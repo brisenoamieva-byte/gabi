@@ -1,0 +1,41 @@
+{
+  "name": "gabi - Guía para Asesores de Bienes Inmuebles",
+  "short_name": "gabi",
+  "description": "Guía comercial inmobiliaria para recorridos estructurados. No es un CRM.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a5f",
+  "lang": "es-MX",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/logos/gabi-logo.png",
+      "sizes": "1018x559",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nuevo recorrido",
+      "short_name": "Recorrido",
+      "description": "Iniciar un recorrido guiado con cliente",
+      "url": "/recorrido"
+    },
+    {
+      "name": "Cotizador",
+      "short_name": "Cotizar",
+      "description": "Cotización comercial con inventario real",
+      "url": "/cotizador"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver tablero comercial",
+      "url": "/dashboard"
+    }
+  ]
+}

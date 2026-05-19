@@ -1,0 +1,674 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, ExternalLink, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  documentoAlcanceLabel,
+  documentoCategoriaLabel,
+  formatDocumentoAlcance,
+  getEtapasForCluster,
+  resolveDocumentoAlcanceStorage,
+  type DocumentoAlcance,
+  type DocumentoCategoria,
+} from "@/lib/admin/documentos-scope";
+import type { DocumentoRecord } from "@/lib/admin/types";
+import type { Cluster, Desarrollo, DisponibilidadUnidad, Prototipo } from "@/lib/data";
+
+type DocumentosAdminPanelProps = {
+  desarrollos: Desarrollo[];
+  scopeLabel?: string;
+  clusters: Cluster[];
+  disponibilidades: DisponibilidadUnidad[];
+  prototipos: Prototipo[];
+};
+
+const alcances: DocumentoAlcance[] = ["desarrollo", "especifico"];
+
+const categorias: DocumentoCategoria[] = [
+  "brochure",
+  "disponibilidad",
+  "ficha_tecnica",
+  "lista_precios",
+  "master_plan",
+  "otro",
+];
+
+const formatBytes = (bytes: number | null) => {
+  if (!bytes) {
+    return "—";
+  }
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const formatFecha = (iso: string) =>
+  new Intl.DateTimeFormat("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+
+const getCategoriaFromRecord = (doc: DocumentoRecord): DocumentoCategoria => {
+  if (doc.tipo === "disponibilidad") {
+    return "disponibilidad";
+  }
+  if (doc.tipo === "ficha_tecnica") {
+    return "ficha_tecnica";
+  }
+  if (doc.tipo === "brochure_desarrollo" || doc.tipo === "brochure_cluster") {
+    return "brochure";
+  }
+  return "otro";
+};
+
+export function DocumentosAdminPanel({
+  desarrollos,
+  scopeLabel,
+  clusters,
+  disponibilidades,
+  prototipos,
+}: DocumentosAdminPanelProps) {
+  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const [alcance, setAlcance] = useState<DocumentoAlcance>("desarrollo");
+  const [clusterId, setClusterId] = useState("");
+  const [etapa, setEtapa] = useState("");
+  const [prototipoId, setPrototipoId] = useState("");
+  const [categoria, setCategoria] = useState<DocumentoCategoria>("brochure");
+  const [nombre, setNombre] = useState("");
+  const [nombrePersonalizado, setNombrePersonalizado] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [documentos, setDocumentos] = useState<DocumentoRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const esFichaTecnica = categoria === "ficha_tecnica";
+
+  const clusterSeleccionado = useMemo(
+    () => clusters.find((item) => item.id === clusterId),
+    [clusterId, clusters],
+  );
+
+  const etapasDisponibles = useMemo(
+    () =>
+      getEtapasForCluster(
+        clusterSeleccionado,
+        disponibilidades.filter((item) => item.clusterId === clusterId),
+      ),
+    [clusterId, clusterSeleccionado, disponibilidades],
+  );
+
+  const prototiposDisponibles = useMemo(
+    () => prototipos.filter((item) => !clusterId || item.clusterId === clusterId),
+    [clusterId, prototipos],
+  );
+
+  const prototipoSeleccionado = useMemo(
+    () => prototipos.find((item) => item.id === prototipoId),
+    [prototipoId, prototipos],
+  );
+
+  const loadDocumentos = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = desarrolloId ? `?desarrolloId=${desarrolloId}` : "";
+      const response = await fetch(`/api/admin/documentos${params}`);
+      const data = (await response.json()) as {
+        documentos?: DocumentoRecord[];
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo cargar la lista");
+      }
+      setDocumentos(data.documentos ?? []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Error de carga");
+    } finally {
+      setLoading(false);
+    }
+  }, [desarrolloId]);
+
+  useEffect(() => {
+    void loadDocumentos();
+  }, [loadDocumentos]);
+
+  useEffect(() => {
+    if (esFichaTecnica) {
+      return;
+    }
+    if (alcance === "desarrollo") {
+      setClusterId("");
+      setEtapa("");
+    }
+  }, [alcance, esFichaTecnica]);
+
+  useEffect(() => {
+    if (!esFichaTecnica) {
+      setEtapa("");
+    }
+    setPrototipoId("");
+  }, [clusterId, esFichaTecnica]);
+
+  useEffect(() => {
+    if (esFichaTecnica) {
+      setEtapa("");
+    } else {
+      setPrototipoId("");
+    }
+  }, [categoria, esFichaTecnica]);
+
+  const nombreSugerido = useMemo(() => {
+    const desarrollo = desarrollos.find((item) => item.id === desarrolloId)?.nombre ?? "Desarrollo";
+    const cluster = clusterSeleccionado?.nombre ?? "Cluster";
+
+    if (categoria === "disponibilidad") {
+      if (alcance === "especifico" && etapa) {
+        return `Disponibilidad ${cluster} · Etapa ${etapa}`;
+      }
+      if (alcance === "especifico") {
+        return `Disponibilidad ${cluster}`;
+      }
+      return `Disponibilidad ${desarrollo}`;
+    }
+
+    if (categoria === "lista_precios") {
+      if (alcance === "especifico" && etapa) {
+        return `Lista de precios ${cluster} · Etapa ${etapa}`;
+      }
+      if (alcance === "especifico") {
+        return `Lista de precios ${cluster}`;
+      }
+      return `Lista de precios ${desarrollo}`;
+    }
+
+    if (categoria === "master_plan") {
+      return alcance === "desarrollo" ? `Master plan ${desarrollo}` : `Plano ${cluster}`;
+    }
+
+    if (categoria === "ficha_tecnica") {
+      const producto = prototipoSeleccionado?.nombre ?? "Producto";
+      return `Ficha técnica ${producto}`;
+    }
+
+    if (categoria === "brochure") {
+      if (alcance === "especifico" && etapa) {
+        return `Brochure ${cluster} · Etapa ${etapa}`;
+      }
+      return alcance === "desarrollo" ? `Brochure ${desarrollo}` : `Brochure ${cluster}`;
+    }
+
+    return `Documento ${desarrollo}`;
+  }, [alcance, categoria, clusterSeleccionado, desarrolloId, desarrollos, etapa, prototipoSeleccionado]);
+
+  useEffect(() => {
+    if (!nombrePersonalizado) {
+      setNombre(nombreSugerido);
+    }
+  }, [nombrePersonalizado, nombreSugerido]);
+
+  const confirmarNombreSugerido = () => {
+    setNombre(nombreSugerido);
+    setNombrePersonalizado(false);
+  };
+
+  const nombreConfirmado = !nombrePersonalizado || nombre.trim() === nombreSugerido.trim();
+
+  const handleUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!file) {
+      setError("Selecciona un archivo PDF.");
+      return;
+    }
+
+    if (esFichaTecnica) {
+      if (!clusterId) {
+        setError("Selecciona un cluster.");
+        return;
+      }
+      if (!prototipoId) {
+        setError("Selecciona un producto (prototipo).");
+        return;
+      }
+    } else {
+      if (alcance === "especifico" && !clusterId) {
+        setError("Selecciona un cluster.");
+        return;
+      }
+    }
+
+    const alcanceStorage = resolveDocumentoAlcanceStorage(alcance, etapa);
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("desarrolloId", desarrolloId);
+      formData.append("categoria", categoria);
+      formData.append("nombre", nombre);
+      if (!esFichaTecnica) {
+        formData.append("alcance", alcanceStorage);
+      }
+      if (clusterId) {
+        formData.append("clusterId", clusterId);
+      }
+      if (etapa) {
+        formData.append("etapa", etapa);
+      }
+      if (prototipoId) {
+        formData.append("prototipoId", prototipoId);
+      }
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 90000);
+
+      let response: Response;
+      try {
+        response = await fetch("/api/admin/documentos", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+      } catch (fetchError) {
+        if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
+          throw new Error(
+            "La subida tardó demasiado. Revisa tu internet, el tamaño del PDF o intenta de nuevo.",
+          );
+        }
+        throw fetchError;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Error al subir");
+      }
+
+      setSuccess("Documento publicado. Los asesores ya pueden descargarlo.");
+      setNombrePersonalizado(false);
+      setNombre("");
+      setFile(null);
+      await loadDocumentos();
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Error al subir");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeactivate = async (id: string) => {
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/documentos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activo: false }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo desactivar");
+      }
+      await loadDocumentos();
+    } catch (deactivateError) {
+      setError(deactivateError instanceof Error ? deactivateError.message : "Error");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {desarrollos.length === 0 ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+          No tienes desarrollos asignados. Pide al administrador gabi que configure tu perfil en
+          Supabase (<code className="rounded bg-white px-1">admin_profiles.desarrollos_ids</code>
+          ).
+        </div>
+      ) : null}
+
+      <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6cc24a]">
+          Paso 1 · Subir documento
+        </p>
+        <h2 className="mt-2 text-2xl font-black text-[#201044]">Publicar PDF comercial</h2>
+        {scopeLabel ? (
+          <p className="mt-2 inline-flex rounded-full bg-[#201044]/5 px-3 py-1 text-xs font-semibold text-[#201044]">
+            Alcance: {scopeLabel}
+          </p>
+        ) : null}
+        <p className="mt-2 text-sm text-slate-500">
+          Define el <strong>tipo de documento</strong> y su contexto: todo el desarrollo, cluster o
+          etapa específica, o producto (ficha técnica).
+        </p>
+
+        <form onSubmit={(event) => void handleUpload(event)} className="mt-6 space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                1 · Desarrollo
+              </span>
+              <select
+                value={desarrolloId}
+                onChange={(event) => setDesarrolloId(event.target.value)}
+                className="input-cotizador"
+              >
+                {desarrollos.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                2 · Tipo de documento
+              </span>
+              <select
+                value={categoria}
+                onChange={(event) => setCategoria(event.target.value as DocumentoCategoria)}
+                className="input-cotizador"
+              >
+                {categorias.map((item) => (
+                  <option key={item} value={item}>
+                    {documentoCategoriaLabel[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {esFichaTecnica ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                  3 · Cluster
+                </span>
+                <select
+                  value={clusterId}
+                  onChange={(event) => setClusterId(event.target.value)}
+                  className="input-cotizador"
+                  required
+                >
+                  <option value="">Selecciona cluster</option>
+                  {clusters.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                  4 · Producto (prototipo)
+                </span>
+                <select
+                  value={prototipoId}
+                  onChange={(event) => setPrototipoId(event.target.value)}
+                  className="input-cotizador"
+                  required
+                  disabled={!clusterId}
+                >
+                  <option value="">
+                    {clusterId ? "Selecciona producto" : "Primero elige cluster"}
+                  </option>
+                  {prototiposDisponibles.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : (
+            <>
+              <label className="block md:max-w-md">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                  3 · Aplica a
+                </span>
+                <select
+                  value={alcance}
+                  onChange={(event) => setAlcance(event.target.value as DocumentoAlcance)}
+                  className="input-cotizador"
+                >
+                  {alcances.map((item) => (
+                    <option key={item} value={item}>
+                      {documentoAlcanceLabel[item]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {alcance === "especifico" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                      4 · Cluster
+                    </span>
+                    <select
+                      value={clusterId}
+                      onChange={(event) => setClusterId(event.target.value)}
+                      className="input-cotizador"
+                      required
+                    >
+                      <option value="">Selecciona cluster</option>
+                      {clusters.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                      5 · Etapa (opcional)
+                    </span>
+                    <select
+                      value={etapa}
+                      onChange={(event) => setEtapa(event.target.value)}
+                      className="input-cotizador"
+                      disabled={!clusterId}
+                    >
+                      <option value="">
+                        {clusterId ? "Todo el cluster" : "Primero elige cluster"}
+                      </option>
+                      {etapasDisponibles.map((item) => (
+                        <option key={item} value={item}>
+                          Etapa {item}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : null}
+            </>
+          )}
+
+          <div className="rounded-xl border border-[#201044]/8 bg-[#f4f2f8]/60 px-4 py-3 text-sm text-slate-600">
+            <span className="font-semibold text-[#201044]">Resumen: </span>
+            {formatDocumentoAlcance({
+              clusterId: esFichaTecnica || alcance === "especifico" ? clusterId || null : null,
+              etapa: !esFichaTecnica && alcance === "especifico" ? etapa || null : null,
+              prototipoId: esFichaTecnica ? prototipoId || null : null,
+              clusterNombre: clusterSeleccionado?.nombre,
+              prototipoNombre: prototipoSeleccionado?.nombre,
+            })}
+            {" · "}
+            {documentoCategoriaLabel[categoria]}
+          </div>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Nombre visible
+            </span>
+            <input
+              value={nombre}
+              onChange={(event) => {
+                setNombre(event.target.value);
+                setNombrePersonalizado(true);
+              }}
+              required
+              className="input-cotizador"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {nombreConfirmado ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                  <Check className="h-3.5 w-3.5" />
+                  Nombre sugerido confirmado
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={confirmarNombreSugerido}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#201044]/15 bg-white px-3 py-1 text-xs font-semibold text-[#201044] hover:bg-slate-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Usar sugerido: {nombreSugerido}
+                </button>
+              )}
+              <span className="text-xs text-slate-400">
+                Se actualiza solo al cambiar desarrollo, tipo o producto.
+              </span>
+            </div>
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Archivo PDF
+            </span>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              required
+              className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#201044] file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white"
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={uploading}
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#6cc24a] px-6 text-sm font-bold text-[#201044] disabled:opacity-60"
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            {uploading ? "Subiendo..." : "Publicar documento"}
+          </button>
+        </form>
+
+        {error ? (
+          <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
+            {error}
+          </p>
+        ) : null}
+        {success ? (
+          <p className="mt-4 rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+            {success}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-lg font-black text-[#201044]">Documentos publicados</h3>
+          <button
+            type="button"
+            onClick={() => void loadDocumentos()}
+            className="text-sm font-semibold text-[#201044] hover:underline"
+          >
+            Actualizar
+          </button>
+        </div>
+
+        {loading ? (
+          <p className="mt-6 text-sm text-slate-500">Cargando...</p>
+        ) : documentos.length ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
+                  <th className="py-3 pr-4">Nombre</th>
+                  <th className="py-3 pr-4">Aplica a</th>
+                  <th className="py-3 pr-4">Tipo</th>
+                  <th className="py-3 pr-4">Estado</th>
+                  <th className="py-3 pr-4">Tamaño</th>
+                  <th className="py-3 pr-4">Fecha</th>
+                  <th className="py-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documentos.map((doc) => (
+                  <tr key={doc.id} className="border-b border-slate-50">
+                    <td className="py-3 pr-4 font-semibold text-[#201044]">{doc.nombre}</td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {formatDocumentoAlcance({
+                        clusterId: doc.cluster_id,
+                        etapa: doc.etapa ?? null,
+                        prototipoId: doc.prototipo_id ?? null,
+                        clusterNombre: clusters.find((item) => item.id === doc.cluster_id)?.nombre,
+                        prototipoNombre: prototipos.find((item) => item.id === doc.prototipo_id)?.nombre,
+                      })}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {documentoCategoriaLabel[getCategoriaFromRecord(doc)]}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-bold ${
+                          doc.activo
+                            ? "bg-green-100 text-green-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {doc.activo ? "Activo" : "Inactivo"}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">{formatBytes(doc.tamano_bytes)}</td>
+                    <td className="py-3 pr-4 text-slate-500">{formatFecha(doc.created_at)}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={doc.public_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-[#201044]"
+                          title="Ver PDF"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                        {doc.activo ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleDeactivate(doc.id)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600"
+                            title="Desactivar"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-6 text-sm text-slate-500">Aún no hay documentos para este desarrollo.</p>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,146 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { LockKeyhole } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+
+export function AdminLoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const configured = isSupabaseConfigured();
+  const resetOk = searchParams.get("reset") === "ok";
+  const otpExpired = searchParams.get("error") === "otp_expired";
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setError(
+          process.env.NODE_ENV === "development"
+            ? authError.message
+            : "Credenciales incorrectas o usuario sin acceso admin.",
+        );
+        return;
+      }
+
+      router.replace("/admin/documentos");
+      router.refresh();
+    } catch {
+      setError("No se pudo iniciar sesión. Revisa la configuración de Supabase.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-md rounded-[1.75rem] border border-[#201044]/10 bg-white p-8 shadow-xl">
+      <div className="mb-8 text-center">
+        <Image
+          src="/logos/gabi-logo.png"
+          alt="gabi"
+          width={1018}
+          height={559}
+          className="mx-auto h-10 w-auto object-contain"
+        />
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+          Backoffice comercial
+        </p>
+        <h1 className="mt-2 text-2xl font-black text-[#201044]">Admin gabi</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Gestión de documentos, inventario y usuarios.
+        </p>
+      </div>
+
+      {!configured ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+          <p className="font-bold">Supabase no configurado</p>
+          <p className="mt-2">
+            Agrega las variables en <code className="rounded bg-white px-1">.env.local</code> y
+            ejecuta el SQL en{" "}
+            <code className="rounded bg-white px-1">supabase/migrations/001_admin_foundation.sql</code>
+          </p>
+        </div>
+      ) : (
+        <>
+          {resetOk ? (
+            <p className="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+              Contraseña actualizada. Ya puedes iniciar sesión.
+            </p>
+          ) : null}
+          {otpExpired ? (
+            <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+              El enlace del correo expiró. Vuelve a enviarlo desde Supabase o crea la contraseña
+              directamente al dar de alta el usuario.
+            </p>
+          ) : null}
+          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                Email
+              </span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                autoComplete="email"
+                className="input-cotizador"
+                placeholder="admin@bbrhabitarea.com"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                Contraseña
+              </span>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                autoComplete="current-password"
+                className="input-cotizador"
+              />
+            </label>
+            {error ? (
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
+                {error}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] text-sm font-bold text-white disabled:opacity-60"
+            >
+              <LockKeyhole className="h-4 w-4" />
+              {loading ? "Entrando..." : "Entrar al panel"}
+            </button>
+          </form>
+        </>
+      )}
+
+      <p className="mt-6 text-center text-sm text-slate-500">
+        <Link href="/" className="font-semibold text-[#201044] hover:underline">
+          Volver al inicio
+        </Link>
+      </p>
+    </div>
+  );
+}

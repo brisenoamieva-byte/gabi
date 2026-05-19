@@ -3,21 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f8fafc;
+  --foreground: #1e293b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+@layer components {
+  .input-xl {
+    @apply min-h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-[#1e293b] outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20 md:text-lg;
+  }
+
+  .input-cotizador {
+    @apply min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-[#1e293b] outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/15 sm:min-h-12 sm:px-4 sm:text-base;
+  }
 }
 
 @layer utilities {

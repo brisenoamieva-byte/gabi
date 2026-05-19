@@ -1,0 +1,214 @@
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
+
+export type CoordinadorAdminSync = {
+  adminLinked: boolean;
+  adminInviteSent: boolean;
+  adminRevoked: boolean;
+  adminMessage?: string;
+};
+
+const getSiteUrl = () => {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+};
+
+const findAuthUserIdByEmail = async (email: string) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  let page = 1;
+  while (page <= 20) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const match = data.users.find((user) => user.email?.toLowerCase() === email);
+    if (match) {
+      return match.id;
+    }
+
+    if (data.users.length < 200) {
+      break;
+    }
+    page += 1;
+  }
+
+  return null;
+};
+
+const resolveAuthUserId = async (email: string) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado (service role).");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const { data: linkedProfile } = await supabase
+    .from("admin_profiles")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (linkedProfile?.id) {
+    return { userId: linkedProfile.id as string, invited: false };
+  }
+
+  const existingAuthId = await findAuthUserIdByEmail(normalizedEmail);
+  if (existingAuthId) {
+    return { userId: existingAuthId, invited: false };
+  }
+
+  const { data, error } = await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
+    redirectTo: `${getSiteUrl()}/auth/callback`,
+  });
+
+  if (error) {
+    const retryId = await findAuthUserIdByEmail(normalizedEmail);
+    if (retryId) {
+      return { userId: retryId, invited: false };
+    }
+    throw new Error(error.message);
+  }
+
+  if (!data.user?.id) {
+    throw new Error("No se pudo crear el usuario de admin.");
+  }
+
+  return { userId: data.user.id, invited: true };
+};
+
+export const syncCoordinadorAdminAccess = async (input: {
+  asesorId: string;
+  nombre: string;
+  email: string;
+  desarrollosIds: string[];
+  activo: boolean;
+}): Promise<CoordinadorAdminSync> => {
+  if (!input.activo) {
+    return revokeCoordinadorAdminAccess(input.asesorId);
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return {
+      adminLinked: false,
+      adminInviteSent: false,
+      adminRevoked: false,
+      adminMessage:
+        "Acceso portal creado. Configura SUPABASE_SERVICE_ROLE_KEY para vincular admin automáticamente.",
+    };
+  }
+
+  try {
+    const { userId, invited } = await resolveAuthUserId(input.email);
+
+    const { error } = await supabase.from("admin_profiles").upsert(
+      {
+        id: userId,
+        nombre: input.nombre.trim(),
+        email: input.email.trim().toLowerCase(),
+        rol: "gerente",
+        desarrollos_ids: input.desarrollosIds,
+        activo: true,
+        asesor_id: input.asesorId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      adminLinked: true,
+      adminInviteSent: invited,
+      adminRevoked: false,
+      adminMessage: invited
+        ? `Invitación enviada a ${input.email} para entrar en /admin/login y definir contraseña.`
+        : `Acceso admin activo para ${input.email} en /admin/login.`,
+    };
+  } catch (syncError) {
+    return {
+      adminLinked: false,
+      adminInviteSent: false,
+      adminRevoked: false,
+      adminMessage:
+        syncError instanceof Error
+          ? `Portal listo, pero admin no se vinculó: ${syncError.message}`
+          : "Portal listo, pero admin no se vinculó.",
+    };
+  }
+};
+
+export const revokeCoordinadorAdminAccess = async (
+  asesorId: string,
+): Promise<CoordinadorAdminSync> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return {
+      adminLinked: false,
+      adminInviteSent: false,
+      adminRevoked: false,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("admin_profiles")
+    .update({
+      activo: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("asesor_id", asesorId)
+    .select("id");
+
+  if (error) {
+    return {
+      adminLinked: false,
+      adminInviteSent: false,
+      adminRevoked: false,
+      adminMessage: error.message,
+    };
+  }
+
+  return {
+    adminLinked: false,
+    adminInviteSent: false,
+    adminRevoked: (data ?? []).length > 0,
+    adminMessage:
+      (data ?? []).length > 0 ? "Acceso admin desactivado para este coordinador." : undefined,
+  };
+};
+
+export const applyCoordinadorAdminPolicy = async (
+  previous: { id: string; rol: string; activo: boolean; nombre: string; email: string; desarrollosIds: string[] },
+  current: { id: string; rol: string; activo: boolean; nombre: string; email: string; desarrollosIds: string[] },
+): Promise<CoordinadorAdminSync | undefined> => {
+  const isCoordinador = current.rol === "coordinador" && current.activo;
+
+  if (isCoordinador) {
+    return syncCoordinadorAdminAccess({
+      asesorId: current.id,
+      nombre: current.nombre,
+      email: current.email,
+      desarrollosIds: current.desarrollosIds,
+      activo: true,
+    });
+  }
+
+  if (previous.rol === "coordinador") {
+    return revokeCoordinadorAdminAccess(previous.id);
+  }
+
+  return undefined;
+};

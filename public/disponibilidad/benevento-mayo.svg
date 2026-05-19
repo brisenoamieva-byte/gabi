@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" fill="#f8fafc"/>
+  <rect x="36" y="36" width="1128" height="688" rx="36" fill="#ffffff" stroke="#d8dee8" stroke-width="3"/>
+  <text x="72" y="94" fill="#1e3a5f" font-family="Arial, sans-serif" font-size="34" font-weight="800">Benevento Residencial</text>
+  <text x="72" y="132" fill="#64748b" font-family="Arial, sans-serif" font-size="18">Plano esquematico de disponibilidad - Mayo</text>
+  <rect x="78" y="588" width="244" height="88" rx="22" fill="#1e3a5f"/>
+  <text x="122" y="640" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="800">CASA CLUB</text>
+  <rect x="392" y="590" width="630" height="54" rx="24" fill="#e2e8f0"/>
+  <text x="560" y="625" fill="#475569" font-family="Arial, sans-serif" font-size="20" font-weight="700">AV. RANCHO EL SALVADOR</text>
+  <g fill="#eef2f7" stroke="#94a3b8" stroke-width="2">
+    <rect x="110" y="200" width="82" height="72" rx="12"/>
+    <rect x="204" y="200" width="82" height="72" rx="12"/>
+    <rect x="298" y="200" width="82" height="72" rx="12"/>
+    <rect x="392" y="200" width="82" height="72" rx="12"/>
+    <rect x="486" y="200" width="82" height="72" rx="12"/>
+    <rect x="580" y="200" width="82" height="72" rx="12"/>
+    <rect x="674" y="200" width="82" height="72" rx="12"/>
+    <rect x="768" y="200" width="82" height="72" rx="12"/>
+    <rect x="862" y="200" width="82" height="72" rx="12"/>
+    <rect x="956" y="200" width="82" height="72" rx="12"/>
+    <rect x="110" y="318" width="82" height="72" rx="12"/>
+    <rect x="204" y="318" width="82" height="72" rx="12"/>
+    <rect x="298" y="318" width="82" height="72" rx="12"/>
+    <rect x="392" y="318" width="82" height="72" rx="12"/>
+    <rect x="486" y="318" width="82" height="72" rx="12"/>
+    <rect x="580" y="318" width="82" height="72" rx="12"/>
+    <rect x="674" y="318" width="82" height="72" rx="12"/>
+    <rect x="768" y="318" width="82" height="72" rx="12"/>
+    <rect x="862" y="318" width="82" height="72" rx="12"/>
+    <rect x="956" y="318" width="82" height="72" rx="12"/>
+    <rect x="170" y="452" width="82" height="72" rx="12"/>
+    <rect x="264" y="452" width="82" height="72" rx="12"/>
+    <rect x="358" y="452" width="82" height="72" rx="12"/>
+    <rect x="452" y="452" width="82" height="72" rx="12"/>
+    <rect x="546" y="452" width="82" height="72" rx="12"/>
+    <rect x="640" y="452" width="82" height="72" rx="12"/>
+    <rect x="734" y="452" width="82" height="72" rx="12"/>
+    <rect x="828" y="452" width="82" height="72" rx="12"/>
+  </g>
+  <g fill="#64748b" font-family="Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">
+    <text x="151" y="242">Lote 1</text>
+    <text x="245" y="242">Lote 2</text>
+    <text x="339" y="242">Lote 3</text>
+    <text x="433" y="242">Lote 4</text>
+    <text x="527" y="242">Lote 5</text>
+    <text x="621" y="242">Lote 6</text>
+    <text x="715" y="242">Lote 7</text>
+    <text x="809" y="242">Lote 8</text>
+    <text x="903" y="242">Lote 9</text>
+    <text x="997" y="242">Lote 10</text>
+    <text x="151" y="360">V48</text>
+    <text x="245" y="360">V49</text>
+    <text x="339" y="360">V50</text>
+    <text x="433" y="360">V51</text>
+    <text x="527" y="360">V52</text>
+    <text x="621" y="360">V53</text>
+    <text x="715" y="360">V42</text>
+    <text x="809" y="360">V43</text>
+    <text x="903" y="360">V44</text>
+    <text x="997" y="360">V45</text>
+    <text x="211" y="494">Lote 27</text>
+    <text x="305" y="494">Lote 28</text>
+    <text x="399" y="494">Lote 29</text>
+    <text x="493" y="494">Lote 30</text>
+    <text x="587" y="494">Lote 38</text>
+    <text x="681" y="494">Lote 39</text>
+    <text x="775" y="494">Lote 40</text>
+    <text x="869" y="494">Lote 41</text>
+  </g>
+</svg>

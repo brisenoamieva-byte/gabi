@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# gabi
 
-## Getting Started
+Guía para Asesores de Bienes Inmuebles. Aplicación Next.js para acompañar recorridos comerciales, trabajar con datos locales y sincronizar registros cuando haya internet.
 
-First, run the development server:
+## Desarrollo Local
+
+Instala dependencias y levanta el servidor:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## PWA Y Modo Offline
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+gabi está configurada como PWA con `next-pwa`.
 
-## Learn More
+- En desarrollo (`npm run dev`) el service worker está desactivado para evitar caché vieja.
+- En producción (`npm run build` + `npm start`) se genera `/sw.js`.
+- La app cachea rutas, imágenes, fuentes y assets internos.
+- Los clientes/leads se guardan localmente y `gabi_crm_pending` se reintenta al volver internet.
 
-To learn more about Next.js, take a look at the following resources:
+Para probar offline localmente:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Después abre la app una vez online, instálala desde el navegador y prueba modo avión.
 
-## Deploy on Vercel
+## Publicación En Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Sube el repositorio a GitHub.
+2. Crea un proyecto en [Vercel](https://vercel.com/new) conectado al repositorio.
+3. Usa los defaults de Next.js:
+   - Build command: `npm run build`
+   - Output: automático
+4. Agrega variables de entorno si se va a sincronizar CRM:
+   - `HUBSPOT_PRIVATE_APP_TOKEN`
+5. Publica y valida la URL temporal antes de conectar dominio.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Validación Antes De Publicar
+
+```bash
+npm run lint
+npm run build
+```
