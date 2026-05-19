@@ -75,6 +75,7 @@ type ClienteTemporal = {
 
 type RecorridoState = {
   etapa: number;
+  recorridoVersion?: number;
   leadId?: string;
   cliente: ClienteTemporal;
   productoTipo: ProductoSeleccion[];
@@ -92,7 +93,29 @@ const CLIENTES_KEY = "gabi_clientes";
 const LEADS_KEY = "gabi_leads";
 const CRM_PENDING_KEY = "gabi_crm_pending";
 
-const etapas = ["Confianza", "Necesidades", "Producto", "Cierre"];
+const etapas = ["Confianza", "Necesidades", "Desarrollo", "Producto", "Cierre"];
+const RECORRIDO_VERSION = 2;
+const LEGACY_ETAPA_COUNT = 4;
+
+const migrateLegacyEtapa = (etapa: number, parsed: Partial<RecorridoState>) => {
+  if (parsed.recorridoVersion === RECORRIDO_VERSION) {
+    return Math.min(Math.max(etapa, 0), etapas.length - 1);
+  }
+
+  if (etapa >= 2) {
+    if (etapa === LEGACY_ETAPA_COUNT - 1) {
+      return etapas.length - 1;
+    }
+
+    if (parsed.clusterId || parsed.prototipoId) {
+      return 3;
+    }
+
+    return 2;
+  }
+
+  return etapa;
+};
 const confianzaItems = [
   {
     title: "Saludar, sonreír, presentarse",
@@ -134,6 +157,7 @@ const medioContactoOptions: { value: Cliente["medioContacto"]; label: string }[]
 
 const initialState: RecorridoState = {
   etapa: 0,
+  recorridoVersion: RECORRIDO_VERSION,
   leadId: undefined,
   cliente: {
     nombre: "",
@@ -625,6 +649,8 @@ export default function RecorridoPage() {
         setState({
           ...initialState,
           ...parsed,
+          etapa: migrateLegacyEtapa(parsed.etapa ?? 0, parsed),
+          recorridoVersion: RECORRIDO_VERSION,
           productoTipo: normalizeProductoTipo(parsed.productoTipo),
           recamarasFiltro: normalizeRecamarasFiltro(parsed.recamarasFiltro),
         });
@@ -928,7 +954,7 @@ export default function RecorridoPage() {
       status: "recorrido-completado",
       fechaRegistro: new Date().toISOString(),
       notas: state.cliente.notas,
-      etapaRecorrido: 4,
+      etapaRecorrido: etapas.length,
       recorrido: state,
       precioFinal,
     };
@@ -1006,13 +1032,13 @@ export default function RecorridoPage() {
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-4 gap-2">
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {etapas.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => goToStep(index)}
-                className={`rounded-2xl px-2 py-3 text-center text-xs font-black transition md:text-base ${
+                className={`min-w-[4.75rem] shrink-0 snap-start rounded-2xl px-2 py-3 text-center text-[11px] font-black transition sm:min-w-0 sm:flex-1 sm:text-xs md:text-sm ${
                   index === state.etapa
                     ? "bg-[#1e3a5f] text-white"
                     : index < state.etapa
@@ -1020,7 +1046,7 @@ export default function RecorridoPage() {
                       : "bg-slate-100 text-slate-500"
                 }`}
               >
-                <span className="mr-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/25">
+                <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-[10px] md:h-6 md:w-6 md:text-xs">
                   {index + 1}
                 </span>
                 {label}
@@ -1248,8 +1274,8 @@ export default function RecorridoPage() {
             {state.etapa === 2 && (
               <StepCard
                 eyebrow="Etapa 3"
-                title="Presentación del producto"
-                tip="Conecta beneficios con necesidades detectadas antes de mostrar precio."
+                title="Presentación del desarrollo"
+                tip="Vende la macro: zona, respaldo del desarrollador y visión del desarrollo antes de entrar al cluster."
               >
                 <div className="space-y-6">
                   <ProductNarrativeCard
@@ -1400,13 +1426,13 @@ export default function RecorridoPage() {
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                       <div>
                         <p className="text-sm font-black uppercase tracking-[0.2em] text-[#c9a96e]">
-                          Paso 4
+                          Cierre de la macro
                         </p>
                         <h3 className="text-2xl font-black text-[#1e3a5f]">
                           Técnica de 2 Minutos
                         </h3>
                         <p className="mt-2 text-slate-500">
-                          Resume zona, producto, amenidades y respaldo antes de mostrar opciones.
+                          Resume zona, desarrollo, amenidades y respaldo. Luego avanza a Producto para filtrar clusters.
                         </p>
                       </div>
                       <button
@@ -1419,8 +1445,18 @@ export default function RecorridoPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+              </StepCard>
+            )}
 
-                  <SectionTitle title="Paso 5: Filtra y selecciona un cluster" />
+            {state.etapa === 3 && (
+              <StepCard
+                eyebrow="Etapa 4"
+                title="Selección de producto"
+                tip="Filtra por necesidades, elige cluster y prototipo. Conecta beneficios antes de mostrar precio."
+              >
+                <div className="space-y-6">
+                  <SectionTitle title="Filtra y selecciona un cluster" />
                   <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
                     <div className="grid gap-5 lg:grid-cols-[1fr_1fr_0.8fr]">
                       <Field label="Tipo de producto">
@@ -1821,9 +1857,9 @@ export default function RecorridoPage() {
               </StepCard>
             )}
 
-            {state.etapa === 3 && (
+            {state.etapa === 4 && (
               <StepCard
-                eyebrow="Etapa 4"
+                eyebrow="Etapa 5"
                 title="Ideas de Cierre"
                 tip="Úsalas como inspiración conversacional, no como una lista de pasos obligatorios."
               >
@@ -2517,7 +2553,7 @@ function ZoneMap() {
 
   return (
     <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg">
-      <div className="relative h-[420px] bg-slate-100">
+      <div className="relative h-[280px] bg-slate-100 md:h-[420px]">
         <iframe
           title="Mapa de ubicación de La Vista Residencial"
           src={zonaLaVista.mapaEmbedUrl}

@@ -172,7 +172,7 @@ export interface Cliente {
   status: 'nuevo' | 'seguimiento' | 'apartado' | 'escriturado' | 'perdido'
   fechaRegistro: string
   notas?: string
-  etapaRecorrido?: number // 1-4 (confianza, necesidades, producto, cierre)
+  etapaRecorrido?: number // 1-5 (confianza, necesidades, desarrollo, producto, cierre)
 }
 
 export const clusters: Cluster[] = [
