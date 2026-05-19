@@ -50,7 +50,7 @@ function MetricCard({
 }) {
   if (variant === "hero") {
     return (
-      <div className="rounded-2xl bg-[#c9a96e] px-5 py-6 text-white shadow-lg shadow-[#c9a96e]/25">
+      <div className="rounded-2xl bg-[#C8A276] px-5 py-6 text-white shadow-lg shadow-[#C8A276]/25">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/75">
           {label}
         </p>
@@ -64,7 +64,7 @@ function MetricCard({
   return (
     <div
       className={`rounded-2xl px-4 py-4 ${
-        variant === "accent" ? "bg-[#1e3a5f]/5 ring-1 ring-[#1e3a5f]/8" : "bg-slate-50"
+        variant === "accent" ? "bg-[#1B4332]/5 ring-1 ring-[#1B4332]/8" : "bg-slate-50"
       }`}
     >
       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
@@ -73,8 +73,8 @@ function MetricCard({
       <p
         className={`mt-1.5 font-black tabular-nums tracking-tight ${
           variant === "accent"
-            ? "text-xl text-[#1e3a5f] sm:text-2xl"
-            : "text-lg text-[#1e3a5f] sm:text-xl"
+            ? "text-xl text-[#1B4332] sm:text-2xl"
+            : "text-lg text-[#1B4332] sm:text-xl"
         }`}
       >
         {value}
@@ -100,7 +100,7 @@ function ToggleGroup({
           type="button"
           onClick={() => onChange(option.value)}
           className={`min-h-11 rounded-lg px-3 text-sm font-bold transition sm:text-base ${
-            value === option.value ? "bg-[#1e3a5f] text-white shadow-sm" : "text-slate-500"
+            value === option.value ? "bg-[#1B4332] text-white shadow-sm" : "text-slate-500"
           }`}
         >
           {option.label}
@@ -174,15 +174,83 @@ export function CotizadorPanel({
     window.setTimeout(() => setCopied(false), 2000);
   };
 
+  const selectorBlock = showSelectors ? (
+    <div className="grid gap-4">
+      <label className="block">
+        <FieldLabel>Cluster</FieldLabel>
+        <select
+          value={clusterId}
+          onChange={(event) => onClusterChange?.(event.target.value)}
+          className="input-cotizador"
+        >
+          {clusters.map((cluster) => (
+            <option key={cluster.id} value={cluster.id}>
+              {cluster.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block min-w-0">
+          <FieldLabel>Prototipo</FieldLabel>
+          <select
+            value={prototipoId ?? ""}
+            onChange={(event) =>
+              onPrototipoChange?.(event.target.value ? event.target.value : undefined)
+            }
+            className="input-cotizador"
+            title={
+              prototipoId
+                ? prototipos.find((item) => item.id === prototipoId)?.nombre
+                : "Sin prototipo"
+            }
+          >
+            <option value="">Sin prototipo (usar unidad)</option>
+            {prototipos.map((prototipo) => (
+              <option key={prototipo.id} value={prototipo.id}>
+                {prototipo.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block min-w-0">
+          <FieldLabel>Unidad (inventario)</FieldLabel>
+          <select
+            value={unidadId ?? ""}
+            onChange={(event) =>
+              onUnidadChange?.(event.target.value ? event.target.value : undefined)
+            }
+            className="input-cotizador"
+            title={
+              unidadId
+                ? unidadesFiltradas.find((item) => item.id === unidadId)?.unidad
+                : "Precio de prototipo"
+            }
+          >
+            <option value="">Precio de prototipo</option>
+            {unidadesFiltradas.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.unidad}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </div>
+  ) : null;
+
   if (!cotizacion) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-        <p className="text-base font-black text-[#1e3a5f] sm:text-lg">
-          Selecciona un producto para cotizar
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">
-          Elige cluster y prototipo, o una unidad del inventario disponible.
-        </p>
+      <div className="space-y-6">
+        {selectorBlock}
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+          <p className="text-base font-black text-[#1B4332] sm:text-lg">
+            Selecciona un producto para cotizar
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            Elige cluster y prototipo, o una unidad del inventario disponible.
+          </p>
+        </div>
       </div>
     );
   }
@@ -191,71 +259,12 @@ export function CotizadorPanel({
     <div className="space-y-6">
       {showSelectors ? (
         <div className="grid gap-4">
-          <label className="block">
-            <FieldLabel>Cluster</FieldLabel>
-            <select
-              value={clusterId}
-              onChange={(event) => onClusterChange?.(event.target.value)}
-              className="input-cotizador"
-            >
-              {clusters.map((cluster) => (
-                <option key={cluster.id} value={cluster.id}>
-                  {cluster.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block min-w-0">
-              <FieldLabel>Prototipo</FieldLabel>
-              <select
-                value={prototipoId ?? ""}
-                onChange={(event) =>
-                  onPrototipoChange?.(event.target.value ? event.target.value : undefined)
-                }
-                className="input-cotizador"
-                title={
-                  prototipoId
-                    ? prototipos.find((item) => item.id === prototipoId)?.nombre
-                    : "Sin prototipo"
-                }
-              >
-                <option value="">Sin prototipo (usar unidad)</option>
-                {prototipos.map((prototipo) => (
-                  <option key={prototipo.id} value={prototipo.id}>
-                    {prototipo.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block min-w-0">
-              <FieldLabel>Unidad (inventario)</FieldLabel>
-              <select
-                value={unidadId ?? ""}
-                onChange={(event) =>
-                  onUnidadChange?.(event.target.value ? event.target.value : undefined)
-                }
-                className="input-cotizador"
-                title={
-                  unidadId
-                    ? unidadesFiltradas.find((item) => item.id === unidadId)?.unidad
-                    : "Precio de prototipo"
-                }
-              >
-                <option value="">Precio de prototipo</option>
-                {unidadesFiltradas.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.unidad}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          {selectorBlock}
           <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
               Selección actual
             </p>
-            <p className="mt-1 text-sm font-bold leading-snug text-[#1e3a5f] sm:text-base">
+            <p className="mt-1 text-sm font-bold leading-snug text-[#1B4332] sm:text-base">
               {cotizacion.clusterNombre}
               {cotizacion.prototipoNombre ? ` · ${cotizacion.prototipoNombre}` : ""}
               {cotizacion.unidadNombre ? ` · ${cotizacion.unidadNombre}` : ""}
@@ -267,11 +276,11 @@ export function CotizadorPanel({
           </div>
         </div>
       ) : (
-        <div className="rounded-xl bg-[#1e3a5f]/5 px-4 py-3.5 ring-1 ring-[#1e3a5f]/8">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c9a96e]">
+        <div className="rounded-xl bg-[#1B4332]/5 px-4 py-3.5 ring-1 ring-[#1B4332]/8">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C8A276]">
             Producto seleccionado
           </p>
-          <p className="mt-1 text-base font-black leading-snug text-[#1e3a5f] sm:text-lg">
+          <p className="mt-1 text-base font-black leading-snug text-[#1B4332] sm:text-lg">
             {cotizacion.clusterNombre} · {cotizacion.prototipoNombre}
             {cotizacion.unidadNombre ? ` · ${cotizacion.unidadNombre}` : ""}
           </p>
@@ -284,10 +293,10 @@ export function CotizadorPanel({
       <div className="space-y-4">
         {showSelectors ? (
           <div className="border-t border-slate-100 pt-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c9a96e]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276]">
               Paso 2 · Números
             </p>
-            <h3 className="mt-1 text-base font-black text-[#1e3a5f] sm:text-lg">
+            <h3 className="mt-1 text-base font-black text-[#1B4332] sm:text-lg">
               Propuesta comercial
             </h3>
           </div>
@@ -304,8 +313,8 @@ export function CotizadorPanel({
 
         <div className="rounded-2xl bg-slate-50 px-4 py-4 sm:px-5">
           <div className="flex items-center justify-between gap-3">
-            <label className="text-sm font-bold text-[#1e3a5f] sm:text-base">Descuento</label>
-            <span className="text-lg font-black tabular-nums text-[#c9a96e] sm:text-xl">
+            <label className="text-sm font-bold text-[#1B4332] sm:text-base">Descuento</label>
+            <span className="text-lg font-black tabular-nums text-[#C8A276] sm:text-xl">
               {formatPrice(cotizacion.descuento)}
             </span>
           </div>
@@ -317,7 +326,7 @@ export function CotizadorPanel({
             value={cotizacion.descuento}
             onChange={(event) => onDescuentoChange?.(Number(event.target.value))}
             disabled={!onDescuentoChange || cotizacion.bonoMaximo === 0}
-            className="mt-3 h-2 w-full cursor-pointer accent-[#c9a96e] disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 h-2 w-full cursor-pointer accent-[#C8A276] disabled:cursor-not-allowed disabled:opacity-40"
           />
           {cotizacion.bonoMaximo === 0 ? (
             <p className="mt-2 text-xs leading-relaxed text-slate-400">
@@ -361,7 +370,7 @@ export function CotizadorPanel({
         <button
           type="button"
           onClick={() => void handleCopy(cotizacion)}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1e3a5f] px-5 text-sm font-bold text-white transition hover:bg-[#16304f] active:scale-[0.99] sm:min-h-14 sm:text-base"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] px-5 text-sm font-bold text-white transition hover:bg-[#245A42] active:scale-[0.99] sm:min-h-14 sm:text-base"
         >
           {copied ? (
             <>

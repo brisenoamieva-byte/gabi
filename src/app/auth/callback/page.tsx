@@ -69,7 +69,7 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f4f2f8] px-5">
+    <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] px-5">
       <p className="max-w-md text-center text-sm font-semibold text-[#201044]">{message}</p>
     </main>
   );

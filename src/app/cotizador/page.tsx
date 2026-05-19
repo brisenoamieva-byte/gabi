@@ -29,8 +29,43 @@ type RecorridoSnapshot = {
   cliente?: { nombre?: string };
 };
 
+function resolveDefaultCluster(recorrido: RecorridoSnapshot | null): string {
+  const recorridoClusterId = recorrido?.clusterId?.trim();
+  const recorridoCluster =
+    recorridoClusterId && clusters.some((cluster) => cluster.id === recorridoClusterId)
+      ? recorridoClusterId
+      : undefined;
+
+  return (
+    recorridoCluster ??
+    clusters.find((cluster) => getPrototiposCotizables(cluster.id).length > 0)?.id ??
+    clusters[0]?.id ??
+    ""
+  );
+}
+
+function resolveDefaultPrototipo(
+  cluster: string,
+  recorrido: RecorridoSnapshot | null,
+): string | undefined {
+  const prototipos = cluster ? getPrototiposCotizables(cluster) : [];
+  const recorridoPrototipoId = recorrido?.prototipoId?.trim();
+
+  if (
+    recorridoPrototipoId &&
+    prototipos.some((prototipo) => prototipo.id === recorridoPrototipoId)
+  ) {
+    return recorridoPrototipoId;
+  }
+
+  return prototipos[0]?.id;
+}
+
+type SessionStatus = "loading" | "ready" | "redirecting";
+
 export default function CotizadorPage() {
   const router = useRouter();
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<SessionUser | null>(null);
   const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
   const [portal, setPortal] = useState<PortalSession | null>(null);
@@ -47,11 +82,13 @@ export default function CotizadorPage() {
     const storedDevelopment = localStorage.getItem("gabi_desarrollo");
 
     if (!storedUser) {
+      setSessionStatus("redirecting");
       router.replace("/portal/bbr");
       return;
     }
 
     if (!storedDevelopment) {
+      setSessionStatus("redirecting");
       router.replace("/desarrollos");
       return;
     }
@@ -67,6 +104,7 @@ export default function CotizadorPage() {
 
       if (!selectedDevelopment) {
         localStorage.removeItem("gabi_desarrollo");
+        setSessionStatus("redirecting");
         router.replace("/desarrollos");
         return;
       }
@@ -81,24 +119,20 @@ export default function CotizadorPage() {
         ? (JSON.parse(recorridoRaw) as RecorridoSnapshot)
         : null;
 
-      const defaultCluster =
-        recorrido?.clusterId ??
-        clusters.find((cluster) => getPrototiposCotizables(cluster.id).length > 0)?.id ??
-        clusters[0]?.id ??
-        "";
-
-      const prototipos = defaultCluster ? getPrototiposCotizables(defaultCluster) : [];
+      const defaultCluster = resolveDefaultCluster(recorrido);
 
       setUser(parsedUser);
       setDesarrollo(selectedDevelopment);
       setClusterId(defaultCluster);
-      setPrototipoId(recorrido?.prototipoId ?? prototipos[0]?.id);
+      setPrototipoId(resolveDefaultPrototipo(defaultCluster, recorrido));
       setDescuento(recorrido?.descuento ?? 0);
       setEsquema(recorrido?.esquema ?? "mensualidades");
       setClienteNombre(recorrido?.cliente?.nombre);
+      setSessionStatus("ready");
     } catch {
       localStorage.removeItem("gabi_user");
       localStorage.removeItem("gabi_desarrollo");
+      setSessionStatus("redirecting");
       router.replace("/portal/bbr");
     }
   }, [router]);
@@ -140,16 +174,36 @@ export default function CotizadorPage() {
     router.replace("/portal/bbr");
   };
 
-  if (!user || !desarrollo || !clusterId) {
+  if (sessionStatus !== "ready" || !user || !desarrollo) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f5fb] text-[#1e293b]">
-        <p className="text-base font-semibold sm:text-lg">Cargando cotizador...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] px-6 text-center text-[#1e293b]">
+        <p className="text-base font-semibold sm:text-lg">
+          {sessionStatus === "redirecting"
+            ? "Redirigiendo al acceso de asesores..."
+            : "Cargando cotizador..."}
+        </p>
+      </main>
+    );
+  }
+
+  if (!clusterId) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F2F0E9] px-6 text-center text-[#1e293b]">
+        <p className="text-base font-semibold sm:text-lg">
+          No hay clusters disponibles para cotizar en {desarrollo.nombre}.
+        </p>
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B4332] px-5 text-sm font-bold text-white"
+        >
+          Volver al dashboard
+        </Link>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f5fb] text-[#1e293b]">
+    <main className="min-h-screen bg-[#F2F0E9] text-[#1e293b]">
       <header className="border-b border-[#201044]/10 bg-white px-4 py-4 shadow-sm sm:px-6 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
@@ -215,7 +269,7 @@ export default function CotizadorPage() {
       <section className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 md:px-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
         <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-lg shadow-[#201044]/5 sm:rounded-[1.75rem] sm:p-6 md:p-8">
           <div className="border-b border-slate-100 pb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c9a96e] sm:text-[11px]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276] sm:text-[11px]">
               Configuración
             </p>
             <h2 className="mt-1.5 text-lg font-black text-[#201044] sm:text-xl">
@@ -245,7 +299,7 @@ export default function CotizadorPage() {
 
         <aside className="space-y-4 lg:sticky lg:top-6">
           <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-md sm:rounded-[1.75rem] sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c9a96e] sm:text-[11px]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276] sm:text-[11px]">
               Datos bancarios
             </p>
             <h3 className="mt-1.5 text-lg font-black text-[#201044]">Para apartado</h3>
@@ -292,15 +346,15 @@ export default function CotizadorPage() {
             <button
               type="button"
               onClick={() => void copyBankData()}
-              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/12 bg-[#faf8f4] px-4 text-sm font-bold text-[#201044] transition hover:bg-slate-100 sm:min-h-12"
+              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/12 bg-[#F2F0E9] px-4 text-sm font-bold text-[#201044] transition hover:bg-slate-100 sm:min-h-12"
             >
               <Copy className="h-4 w-4" />
               {copiedBank ? "Datos copiados" : "Copiar datos bancarios"}
             </button>
           </div>
 
-          <div className="rounded-2xl bg-[#1e3a5f] p-5 sm:rounded-[1.75rem] sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c9a96e] sm:text-[11px]">
+          <div className="rounded-2xl bg-[#1B4332] p-5 sm:rounded-[1.75rem] sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276] sm:text-[11px]">
               Guía gabi
             </p>
             <p className="mt-2.5 text-sm leading-relaxed text-white/85">

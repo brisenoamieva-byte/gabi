@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import { LockKeyhole, LogOut } from "lucide-react";
 import Image from "next/image";
+import { GabiLogo } from "@/components/brand/GabiLogo";
 import { useRouter } from "next/navigation";
 import { asesores } from "@/lib/data";
 
@@ -159,14 +160,14 @@ export default function BbrAdvisorLoginPage() {
 
   if (!ready) {
     return (
-      <main className="grid h-dvh place-items-center bg-[#faf8f4] text-[#201044]">
+      <main className="grid h-dvh place-items-center bg-[#F2F0E9] text-[#201044]">
         <p className="font-semibold">Cargando portal BBR...</p>
       </main>
     );
   }
 
   return (
-    <main className="grid h-dvh max-h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bg-[#faf8f4] text-[#201044]">
+    <main className="grid h-dvh max-h-dvh grid-rows-[auto_1fr_auto] overflow-hidden gabi-surface text-[#201044]">
       <header className="flex shrink-0 flex-col items-center justify-center px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-3">
         <Image
           src="/logos/bbr-habitarea.png"
@@ -263,13 +264,7 @@ export default function BbrAdvisorLoginPage() {
         <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-400">
           Plataforma
         </p>
-        <Image
-          src="/logos/gabi-logo.png"
-          alt="gabi"
-          width={1018}
-          height={559}
-          className="mt-1 h-[clamp(1.25rem,4vh,1.75rem)] w-auto object-contain opacity-85"
-        />
+        <GabiLogo variant="footer" />
       </footer>
     </main>
   );

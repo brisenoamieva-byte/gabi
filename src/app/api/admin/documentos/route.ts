@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     const etapaRaw = formData.get("etapa");
     const prototipoIdRaw = formData.get("prototipoId");
     const nombre = String(formData.get("nombre") ?? "").trim();
+    const confirmReplace = formData.get("confirmReplace") === "true";
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Archivo PDF requerido" }, { status: 400 });
@@ -120,10 +121,28 @@ export async function POST(request: Request) {
       tipo,
       nombre,
       adminId: session.userId,
+      confirmReplace,
     });
 
     return NextResponse.json({ documento });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "DOCUMENTO_ALREADY_EXISTS" &&
+      "existing" in error
+    ) {
+      return NextResponse.json(
+        {
+          error: "DOCUMENTO_ALREADY_EXISTS",
+          message:
+            "Ya existe un documento activo para este alcance. Confirma si deseas reemplazarlo.",
+          existing: error.existing,
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al subir" },
       { status: 500 },

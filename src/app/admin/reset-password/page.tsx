@@ -2,8 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { KeyRound } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { GabiLogo } from "@/components/brand/GabiLogo";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -48,20 +48,14 @@ export default function AdminResetPasswordPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f4f2f8] px-5 py-10">
-      <div className="w-full max-w-md rounded-[1.75rem] border border-[#201044]/10 bg-white p-8 shadow-xl">
+    <main className="flex min-h-screen items-center justify-center gabi-surface px-5 py-10">
+      <div className="w-full max-w-md rounded-[1.75rem] border border-gabi-forest/10 bg-white p-8 shadow-xl shadow-gabi-forest/5">
         <div className="mb-8 text-center">
-          <Image
-            src="/logos/gabi-logo.png"
-            alt="gabi"
-            width={1018}
-            height={559}
-            className="mx-auto h-10 w-auto object-contain"
-          />
-          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+          <GabiLogo variant="hero" className="mx-auto" />
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
             Backoffice comercial
           </p>
-          <h1 className="mt-2 text-2xl font-black text-[#201044]">Nueva contraseña</h1>
+          <h1 className="mt-2 text-2xl font-black text-gabi-forest">Nueva contraseña</h1>
           <p className="mt-2 text-sm text-slate-500">Elige una contraseña para tu cuenta admin.</p>
         </div>
 
@@ -98,7 +92,7 @@ export default function AdminResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] text-sm font-bold text-white disabled:opacity-60"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest text-sm font-bold text-white disabled:opacity-60"
           >
             <KeyRound className="h-4 w-4" />
             {loading ? "Guardando..." : "Guardar contraseña"}
@@ -106,7 +100,7 @@ export default function AdminResetPasswordPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          <Link href="/admin/login" className="font-semibold text-[#201044] hover:underline">
+          <Link href="/admin/login" className="font-semibold text-gabi-forest hover:underline">
             Volver al login
           </Link>
         </p>

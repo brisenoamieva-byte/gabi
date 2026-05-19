@@ -1,5 +1,51 @@
 import type { Cluster, DisponibilidadUnidad } from "@/lib/data";
-import type { DocumentoTipo } from "@/lib/admin/types";
+import type { DocumentoRecord, DocumentoTipo } from "@/lib/admin/types";
+
+export type DocumentoAlcanceKey = {
+  desarrolloId: string;
+  clusterId: string | null;
+  etapa: string | null;
+  prototipoId: string | null;
+  tipo: DocumentoTipo;
+};
+
+const normalizeEtapa = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+/** Misma lógica de alcance que al publicar / desactivar versiones anteriores. */
+export const sameDocumentoAlcance = (
+  doc: Pick<
+    DocumentoRecord,
+    "desarrollo_id" | "cluster_id" | "etapa" | "prototipo_id" | "tipo"
+  >,
+  key: DocumentoAlcanceKey,
+) => {
+  if (doc.desarrollo_id !== key.desarrolloId || doc.tipo !== key.tipo) {
+    return false;
+  }
+
+  const docEtapa = normalizeEtapa(doc.etapa);
+  const keyEtapa = normalizeEtapa(key.etapa);
+
+  if (key.tipo === "ficha_tecnica") {
+    return doc.prototipo_id === key.prototipoId;
+  }
+
+  if (key.tipo === "brochure_desarrollo") {
+    return !doc.cluster_id && !docEtapa && !doc.prototipo_id;
+  }
+
+  if (key.clusterId) {
+    if (doc.cluster_id !== key.clusterId || doc.prototipo_id) {
+      return false;
+    }
+    return docEtapa === keyEtapa;
+  }
+
+  return !doc.cluster_id && !docEtapa && !doc.prototipo_id;
+};
 
 /** Opciones del selector «Aplica a» en admin. */
 export type DocumentoAlcance = "desarrollo" | "especifico";
@@ -57,6 +103,21 @@ export const deriveDocumentoTipo = (
   }
   return alcance === "desarrollo" ? "brochure_desarrollo" : "brochure_cluster";
 };
+
+export const buildDocumentoAlcanceKey = (input: {
+  desarrolloId: string;
+  clusterId: string | null;
+  etapa: string | null;
+  prototipoId: string | null;
+  alcance: DocumentoAlcanceStorage;
+  categoria: DocumentoCategoria;
+}): DocumentoAlcanceKey => ({
+  desarrolloId: input.desarrolloId,
+  clusterId: input.clusterId,
+  etapa: normalizeEtapa(input.etapa),
+  prototipoId: input.prototipoId,
+  tipo: deriveDocumentoTipo(input.alcance, input.categoria),
+});
 
 export const getEtapasForCluster = (
   cluster: Cluster | undefined,

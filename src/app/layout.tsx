@@ -21,13 +21,13 @@ export const metadata: Metadata = {
     "Guía digital para asesores inmobiliarios: estructura cada recorrido comercial desde la visita hasta el cierre. No es un CRM.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/logos/gabi-logo.png",
-    apple: "/logos/gabi-logo.png",
+    icon: "/logos/gabi-icon.png",
+    apple: "/logos/gabi-icon.png",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1e3a5f",
+  themeColor: "#1B4332",
 };
 
 export default function RootLayout({

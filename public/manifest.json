@@ -6,14 +6,14 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f8fafc",
-  "theme_color": "#1e3a5f",
+  "background_color": "#F2F0E9",
+  "theme_color": "#1B4332",
   "lang": "es-MX",
   "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/logos/gabi-logo.png",
-      "sizes": "1018x559",
+      "src": "/logos/gabi-icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }

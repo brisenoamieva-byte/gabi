@@ -3,8 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  --gabi-forest: #1b4332;
+  --gabi-forest-light: #245a42;
+  --gabi-forest-dark: #142e23;
+  --gabi-sand: #c8a276;
+  --gabi-sand-light: #d9bc9a;
+  --gabi-cream: #f2f0e9;
+  --gabi-cream-dark: #e8e4da;
+  --gabi-ink: #1a2e24;
+  --background: var(--gabi-cream);
+  --foreground: var(--gabi-ink);
 }
 
 body {
@@ -15,11 +23,23 @@ body {
 
 @layer components {
   .input-xl {
-    @apply min-h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-[#1e293b] outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20 md:text-lg;
+    @apply min-h-14 w-full rounded-2xl border border-gabi-cream-dark bg-white px-4 py-3 text-base font-semibold text-gabi-ink outline-none transition focus:border-gabi-sand focus:ring-4 focus:ring-gabi-sand/20 md:text-lg;
   }
 
   .input-cotizador {
-    @apply min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-[#1e293b] outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/15 sm:min-h-12 sm:px-4 sm:text-base;
+    @apply min-h-11 w-full min-w-0 rounded-xl border border-gabi-cream-dark bg-white px-3 py-2.5 text-sm font-semibold text-gabi-ink outline-none transition focus:border-gabi-sand focus:ring-4 focus:ring-gabi-sand/15 sm:min-h-12 sm:px-4 sm:text-base;
+  }
+
+  .gabi-surface {
+    @apply bg-gabi-cream text-gabi-ink;
+  }
+
+  .gabi-card {
+    @apply rounded-[1.75rem] border border-gabi-forest/10 bg-white shadow-xl shadow-gabi-forest/5;
+  }
+
+  .gabi-btn-primary {
+    @apply rounded-2xl bg-gabi-forest font-bold text-white shadow-lg transition hover:bg-gabi-forest-light active:scale-[0.98];
   }
 }
 

@@ -6,9 +6,10 @@
     "dev": "node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs && next dev",
     "dev:stop": "node scripts/stop-dev.mjs",
     "dev:reset": "node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs --full && next dev",
-    "build": "node scripts/clean-dev-pwa.mjs --full && next build",
+    "build": "node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs --full && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "process-logo": "node scripts/process-gabi-logo.mjs"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
@@ -32,6 +33,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

@@ -788,8 +788,8 @@ export const desarrollos: Desarrollo[] = [
     estado: 'activo',
     logo: '/logos/la-vista-residencial-transparent.png',
     desarrolladorLogo: '/logos/grupo-vinte.png',
-    colorPrincipal: '#1e3a5f',
-    colorAcento: '#c9a96e',
+    colorPrincipal: '#1B4332',
+    colorAcento: '#C8A276',
     crm: {
       provider: 'hubspot',
       enabled: true

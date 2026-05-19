@@ -1,3 +1,4 @@
+import { sameDocumentoAlcance, type DocumentoAlcanceKey } from "@/lib/admin/documentos-scope";
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { AdminProfile, DocumentoRecord, DocumentoTipo } from "@/lib/admin/types";
@@ -114,6 +115,44 @@ export const resolveDocumentoOficial = async (filters: {
   return tryMatch(null);
 };
 
+export const findDocumentoActivoEnAlcance = async (key: DocumentoAlcanceKey) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  let query = supabase
+    .from("documentos")
+    .select("*")
+    .eq("desarrollo_id", key.desarrolloId)
+    .eq("tipo", key.tipo)
+    .eq("activo", true)
+    .order("created_at", { ascending: false });
+
+  if (key.tipo === "ficha_tecnica" && key.prototipoId) {
+    query = query.eq("prototipo_id", key.prototipoId);
+  } else if (key.tipo === "brochure_desarrollo") {
+    query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
+  } else if (key.clusterId) {
+    query = query.eq("cluster_id", key.clusterId).is("prototipo_id", null);
+    if (key.etapa) {
+      query = query.eq("etapa", key.etapa);
+    } else {
+      query = query.is("etapa", null);
+    }
+  } else {
+    query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
+  }
+
+  const { data, error } = await query.limit(5);
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const records = (data ?? []) as DocumentoRecord[];
+  return records.find((doc) => sameDocumentoAlcance(doc, key)) ?? null;
+};
+
 export const deactivateDocumentosAnteriores = async (filters: {
   desarrolloId: string;
   clusterId: string | null;
@@ -146,10 +185,14 @@ export const deactivateDocumentosAnteriores = async (filters: {
     query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
   }
 
-  await query;
+  const { error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
 };
 
 export const uploadDocumento = async (input: {
+  confirmReplace?: boolean;
   file: File;
   desarrolloId: string;
   clusterId: string | null;
@@ -170,6 +213,25 @@ export const uploadDocumento = async (input: {
 
   if (!isPdf) {
     throw new Error("Solo se permiten archivos PDF.");
+  }
+
+  const alcanceKey: DocumentoAlcanceKey = {
+    desarrolloId: input.desarrolloId,
+    clusterId: input.clusterId,
+    etapa: input.etapa?.trim() || null,
+    prototipoId: input.prototipoId,
+    tipo: input.tipo,
+  };
+
+  const existing = await findDocumentoActivoEnAlcance(alcanceKey);
+  if (existing && !input.confirmReplace) {
+    const conflict = new Error("DOCUMENTO_ALREADY_EXISTS") as Error & {
+      code: "DOCUMENTO_ALREADY_EXISTS";
+      existing: DocumentoRecord;
+    };
+    conflict.code = "DOCUMENTO_ALREADY_EXISTS";
+    conflict.existing = existing;
+    throw conflict;
   }
 
   const safeName = input.file.name.replace(/[^\w.\-() ]+/g, "_");
@@ -199,7 +261,7 @@ export const uploadDocumento = async (input: {
   await deactivateDocumentosAnteriores({
     desarrolloId: input.desarrolloId,
     clusterId: input.clusterId,
-    etapa: input.etapa,
+    etapa: alcanceKey.etapa,
     prototipoId: input.prototipoId,
     tipo: input.tipo,
   });
@@ -209,7 +271,7 @@ export const uploadDocumento = async (input: {
     .insert({
       desarrollo_id: input.desarrolloId,
       cluster_id: input.clusterId,
-      etapa: input.etapa,
+      etapa: alcanceKey.etapa,
       prototipo_id: input.prototipoId,
       tipo: input.tipo,
       nombre: input.nombre,

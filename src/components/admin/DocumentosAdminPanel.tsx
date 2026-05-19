@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ExternalLink, Loader2, Trash2, Upload } from "lucide-react";
 import {
+  buildDocumentoAlcanceKey,
   documentoAlcanceLabel,
   documentoCategoriaLabel,
   formatDocumentoAlcance,
   getEtapasForCluster,
   resolveDocumentoAlcanceStorage,
+  sameDocumentoAlcance,
   type DocumentoAlcance,
   type DocumentoCategoria,
 } from "@/lib/admin/documentos-scope";
@@ -86,6 +88,8 @@ export function DocumentosAdminPanel({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [pendingReplace, setPendingReplace] = useState<DocumentoRecord | null>(null);
+  const [showHistorial, setShowHistorial] = useState(false);
 
   const esFichaTecnica = categoria === "ficha_tecnica";
 
@@ -219,30 +223,76 @@ export function DocumentosAdminPanel({
 
   const nombreConfirmado = !nombrePersonalizado || nombre.trim() === nombreSugerido.trim();
 
-  const handleUpload = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
+  const uploadAlcanceStorage = useMemo(
+    () => resolveDocumentoAlcanceStorage(alcance, etapa),
+    [alcance, etapa],
+  );
 
+  const uploadScopeKey = useMemo(() => {
+    if (!desarrolloId) {
+      return null;
+    }
+
+    const clusterForScope = esFichaTecnica
+      ? clusterId || null
+      : alcance === "especifico"
+        ? clusterId || null
+        : null;
+
+    const etapaForScope =
+      !esFichaTecnica && alcance === "especifico" ? etapa || null : null;
+
+    const prototipoForScope = esFichaTecnica ? prototipoId || null : null;
+
+    return buildDocumentoAlcanceKey({
+      desarrolloId,
+      clusterId: clusterForScope,
+      etapa: etapaForScope,
+      prototipoId: prototipoForScope,
+      alcance: uploadAlcanceStorage,
+      categoria,
+    });
+  }, [
+    alcance,
+    categoria,
+    clusterId,
+    desarrolloId,
+    esFichaTecnica,
+    etapa,
+    prototipoId,
+    uploadAlcanceStorage,
+  ]);
+
+  const documentoActivoEnAlcance = useMemo(() => {
+    if (!uploadScopeKey) {
+      return null;
+    }
+
+    return (
+      documentos.find(
+        (doc) => doc.activo && sameDocumentoAlcance(doc, uploadScopeKey),
+      ) ?? null
+    );
+  }, [documentos, uploadScopeKey]);
+
+  const documentosVisibles = useMemo(
+    () => (showHistorial ? documentos : documentos.filter((doc) => doc.activo)),
+    [documentos, showHistorial],
+  );
+
+  const inactiveCount = useMemo(
+    () => documentos.filter((doc) => !doc.activo).length,
+    [documentos],
+  );
+
+  useEffect(() => {
+    setPendingReplace(null);
+  }, [uploadScopeKey, file?.name]);
+
+  const performUpload = async (confirmReplace: boolean) => {
     if (!file) {
       setError("Selecciona un archivo PDF.");
       return;
-    }
-
-    if (esFichaTecnica) {
-      if (!clusterId) {
-        setError("Selecciona un cluster.");
-        return;
-      }
-      if (!prototipoId) {
-        setError("Selecciona un producto (prototipo).");
-        return;
-      }
-    } else {
-      if (alcance === "especifico" && !clusterId) {
-        setError("Selecciona un cluster.");
-        return;
-      }
     }
 
     const alcanceStorage = resolveDocumentoAlcanceStorage(alcance, etapa);
@@ -254,6 +304,9 @@ export function DocumentosAdminPanel({
       formData.append("desarrolloId", desarrolloId);
       formData.append("categoria", categoria);
       formData.append("nombre", nombre);
+      if (confirmReplace) {
+        formData.append("confirmReplace", "true");
+      }
       if (!esFichaTecnica) {
         formData.append("alcance", alcanceStorage);
       }
@@ -288,12 +341,28 @@ export function DocumentosAdminPanel({
         window.clearTimeout(timeoutId);
       }
 
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(data.error ?? "Error al subir");
+      const data = (await response.json()) as {
+        error?: string;
+        message?: string;
+        existing?: DocumentoRecord;
+      };
+
+      if (response.status === 409 && data.error === "DOCUMENTO_ALREADY_EXISTS") {
+        setPendingReplace(data.existing ?? documentoActivoEnAlcance);
+        setError("");
+        return;
       }
 
-      setSuccess("Documento publicado. Los asesores ya pueden descargarlo.");
+      if (!response.ok) {
+        throw new Error(data.message ?? data.error ?? "Error al subir");
+      }
+
+      setSuccess(
+        confirmReplace
+          ? "Documento reemplazado. La versión anterior quedó en historial."
+          : "Documento publicado. Los asesores ya pueden descargarlo.",
+      );
+      setPendingReplace(null);
       setNombrePersonalizado(false);
       setNombre("");
       setFile(null);
@@ -303,6 +372,51 @@ export function DocumentosAdminPanel({
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!file) {
+      setError("Selecciona un archivo PDF.");
+      return;
+    }
+
+    if (esFichaTecnica) {
+      if (!clusterId) {
+        setError("Selecciona un cluster.");
+        return;
+      }
+      if (!prototipoId) {
+        setError("Selecciona un producto (prototipo).");
+        return;
+      }
+    } else {
+      if (alcance === "especifico" && !clusterId) {
+        setError("Selecciona un cluster.");
+        return;
+      }
+    }
+
+    const existing = documentoActivoEnAlcance ?? pendingReplace;
+    if (existing && !pendingReplace) {
+      setPendingReplace(existing);
+      return;
+    }
+
+    await performUpload(Boolean(pendingReplace));
+  };
+
+  const handleConfirmReplace = async () => {
+    setError("");
+    setSuccess("");
+    await performUpload(true);
+  };
+
+  const handleCancelReplace = () => {
+    setPendingReplace(null);
   };
 
   const handleDeactivate = async (id: string) => {
@@ -493,7 +607,7 @@ export function DocumentosAdminPanel({
             </>
           )}
 
-          <div className="rounded-xl border border-[#201044]/8 bg-[#f4f2f8]/60 px-4 py-3 text-sm text-slate-600">
+          <div className="rounded-xl border border-[#201044]/8 bg-[#F2F0E9]/60 px-4 py-3 text-sm text-slate-600">
             <span className="font-semibold text-[#201044]">Resumen: </span>
             {formatDocumentoAlcance({
               clusterId: esFichaTecnica || alcance === "especifico" ? clusterId || null : null,
@@ -505,6 +619,71 @@ export function DocumentosAdminPanel({
             {" · "}
             {documentoCategoriaLabel[categoria]}
           </div>
+
+          {documentoActivoEnAlcance && !pendingReplace ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              <p className="font-semibold">Ya existe un documento activo para este alcance</p>
+              <p className="mt-1 text-amber-900/80">
+                <strong>{documentoActivoEnAlcance.nombre}</strong> · publicado{" "}
+                {formatFecha(documentoActivoEnAlcance.created_at)}. Si publicas otro PDF, se
+                te pedirá confirmación para reemplazarlo.
+              </p>
+            </div>
+          ) : null}
+
+          {pendingReplace ? (
+            <div className="rounded-xl border border-[#201044]/15 bg-[#F2F0E9] px-4 py-4">
+              <p className="font-bold text-[#201044]">¿Reemplazar documento existente?</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Ya hay un <strong>{documentoCategoriaLabel[categoria].toLowerCase()}</strong>{" "}
+                activo para{" "}
+                <strong>
+                  {formatDocumentoAlcance({
+                    clusterId: esFichaTecnica || alcance === "especifico" ? clusterId || null : null,
+                    etapa: !esFichaTecnica && alcance === "especifico" ? etapa || null : null,
+                    prototipoId: esFichaTecnica ? prototipoId || null : null,
+                    clusterNombre: clusterSeleccionado?.nombre,
+                    prototipoNombre: prototipoSeleccionado?.nombre,
+                  })}
+                </strong>
+                :
+              </p>
+              <p className="mt-2 text-sm font-semibold text-[#201044]">
+                {pendingReplace.nombre}
+                <span className="font-normal text-slate-500">
+                  {" "}
+                  · {formatFecha(pendingReplace.created_at)}
+                </span>
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                La versión actual quedará inactiva en el historial; los asesores verán el PDF
+                nuevo.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleConfirmReplace()}
+                  disabled={uploading}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#201044] px-4 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  Sí, reemplazar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelReplace}
+                  disabled={uploading}
+                  className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -564,7 +743,7 @@ export function DocumentosAdminPanel({
             ) : (
               <Upload className="h-4 w-4" />
             )}
-            {uploading ? "Subiendo..." : "Publicar documento"}
+            {uploading ? "Subiendo..." : pendingReplace ? "Revisar reemplazo arriba" : "Publicar documento"}
           </button>
         </form>
 
@@ -581,20 +760,40 @@ export function DocumentosAdminPanel({
       </div>
 
       <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-black text-[#201044]">Documentos publicados</h3>
-          <button
-            type="button"
-            onClick={() => void loadDocumentos()}
-            className="text-sm font-semibold text-[#201044] hover:underline"
-          >
-            Actualizar
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black text-[#201044]">Documentos publicados</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {showHistorial
+                ? "Mostrando activos e historial de versiones reemplazadas."
+                : "Solo documentos activos visibles para asesores."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {inactiveCount ? (
+              <button
+                type="button"
+                onClick={() => setShowHistorial((current) => !current)}
+                className="text-sm font-semibold text-[#201044] hover:underline"
+              >
+                {showHistorial
+                  ? "Ocultar historial"
+                  : `Ver historial (${inactiveCount})`}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void loadDocumentos()}
+              className="text-sm font-semibold text-[#201044] hover:underline"
+            >
+              Actualizar
+            </button>
+          </div>
         </div>
 
         {loading ? (
           <p className="mt-6 text-sm text-slate-500">Cargando...</p>
-        ) : documentos.length ? (
+        ) : documentosVisibles.length ? (
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
@@ -609,7 +808,7 @@ export function DocumentosAdminPanel({
                 </tr>
               </thead>
               <tbody>
-                {documentos.map((doc) => (
+                {documentosVisibles.map((doc) => (
                   <tr key={doc.id} className="border-b border-slate-50">
                     <td className="py-3 pr-4 font-semibold text-[#201044]">{doc.nombre}</td>
                     <td className="py-3 pr-4 text-slate-600">
@@ -666,7 +865,11 @@ export function DocumentosAdminPanel({
             </table>
           </div>
         ) : (
-          <p className="mt-6 text-sm text-slate-500">Aún no hay documentos para este desarrollo.</p>
+          <p className="mt-6 text-sm text-slate-500">
+            {documentos.length && !showHistorial
+              ? "No hay documentos activos. Activa «Ver historial» para versiones anteriores."
+              : "Aún no hay documentos para este desarrollo."}
+          </p>
         )}
       </div>
     </div>

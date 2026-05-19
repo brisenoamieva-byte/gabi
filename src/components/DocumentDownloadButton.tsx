@@ -73,7 +73,7 @@ export function DocumentDownloadButton({
         type="button"
         onClick={(event) => void handleDownload(event)}
         disabled={loading}
-        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-[#1e3a5f]/15 bg-white font-bold text-[#1e3a5f] transition hover:border-[#1e3a5f]/25 hover:bg-slate-50 disabled:opacity-60 ${
+        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-[#1B4332]/15 bg-white font-bold text-[#1B4332] transition hover:border-[#1B4332]/25 hover:bg-slate-50 disabled:opacity-60 ${
           compact ? "min-h-10 px-3 text-xs" : "min-h-11 px-4 text-sm"
         }`}
       >

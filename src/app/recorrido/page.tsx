@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { GabiLogo } from "@/components/brand/GabiLogo";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import {
@@ -337,7 +338,7 @@ const availabilityStatusLabel: Record<DisponibilidadUnidad["estatus"], string> =
 
 const availabilityStatusClass: Record<DisponibilidadUnidad["estatus"], string> = {
   disponible: "bg-[#22c55e] text-white ring-[#22c55e]/30",
-  apartado: "bg-[#c9a96e] text-white ring-[#c9a96e]/30",
+  apartado: "bg-[#C8A276] text-white ring-[#C8A276]/30",
   vendido: "bg-slate-400 text-white ring-slate-300",
   bloqueado: "bg-slate-700 text-white ring-slate-400",
 };
@@ -612,11 +613,11 @@ export default function RecorridoPage() {
     const list: { label: string; className: string }[] = [];
 
     if (state.cliente.objetivo === "invertir") {
-      list.push({ label: "Inversionista", className: "bg-[#c9a96e] text-white" });
+      list.push({ label: "Inversionista", className: "bg-[#C8A276] text-white" });
     }
 
     if (state.cliente.familia === "3-4" && state.cliente.objetivo === "vivir") {
-      list.push({ label: "Familiar", className: "bg-[#1e3a5f] text-white" });
+      list.push({ label: "Familiar", className: "bg-[#1B4332] text-white" });
     }
 
     if (state.cliente.presupuesto > 4000000) {
@@ -968,20 +969,20 @@ export default function RecorridoPage() {
 
   if (!loaded) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8fafc] text-[#1e293b]">
+      <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-[#1e293b]">
         <p className="text-xl font-bold">Cargando recorrido...</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-[#1e293b]">
-      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-5 py-4 shadow-sm backdrop-blur md:px-8">
+    <main className="min-h-screen bg-gabi-cream text-gabi-ink">
+      <section className="sticky top-0 z-30 border-b border-gabi-cream-dark bg-gabi-cream/95 px-5 py-4 shadow-sm backdrop-blur md:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3 md:gap-4">
               {activeDesarrollo?.logo ? (
-                <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-[#1e3a5f]/10 bg-[#faf8f4] p-2 md:h-12 md:w-[4.5rem]">
+                <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-[#1B4332]/10 bg-[#F2F0E9] p-2 md:h-12 md:w-[4.5rem]">
                   <Image
                     src={activeDesarrollo.logo}
                     alt={activeDesarrollo.nombre}
@@ -993,10 +994,10 @@ export default function RecorridoPage() {
                 </div>
               ) : null}
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#c9a96e]">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#C8A276]">
                   Recorrido guiado
                 </p>
-                <h1 className="truncate text-lg font-black text-[#1e3a5f] md:text-2xl">
+                <h1 className="truncate text-lg font-black text-[#1B4332] md:text-2xl">
                   {activeDesarrollo?.nombre ?? "Desarrollo activo"}
                 </h1>
               </div>
@@ -1006,18 +1007,12 @@ export default function RecorridoPage() {
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
                   Plataforma
                 </p>
-                <Image
-                  src="/logos/gabi-logo.png"
-                  alt="gabi"
-                  width={1018}
-                  height={559}
-                  className="h-3.5 w-auto object-contain opacity-65"
-                />
+                <GabiLogo variant="platform" />
               </div>
               <button
                 type="button"
                 onClick={() => router.push("/dashboard")}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-[#1e3a5f] shadow-sm transition active:scale-95 md:px-5"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-[#1B4332] shadow-sm transition active:scale-95 md:px-5"
               >
                 Salir
               </button>
@@ -1026,7 +1021,7 @@ export default function RecorridoPage() {
 
           <div className="relative h-3 overflow-hidden rounded-full bg-slate-200">
             <motion.div
-              className="h-full rounded-full bg-[#c9a96e]"
+              className="h-full rounded-full bg-[#C8A276]"
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.35 }}
             />
@@ -1040,9 +1035,9 @@ export default function RecorridoPage() {
                 onClick={() => goToStep(index)}
                 className={`min-w-[4.75rem] shrink-0 snap-start rounded-2xl px-2 py-3 text-center text-[11px] font-black transition sm:min-w-0 sm:flex-1 sm:text-xs md:text-sm ${
                   index === state.etapa
-                    ? "bg-[#1e3a5f] text-white"
+                    ? "bg-[#1B4332] text-white"
                     : index < state.etapa
-                      ? "bg-[#c9a96e]/20 text-[#1e3a5f]"
+                      ? "bg-[#C8A276]/20 text-[#1B4332]"
                       : "bg-slate-100 text-slate-500"
                 }`}
               >
@@ -1075,7 +1070,7 @@ export default function RecorridoPage() {
               >
                 <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
                   <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-                    <h2 className="mb-5 text-xl font-black text-[#1e3a5f]">
+                    <h2 className="mb-5 text-xl font-black text-[#1B4332]">
                       Recordatorios de apertura
                     </h2>
                     <div className="space-y-3">
@@ -1084,11 +1079,11 @@ export default function RecorridoPage() {
                           key={item.title}
                           className="flex gap-4 rounded-2xl bg-slate-50 p-4 text-left"
                         >
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c9a96e]/15 text-base font-black text-[#1e3a5f]">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#C8A276]/15 text-base font-black text-[#1B4332]">
                             {index + 1}
                           </span>
                           <span>
-                            <span className="block text-base font-black text-[#1e3a5f] md:text-lg">
+                            <span className="block text-base font-black text-[#1B4332] md:text-lg">
                               {item.title}
                             </span>
                             <span className="mt-1 block text-sm font-semibold text-slate-500">
@@ -1102,7 +1097,7 @@ export default function RecorridoPage() {
 
                   <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
                     <div className="mb-5">
-                      <h2 className="text-xl font-black text-[#1e3a5f]">
+                      <h2 className="text-xl font-black text-[#1B4332]">
                         Prospecto de esta visita
                       </h2>
                       <p className="mt-2 text-sm leading-relaxed text-slate-500">
@@ -1208,7 +1203,7 @@ export default function RecorridoPage() {
                           onChange={(event) =>
                             patchCliente({ presupuesto: Number(event.target.value) })
                           }
-                          className="mt-4 w-full accent-[#c9a96e]"
+                          className="mt-4 w-full accent-[#C8A276]"
                         />
                         <div className="mt-2 flex justify-between text-xs font-semibold text-slate-400">
                           <span>{money(2500000)}</span>
@@ -1240,7 +1235,7 @@ export default function RecorridoPage() {
 
                   <div className="space-y-6">
                     <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-                      <h2 className="mb-4 text-xl font-black text-[#1e3a5f]">
+                      <h2 className="mb-4 text-xl font-black text-[#1B4332]">
                         Tags automáticos
                       </h2>
                       <div className="flex flex-wrap gap-3">
@@ -1287,11 +1282,11 @@ export default function RecorridoPage() {
                     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                       <ZoneMap />
                       <div className="space-y-4">
-                        <div className="rounded-2xl bg-[#c9a96e]/15 p-5">
-                          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#c9a96e]">
+                        <div className="rounded-2xl bg-[#C8A276]/15 p-5">
+                          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#C8A276]">
                             Guion para asesor
                           </p>
-                          <p className="mt-3 text-lg font-bold text-[#1e3a5f]">
+                          <p className="mt-3 text-lg font-bold text-[#1B4332]">
                             {zonaLaVista.mensajeAsesor}
                           </p>
                         </div>
@@ -1307,7 +1302,7 @@ export default function RecorridoPage() {
                     icon={<ShieldCheck className="h-7 w-7" />}
                   >
                     <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                      <div className="rounded-[1.5rem] bg-[#1e3a5f] p-6 text-white">
+                      <div className="rounded-[1.5rem] bg-[#1B4332] p-6 text-white">
                         <div className="mb-6 flex h-20 w-56 items-center justify-start rounded-2xl bg-black/15 p-4">
                           <Image
                             src="/logos/grupo-vinte.png"
@@ -1331,7 +1326,7 @@ export default function RecorridoPage() {
                               key={metrica.valor}
                               className="rounded-2xl bg-slate-50 p-5 text-center"
                             >
-                              <p className="text-3xl font-black text-[#c9a96e]">
+                              <p className="text-3xl font-black text-[#C8A276]">
                                 {metrica.valor}
                               </p>
                               <p className="mt-2 text-sm font-bold text-slate-500">
@@ -1361,7 +1356,7 @@ export default function RecorridoPage() {
                     subtitle={laVistaOverview.subtitulo}
                     icon={<TrendingUp className="h-7 w-7" />}
                   >
-                    <div className="mb-5 flex flex-col gap-5 rounded-[1.5rem] border border-[#1e3a5f]/10 bg-gradient-to-br from-white to-[#f4ead6] p-5 text-[#1e3a5f] md:flex-row md:items-center md:justify-between">
+                    <div className="mb-5 flex flex-col gap-5 rounded-[1.5rem] border border-[#1B4332]/10 bg-gradient-to-br from-white to-[#f4ead6] p-5 text-[#1B4332] md:flex-row md:items-center md:justify-between">
                       <div className="flex h-36 w-full items-center justify-center rounded-2xl bg-white p-4 shadow-inner md:w-56">
                         <Image
                           src="/logos/la-vista-residencial-transparent.png"
@@ -1372,10 +1367,10 @@ export default function RecorridoPage() {
                         />
                       </div>
                       <div className="max-w-2xl">
-                        <p className="text-sm font-black uppercase tracking-[0.25em] text-[#c9a96e]">
+                        <p className="text-sm font-black uppercase tracking-[0.25em] text-[#C8A276]">
                           Desarrollo comercializado
                         </p>
-                        <p className="mt-2 text-lg font-bold text-[#1e3a5f]/75">
+                        <p className="mt-2 text-lg font-bold text-[#1B4332]/75">
                           Presenta La Vista como comunidad integral antes de entrar al cluster específico.
                         </p>
                       </div>
@@ -1385,7 +1380,7 @@ export default function RecorridoPage() {
                         {laVistaOverview.narrativa.map((linea) => (
                           <p
                             key={linea}
-                            className="rounded-2xl bg-slate-50 p-5 text-lg font-bold text-[#1e3a5f]"
+                            className="rounded-2xl bg-slate-50 p-5 text-lg font-bold text-[#1B4332]"
                           >
                             {linea}
                           </p>
@@ -1395,7 +1390,7 @@ export default function RecorridoPage() {
                         {laVistaOverview.destacados.map((item) => (
                           <div
                             key={item}
-                            className="rounded-2xl bg-[#c9a96e]/15 p-5 font-black text-[#1e3a5f]"
+                            className="rounded-2xl bg-[#C8A276]/15 p-5 font-black text-[#1B4332]"
                           >
                             {item}
                           </div>
@@ -1425,10 +1420,10 @@ export default function RecorridoPage() {
                   <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <p className="text-sm font-black uppercase tracking-[0.2em] text-[#c9a96e]">
+                        <p className="text-sm font-black uppercase tracking-[0.2em] text-[#C8A276]">
                           Cierre de la macro
                         </p>
-                        <h3 className="text-2xl font-black text-[#1e3a5f]">
+                        <h3 className="text-2xl font-black text-[#1B4332]">
                           Técnica de 2 Minutos
                         </h3>
                         <p className="mt-2 text-slate-500">
@@ -1438,7 +1433,7 @@ export default function RecorridoPage() {
                       <button
                         type="button"
                         onClick={() => setShowTwoMinuteGuide(true)}
-                        className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#1e3a5f] px-6 text-lg font-black text-white shadow-xl shadow-[#1e3a5f]/20 transition active:scale-[0.99]"
+                        className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#1B4332] px-6 text-lg font-black text-white shadow-xl shadow-[#1B4332]/20 transition active:scale-[0.99]"
                       >
                         <FileText className="h-7 w-7" />
                         Ver guion
@@ -1468,7 +1463,7 @@ export default function RecorridoPage() {
                               onClick={() => toggleProductoTipo(option.value)}
                               className={`min-h-14 rounded-xl px-3 text-sm font-black transition md:text-base ${
                                 selectedProductTypes.includes(option.value)
-                                  ? "bg-[#1e3a5f] text-white shadow"
+                                  ? "bg-[#1B4332] text-white shadow"
                                   : "text-slate-500"
                               }`}
                             >
@@ -1479,7 +1474,7 @@ export default function RecorridoPage() {
                       </Field>
 
                       <div>
-                        <p className="mb-2 text-base font-black text-[#1e3a5f]">
+                        <p className="mb-2 text-base font-black text-[#1B4332]">
                           Rango de precio
                         </p>
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -1502,7 +1497,7 @@ export default function RecorridoPage() {
                             onClick={() =>
                               updatePrecioMinimo(state.precioMinimo - PRICE_STEP)
                             }
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-[#1e3a5f]"
+                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-[#1B4332]"
                           >
                             Desde -$250k
                           </button>
@@ -1511,7 +1506,7 @@ export default function RecorridoPage() {
                             onClick={() =>
                               updatePrecioMinimo(state.precioMinimo + PRICE_STEP)
                             }
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-[#1e3a5f]"
+                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-[#1B4332]"
                           >
                             Desde +$250k
                           </button>
@@ -1520,7 +1515,7 @@ export default function RecorridoPage() {
                             onClick={() =>
                               updatePrecioMaximo(state.precioMaximo - PRICE_STEP)
                             }
-                            className="rounded-full bg-[#c9a96e]/15 px-4 py-2 text-sm font-black text-[#1e3a5f]"
+                            className="rounded-full bg-[#C8A276]/15 px-4 py-2 text-sm font-black text-[#1B4332]"
                           >
                             Hasta -$250k
                           </button>
@@ -1529,7 +1524,7 @@ export default function RecorridoPage() {
                             onClick={() =>
                               updatePrecioMaximo(state.precioMaximo + PRICE_STEP)
                             }
-                            className="rounded-full bg-[#c9a96e]/15 px-4 py-2 text-sm font-black text-[#1e3a5f]"
+                            className="rounded-full bg-[#C8A276]/15 px-4 py-2 text-sm font-black text-[#1B4332]"
                           >
                             Hasta +$250k
                           </button>
@@ -1545,7 +1540,7 @@ export default function RecorridoPage() {
                               onClick={() => toggleRecamarasFiltro(option.value)}
                               className={`min-h-14 rounded-xl px-3 text-sm font-black transition md:text-base ${
                                 selectedRooms.includes(option.value)
-                                  ? "bg-[#1e3a5f] text-white shadow"
+                                  ? "bg-[#1B4332] text-white shadow"
                                   : "text-slate-500"
                               }`}
                             >
@@ -1562,7 +1557,7 @@ export default function RecorridoPage() {
                       </Field>
                     </div>
 
-                    <div className="mt-5 rounded-2xl bg-[#c9a96e]/15 p-4 font-bold text-[#1e3a5f]">
+                    <div className="mt-5 rounded-2xl bg-[#C8A276]/15 p-4 font-bold text-[#1B4332]">
                       Mostrando {filteredClusters.length} cluster
                       {filteredClusters.length === 1 ? "" : "s"} que coinciden con la
                       búsqueda del cliente.
@@ -1590,7 +1585,7 @@ export default function RecorridoPage() {
                             key={cluster.id}
                             className={`flex h-full min-h-[33rem] flex-col overflow-hidden rounded-[2rem] bg-white shadow-lg ring-4 transition ${
                               state.clusterId === cluster.id
-                                ? "ring-[#c9a96e]"
+                                ? "ring-[#C8A276]"
                                 : "ring-transparent"
                             }`}
                           >
@@ -1599,7 +1594,7 @@ export default function RecorridoPage() {
                               onClick={() => handleClusterSelect(cluster.id)}
                               className="flex flex-1 flex-col text-left active:scale-[0.99]"
                             >
-                            <div className="flex h-40 items-center justify-center bg-gradient-to-br from-[#1e3a5f] to-[#0f1f3a] p-6 text-white">
+                            <div className="flex h-40 items-center justify-center bg-gradient-to-br from-[#1B4332] to-[#142E23] p-6 text-white">
                               {cluster.logo ? (
                                 <Image
                                   src={cluster.logo}
@@ -1613,13 +1608,13 @@ export default function RecorridoPage() {
                               )}
                             </div>
                             <div className="flex flex-1 flex-col p-5">
-                              <h3 className="text-2xl font-black text-[#1e3a5f]">
+                              <h3 className="text-2xl font-black text-[#1B4332]">
                                 {cluster.nombre}
                               </h3>
                               <p className="mt-2 min-h-[4.5rem] text-sm leading-6 text-slate-500">
                                 {cluster.descripcion}
                               </p>
-                              <p className="mt-4 text-lg font-black text-[#c9a96e]">
+                              <p className="mt-4 text-lg font-black text-[#C8A276]">
                                 Desde {money(cluster.precioDesde)}
                               </p>
                               <div className="mt-2 min-h-[4.75rem] rounded-2xl bg-slate-50 p-3">
@@ -1631,7 +1626,7 @@ export default function RecorridoPage() {
                                     {cluster.entregaEtapas.map((entrega) => (
                                       <p
                                         key={entrega.etapa}
-                                        className="flex items-center justify-between gap-3 text-xs font-black text-[#1e3a5f]"
+                                        className="flex items-center justify-between gap-3 text-xs font-black text-[#1B4332]"
                                       >
                                         <span>Etapa {entrega.etapa}</span>
                                         <span className="text-right text-slate-500">
@@ -1641,7 +1636,7 @@ export default function RecorridoPage() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <p className="mt-2 text-sm font-black text-[#1e3a5f]">
+                                  <p className="mt-2 text-sm font-black text-[#1B4332]">
                                     {cluster.entregaGeneral}
                                   </p>
                                 )}
@@ -1650,7 +1645,7 @@ export default function RecorridoPage() {
                                 {productLabels.map((label) => (
                                   <span
                                     key={label}
-                                    className="rounded-full bg-[#1e3a5f]/10 px-3 py-1 text-xs font-black text-[#1e3a5f]"
+                                    className="rounded-full bg-[#1B4332]/10 px-3 py-1 text-xs font-black text-[#1B4332]"
                                   >
                                     {label}
                                   </span>
@@ -1675,7 +1670,7 @@ export default function RecorridoPage() {
                     </div>
                   ) : (
                     <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
-                      <p className="text-xl font-black text-[#1e3a5f]">
+                      <p className="text-xl font-black text-[#1B4332]">
                         No hay clusters para estos criterios.
                       </p>
                       <p className="mt-2 text-slate-500">
@@ -1697,7 +1692,7 @@ export default function RecorridoPage() {
                               onClick={() => handlePrototipoSelect(prototipo.id)}
                               className={`rounded-[1.5rem] bg-white p-5 text-left shadow-lg ring-4 transition active:scale-[0.99] ${
                                 state.prototipoId === prototipo.id
-                                  ? "ring-[#c9a96e]"
+                                  ? "ring-[#C8A276]"
                                   : "ring-transparent"
                               }`}
                             >
@@ -1712,10 +1707,10 @@ export default function RecorridoPage() {
                                   />
                                 </div>
                               )}
-                              <h3 className="text-xl font-black text-[#1e3a5f]">
+                              <h3 className="text-xl font-black text-[#1B4332]">
                                 {prototipo.nombre}
                               </h3>
-                              <p className="mt-2 font-black text-[#c9a96e]">
+                              <p className="mt-2 font-black text-[#C8A276]">
                                 {money(prototipo.precioFinal)}
                               </p>
                               <p className="mt-3 text-sm text-slate-500">
@@ -1727,7 +1722,7 @@ export default function RecorridoPage() {
                         </div>
                       ) : (
                         <div className="rounded-[2rem] bg-white p-6 shadow-lg">
-                          <p className="text-xl font-black text-[#1e3a5f]">
+                          <p className="text-xl font-black text-[#1B4332]">
                             Este cluster coincide por terrenos.
                           </p>
                           <p className="mt-2 text-slate-500">
@@ -1761,7 +1756,7 @@ export default function RecorridoPage() {
                           {selectedPrototipo.planos[0] && (
                             <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
                               <div className="border-b border-slate-100 px-4 py-3">
-                                <p className="text-sm font-black uppercase tracking-wide text-[#c9a96e]">
+                                <p className="text-sm font-black uppercase tracking-wide text-[#C8A276]">
                                   Plano del modelo
                                 </p>
                               </div>
@@ -1775,7 +1770,7 @@ export default function RecorridoPage() {
                             </div>
                           )}
                         </div>
-                        <h2 className="text-2xl font-black text-[#1e3a5f]">
+                        <h2 className="text-2xl font-black text-[#1B4332]">
                           {selectedPrototipo.nombre}
                         </h2>
                         {activeDesarrollo ? (
@@ -1797,7 +1792,7 @@ export default function RecorridoPage() {
                             ) : null}
                           </div>
                         ) : null}
-                        <p className="mt-2 text-2xl font-black text-[#c9a96e]">
+                        <p className="mt-2 text-2xl font-black text-[#C8A276]">
                           <span className="mr-3 text-lg text-slate-400 line-through">
                             {money(selectedPrototipo.precioBase)}
                           </span>
@@ -1812,7 +1807,7 @@ export default function RecorridoPage() {
                           <Spec label="Entrega" value={selectedPrototipo.entrega} />
                         </div>
                         {selectedPrototipo.casaMuestra && (
-                          <p className="mt-5 rounded-2xl bg-[#c9a96e]/15 p-4 font-bold text-[#1e3a5f]">
+                          <p className="mt-5 rounded-2xl bg-[#C8A276]/15 p-4 font-bold text-[#1B4332]">
                             Casa muestra: {selectedPrototipo.casaMuestra.numero} | Clave:{" "}
                             {selectedPrototipo.casaMuestra.clave}
                           </p>
@@ -1838,14 +1833,14 @@ export default function RecorridoPage() {
                               setSelectedAvailabilityId(null);
                               setShowAvailability(true);
                             }}
-                            className="rounded-2xl border border-[#1e3a5f]/20 bg-white px-5 py-5 text-lg font-black text-[#1e3a5f] shadow-lg active:scale-95"
+                            className="rounded-2xl border border-[#1B4332]/20 bg-white px-5 py-5 text-lg font-black text-[#1B4332] shadow-lg active:scale-95"
                           >
                             Ver unidades recomendadas
                           </button>
                           <button
                             type="button"
                             onClick={() => setShowQuote(true)}
-                            className="rounded-2xl bg-[#c9a96e] px-5 py-5 text-lg font-black text-white shadow-lg active:scale-95"
+                            className="rounded-2xl bg-[#C8A276] px-5 py-5 text-lg font-black text-white shadow-lg active:scale-95"
                           >
                             Cotizar ahora
                           </button>
@@ -1876,11 +1871,11 @@ export default function RecorridoPage() {
                             className="flex w-full items-center justify-between gap-4 text-left"
                           >
                             <span>
-                              <span className="text-xl font-black text-[#1e3a5f]">
+                              <span className="text-xl font-black text-[#1B4332]">
                                 {tecnica.nombre}
                               </span>
                             </span>
-                            <span className="text-2xl font-black text-[#c9a96e]">
+                            <span className="text-2xl font-black text-[#C8A276]">
                               {open ? "−" : "+"}
                             </span>
                           </button>
@@ -1910,7 +1905,7 @@ export default function RecorridoPage() {
                   </div>
 
                   <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-                    <h2 className="mb-5 text-xl font-black text-[#1e3a5f]">
+                    <h2 className="mb-5 text-xl font-black text-[#1B4332]">
                       Recordatorios de cierre
                     </h2>
                     <div className="space-y-3">
@@ -1919,7 +1914,7 @@ export default function RecorridoPage() {
                           key={item}
                           className="flex w-full items-center gap-4 rounded-2xl bg-slate-50 p-4 text-base font-bold text-slate-700 md:text-lg"
                         >
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#1e3a5f] text-base font-black text-white">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#1B4332] text-base font-black text-white">
                             {index + 1}
                           </span>
                           {item}
@@ -1930,7 +1925,7 @@ export default function RecorridoPage() {
                       <button
                         type="button"
                         onClick={() => setShowRequest(true)}
-                        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#c9a96e] px-6 py-5 text-lg font-black text-white shadow-lg active:scale-95"
+                        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#C8A276] px-6 py-5 text-lg font-black text-white shadow-lg active:scale-95"
                       >
                         <FileText className="h-6 w-6" />
                         Generar solicitud de compra
@@ -1938,7 +1933,7 @@ export default function RecorridoPage() {
                       <button
                         type="button"
                         onClick={finishRecorrido}
-                        className="flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-[#1e3a5f] bg-white px-6 py-5 text-lg font-black text-[#1e3a5f] shadow-sm active:scale-95"
+                        className="flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-[#1B4332] bg-white px-6 py-5 text-lg font-black text-[#1B4332] shadow-sm active:scale-95"
                       >
                         <ClipboardCheck className="h-6 w-6" />
                         Finalizar recorrido
@@ -1958,7 +1953,7 @@ export default function RecorridoPage() {
             type="button"
             onClick={() => goToStep(state.etapa - 1)}
             disabled={state.etapa === 0}
-            className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-base font-black text-[#1e3a5f] shadow-sm transition disabled:opacity-40"
+            className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-base font-black text-[#1B4332] shadow-sm transition disabled:opacity-40"
           >
             <ArrowLeft className="h-5 w-5" />
             Anterior
@@ -1967,7 +1962,7 @@ export default function RecorridoPage() {
             type="button"
             onClick={handleNextStep}
             disabled={state.etapa === etapas.length - 1 || isRegisteringLead}
-            className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-[#1e3a5f] px-6 text-base font-black text-white shadow-lg transition disabled:opacity-40"
+            className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-[#1B4332] px-6 text-base font-black text-white shadow-lg transition disabled:opacity-40"
           >
             {isRegisteringLead ? "Validando..." : "Siguiente"}
             <ArrowRight className="h-5 w-5" />
@@ -1982,10 +1977,10 @@ export default function RecorridoPage() {
           size="wide"
         >
           <div className="space-y-5">
-            <div className="rounded-[1.5rem] border border-[#1e3a5f]/10 bg-[#1e3a5f]/5 p-4">
+            <div className="rounded-[1.5rem] border border-[#1B4332]/10 bg-[#1B4332]/5 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#c9a96e]">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C8A276]">
                     Guía gabi ·{" "}
                     {availabilityConfig.layoutMode === "departamentos"
                       ? "Departamentos"
@@ -1995,7 +1990,7 @@ export default function RecorridoPage() {
                           ? "Referencia"
                           : "Casas y lotes"}
                   </p>
-                  <p className="mt-2 text-sm font-semibold leading-relaxed text-[#1e3a5f]">
+                  <p className="mt-2 text-sm font-semibold leading-relaxed text-[#1B4332]">
                     {availabilityConfig.advisorHint}
                   </p>
                   <p className="mt-2 text-xs font-medium text-slate-500">
@@ -2021,8 +2016,8 @@ export default function RecorridoPage() {
 
             <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
               <div className="space-y-4">
-                <div className="rounded-[2rem] bg-[#1e3a5f] p-5 text-white shadow-lg">
-                  <p className="text-sm font-black uppercase tracking-[0.22em] text-[#c9a96e]">
+                <div className="rounded-[2rem] bg-[#1B4332] p-5 text-white shadow-lg">
+                  <p className="text-sm font-black uppercase tracking-[0.22em] text-[#C8A276]">
                     A dónde dirigir al cliente
                   </p>
                   <h3 className="mt-2 text-2xl font-black">
@@ -2050,7 +2045,7 @@ export default function RecorridoPage() {
                   </div>
                 ) : (
                   <div className="rounded-[1.5rem] bg-white p-5 shadow-lg">
-                    <p className="text-xl font-black text-[#1e3a5f]">
+                    <p className="text-xl font-black text-[#1B4332]">
                       No hay unidades recomendables en este momento.
                     </p>
                     <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -2089,8 +2084,8 @@ export default function RecorridoPage() {
           title={tecnicaDosMinutos.titulo}
         >
           <div className="space-y-5">
-            <div className="rounded-[2rem] bg-[#1e3a5f] p-6 text-white">
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-[#c9a96e]">
+            <div className="rounded-[2rem] bg-[#1B4332] p-6 text-white">
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-[#C8A276]">
                 Guion comercial
               </p>
               <h3 className="mt-3 text-2xl font-black">
@@ -2106,12 +2101,12 @@ export default function RecorridoPage() {
               {tecnicaDosMinutos.puntos.map((punto, index) => (
                 <div
                   key={punto}
-                  className="flex gap-4 rounded-2xl bg-[#c9a96e]/10 p-4"
+                  className="flex gap-4 rounded-2xl bg-[#C8A276]/10 p-4"
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#c9a96e] font-black text-white">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#C8A276] font-black text-white">
                     {index + 1}
                   </span>
-                  <span className="font-semibold leading-7 text-[#1e3a5f]">{punto}</span>
+                  <span className="font-semibold leading-7 text-[#1B4332]">{punto}</span>
                 </div>
               ))}
             </div>
@@ -2147,7 +2142,7 @@ export default function RecorridoPage() {
             <SummaryBox title="Producto seleccionado">
               <p>{selectedCluster?.nombre || "Sin cluster"}</p>
               <p>{selectedPrototipo?.nombre || "Sin prototipo"}</p>
-              <p className="font-black text-[#c9a96e]">{money(precioFinal)}</p>
+              <p className="font-black text-[#C8A276]">{money(precioFinal)}</p>
             </SummaryBox>
             <SummaryBox title="Datos bancarios">
               <p>{datosBancarios.razonSocial}</p>
@@ -2161,7 +2156,7 @@ export default function RecorridoPage() {
               <button
                 type="button"
                 onClick={copyBankData}
-                className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#1e3a5f] px-6 text-lg font-black text-white"
+                className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#1B4332] px-6 text-lg font-black text-white"
               >
                 <Copy className="h-6 w-6" />
                 {copied ? "Datos copiados" : "Copiar datos bancarios"}
@@ -2169,7 +2164,7 @@ export default function RecorridoPage() {
               <button
                 type="button"
                 onClick={finishRecorrido}
-                className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#c9a96e] px-6 text-lg font-black text-white"
+                className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#C8A276] px-6 text-lg font-black text-white"
               >
                 <ClipboardCheck className="h-6 w-6" />
                 Finalizar recorrido
@@ -2196,13 +2191,13 @@ function StepCard({
   return (
     <div className="space-y-6">
       <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-        <p className="text-sm font-black uppercase tracking-[0.25em] text-[#c9a96e]">
+        <p className="text-sm font-black uppercase tracking-[0.25em] text-[#C8A276]">
           {eyebrow}
         </p>
         <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <h2 className="text-3xl font-black text-[#1e3a5f] md:text-5xl">{title}</h2>
-          <div className="flex max-w-xl items-start gap-3 rounded-2xl bg-[#c9a96e]/15 p-4 text-[#1e3a5f]">
-            <Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#c9a96e]" />
+          <h2 className="text-3xl font-black text-[#1B4332] md:text-5xl">{title}</h2>
+          <div className="flex max-w-xl items-start gap-3 rounded-2xl bg-[#C8A276]/15 p-4 text-[#1B4332]">
+            <Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#C8A276]" />
             <p className="font-bold">{tip}</p>
           </div>
         </div>
@@ -2260,7 +2255,7 @@ function BudgetCurrencyInput({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-base font-black text-[#1e3a5f]">{label}</span>
+      <span className="mb-2 block text-base font-black text-[#1B4332]">{label}</span>
       {children}
     </label>
   );
@@ -2318,14 +2313,14 @@ function AvailabilityUnitCard({
       type="button"
       onClick={onSelect}
       className={`w-full rounded-[1.5rem] p-4 text-left shadow-lg transition active:scale-[0.99] ${
-        selected ? "bg-[#1e3a5f] text-white" : "bg-white text-[#1e3a5f]"
+        selected ? "bg-[#1B4332] text-white" : "bg-white text-[#1B4332]"
       }`}
     >
       <div className="flex items-start gap-3">
         {rank ? (
           <span
             className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black ${
-              selected ? "bg-[#c9a96e] text-white" : "bg-[#c9a96e]/15 text-[#c9a96e]"
+              selected ? "bg-[#C8A276] text-white" : "bg-[#C8A276]/15 text-[#C8A276]"
             }`}
           >
             {rank}
@@ -2371,7 +2366,7 @@ function AvailabilityUnitDetail({
   if (!unit) {
     return (
       <div className="rounded-[2rem] bg-white p-5 shadow-lg">
-        <p className="text-sm font-black uppercase tracking-[0.22em] text-[#c9a96e]">
+        <p className="text-sm font-black uppercase tracking-[0.22em] text-[#C8A276]">
           Unidad seleccionada
         </p>
         <p className="mt-4 rounded-2xl bg-slate-50 p-4 font-semibold text-slate-500">
@@ -2385,13 +2380,13 @@ function AvailabilityUnitDetail({
 
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-lg">
-      <p className="text-sm font-black uppercase tracking-[0.22em] text-[#c9a96e]">
+      <p className="text-sm font-black uppercase tracking-[0.22em] text-[#C8A276]">
         Unidad seleccionada
       </p>
       <div className="mt-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-2xl font-black text-[#1e3a5f]">{unit.unidad}</h3>
+            <h3 className="text-2xl font-black text-[#1B4332]">{unit.unidad}</h3>
             <p className="mt-1 font-semibold capitalize text-slate-500">
               {unit.tipo}
               {unit.etapa ? ` | Etapa ${unit.etapa}` : ""}
@@ -2417,7 +2412,7 @@ function AvailabilityUnitDetail({
             <p className="text-sm font-black uppercase tracking-wide text-slate-400">Qué decir</p>
             <div className="mt-3 space-y-2">
               {reasons.map((reason) => (
-                <p key={reason} className="flex gap-2 text-sm font-semibold text-[#1e3a5f]">
+                <p key={reason} className="flex gap-2 text-sm font-semibold text-[#1B4332]">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#22c55e]" />
                   {reason}
                 </p>
@@ -2426,7 +2421,7 @@ function AvailabilityUnitDetail({
           </div>
         ) : null}
         {unit.instruccionRecorrido && (
-          <p className="rounded-2xl bg-[#c9a96e]/10 p-4 text-sm font-bold text-[#1e3a5f]">
+          <p className="rounded-2xl bg-[#C8A276]/10 p-4 text-sm font-bold text-[#1B4332]">
             Recorrido: {unit.instruccionRecorrido}
           </p>
         )}
@@ -2434,7 +2429,7 @@ function AvailabilityUnitDetail({
           <button
             type="button"
             onClick={onShow}
-            className="rounded-2xl border border-[#1e3a5f]/20 bg-white px-4 py-4 text-sm font-black text-[#1e3a5f] shadow-sm"
+            className="rounded-2xl border border-[#1B4332]/20 bg-white px-4 py-4 text-sm font-black text-[#1B4332] shadow-sm"
           >
             Mostrar esta unidad
           </button>
@@ -2442,7 +2437,7 @@ function AvailabilityUnitDetail({
             type="button"
             disabled={!unit.prototipoId}
             onClick={onQuote}
-            className="rounded-2xl bg-[#c9a96e] px-4 py-4 text-sm font-black text-white shadow-sm disabled:opacity-40"
+            className="rounded-2xl bg-[#C8A276] px-4 py-4 text-sm font-black text-white shadow-sm disabled:opacity-40"
           >
             Usar para cotización
           </button>
@@ -2469,7 +2464,7 @@ function ToggleGroup({
           type="button"
           onClick={() => onChange(option.value)}
           className={`min-h-14 rounded-xl px-4 text-base font-black transition ${
-            value === option.value ? "bg-[#1e3a5f] text-white shadow" : "text-slate-500"
+            value === option.value ? "bg-[#1B4332] text-white shadow" : "text-slate-500"
           }`}
         >
           {option.label}
@@ -2493,7 +2488,7 @@ function ToggleCard({
       type="button"
       onClick={onClick}
       className={`min-h-24 rounded-2xl p-5 text-left text-lg font-black shadow-sm transition ${
-        checked ? "bg-[#1e3a5f] text-white" : "bg-slate-50 text-[#1e3a5f]"
+        checked ? "bg-[#1B4332] text-white" : "bg-slate-50 text-[#1B4332]"
       }`}
     >
       <span className="mb-3 block">{label}</span>
@@ -2503,7 +2498,7 @@ function ToggleCard({
 }
 
 function SectionTitle({ title }: { title: string }) {
-  return <h2 className="text-2xl font-black text-[#1e3a5f] md:text-3xl">{title}</h2>;
+  return <h2 className="text-2xl font-black text-[#1B4332] md:text-3xl">{title}</h2>;
 }
 
 function ProductNarrativeCard({
@@ -2529,17 +2524,17 @@ function ProductNarrativeCard({
     >
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#c9a96e]">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#C8A276]">
             Paso {step}
           </p>
-          <h3 className="mt-2 text-2xl font-black text-[#1e3a5f] md:text-4xl">
+          <h3 className="mt-2 text-2xl font-black text-[#1B4332] md:text-4xl">
             {title}
           </h3>
           <p className="mt-2 max-w-3xl text-base font-semibold text-slate-500 md:text-lg">
             {subtitle}
           </p>
         </div>
-        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[#1e3a5f] text-white">
+        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[#1B4332] text-white">
           {icon}
         </div>
       </div>
@@ -2562,10 +2557,10 @@ function ZoneMap() {
           referrerPolicy="no-referrer-when-downgrade"
         />
         <div className="pointer-events-none absolute left-4 top-4 max-w-xs rounded-2xl bg-white/95 p-4 shadow-xl backdrop-blur">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#c9a96e]">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#C8A276]">
             Punto central
           </p>
-          <p className="mt-1 text-lg font-black text-[#1e3a5f]">{zonaLaVista.centro}</p>
+          <p className="mt-1 text-lg font-black text-[#1B4332]">{zonaLaVista.centro}</p>
           <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500">
             {zonaLaVista.direccion}
           </p>
@@ -2577,7 +2572,7 @@ function ZoneMap() {
           href={zonaLaVista.mapaUrl}
           target="_blank"
           rel="noreferrer"
-          className="flex min-h-14 items-center justify-center rounded-2xl bg-[#1e3a5f] px-4 text-center text-sm font-black text-white transition hover:bg-[#16304f] active:scale-95"
+          className="flex min-h-14 items-center justify-center rounded-2xl bg-[#1B4332] px-4 text-center text-sm font-black text-white transition hover:bg-[#245A42] active:scale-95"
         >
           Abrir ubicación exacta en Google Maps
         </a>
@@ -2589,9 +2584,9 @@ function ZoneMap() {
             {destacados.map((punto) => (
               <span
                 key={punto.id}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#c9a96e]/25 bg-[#c9a96e]/10 px-3 py-1.5 text-xs font-bold text-[#1e3a5f]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#C8A276]/25 bg-[#C8A276]/10 px-3 py-1.5 text-xs font-bold text-[#1B4332]"
               >
-                <MapPin className="h-3 w-3 text-[#c9a96e]" />
+                <MapPin className="h-3 w-3 text-[#C8A276]" />
                 {punto.nombre} · {punto.tiempo}
               </span>
             ))}
@@ -2621,30 +2616,30 @@ function NearbyPointCard({ punto }: { punto: (typeof zonaLaVista.puntosCercanos)
     <article
       className={`rounded-2xl border p-4 transition ${
         punto.destacado
-          ? "border-[#c9a96e]/35 bg-[#c9a96e]/8"
+          ? "border-[#C8A276]/35 bg-[#C8A276]/8"
           : "border-slate-200 bg-white"
       }`}
     >
       <div className="flex items-start gap-3">
         <span
           className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-            punto.destacado ? "bg-[#1e3a5f] text-white" : "bg-slate-100 text-[#1e3a5f]"
+            punto.destacado ? "bg-[#1B4332] text-white" : "bg-slate-100 text-[#1B4332]"
           }`}
         >
           <Icon className="h-4 w-4" strokeWidth={2.25} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-wide text-[#c9a96e]">
+            <p className="text-[10px] font-black uppercase tracking-wide text-[#C8A276]">
               {punto.categoria}
             </p>
             {punto.destacado ? (
-              <span className="rounded-full bg-[#1e3a5f] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+              <span className="rounded-full bg-[#1B4332] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
                 Clave
               </span>
             ) : null}
           </div>
-          <p className="mt-1 font-black leading-snug text-[#1e3a5f]">{punto.nombre}</p>
+          <p className="mt-1 font-black leading-snug text-[#1B4332]">{punto.nombre}</p>
           <p className="mt-1 text-sm font-semibold text-slate-500">Aprox. {punto.tiempo}</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">{punto.detalle}</p>
         </div>
@@ -2671,7 +2666,7 @@ function NearbyPointsPanel() {
     <div className="max-h-[520px] space-y-5 overflow-y-auto pr-1">
       {Array.from(grouped.entries()).map(([categoria, puntos]) => (
         <section key={categoria}>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-[#1e3a5f]">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-[#1B4332]">
             {categoria}
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
               {puntos.length}
@@ -2692,7 +2687,7 @@ function Spec({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-4">
       <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 font-black text-[#1e3a5f]">{value}</p>
+      <p className="mt-1 font-black text-[#1B4332]">{value}</p>
     </div>
   );
 }
@@ -2708,7 +2703,7 @@ function ListBox({
 }) {
   return (
     <div className="rounded-[1.5rem] bg-white p-5 shadow-lg">
-      <h3 className="mb-4 text-lg font-black text-[#1e3a5f]">{title}</h3>
+      <h3 className="mb-4 text-lg font-black text-[#1B4332]">{title}</h3>
       <div className="space-y-2">
         {items.map((item) => (
           <p key={item} className="flex gap-2 text-sm font-semibold text-slate-600">
@@ -2746,11 +2741,11 @@ function Modal({
         }`}
       >
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-black text-[#1e3a5f] md:text-3xl">{title}</h2>
+          <h2 className="text-2xl font-black text-[#1B4332] md:text-3xl">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-[#1e3a5f]"
+            className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-[#1B4332]"
           >
             <X className="h-6 w-6" />
           </button>
@@ -2764,7 +2759,7 @@ function Modal({
 function SummaryBox({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-5">
-      <h3 className="mb-3 text-lg font-black text-[#1e3a5f]">{title}</h3>
+      <h3 className="mb-3 text-lg font-black text-[#1B4332]">{title}</h3>
       <div className="space-y-1 font-semibold text-slate-600">{children}</div>
     </div>
   );

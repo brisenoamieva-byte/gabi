@@ -237,7 +237,7 @@ export function InventarioAdminPanel({
           </label>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-dashed border-[#201044]/15 bg-[#f4f2f8]/60 p-4">
+        <div className="mt-5 rounded-2xl border border-dashed border-[#201044]/15 bg-[#F2F0E9]/60 p-4">
           <p className="text-sm font-bold text-[#201044]">Excel / CSV</p>
           <p className="mt-1 text-xs text-slate-500">
             La plantilla es la misma estructura para todos los clusters. Al{" "}

@@ -2,8 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { LockKeyhole } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { GabiLogo } from "@/components/brand/GabiLogo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -51,19 +51,13 @@ export function AdminLoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-[1.75rem] border border-[#201044]/10 bg-white p-8 shadow-xl">
+    <div className="w-full max-w-md rounded-[1.75rem] border border-gabi-forest/10 bg-white p-8 shadow-xl shadow-gabi-forest/5">
       <div className="mb-8 text-center">
-        <Image
-          src="/logos/gabi-logo.png"
-          alt="gabi"
-          width={1018}
-          height={559}
-          className="mx-auto h-10 w-auto object-contain"
-        />
-        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+        <GabiLogo variant="hero" className="mx-auto" />
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
           Backoffice comercial
         </p>
-        <h1 className="mt-2 text-2xl font-black text-[#201044]">Admin gabi</h1>
+        <h1 className="mt-2 text-2xl font-black text-gabi-forest">Admin gabi</h1>
         <p className="mt-2 text-sm text-slate-500">
           Gestión de documentos, inventario y usuarios.
         </p>
@@ -127,7 +121,7 @@ export function AdminLoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] text-sm font-bold text-white disabled:opacity-60"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest text-sm font-bold text-white disabled:opacity-60"
             >
               <LockKeyhole className="h-4 w-4" />
               {loading ? "Entrando..." : "Entrar al panel"}
@@ -137,7 +131,7 @@ export function AdminLoginForm() {
       )}
 
       <p className="mt-6 text-center text-sm text-slate-500">
-        <Link href="/" className="font-semibold text-[#201044] hover:underline">
+        <Link href="/" className="font-semibold text-gabi-forest hover:underline">
           Volver al inicio
         </Link>
       </p>

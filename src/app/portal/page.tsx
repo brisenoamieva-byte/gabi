@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
-import Image from "next/image";
+import { GabiLogo } from "@/components/brand/GabiLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { comercializadores } from "@/lib/data";
@@ -65,32 +65,26 @@ export default function PortalLoginPage() {
   };
 
   return (
-    <main className="flex min-h-dvh flex-col bg-[#faf8f4] text-[#1a3d2e]">
+    <main className="flex min-h-dvh flex-col gabi-surface text-gabi-forest">
       <header className="flex shrink-0 items-center justify-between px-5 py-4 md:px-8">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#1a3d2e]/70 transition hover:text-[#1a3d2e]"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[#1B4332]/70 transition hover:text-[#1B4332]"
         >
           <ArrowLeft className="h-4 w-4" />
           gabi.mx
         </Link>
-        <Image
-          src="/logos/gabi-logo.png"
-          alt="gabi"
-          width={1018}
-          height={559}
-          className="h-7 w-auto object-contain opacity-90"
-        />
+        <GabiLogo variant="header" />
       </header>
 
       <section className="flex flex-1 items-center justify-center px-5 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md rounded-[1.75rem] border border-[#1a3d2e]/10 bg-white p-6 shadow-xl shadow-[#1a3d2e]/8 md:p-8"
+          className="w-full max-w-md rounded-[1.75rem] border border-[#1B4332]/10 bg-white p-6 shadow-xl shadow-[#1B4332]/8 md:p-8"
         >
           <div className="text-center">
-            <span className="grid mx-auto h-12 w-12 place-items-center rounded-2xl bg-[#1a3d2e]/8 text-[#1a3d2e]">
+            <span className="grid mx-auto h-12 w-12 place-items-center rounded-2xl bg-[#1B4332]/8 text-[#1B4332]">
               <LockKeyhole className="h-6 w-6" />
             </span>
             <h1 className="mt-4 text-2xl font-black">Portal comercializadoras</h1>
@@ -132,7 +126,7 @@ export default function PortalLoginPage() {
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-[#1a3d2e] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#245a42] active:scale-[0.98]"
+              className="w-full rounded-2xl bg-[#1B4332] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#245a42] active:scale-[0.98]"
             >
               Entrar al portal
             </button>
