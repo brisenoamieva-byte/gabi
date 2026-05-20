@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import { InstallGabiApp } from "@/components/InstallGabiApp";
 
 const navLinks = [
   { href: "#posicionamiento", label: "Qué es gabi" },
@@ -455,6 +456,27 @@ export default function LandingPage() {
               <Smartphone className="h-4 w-4" />
               Optimizado para tablet y móvil
             </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-[#13315C]/8 bg-white px-5 py-16 md:px-8 md:py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-gabi-teal">
+              App en tu celular
+            </p>
+            <h2 className="mt-3 text-3xl font-black text-gabi-navy md:text-4xl">
+              Instala gabi para recorridos en showroom
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-gabi-navy/65">
+              El navegador no siempre muestra el aviso automático. Usa el botón para agregar gabi
+              a tu pantalla de inicio y trabajar como app, con soporte offline tras preparar la
+              visita desde el dashboard.
+            </p>
+          </div>
+          <div className="rounded-[1.75rem] border border-gabi-navy/10 bg-gabi-surface p-6 shadow-lg shadow-gabi-navy/5">
+            <InstallGabiApp variant="landing" />
           </div>
         </div>
       </section>

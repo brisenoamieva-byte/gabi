@@ -15,6 +15,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
+import { InstallGabiApp } from "@/components/InstallGabiApp";
+import { PrepareOfflineVisitButton } from "@/components/PrepareOfflineVisitButton";
 import { desarrollos, formatPrice, type Asesor, type Desarrollo } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
@@ -225,6 +227,19 @@ export default function DashboardPage() {
               </p>
             </div>
           </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="grid gap-3"
+        >
+          <PrepareOfflineVisitButton
+            desarrolloId={desarrollo.id}
+            desarrolloNombre={desarrollo.nombre}
+          />
+          <InstallGabiApp variant="dashboard" />
         </motion.div>
 
         {/* Herramientas secundarias — grid equilibrado */}

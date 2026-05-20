@@ -21,6 +21,28 @@ const withPWA = withPWAInit({
       },
     },
     {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|pdf)$/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "gabi-documents-media",
+        expiration: {
+          maxEntries: 160,
+          maxAgeSeconds: 60 * 24 * 60 * 60,
+        },
+      },
+    },
+    {
+      urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "gabi-supabase-storage",
+        expiration: {
+          maxEntries: 80,
+          maxAgeSeconds: 60 * 24 * 60 * 60,
+        },
+      },
+    },
+    {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
       handler: "CacheFirst",
       options: {

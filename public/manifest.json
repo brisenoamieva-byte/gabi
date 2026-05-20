@@ -2,20 +2,32 @@
   "name": "gabi - Guía para Asesores de Bienes Inmuebles",
   "short_name": "gabi",
   "description": "Guía comercial inmobiliaria para recorridos estructurados. No es un CRM.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#F8FAFC",
+  "background_color": "#13315C",
   "theme_color": "#13315C",
   "lang": "es-MX",
   "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/logos/gabi-icon.png",
+      "src": "/logos/gabi-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/gabi-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/logos/gabi-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [

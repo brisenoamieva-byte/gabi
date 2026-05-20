@@ -1,6 +1,7 @@
 import { getDisponibilidadesByCluster, type DisponibilidadUnidad } from "@/lib/data";
+import { readOfflineInventario } from "@/lib/offline/inventario-store";
 
-export type ClusterInventarioSource = "supabase" | "local";
+export type ClusterInventarioSource = "supabase" | "local" | "offline-cache";
 
 export type ClusterInventarioResult = {
   units: DisponibilidadUnidad[];
@@ -12,6 +13,11 @@ export async function fetchClusterInventario(
   clusterId: string,
 ): Promise<ClusterInventarioResult> {
   const fallback = getDisponibilidadesByCluster(clusterId);
+  const offlineUnits = readOfflineInventario(desarrolloId, clusterId);
+
+  if (typeof navigator !== "undefined" && !navigator.onLine && offlineUnits) {
+    return { units: offlineUnits, source: "offline-cache" };
+  }
 
   try {
     const params = new URLSearchParams({ desarrolloId, clusterId });
@@ -25,7 +31,13 @@ export async function fetchClusterInventario(
       return { units: data.productos, source: "supabase" };
     }
   } catch {
-    // Sin red o API caída: inventario estático local.
+    if (offlineUnits) {
+      return { units: offlineUnits, source: "offline-cache" };
+    }
+  }
+
+  if (offlineUnits) {
+    return { units: offlineUnits, source: "offline-cache" };
   }
 
   return { units: fallback, source: "local" };

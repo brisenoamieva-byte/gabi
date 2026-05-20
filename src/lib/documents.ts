@@ -5,6 +5,11 @@ import {
   getDisponibilidadPlanoByCluster,
   getPrototipoById,
 } from "@/lib/data";
+import {
+  cacheDocumentBlob,
+  readCachedDocument,
+  triggerBlobDownload,
+} from "@/lib/offline/documents-cache";
 
 export class DocumentNotAvailableError extends Error {
   constructor(label: string) {
@@ -13,19 +18,42 @@ export class DocumentNotAvailableError extends Error {
   }
 }
 
-const downloadStaticFile = async (url: string, filename: string) => {
+const downloadStaticFile = async (
+  url: string,
+  filename: string,
+  cacheParams?: {
+    desarrolloId: string;
+    tipo: DocumentoTipo;
+    clusterId?: string;
+    prototipoId?: string;
+    etapa?: string;
+  },
+) => {
+  if (cacheParams) {
+    const cached = await readCachedDocument(cacheParams);
+    if (cached) {
+      triggerBlobDownload(cached.blob, cached.filename);
+      return;
+    }
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
+    if (cacheParams) {
+      const cached = await readCachedDocument(cacheParams);
+      if (cached) {
+        triggerBlobDownload(cached.blob, cached.filename);
+        return;
+      }
+    }
     throw new Error("No se encontró el archivo PDF.");
   }
 
   const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(objectUrl);
+  if (cacheParams) {
+    await cacheDocumentBlob(cacheParams, blob, filename);
+  }
+  triggerBlobDownload(blob, filename);
 };
 
 const fetchDocumentoOficial = async (params: {
@@ -78,12 +106,22 @@ export const downloadDesarrolloBrochure = async (desarrolloId: string) => {
     throw new Error("Desarrollo no encontrado.");
   }
 
+  const cacheParams = { desarrolloId, tipo: "brochure_desarrollo" as const };
+  const cached = await readCachedDocument(cacheParams);
+  if (cached) {
+    triggerBlobDownload(cached.blob, cached.filename);
+    return;
+  }
+
   const oficial = await fetchDocumentoOficial({
     desarrolloId,
     tipo: "brochure_desarrollo",
   });
   if (oficial) {
-    await downloadStaticFile(oficial.url, oficial.filename);
+    await downloadStaticFile(oficial.url, oficial.filename, {
+      desarrolloId,
+      tipo: "brochure_desarrollo",
+    });
     return;
   }
 
@@ -105,13 +143,28 @@ export const downloadClusterBrochure = async (clusterId: string, desarrolloId: s
     throw new Error("Cluster o desarrollo no encontrado.");
   }
 
+  const cacheParams = {
+    desarrolloId,
+    tipo: "brochure_cluster" as const,
+    clusterId,
+  };
+  const cached = await readCachedDocument(cacheParams);
+  if (cached) {
+    triggerBlobDownload(cached.blob, cached.filename);
+    return;
+  }
+
   const oficial = await fetchDocumentoOficial({
     desarrolloId,
     clusterId,
     tipo: "brochure_cluster",
   });
   if (oficial) {
-    await downloadStaticFile(oficial.url, oficial.filename);
+    await downloadStaticFile(oficial.url, oficial.filename, {
+      desarrolloId,
+      tipo: "brochure_cluster",
+      clusterId,
+    });
     return;
   }
 
@@ -137,6 +190,18 @@ export const downloadDisponibilidadReport = async (
     throw new Error("Cluster o desarrollo no encontrado.");
   }
 
+  const cacheParams = {
+    desarrolloId,
+    tipo: "disponibilidad" as const,
+    clusterId,
+    etapa,
+  };
+  const cached = await readCachedDocument(cacheParams);
+  if (cached) {
+    triggerBlobDownload(cached.blob, cached.filename);
+    return;
+  }
+
   const plano = getDisponibilidadPlanoByCluster(clusterId);
 
   const oficial = await fetchDocumentoOficial({
@@ -146,7 +211,12 @@ export const downloadDisponibilidadReport = async (
     tipo: "disponibilidad",
   });
   if (oficial) {
-    await downloadStaticFile(oficial.url, oficial.filename);
+    await downloadStaticFile(oficial.url, oficial.filename, {
+      desarrolloId,
+      tipo: "disponibilidad",
+      clusterId,
+      etapa,
+    });
     return;
   }
 
@@ -172,6 +242,18 @@ export const downloadFichaTecnica = async (prototipoId: string, desarrolloId: st
     throw new Error("Producto no encontrado.");
   }
 
+  const cacheParams = {
+    desarrolloId,
+    tipo: "ficha_tecnica" as const,
+    clusterId: cluster.id,
+    prototipoId,
+  };
+  const cached = await readCachedDocument(cacheParams);
+  if (cached) {
+    triggerBlobDownload(cached.blob, cached.filename);
+    return;
+  }
+
   const oficial = await fetchDocumentoOficial({
     desarrolloId,
     clusterId: cluster.id,
@@ -179,7 +261,12 @@ export const downloadFichaTecnica = async (prototipoId: string, desarrolloId: st
     tipo: "ficha_tecnica",
   });
   if (oficial) {
-    await downloadStaticFile(oficial.url, oficial.filename);
+    await downloadStaticFile(oficial.url, oficial.filename, {
+      desarrolloId,
+      tipo: "ficha_tecnica",
+      clusterId: cluster.id,
+      prototipoId,
+    });
     return;
   }
 

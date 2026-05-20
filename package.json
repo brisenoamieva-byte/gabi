@@ -9,7 +9,9 @@
     "build": "node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs --full && next build",
     "start": "next start",
     "lint": "next lint",
-    "process-logo": "node scripts/process-gabi-logo.mjs"
+    "process-logo": "node scripts/process-gabi-logo.mjs",
+    "generate:pwa-icons": "node scripts/generate-gabi-pwa-icons.mjs",
+    "prebuild": "node scripts/generate-gabi-pwa-icons.mjs"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
