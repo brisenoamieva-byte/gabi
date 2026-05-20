@@ -29,6 +29,8 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import { PostVisitaModal } from "@/components/recorrido/PostVisitaModal";
+import { trackVisita } from "@/lib/visitas/client";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import {
@@ -395,6 +397,15 @@ export default function RecorridoPage() {
     "idle" | "success" | "error"
   >("idle");
   const [isRegisteringLead, setIsRegisteringLead] = useState(false);
+  const [postVisita, setPostVisita] = useState<{
+    desarrolloNombre: string;
+    asesorNombre: string;
+    clienteNombre: string;
+    clienteTelefono?: string;
+    clusterNombre?: string;
+    prototipoNombre?: string;
+    precioFinal?: number;
+  } | null>(null);
   const [recorridoEtapas, setRecorridoEtapas] = useState<string[]>([
     ...DEFAULT_RECORRIDO_ETAPAS,
   ]);
@@ -832,6 +843,19 @@ export default function RecorridoPage() {
       writeLocalArray(LEADS_KEY, [...existingLeads, savedLead]);
       patchState({ leadId: savedLead.id });
 
+      trackVisita({
+        tipo: "lead_registrado",
+        desarrolloId,
+        asesorId: lead.asesorId,
+        asesorNombre: asesor?.nombre,
+        clienteNombre: clientName,
+        clienteEmail: normalizedEmail,
+        clienteTelefono: normalizedPhone,
+        medioContacto: state.cliente.medioContacto,
+        crmStatus: savedLead.crmStatus,
+        crmId: savedLead.crmId,
+      });
+
       if (shouldQueueLeadForCrm(result)) {
         writeLocalArray(CRM_PENDING_KEY, [
           ...readLocalArray(CRM_PENDING_KEY),
@@ -846,6 +870,17 @@ export default function RecorridoPage() {
       const queuedLead = { ...lead, crmStatus: "local" };
       writeLocalArray(LEADS_KEY, [...existingLeads, queuedLead]);
       patchState({ leadId: queuedLead.id });
+      trackVisita({
+        tipo: "lead_registrado",
+        desarrolloId,
+        asesorId: lead.asesorId,
+        asesorNombre: asesor?.nombre,
+        clienteNombre: clientName,
+        clienteEmail: normalizedEmail,
+        clienteTelefono: normalizedPhone,
+        medioContacto: state.cliente.medioContacto,
+        crmStatus: "local",
+      });
       setClientValidationStatus("success");
       setClientValidationMessage("Prospecto registrado en gabi.");
       return true;
@@ -960,15 +995,19 @@ export default function RecorridoPage() {
 
   const finishRecorrido = () => {
     let asesorId = "local";
-    let desarrolloId = activeDesarrollo?.id;
+    let asesorNombre = "Asesor";
+    let desarrolloId = activeDesarrollo?.id ?? "";
 
     try {
       const userRaw = localStorage.getItem("gabi_user");
       const storedDesarrollo = localStorage.getItem("gabi_desarrollo");
       if (userRaw) {
-        const user = JSON.parse(userRaw) as { id?: string };
+        const user = JSON.parse(userRaw) as { id?: string; nombre?: string };
         if (user.id) {
           asesorId = user.id;
+        }
+        if (user.nombre) {
+          asesorNombre = user.nombre;
         }
       }
       if (storedDesarrollo) {
@@ -1002,6 +1041,39 @@ export default function RecorridoPage() {
 
     localStorage.setItem(CLIENTES_KEY, JSON.stringify([...previousClients, newClient]));
     localStorage.removeItem(STORAGE_KEY);
+
+    if (asesorId !== "local" && desarrolloId) {
+      trackVisita({
+        tipo: "recorrido_completado",
+        desarrolloId,
+        asesorId,
+        asesorNombre,
+        clienteNombre: state.cliente.nombre,
+        clienteEmail: state.cliente.email,
+        clienteTelefono: state.cliente.telefono,
+        medioContacto: state.cliente.medioContacto,
+        clusterId: state.clusterId || undefined,
+        clusterNombre: selectedCluster?.nombre,
+        prototipoId: state.prototipoId || undefined,
+        prototipoNombre: selectedPrototipo?.nombre,
+        precioFinal: precioFinal || undefined,
+        etapaAlcanzada: recorridoEtapas.length,
+      });
+    }
+
+    setPostVisita({
+      desarrolloNombre: activeDesarrollo?.nombre ?? "Desarrollo",
+      asesorNombre,
+      clienteNombre: state.cliente.nombre || "Prospecto",
+      clienteTelefono: state.cliente.telefono || undefined,
+      clusterNombre: selectedCluster?.nombre,
+      prototipoNombre: selectedPrototipo?.nombre,
+      precioFinal: precioFinal || undefined,
+    });
+  };
+
+  const closePostVisita = () => {
+    setPostVisita(null);
     router.replace("/dashboard");
   };
 
@@ -2214,6 +2286,10 @@ export default function RecorridoPage() {
           </div>
         </Modal>
       )}
+
+      {postVisita ? (
+        <PostVisitaModal {...postVisita} onClose={closePostVisita} />
+      ) : null}
     </main>
   );
 }

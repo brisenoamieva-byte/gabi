@@ -1,6 +1,6 @@
 export type AdminRol = "superadmin" | "gerente" | "operaciones";
 
-export type AdminModule = "documentos" | "inventario" | "asesores" | "usuarios";
+export type AdminModule = "documentos" | "inventario" | "asesores" | "metricas" | "usuarios";
 
 export type DocumentoTipo =
   | "brochure_desarrollo"
@@ -71,6 +71,13 @@ export const adminNavItems: AdminNavItem[] = [
     label: "Asesores",
     description: "Usuarios y accesos",
     paso: 3,
+    ready: true,
+  },
+  {
+    href: "/admin/metricas",
+    label: "Métricas",
+    description: "Visitas y desempeño comercial",
+    paso: 4,
     ready: true,
   },
 ];

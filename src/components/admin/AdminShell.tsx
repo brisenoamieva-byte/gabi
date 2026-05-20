@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, Package, Users } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3 } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { adminRolLabel, canAccessModule } from "@/lib/admin/permissions";
@@ -12,12 +12,14 @@ const navIcons = {
   "/admin/documentos": FileText,
   "/admin/inventario": Package,
   "/admin/asesores": Users,
+  "/admin/metricas": BarChart3,
 } as const;
 
 const navModules: Record<string, AdminModule> = {
   "/admin/documentos": "documentos",
   "/admin/inventario": "inventario",
   "/admin/asesores": "asesores",
+  "/admin/metricas": "metricas",
 };
 
 type AdminShellProps = {
@@ -34,6 +36,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/documentos", label: "Documentos", ready: true },
     { href: "/admin/inventario", label: "Productos", ready: true },
     { href: "/admin/asesores", label: "Asesores", ready: true },
+    { href: "/admin/metricas", label: "Métricas", ready: true },
   ].filter((item) => canAccessModule(profile, navModules[item.href]));
 
   const handleLogout = async () => {
