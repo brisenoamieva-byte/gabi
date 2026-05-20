@@ -1,0 +1,407 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, Save } from "lucide-react";
+import type { Desarrollo } from "@/lib/data";
+import type { RecorridoContenido } from "@/lib/catalog/recorrido-content";
+import {
+  contenidoToForm,
+  formToContenido,
+  type RecorridoContenidoForm,
+} from "@/lib/catalog/recorrido-content-editor";
+
+type GuionAdminPanelProps = {
+  desarrollos: Desarrollo[];
+  scopeLabel?: string;
+};
+
+type SectionProps = {
+  title: string;
+  children: React.ReactNode;
+};
+
+function Section({ title, children }: SectionProps) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h3 className="mb-4 text-sm font-black uppercase tracking-[0.16em] text-[#13315C]">
+        {title}
+      </h3>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  children,
+  className = "",
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+  hint?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </span>
+      {children}
+      {hint ? <span className="mt-1 block text-[11px] text-slate-400">{hint}</span> : null}
+    </label>
+  );
+}
+
+export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProps) {
+  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const [form, setForm] = useState<RecorridoContenidoForm | null>(null);
+  const [baseContent, setBaseContent] = useState<RecorridoContenido | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const patchForm = (patch: Partial<RecorridoContenidoForm>) => {
+    setForm((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const loadContenido = useCallback(async () => {
+    if (!desarrolloId) {
+      setForm(null);
+      setBaseContent(null);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/catalog/desarrollos/${encodeURIComponent(desarrolloId)}/recorrido-contenido`,
+      );
+      const data = (await response.json()) as {
+        recorridoContenido?: RecorridoContenido;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo cargar el guion.");
+      }
+
+      const content = data.recorridoContenido;
+      if (!content) {
+        throw new Error("Sin contenido de recorrido.");
+      }
+
+      setBaseContent(content);
+      setForm(contenidoToForm(content));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Error al cargar");
+      setForm(null);
+      setBaseContent(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [desarrolloId]);
+
+  useEffect(() => {
+    void loadContenido();
+  }, [loadContenido]);
+
+  useEffect(() => {
+    if (!desarrolloId && desarrollos[0]?.id) {
+      setDesarrolloId(desarrollos[0].id);
+    }
+  }, [desarrolloId, desarrollos]);
+
+  const saveContenido = async () => {
+    if (!form || !baseContent || !desarrolloId) {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const recorridoContenido = formToContenido(form, baseContent);
+      const response = await fetch(
+        `/api/admin/catalog/desarrollos/${encodeURIComponent(desarrolloId)}/recorrido-contenido`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recorridoContenido }),
+        },
+      );
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo guardar.");
+      }
+
+      setSuccess("Guion comercial actualizado.");
+      await loadContenido();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!desarrollos.length) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+        No tienes desarrollos asignados para editar el guion comercial.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
+          Recorrido comercial
+        </p>
+        <h2 className="mt-2 text-2xl font-black text-[#13315C]">Guion por desarrollo</h2>
+        {scopeLabel ? (
+          <p className="mt-2 inline-flex rounded-full bg-[#13315C]/5 px-3 py-1 text-xs font-semibold text-[#13315C]">
+            Alcance: {scopeLabel}
+          </p>
+        ) : null}
+        <p className="mt-3 max-w-3xl text-sm text-slate-500">
+          Edita los textos que ve el asesor en la etapa de presentación del desarrollo. Los puntos
+          de interés del mapa y técnicas de cierre se mantienen del catálogo base.
+        </p>
+
+        <div className="mt-5 flex flex-wrap items-end gap-3">
+          <label className="block min-w-[240px]">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Desarrollo
+            </span>
+            <select
+              value={desarrolloId}
+              onChange={(event) => setDesarrolloId(event.target.value)}
+              className="input-cotizador"
+            >
+              {desarrollos.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={saving || loading || !form}
+            onClick={() => void saveContenido()}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#13315C] px-5 text-sm font-black text-white disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Guardar guion
+          </button>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+          {error}
+        </div>
+      ) : null}
+
+      {success ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+          {success}
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="flex items-center gap-2 py-12 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Cargando guion...
+        </div>
+      ) : form ? (
+        <div className="space-y-5">
+          <Section title="1 · Zona y ubicación">
+            <Field label="Título">
+              <input
+                value={form.zonaTitulo}
+                onChange={(event) => patchForm({ zonaTitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Subtítulo">
+              <input
+                value={form.zonaSubtitulo}
+                onChange={(event) => patchForm({ zonaSubtitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Centro / referencia">
+              <input
+                value={form.zonaCentro}
+                onChange={(event) => patchForm({ zonaCentro: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Dirección">
+              <input
+                value={form.zonaDireccion}
+                onChange={(event) => patchForm({ zonaDireccion: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="URL embed mapa" className="sm:col-span-2">
+              <input
+                value={form.zonaMapaEmbedUrl}
+                onChange={(event) => patchForm({ zonaMapaEmbedUrl: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="URL Google Maps" className="sm:col-span-2">
+              <input
+                value={form.zonaMapaUrl}
+                onChange={(event) => patchForm({ zonaMapaUrl: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Guion para asesor" className="sm:col-span-2">
+              <textarea
+                value={form.zonaMensajeAsesor}
+                onChange={(event) => patchForm({ zonaMensajeAsesor: event.target.value })}
+                className="input-cotizador min-h-24"
+              />
+            </Field>
+          </Section>
+
+          <Section title="2 · Desarrollador">
+            <Field label="Título">
+              <input
+                value={form.desarrolladorTitulo}
+                onChange={(event) => patchForm({ desarrolladorTitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Subtítulo">
+              <input
+                value={form.desarrolladorSubtitulo}
+                onChange={(event) => patchForm({ desarrolladorSubtitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Logo (ruta)" className="sm:col-span-2">
+              <input
+                value={form.desarrolladorLogoPath}
+                onChange={(event) => patchForm({ desarrolladorLogoPath: event.target.value })}
+                className="input-cotizador"
+                placeholder="/logos/grupo-vinte.png"
+              />
+            </Field>
+            <Field label="Historia" className="sm:col-span-2">
+              <textarea
+                value={form.desarrolladorHistoria}
+                onChange={(event) => patchForm({ desarrolladorHistoria: event.target.value })}
+                className="input-cotizador min-h-28"
+              />
+            </Field>
+            <Field label="Frase asesor" className="sm:col-span-2">
+              <textarea
+                value={form.desarrolladorFraseAsesor}
+                onChange={(event) => patchForm({ desarrolladorFraseAsesor: event.target.value })}
+                className="input-cotizador min-h-20"
+              />
+            </Field>
+            <Field
+              label="Métricas"
+              className="sm:col-span-2"
+              hint="Una por línea: valor|etiqueta. Ej: +30|años de experiencia"
+            >
+              <textarea
+                value={form.desarrolladorMetricas}
+                onChange={(event) => patchForm({ desarrolladorMetricas: event.target.value })}
+                className="input-cotizador min-h-24 font-mono text-sm"
+              />
+            </Field>
+            <Field label="Respaldo" className="sm:col-span-2" hint="Un ítem por línea">
+              <textarea
+                value={form.desarrolladorRespaldo}
+                onChange={(event) => patchForm({ desarrolladorRespaldo: event.target.value })}
+                className="input-cotizador min-h-24"
+              />
+            </Field>
+          </Section>
+
+          <Section title="3 · Desarrollo">
+            <Field label="Título">
+              <input
+                value={form.overviewTitulo}
+                onChange={(event) => patchForm({ overviewTitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Subtítulo">
+              <input
+                value={form.overviewSubtitulo}
+                onChange={(event) => patchForm({ overviewSubtitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Logo (ruta)" className="sm:col-span-2">
+              <input
+                value={form.overviewLogoPath}
+                onChange={(event) => patchForm({ overviewLogoPath: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Guía asesor" className="sm:col-span-2">
+              <textarea
+                value={form.overviewGuiaAsesor}
+                onChange={(event) => patchForm({ overviewGuiaAsesor: event.target.value })}
+                className="input-cotizador min-h-20"
+              />
+            </Field>
+            <Field label="Narrativa" className="sm:col-span-2" hint="Un párrafo por línea">
+              <textarea
+                value={form.overviewNarrativa}
+                onChange={(event) => patchForm({ overviewNarrativa: event.target.value })}
+                className="input-cotizador min-h-32"
+              />
+            </Field>
+            <Field label="Destacados" className="sm:col-span-2" hint="Un ítem por línea">
+              <textarea
+                value={form.overviewDestacados}
+                onChange={(event) => patchForm({ overviewDestacados: event.target.value })}
+                className="input-cotizador min-h-24"
+              />
+            </Field>
+            <Field label="Bondades" className="sm:col-span-2" hint="Un ítem por línea">
+              <textarea
+                value={form.bondades}
+                onChange={(event) => patchForm({ bondades: event.target.value })}
+                className="input-cotizador min-h-24"
+              />
+            </Field>
+          </Section>
+
+          <Section title="Técnica de 2 minutos">
+            <Field label="Título">
+              <input
+                value={form.tecnicaTitulo}
+                onChange={(event) => patchForm({ tecnicaTitulo: event.target.value })}
+                className="input-cotizador"
+              />
+            </Field>
+            <Field label="Puntos del guion" className="sm:col-span-2" hint="Un punto por línea">
+              <textarea
+                value={form.tecnicaPuntos}
+                onChange={(event) => patchForm({ tecnicaPuntos: event.target.value })}
+                className="input-cotizador min-h-32"
+              />
+            </Field>
+          </Section>
+        </div>
+      ) : null}
+    </div>
+  );
+}

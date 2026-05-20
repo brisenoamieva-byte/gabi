@@ -1,4 +1,5 @@
 import { getDefaultRecorridoContenido } from "@/lib/catalog/recorrido-content";
+import type { RecorridoContenido } from "@/lib/catalog/recorrido-content";
 import { assertCatalogId } from "@/lib/catalog/slug";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -491,4 +492,36 @@ export const updateDesarrolloCatalog = async (
   }
 
   return toDesarrolloAdmin(data);
+};
+
+export const updateRecorridoContenido = async (
+  desarrolloId: string,
+  contenido: RecorridoContenido,
+): Promise<void> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: existing } = await supabase
+    .from("desarrollos_catalog")
+    .select("id")
+    .eq("id", desarrolloId)
+    .maybeSingle();
+
+  if (!existing) {
+    throw new Error("Desarrollo no encontrado.");
+  }
+
+  const { error } = await supabase
+    .from("desarrollos_catalog")
+    .update({
+      recorrido_contenido: contenido,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", desarrolloId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 };
