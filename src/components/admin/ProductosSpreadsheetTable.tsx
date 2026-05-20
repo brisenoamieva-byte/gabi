@@ -45,7 +45,7 @@ type ProductosSpreadsheetTableProps = {
 };
 
 const cellClass =
-  "w-full min-w-0 rounded-lg border border-transparent bg-white px-2 py-1.5 text-sm text-[#201044] outline-none focus:border-[#6cc24a] focus:ring-1 focus:ring-[#6cc24a]/30";
+  "w-full min-w-0 rounded-lg border border-transparent bg-white px-2 py-1.5 text-sm text-[#13315C] outline-none focus:border-[#2DD4BF] focus:ring-1 focus:ring-[#2DD4BF]/30";
 
 const headerClass =
   "px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400";
@@ -263,7 +263,7 @@ export function ProductosSpreadsheetTable({
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#6cc24a] px-4 text-sm font-bold text-[#201044]"
+          className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#2DD4BF] px-4 text-sm font-bold text-[#13315C]"
         >
           <Plus className="h-4 w-4" />
           Agregar fila
@@ -278,7 +278,7 @@ export function ProductosSpreadsheetTable({
         <p className="text-xs text-slate-500">
           Edita celdas directamente.{" "}
           {dirtyCount ? (
-            <span className="font-semibold text-[#201044]">{dirtyCount} fila(s) sin guardar</span>
+            <span className="font-semibold text-[#13315C]">{dirtyCount} fila(s) sin guardar</span>
           ) : (
             "Los cambios se guardan fila por fila."
           )}
@@ -286,7 +286,7 @@ export function ProductosSpreadsheetTable({
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#201044]/15 bg-white px-3 text-xs font-bold text-[#201044]"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#13315C]/15 bg-white px-3 text-xs font-bold text-[#13315C]"
         >
           <Plus className="h-3.5 w-3.5" />
           Agregar fila
@@ -319,9 +319,9 @@ export function ProductosSpreadsheetTable({
               return (
                 <Fragment key={row.id}>
                   <tr
-                    className={`border-b border-slate-100 ${isDirty ? "bg-[#6cc24a]/5" : "bg-white"}`}
+                    className={`border-b border-slate-100 ${isDirty ? "bg-[#2DD4BF]/5" : "bg-white"}`}
                   >
-                    <td className="px-2 py-2 font-black text-[#201044]">{index + 1}</td>
+                    <td className="px-2 py-2 font-black text-[#13315C]">{index + 1}</td>
                     <td className="px-2 py-2 min-w-[8rem]">
                       <input
                         value={row.unidad}
@@ -431,7 +431,7 @@ export function ProductosSpreadsheetTable({
                           title="Guardar fila"
                           disabled={!isDirty || isSaving}
                           onClick={() => void saveRow(row)}
-                          className="rounded-lg border border-[#6cc24a]/30 bg-[#6cc24a]/10 p-1.5 text-[#201044] disabled:opacity-30"
+                          className="rounded-lg border border-[#2DD4BF]/30 bg-[#2DD4BF]/10 p-1.5 text-[#13315C] disabled:opacity-30"
                         >
                           {isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

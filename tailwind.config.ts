@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { bbrBrand, gabiBrand } from "./src/lib/brand/colors";
 
 const config: Config = {
   content: [
@@ -12,14 +13,32 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         gabi: {
-          forest: "#1B4332",
-          "forest-light": "#245A42",
-          "forest-dark": "#142E23",
-          sand: "#C8A276",
-          "sand-light": "#D9BC9A",
-          cream: "#F2F0E9",
-          "cream-dark": "#E8E4DA",
-          ink: "#1A2E24",
+          navy: gabiBrand.navy,
+          "navy-light": gabiBrand.navyLight,
+          "navy-dark": gabiBrand.navyDark,
+          teal: gabiBrand.teal,
+          cyan: gabiBrand.cyan,
+          emerald: gabiBrand.emerald,
+          amber: gabiBrand.amber,
+          surface: gabiBrand.surface,
+          muted: gabiBrand.muted,
+          line: gabiBrand.line,
+          ink: gabiBrand.ink,
+          // Aliases legacy → nueva paleta
+          forest: gabiBrand.navy,
+          "forest-light": gabiBrand.navyLight,
+          "forest-dark": gabiBrand.navyDark,
+          sand: gabiBrand.teal,
+          "sand-light": "#5EEAD4",
+          cream: gabiBrand.surface,
+          "cream-dark": gabiBrand.line,
+        },
+        bbr: {
+          purple: bbrBrand.purple,
+          "purple-light": bbrBrand.purpleLight,
+          green: bbrBrand.green,
+          "green-dark": bbrBrand.greenDark,
+          cream: bbrBrand.cream,
         },
       },
     },

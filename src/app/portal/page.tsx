@@ -72,11 +72,11 @@ export default function PortalLoginPage() {
   };
 
   return (
-    <main className="flex min-h-dvh flex-col gabi-surface text-gabi-forest">
+    <main className="flex min-h-dvh flex-col gabi-surface text-gabi-navy">
       <header className="flex shrink-0 items-center justify-between px-5 py-4 md:px-8">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#1B4332]/70 transition hover:text-[#1B4332]"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[#13315C]/70 transition hover:text-[#13315C]"
         >
           <ArrowLeft className="h-4 w-4" />
           gabi.mx
@@ -88,10 +88,10 @@ export default function PortalLoginPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md rounded-[1.75rem] border border-[#1B4332]/10 bg-white p-6 shadow-xl shadow-[#1B4332]/8 md:p-8"
+          className="w-full max-w-md rounded-[1.75rem] border border-[#13315C]/10 bg-white p-6 shadow-xl shadow-[#13315C]/8 md:p-8"
         >
           <div className="text-center">
-            <span className="grid mx-auto h-12 w-12 place-items-center rounded-2xl bg-[#1B4332]/8 text-[#1B4332]">
+            <span className="grid mx-auto h-12 w-12 place-items-center rounded-2xl bg-[#13315C]/8 text-[#13315C]">
               <LockKeyhole className="h-6 w-6" />
             </span>
             <h1 className="mt-4 text-2xl font-black">Portal comercializadoras</h1>
@@ -134,7 +134,7 @@ export default function PortalLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-[#1B4332] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#245a42] active:scale-[0.98] disabled:opacity-60"
+              className="w-full rounded-2xl bg-[#13315C] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#1A4478] active:scale-[0.98] disabled:opacity-60"
             >
               {loading ? "Validando..." : "Entrar al portal"}
             </button>

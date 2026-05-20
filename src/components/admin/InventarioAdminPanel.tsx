@@ -182,15 +182,15 @@ export function InventarioAdminPanel({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6cc24a]">
+      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
           Paso 2 · Productos para mostrar
         </p>
-        <h2 className="mt-2 text-2xl font-black text-[#201044]">
+        <h2 className="mt-2 text-2xl font-black text-[#13315C]">
           Lista curada para el recorrido
         </h2>
         {scopeLabel ? (
-          <p className="mt-2 inline-flex rounded-full bg-[#201044]/5 px-3 py-1 text-xs font-semibold text-[#201044]">
+          <p className="mt-2 inline-flex rounded-full bg-[#13315C]/5 px-3 py-1 text-xs font-semibold text-[#13315C]">
             Alcance: {scopeLabel}
           </p>
         ) : null}
@@ -237,8 +237,8 @@ export function InventarioAdminPanel({
           </label>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-dashed border-[#201044]/15 bg-[#F2F0E9]/60 p-4">
-          <p className="text-sm font-bold text-[#201044]">Excel / CSV</p>
+        <div className="mt-5 rounded-2xl border border-dashed border-[#13315C]/15 bg-[#F2F0E9]/60 p-4">
+          <p className="text-sm font-bold text-[#13315C]">Excel / CSV</p>
           <p className="mt-1 text-xs text-slate-500">
             La plantilla es la misma estructura para todos los clusters. Al{" "}
             <strong>importar</strong>, se aplica al cluster seleccionado arriba. Solo se listan
@@ -249,7 +249,7 @@ export function InventarioAdminPanel({
             <button
               type="button"
               onClick={handleDownloadTemplate}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 text-sm font-semibold text-[#201044]"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#13315C]/15 bg-white px-4 text-sm font-semibold text-[#13315C]"
             >
               <Download className="h-4 w-4" />
               Descargar plantilla
@@ -258,7 +258,7 @@ export function InventarioAdminPanel({
               type="button"
               onClick={handleDownloadCurrent}
               disabled={!clusterId || !activos.length}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 text-sm font-semibold text-[#201044] disabled:opacity-40"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#13315C]/15 bg-white px-4 text-sm font-semibold text-[#13315C] disabled:opacity-40"
             >
               <Download className="h-4 w-4" />
               Exportar lista actual
@@ -267,7 +267,7 @@ export function InventarioAdminPanel({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={!clusterId || importing}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#201044] px-4 text-sm font-semibold text-white disabled:opacity-40"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#13315C] px-4 text-sm font-semibold text-white disabled:opacity-40"
             >
               {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Subir Excel/CSV
@@ -288,9 +288,9 @@ export function InventarioAdminPanel({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
         <div>
-          <h3 className="text-lg font-black text-[#201044]">
+          <h3 className="text-lg font-black text-[#13315C]">
             Hoja editable ({activos.length} filas)
           </h3>
           <p className="text-sm text-slate-500">

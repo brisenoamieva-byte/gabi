@@ -4,7 +4,7 @@ import {
   canAccessModule,
 } from "@/lib/admin/permissions";
 import {
-  deactivateAsesor,
+  deleteAsesor,
   getAsesorById,
   updateAsesor,
 } from "@/lib/admin/asesores-service";
@@ -68,11 +68,11 @@ export async function DELETE(
 
     existing.desarrollosIds.forEach((id) => assertDesarrolloAccess(session.profile, id));
 
-    const result = await deactivateAsesor(session.profile, params.id);
+    const result = await deleteAsesor(session.profile, params.id);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error al desactivar" },
+      { error: error instanceof Error ? error.message : "Error al eliminar" },
       { status: 500 },
     );
   }

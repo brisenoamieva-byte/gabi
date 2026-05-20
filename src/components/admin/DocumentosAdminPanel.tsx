@@ -447,13 +447,13 @@ export function DocumentosAdminPanel({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6cc24a]">
+      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
           Paso 1 · Subir documento
         </p>
-        <h2 className="mt-2 text-2xl font-black text-[#201044]">Publicar PDF comercial</h2>
+        <h2 className="mt-2 text-2xl font-black text-[#13315C]">Publicar PDF comercial</h2>
         {scopeLabel ? (
-          <p className="mt-2 inline-flex rounded-full bg-[#201044]/5 px-3 py-1 text-xs font-semibold text-[#201044]">
+          <p className="mt-2 inline-flex rounded-full bg-[#13315C]/5 px-3 py-1 text-xs font-semibold text-[#13315C]">
             Alcance: {scopeLabel}
           </p>
         ) : null}
@@ -607,8 +607,8 @@ export function DocumentosAdminPanel({
             </>
           )}
 
-          <div className="rounded-xl border border-[#201044]/8 bg-[#F2F0E9]/60 px-4 py-3 text-sm text-slate-600">
-            <span className="font-semibold text-[#201044]">Resumen: </span>
+          <div className="rounded-xl border border-[#13315C]/8 bg-[#F2F0E9]/60 px-4 py-3 text-sm text-slate-600">
+            <span className="font-semibold text-[#13315C]">Resumen: </span>
             {formatDocumentoAlcance({
               clusterId: esFichaTecnica || alcance === "especifico" ? clusterId || null : null,
               etapa: !esFichaTecnica && alcance === "especifico" ? etapa || null : null,
@@ -632,8 +632,8 @@ export function DocumentosAdminPanel({
           ) : null}
 
           {pendingReplace ? (
-            <div className="rounded-xl border border-[#201044]/15 bg-[#F2F0E9] px-4 py-4">
-              <p className="font-bold text-[#201044]">¿Reemplazar documento existente?</p>
+            <div className="rounded-xl border border-[#13315C]/15 bg-[#F2F0E9] px-4 py-4">
+              <p className="font-bold text-[#13315C]">¿Reemplazar documento existente?</p>
               <p className="mt-2 text-sm text-slate-600">
                 Ya hay un <strong>{documentoCategoriaLabel[categoria].toLowerCase()}</strong>{" "}
                 activo para{" "}
@@ -648,7 +648,7 @@ export function DocumentosAdminPanel({
                 </strong>
                 :
               </p>
-              <p className="mt-2 text-sm font-semibold text-[#201044]">
+              <p className="mt-2 text-sm font-semibold text-[#13315C]">
                 {pendingReplace.nombre}
                 <span className="font-normal text-slate-500">
                   {" "}
@@ -664,7 +664,7 @@ export function DocumentosAdminPanel({
                   type="button"
                   onClick={() => void handleConfirmReplace()}
                   disabled={uploading}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#201044] px-4 text-sm font-bold text-white disabled:opacity-60"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#13315C] px-4 text-sm font-bold text-white disabled:opacity-60"
                 >
                   {uploading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -708,7 +708,7 @@ export function DocumentosAdminPanel({
                 <button
                   type="button"
                   onClick={confirmarNombreSugerido}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#201044]/15 bg-white px-3 py-1 text-xs font-semibold text-[#201044] hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#13315C]/15 bg-white px-3 py-1 text-xs font-semibold text-[#13315C] hover:bg-slate-50"
                 >
                   <Check className="h-3.5 w-3.5" />
                   Usar sugerido: {nombreSugerido}
@@ -729,14 +729,14 @@ export function DocumentosAdminPanel({
               accept="application/pdf"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               required
-              className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#201044] file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white"
+              className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#13315C] file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white"
             />
           </label>
 
           <button
             type="submit"
             disabled={uploading}
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#6cc24a] px-6 text-sm font-bold text-[#201044] disabled:opacity-60"
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#2DD4BF] px-6 text-sm font-bold text-[#13315C] disabled:opacity-60"
           >
             {uploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -759,10 +759,10 @@ export function DocumentosAdminPanel({
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-[#201044]/8 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg font-black text-[#201044]">Documentos publicados</h3>
+            <h3 className="text-lg font-black text-[#13315C]">Documentos publicados</h3>
             <p className="mt-1 text-xs text-slate-500">
               {showHistorial
                 ? "Mostrando activos e historial de versiones reemplazadas."
@@ -774,7 +774,7 @@ export function DocumentosAdminPanel({
               <button
                 type="button"
                 onClick={() => setShowHistorial((current) => !current)}
-                className="text-sm font-semibold text-[#201044] hover:underline"
+                className="text-sm font-semibold text-[#13315C] hover:underline"
               >
                 {showHistorial
                   ? "Ocultar historial"
@@ -784,7 +784,7 @@ export function DocumentosAdminPanel({
             <button
               type="button"
               onClick={() => void loadDocumentos()}
-              className="text-sm font-semibold text-[#201044] hover:underline"
+              className="text-sm font-semibold text-[#13315C] hover:underline"
             >
               Actualizar
             </button>
@@ -810,7 +810,7 @@ export function DocumentosAdminPanel({
               <tbody>
                 {documentosVisibles.map((doc) => (
                   <tr key={doc.id} className="border-b border-slate-50">
-                    <td className="py-3 pr-4 font-semibold text-[#201044]">{doc.nombre}</td>
+                    <td className="py-3 pr-4 font-semibold text-[#13315C]">{doc.nombre}</td>
                     <td className="py-3 pr-4 text-slate-600">
                       {formatDocumentoAlcance({
                         clusterId: doc.cluster_id,
@@ -842,7 +842,7 @@ export function DocumentosAdminPanel({
                           href={doc.public_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-[#201044]"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-[#13315C]"
                           title="Ver PDF"
                         >
                           <ExternalLink className="h-4 w-4" />

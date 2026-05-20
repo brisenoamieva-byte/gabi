@@ -11,6 +11,7 @@ import {
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import { clusters, datosBancarios, desarrollos, type Asesor, type Desarrollo } from "@/lib/data";
+import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 
 const RECORRIDO_KEY = "gabi_recorrido_actual";
 
@@ -151,6 +152,11 @@ export default function CotizadorPage() {
     setDescuento(0);
   };
 
+  const { units: inventarioUnidades } = useClusterInventario(
+    desarrollo?.id,
+    clusterId || undefined,
+  );
+
   const copyBankData = async () => {
     const text = [
       datosBancarios.razonSocial,
@@ -194,7 +200,7 @@ export default function CotizadorPage() {
         </p>
         <Link
           href="/dashboard"
-          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B4332] px-5 text-sm font-bold text-white"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#201044] px-5 text-sm font-bold text-white"
         >
           Volver al dashboard
         </Link>
@@ -269,7 +275,7 @@ export default function CotizadorPage() {
       <section className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 md:px-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
         <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-lg shadow-[#201044]/5 sm:rounded-[1.75rem] sm:p-6 md:p-8">
           <div className="border-b border-slate-100 pb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276] sm:text-[11px]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
               Configuración
             </p>
             <h2 className="mt-1.5 text-lg font-black text-[#201044] sm:text-xl">
@@ -283,6 +289,7 @@ export default function CotizadorPage() {
               clusterId={clusterId}
               prototipoId={prototipoId}
               unidadId={unidadId}
+              inventarioUnidades={inventarioUnidades}
               descuento={descuento}
               esquema={esquema}
               clienteNombre={clienteNombre}
@@ -299,7 +306,7 @@ export default function CotizadorPage() {
 
         <aside className="space-y-4 lg:sticky lg:top-6">
           <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-md sm:rounded-[1.75rem] sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276] sm:text-[11px]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
               Datos bancarios
             </p>
             <h3 className="mt-1.5 text-lg font-black text-[#201044]">Para apartado</h3>
@@ -346,15 +353,15 @@ export default function CotizadorPage() {
             <button
               type="button"
               onClick={() => void copyBankData()}
-              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/12 bg-[#F2F0E9] px-4 text-sm font-bold text-[#201044] transition hover:bg-slate-100 sm:min-h-12"
+              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-bbr-purple/12 bg-bbr-cream px-4 text-sm font-bold text-bbr-purple transition hover:bg-slate-100 sm:min-h-12"
             >
               <Copy className="h-4 w-4" />
               {copiedBank ? "Datos copiados" : "Copiar datos bancarios"}
             </button>
           </div>
 
-          <div className="rounded-2xl bg-[#1B4332] p-5 sm:rounded-[1.75rem] sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276] sm:text-[11px]">
+          <div className="rounded-2xl bg-[#201044] p-5 sm:rounded-[1.75rem] sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
               Guía gabi
             </p>
             <p className="mt-2.5 text-sm leading-relaxed text-white/85">

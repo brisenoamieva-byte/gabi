@@ -1,11 +1,24 @@
-/** Paleta extraída del logo gabi */
+/** Paleta GABI — plataforma, landing, admin, portal genérico */
 export const gabiBrand = {
-  forest: "#1B4332",
-  forestLight: "#245A42",
-  forestDark: "#142E23",
-  sand: "#C8A276",
-  sandLight: "#D9BC9A",
+  navy: "#13315C",
+  navyLight: "#1A4478",
+  navyDark: "#0F2A4A",
+  teal: "#2DD4BF",
+  cyan: "#22D3EE",
+  emerald: "#10B981",
+  amber: "#F59E0B",
+  surface: "#F8FAFC",
+  muted: "#64748B",
+  line: "#E2E8F0",
+  ink: "#1E293B",
+  white: "#FFFFFF",
+} as const;
+
+/** Paleta BBR Habitarea — flujo comercializadora / asesor */
+export const bbrBrand = {
+  purple: "#201044",
+  purpleLight: "#35156D",
+  green: "#6CC24A",
+  greenDark: "#5BAD3E",
   cream: "#F2F0E9",
-  creamDark: "#E8E4DA",
-  ink: "#1A2E24",
 } as const;

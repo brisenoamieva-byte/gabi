@@ -11,7 +11,7 @@ import {
   type CotizacionResult,
   type CotizadorEsquema,
 } from "@/lib/cotizador";
-import { clusters, formatPrice } from "@/lib/data";
+import { clusters, formatPrice, type DisponibilidadUnidad } from "@/lib/data";
 
 export type CotizadorPanelProps = {
   desarrolloId: string;
@@ -19,6 +19,8 @@ export type CotizadorPanelProps = {
   clusterId: string;
   prototipoId?: string;
   unidadId?: string;
+  /** Inventario unificado (Supabase con fallback local). */
+  inventarioUnidades?: DisponibilidadUnidad[];
   descuento: number;
   esquema: CotizadorEsquema;
   clienteNombre?: string;
@@ -50,7 +52,7 @@ function MetricCard({
 }) {
   if (variant === "hero") {
     return (
-      <div className="rounded-2xl bg-[#C8A276] px-5 py-6 text-white shadow-lg shadow-[#C8A276]/25">
+      <div className="rounded-2xl bg-[#6CC24A] px-5 py-6 text-white shadow-lg shadow-[#6CC24A]/25">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/75">
           {label}
         </p>
@@ -64,7 +66,7 @@ function MetricCard({
   return (
     <div
       className={`rounded-2xl px-4 py-4 ${
-        variant === "accent" ? "bg-[#1B4332]/5 ring-1 ring-[#1B4332]/8" : "bg-slate-50"
+        variant === "accent" ? "bg-[#201044]/5 ring-1 ring-[#201044]/8" : "bg-slate-50"
       }`}
     >
       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
@@ -73,8 +75,8 @@ function MetricCard({
       <p
         className={`mt-1.5 font-black tabular-nums tracking-tight ${
           variant === "accent"
-            ? "text-xl text-[#1B4332] sm:text-2xl"
-            : "text-lg text-[#1B4332] sm:text-xl"
+            ? "text-xl text-[#201044] sm:text-2xl"
+            : "text-lg text-[#201044] sm:text-xl"
         }`}
       >
         {value}
@@ -100,7 +102,7 @@ function ToggleGroup({
           type="button"
           onClick={() => onChange(option.value)}
           className={`min-h-11 rounded-lg px-3 text-sm font-bold transition sm:text-base ${
-            value === option.value ? "bg-[#1B4332] text-white shadow-sm" : "text-slate-500"
+            value === option.value ? "bg-[#201044] text-white shadow-sm" : "text-slate-500"
           }`}
         >
           {option.label}
@@ -116,6 +118,7 @@ export function CotizadorPanel({
   clusterId,
   prototipoId,
   unidadId,
+  inventarioUnidades,
   descuento,
   esquema,
   clienteNombre,
@@ -139,8 +142,9 @@ export function CotizadorPanel({
         unidadId,
         descuento,
         esquema,
+        inventarioUnidades,
       }),
-    [clusterId, descuento, desarrolloId, esquema, prototipoId, unidadId],
+    [clusterId, descuento, desarrolloId, esquema, inventarioUnidades, prototipoId, unidadId],
   );
 
   const prototipos = useMemo(
@@ -149,8 +153,8 @@ export function CotizadorPanel({
   );
 
   const unidades = useMemo(
-    () => (clusterId ? getUnidadesCotizables(clusterId) : []),
-    [clusterId],
+    () => (clusterId ? getUnidadesCotizables(clusterId, inventarioUnidades) : []),
+    [clusterId, inventarioUnidades],
   );
 
   const unidadesFiltradas = useMemo(
@@ -160,6 +164,9 @@ export function CotizadorPanel({
         : unidades,
     [prototipoId, unidades],
   );
+
+  const sinProductosCotizables =
+    showSelectors && clusterId && prototipos.length === 0 && unidades.length === 0;
 
   const handleCopy = async (result: CotizacionResult) => {
     try {
@@ -244,11 +251,15 @@ export function CotizadorPanel({
       <div className="space-y-6">
         {selectorBlock}
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-          <p className="text-base font-black text-[#1B4332] sm:text-lg">
-            Selecciona un producto para cotizar
+          <p className="text-base font-black text-[#201044] sm:text-lg">
+            {sinProductosCotizables
+              ? "Sin inventario en este cluster"
+              : "Selecciona un producto para cotizar"}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Elige cluster y prototipo, o una unidad del inventario disponible.
+            {sinProductosCotizables
+              ? "No hay prototipos ni unidades disponibles. Revisa el inventario en admin o elige otro cluster."
+              : "Elige cluster y prototipo, o una unidad del inventario disponible."}
           </p>
         </div>
       </div>
@@ -264,7 +275,7 @@ export function CotizadorPanel({
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
               Selección actual
             </p>
-            <p className="mt-1 text-sm font-bold leading-snug text-[#1B4332] sm:text-base">
+            <p className="mt-1 text-sm font-bold leading-snug text-[#201044] sm:text-base">
               {cotizacion.clusterNombre}
               {cotizacion.prototipoNombre ? ` · ${cotizacion.prototipoNombre}` : ""}
               {cotizacion.unidadNombre ? ` · ${cotizacion.unidadNombre}` : ""}
@@ -276,11 +287,11 @@ export function CotizadorPanel({
           </div>
         </div>
       ) : (
-        <div className="rounded-xl bg-[#1B4332]/5 px-4 py-3.5 ring-1 ring-[#1B4332]/8">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C8A276]">
+        <div className="rounded-xl bg-[#201044]/5 px-4 py-3.5 ring-1 ring-[#201044]/8">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6CC24A]">
             Producto seleccionado
           </p>
-          <p className="mt-1 text-base font-black leading-snug text-[#1B4332] sm:text-lg">
+          <p className="mt-1 text-base font-black leading-snug text-[#201044] sm:text-lg">
             {cotizacion.clusterNombre} · {cotizacion.prototipoNombre}
             {cotizacion.unidadNombre ? ` · ${cotizacion.unidadNombre}` : ""}
           </p>
@@ -293,10 +304,10 @@ export function CotizadorPanel({
       <div className="space-y-4">
         {showSelectors ? (
           <div className="border-t border-slate-100 pt-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8A276]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A]">
               Paso 2 · Números
             </p>
-            <h3 className="mt-1 text-base font-black text-[#1B4332] sm:text-lg">
+            <h3 className="mt-1 text-base font-black text-[#201044] sm:text-lg">
               Propuesta comercial
             </h3>
           </div>
@@ -313,8 +324,8 @@ export function CotizadorPanel({
 
         <div className="rounded-2xl bg-slate-50 px-4 py-4 sm:px-5">
           <div className="flex items-center justify-between gap-3">
-            <label className="text-sm font-bold text-[#1B4332] sm:text-base">Descuento</label>
-            <span className="text-lg font-black tabular-nums text-[#C8A276] sm:text-xl">
+            <label className="text-sm font-bold text-[#201044] sm:text-base">Descuento</label>
+            <span className="text-lg font-black tabular-nums text-[#6CC24A] sm:text-xl">
               {formatPrice(cotizacion.descuento)}
             </span>
           </div>
@@ -326,7 +337,7 @@ export function CotizadorPanel({
             value={cotizacion.descuento}
             onChange={(event) => onDescuentoChange?.(Number(event.target.value))}
             disabled={!onDescuentoChange || cotizacion.bonoMaximo === 0}
-            className="mt-3 h-2 w-full cursor-pointer accent-[#C8A276] disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 h-2 w-full cursor-pointer accent-[#6CC24A] disabled:cursor-not-allowed disabled:opacity-40"
           />
           {cotizacion.bonoMaximo === 0 ? (
             <p className="mt-2 text-xs leading-relaxed text-slate-400">
@@ -370,7 +381,7 @@ export function CotizadorPanel({
         <button
           type="button"
           onClick={() => void handleCopy(cotizacion)}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] px-5 text-sm font-bold text-white transition hover:bg-[#245A42] active:scale-[0.99] sm:min-h-14 sm:text-base"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-5 text-sm font-bold text-white transition hover:bg-[#35156D] active:scale-[0.99] sm:min-h-14 sm:text-base"
         >
           {copied ? (
             <>

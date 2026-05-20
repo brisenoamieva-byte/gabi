@@ -142,7 +142,7 @@ export function OfflineStatus() {
         detail: pendingCount
           ? `${pendingCount} prospecto(s) por enviar al CRM`
           : "Puedes seguir usando gabi con datos locales",
-        className: "bg-[#1B4332] text-white",
+        className: "bg-gabi-navy text-white",
       };
     }
 
@@ -151,7 +151,7 @@ export function OfflineStatus() {
         icon: RefreshCcw,
         label: "Sincronizando",
         detail: `${pendingCount} prospecto(s) por enviar al CRM`,
-        className: "bg-[#C8A276] text-white",
+        className: "bg-gabi-teal text-gabi-navy-dark",
       };
     }
 
@@ -160,7 +160,7 @@ export function OfflineStatus() {
         icon: Wifi,
         label: "Con internet",
         detail: `${pendingCount} prospecto(s) por enviar al CRM`,
-        className: "bg-[#C8A276] text-white",
+        className: "bg-gabi-teal text-gabi-navy-dark",
       };
     }
 
@@ -169,7 +169,7 @@ export function OfflineStatus() {
         icon: CheckCircle2,
         label: "Sincronizado",
         detail: "Los prospectos pendientes fueron enviados al CRM",
-        className: "bg-[#22c55e] text-white",
+        className: "bg-gabi-emerald text-white",
       };
     }
 

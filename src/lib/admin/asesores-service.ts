@@ -11,9 +11,14 @@ import {
 import { generatePin } from "@/lib/asesores/pin-utils";
 import { hashPin, verifyPin } from "@/lib/asesores/pin-server";
 import type { AsesorInput, AsesorRecord, AsesorRol, AsesorUpdateInput } from "@/lib/asesores/types";
-import { isGerenteCreatableAsesorRol } from "@/lib/asesores/types";
+import {
+  isAssignableAsesorRol,
+  isLeadershipAsesorRol,
+  normalizeAsesorRol,
+} from "@/lib/asesores/types";
 import {
   applyCoordinadorAdminPolicy,
+  revokeCoordinadorAdminAccess,
   syncCoordinadorAdminAccess,
   type CoordinadorAdminSync,
 } from "@/lib/admin/coordinador-admin-access";
@@ -35,12 +40,32 @@ const toRecord = (row: AsesorRow): AsesorRecord => ({
   id: row.id,
   nombre: row.nombre,
   email: row.email,
-  rol: row.rol,
+  rol: normalizeAsesorRol(row.rol),
   activo: row.activo,
   desarrollosIds: row.desarrollos_ids ?? [],
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
+
+const assertValidEmail = (email: string) => {
+  const normalized = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    throw new Error("El email debe incluir un formato válido (ej. nombre@empresa.com).");
+  }
+  return normalized;
+};
+
+const formatAsesorDbError = (message: string) => {
+  if (message.includes("asesores_rol_check") || message.includes("violates check constraint")) {
+    return "No se pudo guardar el rol. Ejecuta la migración 012 en Supabase (supabase/migrations/012_asesores_roles_gerente.sql) y vuelve a intentar.";
+  }
+
+  if (message.includes("asesores_email_key") || message.includes("duplicate key")) {
+    return "Ese email ya está registrado para otro asesor.";
+  }
+
+  return message;
+};
 
 const assertCanManageAsesor = (profile: AdminProfile, desarrollosIds: string[]) => {
   if (isSuperAdmin(profile)) {
@@ -59,10 +84,8 @@ const assertGerenteCanAssignRol = (profile: AdminProfile, rol: AsesorRol) => {
     return;
   }
 
-  if (profile.rol === "gerente" && !isGerenteCreatableAsesorRol(rol)) {
-    throw new Error(
-      "Como gerente comercial solo puedes crear asesores o coordinadores del desarrollo.",
-    );
+  if (profile.rol === "gerente" && !isAssignableAsesorRol(rol)) {
+    throw new Error("Rol comercial no válido para este desarrollo.");
   }
 };
 
@@ -76,10 +99,8 @@ const normalizeCreateInput = (profile: AdminProfile, input: AsesorInput): Asesor
       throw new Error("Selecciona un solo desarrollo para el nuevo acceso.");
     }
 
-    if (!isGerenteCreatableAsesorRol(input.rol)) {
-      throw new Error(
-        "Como gerente comercial solo puedes crear asesores o coordinadores del desarrollo.",
-      );
+    if (!isAssignableAsesorRol(input.rol)) {
+      throw new Error("Rol comercial no válido para este desarrollo.");
     }
 
     return input;
@@ -256,7 +277,7 @@ export const createAsesor = async (profile: AdminProfile, input: AsesorInput) =>
   const row = {
     id,
     nombre: input.nombre.trim(),
-    email: input.email.trim().toLowerCase(),
+    email: assertValidEmail(input.email),
     pin_hash: hashPin(pin),
     rol: normalized.rol,
     activo: normalized.activo ?? true,
@@ -266,13 +287,13 @@ export const createAsesor = async (profile: AdminProfile, input: AsesorInput) =>
 
   const { data, error } = await supabase.from("asesores").insert(row).select().single();
   if (error) {
-    throw new Error(error.message);
+    throw new Error(formatAsesorDbError(error.message));
   }
 
   const asesor = toRecord(data as AsesorRow);
   let adminSync: CoordinadorAdminSync | undefined;
 
-  if (asesor.rol === "coordinador" && asesor.activo) {
+  if (isLeadershipAsesorRol(asesor.rol) && asesor.activo) {
     adminSync = await syncCoordinadorAdminAccess({
       asesorId: asesor.id,
       nombre: asesor.nombre,
@@ -301,8 +322,8 @@ export const updateAsesor = async (
   }
 
   if (input.syncAdmin) {
-    if (existing.rol !== "coordinador" || !existing.activo) {
-      throw new Error("Solo coordinadores activos pueden sincronizar acceso admin.");
+    if (!isLeadershipAsesorRol(existing.rol) || !existing.activo) {
+      throw new Error("Solo Gerente, Coordinador o Director activos pueden sincronizar acceso admin.");
     }
 
     const adminSync = await syncCoordinadorAdminAccess({
@@ -327,7 +348,7 @@ export const updateAsesor = async (
     patch.nombre = input.nombre.trim();
   }
   if (input.email !== undefined) {
-    patch.email = input.email.trim().toLowerCase();
+    patch.email = assertValidEmail(input.email);
   }
   if (input.rol !== undefined) {
     assertGerenteCanAssignRol(profile, input.rol);
@@ -357,7 +378,7 @@ export const updateAsesor = async (
     .single();
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(formatAsesorDbError(error.message));
   }
 
   const asesor = toRecord({ ...(data as Omit<AsesorRow, "pin_hash">), pin_hash: "" });
@@ -368,6 +389,31 @@ export const updateAsesor = async (
 
 export const deactivateAsesor = async (profile: AdminProfile, id: string) => {
   return updateAsesor(profile, id, { activo: false });
+};
+
+export const deleteAsesor = async (profile: AdminProfile, id: string) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const existing = await getAsesorById(id);
+  if (!existing) {
+    throw new Error("Asesor no encontrado.");
+  }
+
+  assertCanManageAsesor(profile, existing.desarrollosIds);
+
+  if (isLeadershipAsesorRol(existing.rol)) {
+    await revokeCoordinadorAdminAccess(existing.id);
+  }
+
+  const { error } = await supabase.from("asesores").delete().eq("id", id);
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { deleted: true, id, nombre: existing.nombre };
 };
 
 export type DemoSeedResult = {

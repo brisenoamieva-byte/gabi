@@ -123,7 +123,7 @@ export interface Asesor {
   nombre: string
   email: string
   pin: string
-  rol: 'asesor' | 'coordinador' | 'admin' | 'director'
+  rol: 'asesor' | 'gerente' | 'coordinador' | 'director'
   activo: boolean
   desarrollosIds: string[]
 }

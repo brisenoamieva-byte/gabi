@@ -114,7 +114,7 @@ export default function DashboardPage() {
   return (
     <main className="flex min-h-screen flex-col bg-[#F2F0E9] text-[#1e293b]">
       {/* Header compacto — contexto, no protagonista */}
-      <header className="border-b border-[#1B4332]/8 bg-white/90 px-5 py-3 backdrop-blur md:px-10">
+      <header className="border-b border-[#201044]/8 bg-white/90 px-5 py-3 backdrop-blur md:px-10">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             {portal?.logo ? (
@@ -128,7 +128,7 @@ export default function DashboardPage() {
               />
             ) : null}
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-[#1B4332]">
+              <p className="truncate text-sm font-bold text-[#201044]">
                 Hola, {firstName}
               </p>
               <p className="truncate text-xs text-slate-500">{portal?.nombre ?? "Comercial"}</p>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={handleChangeDevelopment}
-              className="inline-flex min-h-10 items-center rounded-xl border border-[#1B4332]/12 bg-white px-3 text-xs font-semibold text-[#1B4332] md:px-4 md:text-sm"
+              className="inline-flex min-h-10 items-center rounded-xl border border-[#201044]/12 bg-white px-3 text-xs font-semibold text-[#201044] md:px-4 md:text-sm"
             >
               Cambiar
             </button>
@@ -146,7 +146,7 @@ export default function DashboardPage() {
               type="button"
               onClick={handleLogout}
               aria-label="Cerrar sesión"
-              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#1B4332] text-white"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#201044] text-white"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -159,7 +159,7 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl border border-[#1B4332]/8 bg-white px-4 py-3 shadow-sm"
+          className="flex items-center gap-3 rounded-2xl border border-[#201044]/8 bg-white px-4 py-3 shadow-sm"
         >
           {desarrollo.logo ? (
             <div className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F2F0E9] p-1.5">
@@ -172,12 +172,12 @@ export default function DashboardPage() {
               />
             </div>
           ) : (
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#1B4332]/6 text-[#1B4332]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
               <Building2 className="h-5 w-5" />
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-black text-[#1B4332]">{desarrollo.nombre}</p>
+            <p className="truncate text-sm font-black text-[#201044]">{desarrollo.nombre}</p>
             <p className="text-xs text-slate-500">
               Desde {formatPrice(desarrollo.precioDesde)} · {desarrollo.ubicacion}
             </p>
@@ -201,26 +201,26 @@ export default function DashboardPage() {
         >
           <Link
             href="/recorrido"
-            className="group relative flex min-h-[9.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] bg-[#6cc24a] p-6 text-[#1B4332] shadow-lg shadow-[#6cc24a]/25 transition active:scale-[0.99] md:min-h-[10.5rem] md:p-8"
+            className="group relative flex min-h-[9.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] bg-[#6cc24a] p-6 text-[#201044] shadow-lg shadow-[#6cc24a]/25 transition active:scale-[0.99] md:min-h-[10.5rem] md:p-8"
           >
             <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/15" />
-            <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-[#1B4332]/5" />
+            <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-[#201044]/5" />
             <div className="relative flex items-start justify-between gap-3">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#1B4332]/12">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#201044]/12">
                 <MapPinned className="h-7 w-7" strokeWidth={2.25} />
               </span>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#1B4332] text-white transition group-hover:scale-105">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#201044] text-white transition group-hover:scale-105">
                 <ArrowRight className="h-5 w-5" />
               </span>
             </div>
             <div className="relative mt-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1B4332]/60">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#201044]/60">
                 Acción principal
               </p>
               <h2 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">
                 Nuevo recorrido
               </h2>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#1B4332]/75 md:text-base">
+              <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#201044]/75 md:text-base">
                 Guía paso a paso con el cliente en showroom o campo.
               </p>
             </div>
@@ -240,16 +240,16 @@ export default function DashboardPage() {
               <Link
                 key={action.title}
                 href={action.href!}
-                className="group flex min-h-[6.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-[#1B4332]/12 hover:shadow-md active:scale-[0.99]"
+                className="group flex min-h-[6.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-[#201044]/12 hover:shadow-md active:scale-[0.99]"
               >
                 <div className="flex items-start justify-between">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1B4332]/6 text-[#1B4332]">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
                     <Icon className="h-5 w-5" />
                   </span>
-                  <ChevronRight className="h-5 w-5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#1B4332]" />
+                  <ChevronRight className="h-5 w-5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#201044]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-[#1B4332]">{action.title}</h3>
+                  <h3 className="text-lg font-black text-[#201044]">{action.title}</h3>
                   <p className="mt-0.5 text-xs text-slate-500">{action.description}</p>
                 </div>
               </Link>
@@ -261,7 +261,7 @@ export default function DashboardPage() {
               Material
             </p>
             <div>
-              <h3 className="text-lg font-black text-[#1B4332]">Brochure</h3>
+              <h3 className="text-lg font-black text-[#201044]">Brochure</h3>
               <p className="mt-0.5 text-xs text-slate-500">PDF oficial del desarrollo</p>
               <DocumentDownloadButton
                 variant="desarrollo"

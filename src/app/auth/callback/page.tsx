@@ -70,7 +70,7 @@ export default function AuthCallbackPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] px-5">
-      <p className="max-w-md text-center text-sm font-semibold text-[#201044]">{message}</p>
+      <p className="max-w-md text-center text-sm font-semibold text-gabi-navy">{message}</p>
     </main>
   );
 }

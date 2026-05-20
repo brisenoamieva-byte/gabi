@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { GabiLogo } from "@/components/brand/GabiLogo";
@@ -19,6 +19,14 @@ export function AdminLoginForm() {
   const configured = isSupabaseConfigured();
   const resetOk = searchParams.get("reset") === "ok";
   const otpExpired = searchParams.get("error") === "otp_expired";
+  const [isProductionHost, setIsProductionHost] = useState(false);
+
+  useEffect(() => {
+    setIsProductionHost(
+      window.location.hostname !== "localhost" &&
+        !window.location.hostname.startsWith("127."),
+    );
+  }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -66,11 +74,21 @@ export function AdminLoginForm() {
       {!configured ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
           <p className="font-bold">Supabase no configurado</p>
-          <p className="mt-2">
-            Agrega las variables en <code className="rounded bg-white px-1">.env.local</code> y
-            ejecuta el SQL en{" "}
-            <code className="rounded bg-white px-1">supabase/migrations/001_admin_foundation.sql</code>
-          </p>
+          {isProductionHost ? (
+            <p className="mt-2">
+              En producción (Vercel), agrega{" "}
+              <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
+              <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> y{" "}
+              <code className="rounded bg-white px-1">SUPABASE_SERVICE_ROLE_KEY</code> en el
+              proyecto de Vercel y vuelve a desplegar.
+            </p>
+          ) : (
+            <p className="mt-2">
+              Agrega las variables en <code className="rounded bg-white px-1">.env.local</code> y
+              ejecuta el SQL en{" "}
+              <code className="rounded bg-white px-1">supabase/migrations/001_admin_foundation.sql</code>
+            </p>
+          )}
         </div>
       ) : (
         <>
@@ -116,6 +134,12 @@ export function AdminLoginForm() {
             {error ? (
               <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
                 {error}
+              </p>
+            ) : null}
+            {configured && isProductionHost ? (
+              <p className="text-xs leading-relaxed text-slate-400">
+                Si el login falla tras un deploy, confirma que las variables de Supabase en Vercel
+                coinciden con tu proyecto y que el usuario existe en Authentication.
               </p>
             ) : null}
             <button

@@ -40,6 +40,8 @@ export type CotizacionInput = {
   unidadId?: string;
   descuento: number;
   esquema: CotizadorEsquema;
+  /** Inventario del cluster (Supabase o fallback local). */
+  inventarioUnidades?: DisponibilidadUnidad[];
 };
 
 export type CotizacionResult = {
@@ -64,10 +66,10 @@ export const resolveCotizacionPricing = (
   clusterId: string,
   prototipoId?: string,
   unidadId?: string,
+  inventarioUnidades?: DisponibilidadUnidad[],
 ) => {
-  const unidad = unidadId
-    ? getDisponibilidadesByCluster(clusterId).find((item) => item.id === unidadId)
-    : undefined;
+  const units = inventarioUnidades ?? getDisponibilidadesByCluster(clusterId);
+  const unidad = unidadId ? units.find((item) => item.id === unidadId) : undefined;
 
   const resolvedPrototipoId = prototipoId || unidad?.prototipoId || "";
   const prototipo = resolvedPrototipoId ? getPrototipoById(resolvedPrototipoId) : undefined;
@@ -87,6 +89,7 @@ export const computeCotizacion = (input: CotizacionInput): CotizacionResult | nu
     input.clusterId,
     input.prototipoId,
     input.unidadId,
+    input.inventarioUnidades,
   );
 
   if (!precioLista || (!prototipo && !unidad)) {
@@ -124,10 +127,13 @@ export const computeCotizacion = (input: CotizacionInput): CotizacionResult | nu
   };
 };
 
-export const getUnidadesCotizables = (clusterId: string): DisponibilidadUnidad[] =>
-  getDisponibilidadesByCluster(clusterId).filter(
-    (unit) => unit.estatus === "disponible" && unit.visitable,
-  );
+export const getUnidadesCotizables = (
+  clusterId: string,
+  inventarioUnidades?: DisponibilidadUnidad[],
+): DisponibilidadUnidad[] => {
+  const units = inventarioUnidades ?? getDisponibilidadesByCluster(clusterId);
+  return units.filter((unit) => unit.estatus === "disponible" && unit.visitable);
+};
 
 export const getPrototiposCotizables = (clusterId: string): Prototipo[] =>
   getPrototiposByCluster(clusterId).filter((item) => item.activo && !item.soldOut);

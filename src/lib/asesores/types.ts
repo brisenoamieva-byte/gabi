@@ -1,4 +1,4 @@
-export type AsesorRol = "asesor" | "coordinador" | "director" | "admin";
+export type AsesorRol = "gerente" | "coordinador" | "director" | "asesor";
 
 export type AsesorRecord = {
   id: string;
@@ -28,7 +28,7 @@ export type AsesorUpdateInput = Partial<Omit<AsesorInput, "nombre" | "email" | "
   rol?: AsesorRol;
   desarrollosIds?: string[];
   regeneratePin?: boolean;
-  /** Re-sincroniza acceso /admin para coordinador activo. */
+  /** Re-sincroniza acceso /admin para roles con permisos amplios. */
   syncAdmin?: boolean;
 };
 
@@ -37,31 +37,42 @@ export type AsesorSession = Pick<
   "id" | "nombre" | "email" | "rol" | "desarrollosIds"
 >;
 
+/** Orden de presentación en selects y formularios. */
+export const ALL_ASESOR_ROLES: AsesorRol[] = ["gerente", "coordinador", "director", "asesor"];
+
+/** Gerente, coordinador y director comparten permisos amplios en el desarrollo + acceso admin. */
+export const LEADERSHIP_ASESOR_ROLES: AsesorRol[] = ["gerente", "coordinador", "director"];
+
 export const asesorRolLabel: Record<AsesorRol, string> = {
-  asesor: "Asesor del desarrollo",
-  coordinador: "Coordinador del desarrollo",
-  director: "Director comercial",
-  admin: "Administrador comercial",
+  gerente: "Gerente",
+  coordinador: "Coordinador",
+  director: "Director",
+  asesor: "Asesor",
 };
 
-/** Roles que un gerente comercial puede dar de alta (solo subordinados). */
-export const GERENTE_CREATABLE_ASESOR_ROLES: AsesorRol[] = ["asesor", "coordinador"];
+export const normalizeAsesorRol = (rol: string): AsesorRol => {
+  if (rol === "admin") {
+    return "gerente";
+  }
 
-export const isGerenteCreatableAsesorRol = (rol: AsesorRol) =>
-  GERENTE_CREATABLE_ASESOR_ROLES.includes(rol);
+  if (ALL_ASESOR_ROLES.includes(rol as AsesorRol)) {
+    return rol as AsesorRol;
+  }
+
+  return "asesor";
+};
+
+export const isLeadershipAsesorRol = (rol: AsesorRol) => LEADERSHIP_ASESOR_ROLES.includes(rol);
+
+export const isAssignableAsesorRol = (rol: AsesorRol) => ALL_ASESOR_ROLES.includes(rol);
 
 export const getEditableAsesorRoles = (
-  isGerenteComercial: boolean,
+  _isGerenteComercial: boolean,
   currentRol?: AsesorRol,
 ): AsesorRol[] => {
-  if (!isGerenteComercial) {
-    return Object.keys(asesorRolLabel) as AsesorRol[];
+  if (currentRol && !ALL_ASESOR_ROLES.includes(currentRol)) {
+    return [normalizeAsesorRol(currentRol), ...ALL_ASESOR_ROLES];
   }
 
-  const options = [...GERENTE_CREATABLE_ASESOR_ROLES];
-  if (currentRol && !options.includes(currentRol)) {
-    return [currentRol, ...options];
-  }
-
-  return options;
+  return ALL_ASESOR_ROLES;
 };

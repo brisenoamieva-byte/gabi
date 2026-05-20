@@ -159,7 +159,7 @@ export default function BbrAdvisorLoginPage() {
   }
 
   return (
-    <main className="grid h-dvh max-h-dvh grid-rows-[auto_1fr_auto] overflow-hidden gabi-surface text-[#201044]">
+    <main className="grid h-dvh max-h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bbr-surface text-bbr-purple">
       <header className="flex shrink-0 flex-col items-center justify-center px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-3">
         <Image
           src="/logos/bbr-habitarea.png"

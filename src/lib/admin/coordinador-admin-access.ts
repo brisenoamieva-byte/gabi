@@ -1,3 +1,4 @@
+import { isLeadershipAsesorRol, normalizeAsesorRol } from "@/lib/asesores/types";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type CoordinadorAdminSync = {
@@ -186,7 +187,7 @@ export const revokeCoordinadorAdminAccess = async (
     adminInviteSent: false,
     adminRevoked: (data ?? []).length > 0,
     adminMessage:
-      (data ?? []).length > 0 ? "Acceso admin desactivado para este coordinador." : undefined,
+      (data ?? []).length > 0 ? "Acceso admin desactivado para este perfil comercial." : undefined,
   };
 };
 
@@ -194,9 +195,11 @@ export const applyCoordinadorAdminPolicy = async (
   previous: { id: string; rol: string; activo: boolean; nombre: string; email: string; desarrollosIds: string[] },
   current: { id: string; rol: string; activo: boolean; nombre: string; email: string; desarrollosIds: string[] },
 ): Promise<CoordinadorAdminSync | undefined> => {
-  const isCoordinador = current.rol === "coordinador" && current.activo;
+  const currentRol = normalizeAsesorRol(current.rol);
+  const previousRol = normalizeAsesorRol(previous.rol);
+  const isLeadership = isLeadershipAsesorRol(currentRol) && current.activo;
 
-  if (isCoordinador) {
+  if (isLeadership) {
     return syncCoordinadorAdminAccess({
       asesorId: current.id,
       nombre: current.nombre,
@@ -206,7 +209,7 @@ export const applyCoordinadorAdminPolicy = async (
     });
   }
 
-  if (previous.rol === "coordinador") {
+  if (isLeadershipAsesorRol(previousRol)) {
     return revokeCoordinadorAdminAccess(previous.id);
   }
 
