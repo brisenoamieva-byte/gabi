@@ -50,6 +50,10 @@ export const authenticateAsesorByPin = async (
     }
   }
 
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
   const fallback = fallbackAsesores.find((item) => {
     if (!item.activo || item.pin !== pin) {
       return false;

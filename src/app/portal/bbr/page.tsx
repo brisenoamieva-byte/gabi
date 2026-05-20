@@ -6,7 +6,6 @@ import { LockKeyhole, LogOut } from "lucide-react";
 import Image from "next/image";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { useRouter } from "next/navigation";
-import { asesores } from "@/lib/data";
 
 const PORTAL_KEY = "gabi_portal";
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
@@ -85,7 +84,18 @@ export default function BbrAdvisorLoginPage() {
             rol: string;
             desarrollosIds: string[];
           };
+          error?: string;
         };
+
+        if (!cancelled && response.status === 429) {
+          setError(data.error ?? "Demasiados intentos. Espera un momento.");
+          controls.start({
+            x: [0, -14, 14, -10, 10, 0],
+            transition: { duration: 0.38 },
+          });
+          timeout = window.setTimeout(() => setPin(""), 450);
+          return;
+        }
 
         if (!cancelled && response.ok && data.asesor) {
           localStorage.setItem("gabi_user", JSON.stringify(data.asesor));
@@ -94,28 +104,10 @@ export default function BbrAdvisorLoginPage() {
           return;
         }
       } catch {
-        // Fallback abajo
+        // Sin fallback en producción: solo API
       }
 
       if (cancelled) {
-        return;
-      }
-
-      const asesor = asesores.find((item) => item.activo && item.pin === pin);
-
-      if (asesor) {
-        localStorage.setItem(
-          "gabi_user",
-          JSON.stringify({
-            id: asesor.id,
-            nombre: asesor.nombre,
-            email: asesor.email,
-            rol: asesor.rol,
-            desarrollosIds: asesor.desarrollosIds,
-          }),
-        );
-        localStorage.removeItem("gabi_desarrollo");
-        router.replace("/desarrollos");
         return;
       }
 

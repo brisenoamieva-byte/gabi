@@ -6,7 +6,7 @@ import { ArrowRight, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
-import { formatPrice, getDesarrollosByAsesor, type Asesor } from "@/lib/data";
+import { formatPrice, getDesarrollosByIds, type Asesor } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
 
@@ -43,7 +43,7 @@ export default function DesarrollosPage() {
   }, [router]);
 
   const desarrollosDisponibles = useMemo(
-    () => (user ? getDesarrollosByAsesor(user.id) : []),
+    () => (user ? getDesarrollosByIds(user.desarrollosIds) : []),
     [user],
   );
 
@@ -128,7 +128,16 @@ export default function DesarrollosPage() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          {desarrollosDisponibles.map((desarrollo, index) => (
+          {desarrollosDisponibles.length === 0 ? (
+            <div className="rounded-[2rem] border border-dashed border-[#1B4332]/20 bg-white p-8 text-center md:col-span-2">
+              <p className="text-lg font-black text-[#1B4332]">Sin desarrollos asignados</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                Tu usuario no tiene proyectos activos. Pide a tu coordinador que revise tu
+                perfil en el panel admin de gabi.
+              </p>
+            </div>
+          ) : (
+            desarrollosDisponibles.map((desarrollo, index) => (
             <motion.button
               key={desarrollo.id}
               type="button"
@@ -203,7 +212,8 @@ export default function DesarrollosPage() {
                 </div>
               </div>
             </motion.button>
-          ))}
+          ))
+          )}
         </div>
       </section>
     </main>

@@ -6,7 +6,6 @@ import { ArrowLeft, LockKeyhole } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { comercializadores } from "@/lib/data";
 
 const PORTAL_KEY = "gabi_portal";
 
@@ -15,6 +14,7 @@ export default function PortalLoginPage() {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -30,38 +30,45 @@ export default function PortalLoginPage() {
     }
   }, [router]);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+    setLoading(true);
 
-    const match = comercializadores.find(
-      (item) =>
-        item.usuario.toLowerCase() === usuario.trim().toLowerCase() &&
-        item.password === password,
-    );
+    try {
+      const response = await fetch("/api/portal/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario, password }),
+      });
 
-    if (!match) {
-      setError("Usuario o contraseña incorrectos.");
-      return;
+      const data = (await response.json()) as {
+        portal?: {
+          id: string;
+          nombre: string;
+          slug: string;
+          logo: string;
+          portalPath: string;
+          colorPrimary: string;
+          colorAccent: string;
+        };
+        error?: string;
+      };
+
+      if (!response.ok || !data.portal) {
+        setError(data.error ?? "Usuario o contraseña incorrectos.");
+        return;
+      }
+
+      localStorage.removeItem("gabi_user");
+      localStorage.removeItem("gabi_desarrollo");
+      localStorage.setItem(PORTAL_KEY, JSON.stringify(data.portal));
+      router.push(data.portal.portalPath);
+    } catch {
+      setError("No se pudo validar el acceso. Revisa tu conexión.");
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.removeItem("gabi_user");
-    localStorage.removeItem("gabi_desarrollo");
-
-    localStorage.setItem(
-      PORTAL_KEY,
-      JSON.stringify({
-        id: match.id,
-        nombre: match.nombre,
-        slug: match.slug,
-        logo: match.logo,
-        portalPath: match.portalPath,
-        colorPrimary: match.colorPrimary,
-        colorAccent: match.colorAccent,
-      }),
-    );
-
-    router.push(match.portalPath);
   };
 
   return (
@@ -126,9 +133,10 @@ export default function PortalLoginPage() {
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-[#1B4332] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#245a42] active:scale-[0.98]"
+              disabled={loading}
+              className="w-full rounded-2xl bg-[#1B4332] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#245a42] active:scale-[0.98] disabled:opacity-60"
             >
-              Entrar al portal
+              {loading ? "Validando..." : "Entrar al portal"}
             </button>
           </form>
         </motion.div>

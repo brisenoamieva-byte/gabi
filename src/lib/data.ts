@@ -797,6 +797,16 @@ export const desarrollos: Desarrollo[] = [
   }
 ]
 
+export const getDesarrollosByIds = (desarrollosIds: string[]): Desarrollo[] => {
+  if (!desarrollosIds.length) {
+    return []
+  }
+
+  return desarrollos.filter(
+    (item) => desarrollosIds.includes(item.id) && item.estado === 'activo',
+  )
+}
+
 export const getDesarrollosByAsesor = (asesorId: string): Desarrollo[] => {
   const asesor = asesores.find(a => a.id === asesorId && a.activo)
 
@@ -804,7 +814,7 @@ export const getDesarrollosByAsesor = (asesorId: string): Desarrollo[] => {
     return []
   }
 
-  return desarrollos.filter(d => asesor.desarrollosIds.includes(d.id) && d.estado === 'activo')
+  return getDesarrollosByIds(asesor.desarrollosIds)
 }
 
 export const tecnicasCierre: TecnicaCierre[] = [
