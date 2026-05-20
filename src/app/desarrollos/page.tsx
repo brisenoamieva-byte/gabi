@@ -6,46 +6,60 @@ import { ArrowRight, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
-import { formatPrice, getDesarrollosByIds, type Asesor } from "@/lib/data";
+import type { DesarrolloRecord } from "@/lib/catalog/types";
+import {
+  readPortalSession,
+  resolveAdvisorEntryPath,
+  type PortalSession,
+} from "@/lib/portal/session";
+import type { Asesor } from "@/lib/data";
+import { formatPrice } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
-
-type PortalSession = {
-  nombre: string;
-  logo: string;
-  colorPrimary: string;
-};
 
 export default function DesarrollosPage() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [portal, setPortal] = useState<PortalSession | null>(null);
+  const [desarrollosDisponibles, setDesarrollosDisponibles] = useState<DesarrolloRecord[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+
+  const portalPath = useMemo(() => resolveAdvisorEntryPath(portal), [portal]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("gabi_user");
+    const session = readPortalSession();
 
-    if (!storedUser) {
-      router.replace("/portal/bbr");
+    if (!storedUser || !session) {
+      router.replace(session ? portalPath : "/portal");
       return;
     }
 
     try {
-      setUser(JSON.parse(storedUser) as SessionUser);
+      const parsedUser = JSON.parse(storedUser) as SessionUser;
+      setUser(parsedUser);
+      setPortal(session);
 
-      const storedPortal = localStorage.getItem("gabi_portal");
-      if (storedPortal) {
-        setPortal(JSON.parse(storedPortal) as PortalSession);
-      }
+      const loadDesarrollos = async () => {
+        setLoadingCatalog(true);
+        try {
+          const ids = parsedUser.desarrollosIds.join(",");
+          const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
+          const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
+          setDesarrollosDisponibles(data.desarrollos ?? []);
+        } catch {
+          setDesarrollosDisponibles([]);
+        } finally {
+          setLoadingCatalog(false);
+        }
+      };
+
+      void loadDesarrollos();
     } catch {
       localStorage.removeItem("gabi_user");
-      router.replace("/portal/bbr");
+      router.replace(portalPath);
     }
-  }, [router]);
-
-  const desarrollosDisponibles = useMemo(
-    () => (user ? getDesarrollosByIds(user.desarrollosIds) : []),
-    [user],
-  );
+  }, [portalPath, router]);
 
   const handleSelect = (desarrolloId: string) => {
     localStorage.setItem("gabi_desarrollo", desarrolloId);
@@ -55,20 +69,26 @@ export default function DesarrollosPage() {
   const handleLogout = () => {
     localStorage.removeItem("gabi_user");
     localStorage.removeItem("gabi_desarrollo");
-    router.replace("/portal/bbr");
+    router.replace(portalPath);
   };
+
+  const accent = portal?.colorAccent ?? "#6cc24a";
+  const primary = portal?.colorPrimary ?? "#201044";
 
   if (!user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-[#201044]">
-        <p className="text-lg font-bold">Cargando desarrollos...</p>
+      <main
+        className="flex min-h-screen items-center justify-center"
+        style={{ backgroundColor: "#F8FAFC", color: primary }}
+      >
+        <p className="text-lg font-semibold">Cargando desarrollos...</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-bbr-cream text-bbr-purple">
-      <header className="border-b border-bbr-purple/10 bg-white px-5 py-4 shadow-sm md:px-10">
+    <main className="min-h-screen bg-[#F8FAFC]" style={{ color: primary }}>
+      <header className="border-b border-black/8 bg-white px-5 py-4 shadow-sm md:px-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-4">
             {portal?.logo ? (
@@ -82,12 +102,10 @@ export default function DesarrollosPage() {
               />
             ) : null}
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-[#6cc24a]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: accent }}>
                 {portal?.nombre ?? "Guía comercial"}
               </p>
-              <h1 className="truncate text-2xl font-black text-[#201044] md:text-3xl">
-                Elige un desarrollo
-              </h1>
+              <h1 className="truncate text-2xl font-bold md:text-3xl">Elige un desarrollo</h1>
               <p className="mt-1 text-sm text-slate-500">
                 Hola, {user.nombre}. Selecciona dónde vas a trabajar hoy.
               </p>
@@ -96,7 +114,7 @@ export default function DesarrollosPage() {
 
           <div className="flex items-center gap-4 sm:shrink-0">
             <div className="hidden flex-col items-end sm:flex">
-              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                 Plataforma
               </p>
               <GabiLogo variant="platform" />
@@ -104,7 +122,8 @@ export default function DesarrollosPage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-bbr-purple px-5 text-sm font-semibold text-white shadow-lg shadow-bbr-purple/20 transition hover:bg-bbr-purple-light active:scale-95 md:min-h-14 md:px-6 md:text-base"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-md transition active:scale-95 md:min-h-14 md:px-6"
+              style={{ backgroundColor: primary }}
             >
               <LogOut className="h-5 w-5" />
               Cerrar sesión
@@ -114,109 +133,74 @@ export default function DesarrollosPage() {
       </header>
 
       <section className="mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
-        <div className="mb-6 rounded-[2rem] bg-white p-6 shadow-xl shadow-[#201044]/10 md:p-8">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-[#6cc24a]">
-            {portal?.nombre ?? "Comercializadora"}
-          </p>
-          <h2 className="mt-2 text-3xl font-black text-[#201044] md:text-5xl">
-            Desarrollos asignados
-          </h2>
-          <p className="mt-3 max-w-2xl text-lg text-slate-500">
+        <div className="mb-6 rounded-2xl bg-white p-6 shadow-sm md:p-8">
+          <h2 className="text-2xl font-bold md:text-4xl">Desarrollos asignados</h2>
+          <p className="mt-3 max-w-2xl text-base text-slate-500">
             Selecciona el desarrollo para iniciar un recorrido guiado con gabi.
-            Materiales, inventario y cotizador se adaptan a cada proyecto.
           </p>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          {desarrollosDisponibles.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-[#201044]/20 bg-white p-8 text-center md:col-span-2">
-              <p className="text-lg font-black text-[#201044]">Sin desarrollos asignados</p>
+          {loadingCatalog ? (
+            <p className="text-sm text-slate-500 md:col-span-2">Cargando catálogo...</p>
+          ) : desarrollosDisponibles.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-black/15 bg-white p-8 text-center md:col-span-2">
+              <p className="text-lg font-bold">Sin desarrollos asignados</p>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                Tu usuario no tiene proyectos activos. Pide a tu coordinador que revise tu
-                perfil en el panel admin de gabi, o escribe a{" "}
-                <a href="mailto:hola@gabi.mx" className="font-semibold text-[#201044] underline-offset-2 hover:underline">
-                  hola@gabi.mx
-                </a>
-                .
+                Tu usuario no tiene proyectos activos. Pide a tu coordinador que revise tu perfil
+                en el panel admin de gabi.
               </p>
             </div>
           ) : (
             desarrollosDisponibles.map((desarrollo, index) => (
-            <motion.button
-              key={desarrollo.id}
-              type="button"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08, duration: 0.35 }}
-              onClick={() => handleSelect(desarrollo.id)}
-              className="group overflow-hidden rounded-[2rem] bg-white text-left shadow-xl shadow-[#201044]/10 ring-4 ring-transparent transition hover:-translate-y-1 hover:ring-[#6cc24a]/50 active:scale-[0.99]"
-            >
-              <div className="relative min-h-56 bg-gradient-to-br from-[#F2F0E9] via-white to-[#f4ead6] p-6 text-[#201044]">
-                <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-[#6CC24A]/20" />
-                {desarrollo.logo ? (
-                  <div className="relative flex min-h-36 items-center justify-center rounded-[1.5rem] border border-[#201044]/10 bg-white p-5 shadow-inner">
-                    <Image
-                      src={desarrollo.logo}
-                      alt={desarrollo.nombre}
-                      width={260}
-                      height={220}
-                      className="h-auto max-h-28 w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <p className="relative text-sm font-black uppercase tracking-[0.25em] text-[#6CC24A]">
-                    {desarrollo.desarrollador}
-                  </p>
-                )}
-                <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <h3 className="text-3xl font-black">{desarrollo.nombre}</h3>
-                    <p className="mt-2 flex items-center gap-2 text-[#201044]/70">
+              <motion.button
+                key={desarrollo.id}
+                type="button"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06, duration: 0.3 }}
+                onClick={() => handleSelect(desarrollo.id)}
+                className="group overflow-hidden rounded-2xl bg-white text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
+              >
+                <div className="relative min-h-52 bg-gradient-to-br from-slate-50 to-white p-6">
+                  {desarrollo.logo ? (
+                    <div className="flex min-h-32 items-center justify-center rounded-xl border border-black/8 bg-white p-4">
+                      <Image
+                        src={desarrollo.logo}
+                        alt={desarrollo.nombre}
+                        width={260}
+                        height={220}
+                        className="h-auto max-h-24 w-full object-contain"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="mt-5">
+                    <h3 className="text-2xl font-bold">{desarrollo.nombre}</h3>
+                    <p className="mt-2 flex items-center gap-2 text-sm opacity-70">
                       <MapPin className="h-4 w-4" />
                       {desarrollo.ubicacion}
                     </p>
                   </div>
-                  {desarrollo.desarrolladorLogo && (
-                    <div className="flex h-12 w-36 items-center rounded-xl bg-[#201044] p-2 shadow-md">
-                      <Image
-                        src={desarrollo.desarrolladorLogo}
-                        alt={desarrollo.desarrollador}
-                        width={170}
-                        height={70}
-                        className="h-auto max-h-8 w-full object-contain"
-                      />
+                </div>
+                <div className="p-6">
+                  <p className="text-sm text-slate-500">{desarrollo.descripcion}</p>
+                  <div className="mt-5 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Desde
+                      </p>
+                      <p className="text-xl font-bold">{formatPrice(desarrollo.precioDesde)}</p>
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="p-6">
-                <p className="text-base text-slate-500">{desarrollo.descripcion}</p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {desarrollo.tiposProducto.map((tipo) => (
                     <span
-                      key={tipo}
-                      className="rounded-full bg-[#201044]/10 px-3 py-1 text-xs font-black uppercase text-[#201044]"
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-xl text-white transition group-hover:translate-x-0.5"
+                      style={{ backgroundColor: accent }}
                     >
-                      {tipo}
+                      <ArrowRight className="h-5 w-5" />
                     </span>
-                  ))}
-                </div>
-                <div className="mt-6 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-                      Desde
-                    </p>
-                    <p className="text-2xl font-black text-[#201044]">
-                      {formatPrice(desarrollo.precioDesde)}
-                    </p>
                   </div>
-                  <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#6cc24a] text-[#201044] transition group-hover:translate-x-1">
-                    <ArrowRight className="h-6 w-6" />
-                  </span>
                 </div>
-              </div>
-            </motion.button>
-          ))
+              </motion.button>
+            ))
           )}
         </div>
       </section>

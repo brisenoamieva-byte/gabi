@@ -747,7 +747,7 @@ export const comercializadores: Comercializador[] = [
     logo: '/logos/bbr-habitarea.png',
     usuario: 'bbr',
     password: 'habitarea',
-    portalPath: '/portal/bbr',
+    portalPath: "/portal/bbr",
     colorPrimary: '#201044',
     colorAccent: '#6cc24a'
   }

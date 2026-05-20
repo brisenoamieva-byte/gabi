@@ -11,6 +11,10 @@ import {
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import { clusters, datosBancarios, desarrollos, type Asesor, type Desarrollo } from "@/lib/data";
+import {
+  readPortalSession,
+  resolveAdvisorEntryPath,
+} from "@/lib/portal/session";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 
 const RECORRIDO_KEY = "gabi_recorrido_actual";
@@ -84,7 +88,8 @@ export default function CotizadorPage() {
 
     if (!storedUser) {
       setSessionStatus("redirecting");
-      router.replace("/portal/bbr");
+      const portal = readPortalSession();
+      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
       return;
     }
 
@@ -134,7 +139,8 @@ export default function CotizadorPage() {
       localStorage.removeItem("gabi_user");
       localStorage.removeItem("gabi_desarrollo");
       setSessionStatus("redirecting");
-      router.replace("/portal/bbr");
+      const portal = readPortalSession();
+      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
     }
   }, [router]);
 
@@ -175,9 +181,10 @@ export default function CotizadorPage() {
   };
 
   const handleLogout = () => {
+    const portal = readPortalSession();
     localStorage.removeItem("gabi_user");
     localStorage.removeItem("gabi_desarrollo");
-    router.replace("/portal/bbr");
+    router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
   };
 
   if (sessionStatus !== "ready" || !user || !desarrollo) {

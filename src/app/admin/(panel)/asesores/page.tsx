@@ -15,6 +15,7 @@ export default async function AdminAsesoresPage() {
       desarrollos={allowedDesarrollos}
       scopeLabel={getAdminScopeLabel(session.profile, desarrolloNames)}
       isGerenteComercial={!isSuperAdmin(session.profile) && session.profile.rol === "gerente"}
+      isSuperAdmin={isSuperAdmin(session.profile)}
     />
   );
 }

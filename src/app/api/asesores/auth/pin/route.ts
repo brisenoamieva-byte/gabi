@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { getDesarrolloIdsForComercializadora } from "@/lib/catalog/service";
 import { authenticateAsesorByPin } from "@/lib/asesores/auth";
-import { getDesarrolloIdsForComercializador } from "@/lib/asesores/comercializadora";
 import { isValidPin } from "@/lib/asesores/pin-server";
 import { checkRateLimit, getRequestClientKey } from "@/lib/rate-limit";
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const portal = body.portal?.trim().toLowerCase() ?? "bbr";
-    const desarrolloIds = getDesarrolloIdsForComercializador(portal);
+    const desarrolloIds = await getDesarrolloIdsForComercializadora(portal);
 
     const result = await authenticateAsesorByPin(pin, { desarrolloIds });
     if (!result) {

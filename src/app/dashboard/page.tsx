@@ -17,7 +17,11 @@ import { useRouter } from "next/navigation";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
 import { PrepareOfflineVisitButton } from "@/components/PrepareOfflineVisitButton";
-import { desarrollos, formatPrice, type Asesor, type Desarrollo } from "@/lib/data";
+import {
+  readPortalSession,
+  resolveAdvisorEntryPath,
+} from "@/lib/portal/session";
+import { formatPrice, type Asesor, type Desarrollo } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
 
@@ -50,11 +54,12 @@ export default function DashboardPage() {
   const [portal, setPortal] = useState<PortalSession | null>(null);
 
   useEffect(() => {
+    const portal = readPortalSession();
     const storedUser = localStorage.getItem("gabi_user");
     const storedDevelopment = localStorage.getItem("gabi_desarrollo");
 
     if (!storedUser) {
-      router.replace("/portal/bbr");
+      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
       return;
     }
 
@@ -63,39 +68,49 @@ export default function DashboardPage() {
       return;
     }
 
-    try {
-      const parsedUser = JSON.parse(storedUser) as SessionUser;
-      const selectedDevelopment = desarrollos.find(
-        (item) =>
-          item.id === storedDevelopment &&
-          parsedUser.desarrollosIds.includes(item.id) &&
-          item.estado === "activo",
-      );
+    const loadSession = async () => {
+      try {
+        const parsedUser = JSON.parse(storedUser) as SessionUser;
 
-      if (!selectedDevelopment) {
+        if (!parsedUser.desarrollosIds.includes(storedDevelopment)) {
+          localStorage.removeItem("gabi_desarrollo");
+          router.replace("/desarrollos");
+          return;
+        }
+
+        const response = await fetch(
+          `/api/catalog/desarrollos?ids=${encodeURIComponent(storedDevelopment)}`,
+        );
+        const data = (await response.json()) as { desarrollos?: Desarrollo[] };
+        const selectedDevelopment = data.desarrollos?.[0];
+
+        if (!selectedDevelopment) {
+          localStorage.removeItem("gabi_desarrollo");
+          router.replace("/desarrollos");
+          return;
+        }
+
+        if (portal) {
+          setPortal(portal);
+        }
+
+        setUser(parsedUser);
+        setDesarrollo(selectedDevelopment);
+      } catch {
+        localStorage.removeItem("gabi_user");
         localStorage.removeItem("gabi_desarrollo");
-        router.replace("/desarrollos");
-        return;
+        router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
       }
+    };
 
-      const storedPortal = localStorage.getItem("gabi_portal");
-      if (storedPortal) {
-        setPortal(JSON.parse(storedPortal) as PortalSession);
-      }
-
-      setUser(parsedUser);
-      setDesarrollo(selectedDevelopment);
-    } catch {
-      localStorage.removeItem("gabi_user");
-      localStorage.removeItem("gabi_desarrollo");
-      router.replace("/portal/bbr");
-    }
+    void loadSession();
   }, [router]);
 
   const handleLogout = () => {
+    const portal = readPortalSession();
     localStorage.removeItem("gabi_user");
     localStorage.removeItem("gabi_desarrollo");
-    router.replace("/portal/bbr");
+    router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
   };
 
   const handleChangeDevelopment = () => {

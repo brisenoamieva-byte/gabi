@@ -16,6 +16,7 @@ type AsesoresAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
   isGerenteComercial?: boolean;
+  isSuperAdmin?: boolean;
 };
 
 const emptyForm = {
@@ -41,11 +42,13 @@ export function AsesoresAdminPanel({
   desarrollos,
   scopeLabel,
   isGerenteComercial = false,
+  isSuperAdmin = false,
 }: AsesoresAdminPanelProps) {
   const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
   const [asesores, setAsesores] = useState<AsesorRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [catalogSeeding, setCatalogSeeding] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -146,6 +149,37 @@ export function AsesoresAdminPanel({
     setShowForm(true);
     setSuccess("");
     setError("");
+  };
+
+  const handleImportCatalog = async () => {
+    setCatalogSeeding(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("/api/admin/catalog/seed", { method: "POST" });
+      const data = (await response.json()) as {
+        comercializadoras?: number;
+        desarrollos?: number;
+        clusters?: number;
+        prototipos?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo importar el catálogo.");
+      }
+
+      setSuccess(
+        `Catálogo importado: ${data.comercializadoras ?? 0} comercializadora(s), ` +
+          `${data.desarrollos ?? 0} desarrollo(s), ${data.clusters ?? 0} cluster(s), ` +
+          `${data.prototipos ?? 0} prototipo(s).`,
+      );
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "Error al importar catálogo");
+    } finally {
+      setCatalogSeeding(false);
+    }
   };
 
   const handleImportDemo = async () => {
@@ -516,6 +550,32 @@ export function AsesoresAdminPanel({
 
   return (
     <div className="space-y-6">
+      {isSuperAdmin ? (
+        <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
+            Catálogo multi-tenant
+          </p>
+          <h2 className="mt-2 text-xl font-black text-[#13315C]">Importar catálogo piloto</h2>
+          <p className="mt-2 max-w-3xl text-sm text-slate-500">
+            Carga comercializadoras, desarrollos, clusters y prototipos desde el seed BBR / La Vista.
+            Ejecuta esto una vez después de aplicar la migración 013 en Supabase.
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleImportCatalog()}
+            disabled={catalogSeeding}
+            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#13315C] px-4 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            {catalogSeeding ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Importar catálogo
+          </button>
+        </div>
+      ) : null}
+
       {desarrollos.length === 0 ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
           No tienes desarrollos asignados. Pide al administrador gabi que configure tu perfil.
@@ -538,13 +598,14 @@ export function AsesoresAdminPanel({
               Crea accesos comerciales para tu desarrollo.{" "}
               <strong>Gerente</strong>, <strong>Coordinador</strong> y <strong>Director</strong>{" "}
               tienen permisos amplios en el desarrollo y pueden entrar a{" "}
-              <strong>/admin</strong> además del PIN en <strong>/portal/bbr</strong>.
+              <strong>/admin</strong> además del PIN en el portal de su comercializadora (ej.{" "}
+              <strong>/portal/bbr</strong>).
             </>
           ) : (
             <>
               Crea accesos comerciales, asigna desarrollos y roles. El PIN de 4 dígitos se genera
-              automáticamente por comercializadora. Compártelo por canal seguro para entrar en{" "}
-              <strong>/portal/bbr</strong>.
+              automáticamente por comercializadora. Compártelo por canal seguro para entrar en el
+              portal correspondiente (ej. <strong>/portal/bbr</strong>).
             </>
           )}
         </p>

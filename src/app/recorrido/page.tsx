@@ -47,9 +47,9 @@ import {
   formatPrice,
   getDisponibilidadesByCluster,
   getPrototipoById,
-  getPrototiposByCluster,
   grupoVinte,
   laVistaOverview,
+  prototipos as catalogPrototipos,
   tecnicaDosMinutos,
   tecnicasCierre,
   zonaLaVista,
@@ -63,6 +63,11 @@ import {
   leadRegistrationMessage,
   shouldQueueLeadForCrm,
 } from "@/lib/crm/sync-policy";
+import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
+import {
+  readPortalSession,
+  resolveAdvisorEntryPath,
+} from "@/lib/portal/session";
 
 type ProductoFiltro = "casa" | "departamento" | "terreno";
 type ProductoSeleccion = "todos" | ProductoFiltro;
@@ -100,18 +105,18 @@ const CLIENTES_KEY = "gabi_clientes";
 const LEADS_KEY = "gabi_leads";
 const CRM_PENDING_KEY = "gabi_crm_pending";
 
-const etapas = ["Confianza", "Necesidades", "Desarrollo", "Producto", "Cierre"];
-const RECORRIDO_VERSION = 2;
-const LEGACY_ETAPA_COUNT = 4;
-
-const migrateLegacyEtapa = (etapa: number, parsed: Partial<RecorridoState>) => {
+const migrateLegacyEtapa = (
+  etapa: number,
+  parsed: Partial<RecorridoState>,
+  stageCount = DEFAULT_RECORRIDO_ETAPAS.length,
+) => {
   if (parsed.recorridoVersion === RECORRIDO_VERSION) {
-    return Math.min(Math.max(etapa, 0), etapas.length - 1);
+    return Math.min(Math.max(etapa, 0), stageCount - 1);
   }
 
   if (etapa >= 2) {
     if (etapa === LEGACY_ETAPA_COUNT - 1) {
-      return etapas.length - 1;
+      return stageCount - 1;
     }
 
     if (parsed.clusterId || parsed.prototipoId) {
@@ -123,6 +128,9 @@ const migrateLegacyEtapa = (etapa: number, parsed: Partial<RecorridoState>) => {
 
   return etapa;
 };
+const RECORRIDO_VERSION = 2;
+const LEGACY_ETAPA_COUNT = 4;
+
 const confianzaItems = [
   {
     title: "Saludar, sonreír, presentarse",
@@ -387,6 +395,11 @@ export default function RecorridoPage() {
     "idle" | "success" | "error"
   >("idle");
   const [isRegisteringLead, setIsRegisteringLead] = useState(false);
+  const [recorridoEtapas, setRecorridoEtapas] = useState<string[]>([
+    ...DEFAULT_RECORRIDO_ETAPAS,
+  ]);
+  const [activeClusters, setActiveClusters] = useState<Cluster[]>(clusters);
+  const [activePrototipos, setActivePrototipos] = useState<Prototipo[]>(catalogPrototipos);
   const selectedProductTypes = useMemo(
     () => normalizeProductoTipo(state.productoTipo),
     [state.productoTipo],
@@ -402,8 +415,10 @@ export default function RecorridoPage() {
 
   const filteredPrototiposByCluster = useMemo(() => {
     const byCluster = new Map<string, Prototipo[]>();
-    clusters.forEach((cluster) => {
-      const matches = getPrototiposByCluster(cluster.id).filter((prototipo) => {
+    activeClusters.forEach((cluster) => {
+      const matches = activePrototipos
+        .filter((item) => item.clusterId === cluster.id)
+        .filter((prototipo) => {
         const productType = getProductoTipo(cluster, prototipo);
         const matchesType = matchesProductoTipo(productType, selectedProductTypes);
         const matchesPrice =
@@ -426,11 +441,13 @@ export default function RecorridoPage() {
     state.precioMinimo,
     selectedProductTypes,
     selectedRooms,
+    activeClusters,
+    activePrototipos,
   ]);
 
   const filteredClusters = useMemo(
     () =>
-      clusters.filter((cluster) => {
+      activeClusters.filter((cluster) => {
         const productMatches = filteredPrototiposByCluster.get(cluster.id)?.length;
         const terrainMatches =
           (selectedProductTypes.includes("todos") ||
@@ -448,18 +465,19 @@ export default function RecorridoPage() {
       state.precioMinimo,
       selectedProductTypes,
       selectedRooms,
+      activeClusters,
     ],
   );
 
-  const selectedCluster = clusters.find((cluster) => cluster.id === state.clusterId);
-  const prototipos = state.clusterId
+  const selectedCluster = activeClusters.find((cluster) => cluster.id === state.clusterId);
+  const clusterPrototipos = state.clusterId
     ? filteredPrototiposByCluster.get(state.clusterId) ?? []
     : [];
-  const selectedPrototipo = prototipos.find(
+  const selectedPrototipo = clusterPrototipos.find(
     (prototipo) => prototipo.id === state.prototipoId,
   );
   const availabilityCluster =
-    clusters.find((cluster) => cluster.id === availabilityClusterId) ?? selectedCluster;
+    activeClusters.find((cluster) => cluster.id === availabilityClusterId) ?? selectedCluster;
   useEffect(() => {
     if (!availabilityCluster || !activeDesarrollo) {
       setRemoteAvailabilityUnits(null);
@@ -627,8 +645,9 @@ export default function RecorridoPage() {
   }, [state.cliente.familia, state.cliente.objetivo, state.cliente.presupuesto]);
 
   useEffect(() => {
+    const portal = readPortalSession();
     if (!localStorage.getItem("gabi_user")) {
-      router.replace("/portal/bbr");
+      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
       return;
     }
 
@@ -638,8 +657,40 @@ export default function RecorridoPage() {
     }
 
     const desarrolloId = localStorage.getItem("gabi_desarrollo") ?? "";
-    const selectedDevelopment = desarrollos.find((item) => item.id === desarrolloId) ?? null;
-    setActiveDesarrollo(selectedDevelopment);
+
+    const loadCatalog = async () => {
+      try {
+        const response = await fetch(
+          `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+        );
+        const data = (await response.json()) as {
+          desarrollo?: Desarrollo;
+          clusters?: Cluster[];
+          prototipos?: Prototipo[];
+          recorridoEtapas?: string[];
+        };
+
+        if (data.desarrollo) {
+          setActiveDesarrollo(data.desarrollo);
+        } else {
+          setActiveDesarrollo(desarrollos.find((item) => item.id === desarrolloId) ?? null);
+        }
+
+        if (data.recorridoEtapas?.length) {
+          setRecorridoEtapas(data.recorridoEtapas);
+        }
+        if (data.clusters?.length) {
+          setActiveClusters(data.clusters);
+        }
+        if (data.prototipos?.length) {
+          setActivePrototipos(data.prototipos);
+        }
+      } catch {
+        setActiveDesarrollo(desarrollos.find((item) => item.id === desarrolloId) ?? null);
+      }
+    };
+
+    void loadCatalog();
 
     const saved = localStorage.getItem(STORAGE_KEY);
 
@@ -687,7 +738,7 @@ export default function RecorridoPage() {
 
   const goToStep = (step: number) => {
     setDirection(step > state.etapa ? 1 : -1);
-    patchState({ etapa: Math.min(Math.max(step, 0), etapas.length - 1) });
+    patchState({ etapa: Math.min(Math.max(step, 0), recorridoEtapas.length - 1) });
   };
 
   const registerLeadBeforeNeeds = async () => {
@@ -883,7 +934,7 @@ export default function RecorridoPage() {
   };
 
   const handlePrototipoSelect = (prototipoId: string) => {
-    const prototipo = prototipos.find((item) => item.id === prototipoId);
+    const prototipo = clusterPrototipos.find((item) => item.id === prototipoId);
     patchState({
       prototipoId,
       descuento: prototipo ? Math.min(state.descuento, prototipo.bonoMaximo) : 0,
@@ -944,7 +995,7 @@ export default function RecorridoPage() {
       status: "recorrido-completado",
       fechaRegistro: new Date().toISOString(),
       notas: state.cliente.notas,
-      etapaRecorrido: etapas.length,
+      etapaRecorrido: recorridoEtapas.length,
       recorrido: state,
       precioFinal,
     };
@@ -954,7 +1005,7 @@ export default function RecorridoPage() {
     router.replace("/dashboard");
   };
 
-  const progress = ((state.etapa + 1) / etapas.length) * 100;
+  const progress = ((state.etapa + 1) / recorridoEtapas.length) * 100;
 
   if (!loaded) {
     return (
@@ -1017,7 +1068,7 @@ export default function RecorridoPage() {
           </div>
 
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {etapas.map((label, index) => (
+            {recorridoEtapas.map((label, index) => (
               <button
                 key={label}
                 type="button"
@@ -1672,9 +1723,9 @@ export default function RecorridoPage() {
                   {selectedCluster && (
                     <>
                       <SectionTitle title={`Prototipos en ${selectedCluster.nombre}`} />
-                      {prototipos.length ? (
+                      {clusterPrototipos.length ? (
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                          {prototipos.map((prototipo) => (
+                          {clusterPrototipos.map((prototipo) => (
                             <button
                               key={prototipo.id}
                               type="button"
@@ -1950,7 +2001,7 @@ export default function RecorridoPage() {
           <button
             type="button"
             onClick={handleNextStep}
-            disabled={state.etapa === etapas.length - 1 || isRegisteringLead}
+            disabled={state.etapa === recorridoEtapas.length - 1 || isRegisteringLead}
             className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-[#201044] px-6 text-base font-black text-white shadow-lg transition disabled:opacity-40"
           >
             {isRegisteringLead ? "Validando..." : "Siguiente"}

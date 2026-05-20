@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getDemoBookingUrl } from "@/lib/site/demo-booking";
 
 type ScheduleDemoButtonProps = {
-  variant?: "primary" | "outline" | "header" | "footer" | "link";
+  variant?: "hero" | "nav" | "footer" | "link";
   className?: string;
   showIcon?: boolean;
   label?: string;
@@ -13,22 +13,19 @@ type ScheduleDemoButtonProps = {
 };
 
 const variantClasses: Record<NonNullable<ScheduleDemoButtonProps["variant"]>, string> = {
-  primary:
-    "inline-flex items-center justify-center gap-2 rounded-full border border-[#2DD4BF]/40 bg-[#2DD4BF]/10 px-6 py-4 text-base font-bold text-[#13315C] transition hover:bg-[#2DD4BF]/20",
-  outline:
-    "inline-flex items-center justify-center gap-2 rounded-full border border-[#13315C]/15 bg-white px-4 py-2.5 text-sm font-bold text-[#13315C] transition hover:bg-[#F1F5F9]",
-  header:
-    "hidden rounded-full border border-[#13315C]/15 bg-white px-4 py-2.5 text-sm font-bold text-[#13315C] transition hover:bg-[#F1F5F9] sm:inline-flex items-center gap-2",
+  hero:
+    "inline-flex items-center justify-center gap-2 rounded-lg bg-gabi-navy px-5 py-3 text-sm font-semibold text-white transition hover:bg-gabi-navy-light active:scale-[0.99]",
+  nav: "hidden text-sm font-medium text-gabi-navy/60 transition hover:text-gabi-navy sm:inline-flex",
   footer:
-    "inline-flex items-center gap-2 rounded-full bg-gabi-teal px-7 py-4 text-base font-black text-gabi-navy shadow-lg transition hover:bg-gabi-teal/85 active:scale-[0.98]",
-  link: "font-bold text-[#2DD4BF] underline-offset-2 hover:underline",
+    "inline-flex items-center gap-2 rounded-lg bg-gabi-navy px-5 py-3 text-sm font-semibold text-white transition hover:bg-gabi-navy-light",
+  link: "font-medium text-gabi-teal underline-offset-2 hover:underline",
 };
 
 export function ScheduleDemoButton({
-  variant = "primary",
+  variant = "hero",
   className = "",
-  showIcon = true,
-  label = "Agendar una demo",
+  showIcon = false,
+  label = "Agendar demo",
   scrollToEmbed = false,
 }: ScheduleDemoButtonProps) {
   const bookingUrl = getDemoBookingUrl();
@@ -52,12 +49,7 @@ export function ScheduleDemoButton({
   }
 
   return (
-    <Link
-      href={bookingUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={classes}
-    >
+    <Link href={bookingUrl} target="_blank" rel="noopener noreferrer" className={classes}>
       {showIcon ? <CalendarDays className="h-4 w-4 shrink-0" /> : null}
       {label}
     </Link>

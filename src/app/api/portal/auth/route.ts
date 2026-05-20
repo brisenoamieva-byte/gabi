@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Usuario y contraseña requeridos." }, { status: 400 });
     }
 
-    const match = authenticateComercializador(usuario, password);
+    const match = await authenticateComercializador(usuario, password);
     if (!match) {
       return NextResponse.json(
         { error: "Usuario o contraseña incorrectos." },

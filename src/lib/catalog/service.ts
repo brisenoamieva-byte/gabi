@@ -1,0 +1,307 @@
+import {
+  clusters as fallbackClusters,
+  comercializadores as fallbackComercializadores,
+  desarrollos as fallbackDesarrollos,
+  prototipos as fallbackPrototipos,
+  type Cluster,
+  type Desarrollo,
+  type Prototipo,
+} from "@/lib/data";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_RECORRIDO_ETAPAS,
+  type ClusterRecord,
+  type ComercializadoraRecord,
+  type DesarrolloRecord,
+  type PrototipoRecord,
+} from "@/lib/catalog/types";
+
+const LA_VISTA_ID = "la-vista-residencial";
+
+const toComercializadora = (row: {
+  id: string;
+  slug: string;
+  nombre: string;
+  logo: string | null;
+  usuario: string;
+  color_primary: string;
+  color_accent: string;
+}): ComercializadoraRecord => ({
+  id: row.id,
+  slug: row.slug,
+  nombre: row.nombre,
+  logo: row.logo,
+  usuario: row.usuario,
+  colorPrimary: row.color_primary,
+  colorAccent: row.color_accent,
+  portalPath: `/portal/${row.slug}`,
+});
+
+const toDesarrollo = (row: {
+  id: string;
+  comercializadora_id: string;
+  nombre: string;
+  slug: string;
+  desarrollador: string | null;
+  ubicacion: string | null;
+  descripcion: string | null;
+  precio_desde: number | null;
+  tipos_producto: string[] | null;
+  estado: Desarrollo["estado"];
+  logo: string | null;
+  desarrollador_logo: string | null;
+  color_principal: string | null;
+  color_acento: string | null;
+  brochure_pdf: string | null;
+  crm: Desarrollo["crm"] | null;
+  recorrido_etapas: string[] | null;
+  recorrido_version: number | null;
+}): DesarrolloRecord => ({
+  id: row.id,
+  comercializadoraId: row.comercializadora_id,
+  nombre: row.nombre,
+  slug: row.slug,
+  desarrollador: row.desarrollador ?? "",
+  comercializador: row.comercializadora_id,
+  ubicacion: row.ubicacion ?? "",
+  descripcion: row.descripcion ?? "",
+  precioDesde: Number(row.precio_desde ?? 0),
+  tiposProducto: (row.tipos_producto ?? []) as Desarrollo["tiposProducto"],
+  estado: row.estado,
+  logo: row.logo ?? undefined,
+  desarrolladorLogo: row.desarrollador_logo ?? undefined,
+  colorPrincipal: row.color_principal ?? "#13315C",
+  colorAcento: row.color_acento ?? "#2DD4BF",
+  brochurePdf: row.brochure_pdf ?? undefined,
+  crm: row.crm ?? { provider: "none", enabled: false },
+  recorridoEtapas: row.recorrido_etapas?.length
+    ? row.recorrido_etapas
+    : [...DEFAULT_RECORRIDO_ETAPAS],
+  recorridoVersion: row.recorrido_version ?? 2,
+});
+
+const fallbackComercializadora = (slug: string): ComercializadoraRecord | null => {
+  const match = fallbackComercializadores.find((item) => item.slug === slug);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    id: match.id,
+    slug: match.slug,
+    nombre: match.nombre,
+    logo: match.logo,
+    usuario: match.usuario,
+    colorPrimary: match.colorPrimary,
+    colorAccent: match.colorAccent,
+    portalPath: match.portalPath.startsWith("/portal/")
+      ? match.portalPath
+      : `/portal/${match.slug}`,
+  };
+};
+
+const fallbackDesarrolloRecords = (): DesarrolloRecord[] =>
+  fallbackDesarrollos.map((item) => ({
+    ...item,
+    comercializadoraId: "bbr",
+    recorridoEtapas: [...DEFAULT_RECORRIDO_ETAPAS],
+    recorridoVersion: 2,
+  }));
+
+export const getComercializadoraBySlug = async (
+  slug: string,
+): Promise<ComercializadoraRecord | null> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return fallbackComercializadora(slug);
+  }
+
+  const { data, error } = await supabase
+    .from("comercializadoras")
+    .select("id, slug, nombre, logo, usuario, color_primary, color_accent")
+    .eq("slug", slug)
+    .eq("activo", true)
+    .maybeSingle();
+
+  if (error || !data) {
+    return fallbackComercializadora(slug);
+  }
+
+  return toComercializadora(data);
+};
+
+export const getComercializadoraByUsuario = async (
+  usuario: string,
+): Promise<ComercializadoraRecord | null> => {
+  const normalized = usuario.trim().toLowerCase();
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    const match = fallbackComercializadores.find(
+      (item) => item.usuario.toLowerCase() === normalized,
+    );
+    return match ? fallbackComercializadora(match.slug) : null;
+  }
+
+  const { data, error } = await supabase
+    .from("comercializadoras")
+    .select("id, slug, nombre, logo, usuario, color_primary, color_accent")
+    .eq("usuario", normalized)
+    .eq("activo", true)
+    .maybeSingle();
+
+  if (error || !data) {
+    const match = fallbackComercializadores.find(
+      (item) => item.usuario.toLowerCase() === normalized,
+    );
+    return match ? fallbackComercializadora(match.slug) : null;
+  }
+
+  return toComercializadora(data);
+};
+
+export const getDesarrolloIdsForComercializadora = async (
+  comercializadoraId: string,
+): Promise<string[]> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    return fallbackDesarrollos
+      .filter((item) => item.comercializador === "BBR Habitarea" || comercializadoraId === "bbr")
+      .map((item) => item.id);
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("id")
+    .eq("comercializadora_id", comercializadoraId)
+    .eq("activo", true)
+    .eq("estado", "activo");
+
+  if (error || !data?.length) {
+    return fallbackDesarrollos
+      .filter(
+        (item) =>
+          item.comercializador === "BBR Habitarea" || comercializadoraId === "bbr",
+      )
+      .map((item) => item.id);
+  }
+
+  return data.map((row) => row.id);
+};
+
+export const getDesarrollosByIds = async (ids: string[]): Promise<DesarrolloRecord[]> => {
+  if (!ids.length) {
+    return [];
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return fallbackDesarrolloRecords().filter((item) => ids.includes(item.id));
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("*")
+    .in("id", ids)
+    .eq("activo", true)
+    .eq("estado", "activo");
+
+  if (error || !data?.length) {
+    return fallbackDesarrolloRecords().filter((item) => ids.includes(item.id));
+  }
+
+  return data.map(toDesarrollo);
+};
+
+export const getDesarrolloById = async (id: string): Promise<DesarrolloRecord | null> => {
+  const results = await getDesarrollosByIds([id]);
+  return results[0] ?? null;
+};
+
+export const getClustersForDesarrollo = async (desarrolloId: string): Promise<ClusterRecord[]> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    return fallbackClusters
+      .filter(() => desarrolloId === LA_VISTA_ID)
+      .map((cluster) => ({ ...cluster, desarrolloId }));
+  }
+
+  const { data, error } = await supabase
+    .from("clusters_catalog")
+    .select("id, desarrollo_id, payload")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("activo", true)
+    .order("orden", { ascending: true });
+
+  if (error || !data?.length) {
+    return fallbackClusters
+      .filter(() => desarrolloId === LA_VISTA_ID)
+      .map((cluster) => ({ ...cluster, desarrolloId }));
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    desarrolloId: row.desarrollo_id,
+    ...(row.payload as Omit<Cluster, "id">),
+  }));
+};
+
+export const getPrototiposForDesarrollo = async (
+  desarrolloId: string,
+): Promise<PrototipoRecord[]> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    return fallbackPrototipos
+      .filter((item) => {
+        const cluster = fallbackClusters.find((c) => c.id === item.clusterId);
+        return Boolean(cluster) && desarrolloId === LA_VISTA_ID;
+      })
+      .map((prototipo) => ({ ...prototipo, desarrolloId }));
+  }
+
+  const { data, error } = await supabase
+    .from("prototipos_catalog")
+    .select("id, desarrollo_id, cluster_id, payload")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("activo", true);
+
+  if (error || !data?.length) {
+    return fallbackPrototipos
+      .filter(() => desarrolloId === LA_VISTA_ID)
+      .map((prototipo) => ({ ...prototipo, desarrolloId }));
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    clusterId: row.cluster_id,
+    desarrolloId: row.desarrollo_id,
+    ...(row.payload as Omit<Prototipo, "id" | "clusterId">),
+  }));
+};
+
+export const getPrototiposByCluster = async (
+  desarrolloId: string,
+  clusterId: string,
+): Promise<PrototipoRecord[]> => {
+  const all = await getPrototiposForDesarrollo(desarrolloId);
+  return all.filter((item) => item.clusterId === clusterId && item.activo);
+};
+
+export const getClusterById = async (
+  desarrolloId: string,
+  clusterId: string,
+): Promise<ClusterRecord | null> => {
+  const clusters = await getClustersForDesarrollo(desarrolloId);
+  return clusters.find((item) => item.id === clusterId) ?? null;
+};
+
+export const getPrototipoById = async (
+  desarrolloId: string,
+  prototipoId: string,
+): Promise<PrototipoRecord | null> => {
+  const prototipos = await getPrototiposForDesarrollo(desarrolloId);
+  return prototipos.find((item) => item.id === prototipoId) ?? null;
+};

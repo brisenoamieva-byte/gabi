@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays } from "lucide-react";
 import {
   getDemoBookingEmbedUrl,
   getDemoBookingUrl,
@@ -24,59 +23,48 @@ export function DemoBookingEmbed() {
   }, [bookingUrl]);
 
   return (
-    <section
-      id="agendar-demo"
-      className="border-t border-[#13315C]/8 bg-[#F8FAFC] px-5 py-20 md:px-8 md:py-24"
-    >
-      <div className="mx-auto max-w-4xl">
-        <div className="text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#2DD4BF]">
-            Demo en vivo
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-[#13315C] md:text-4xl">
-            Agenda una presentación con nuestro equipo
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-[#13315C]/65">
-            Te mostramos gabi en acción: recorrido guiado, captura de prospectos y handoff al CRM.
-            Elige el horario que mejor te funcione.
+    <section id="agendar-demo" className="border-t border-gabi-line px-5 py-16 md:px-8 md:py-20">
+      <div className="mx-auto max-w-3xl">
+        <div className="max-w-lg">
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Agenda una demo</h2>
+          <p className="mt-2 text-base leading-relaxed text-gabi-navy/60">
+            30 minutos para ver el flujo con un desarrollo real. Elige el horario que te quede
+            bien.
           </p>
         </div>
 
         {embedUrl ? (
-          <div className="mt-10 overflow-hidden rounded-[1.75rem] border border-[#13315C]/10 bg-white shadow-lg shadow-[#13315C]/5">
+          <div className="mt-8 overflow-hidden rounded-xl border border-gabi-navy/10 bg-white">
             <iframe
               title="Agendar demo de gabi"
               src={embedUrl}
-              className="min-h-[680px] w-full border-0"
+              className="min-h-[640px] w-full border-0"
               loading="lazy"
               allow="payment"
             />
           </div>
         ) : (
-          <div className="mt-10 rounded-[1.75rem] border border-[#13315C]/10 bg-white p-8 text-center shadow-lg shadow-[#13315C]/5">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#13315C]/8 text-[#13315C]">
-              <CalendarDays className="h-7 w-7" />
-            </span>
-            <p className="mt-5 text-base leading-relaxed text-[#13315C]/70">
+          <div className="mt-8 rounded-xl border border-gabi-navy/10 bg-gabi-surface p-8">
+            <p className="text-sm leading-relaxed text-gabi-navy/65">
               {configured
-                ? "Abre el calendario para elegir fecha y hora de tu demo."
-                : "Escríbenos y coordinamos una demo personalizada para tu comercializadora."}
+                ? "Abre el calendario para elegir fecha y hora."
+                : "Escríbenos y coordinamos una demo para tu equipo."}
             </p>
-            <div className="mt-6">
-              <ScheduleDemoButton variant="footer" label="Agendar demo" showIcon />
+            <div className="mt-5">
+              <ScheduleDemoButton variant="footer" label="Ver horarios" />
             </div>
           </div>
         )}
 
         {configured ? (
-          <p className="mt-4 text-center text-sm text-[#13315C]/50">
+          <p className="mt-4 text-sm text-gabi-navy/45">
             <a
               href={bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#13315C] underline-offset-2 hover:underline"
+              className="font-medium text-gabi-navy/70 underline-offset-2 hover:text-gabi-navy hover:underline"
             >
-              {embedUrl ? "Abrir calendario en una pestaña nueva" : "Ver horarios disponibles"}
+              {embedUrl ? "Abrir en pestaña nueva" : "Ir al calendario"}
             </a>
           </p>
         ) : null}

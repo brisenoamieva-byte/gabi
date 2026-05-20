@@ -4,39 +4,47 @@ import { useEffect, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import { LockKeyhole, LogOut } from "lucide-react";
 import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
-import { useRouter } from "next/navigation";
+import {
+  PORTAL_STORAGE_KEY,
+  type PortalSession,
+  resolvePortalLogoutPath,
+} from "@/lib/portal/session";
 
-const PORTAL_KEY = "gabi_portal";
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
-export default function BbrAdvisorLoginPage() {
+export default function PortalSlugPinPage() {
   const router = useRouter();
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug?.toLowerCase() ?? "";
   const controls = useAnimationControls();
+  const [portal, setPortal] = useState<PortalSession | null>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
-      const portal = localStorage.getItem(PORTAL_KEY);
-      if (!portal) {
+      const stored = localStorage.getItem(PORTAL_STORAGE_KEY);
+      if (!stored) {
         router.replace("/portal");
         return;
       }
 
-      const parsed = JSON.parse(portal) as { slug?: string };
-      if (parsed.slug !== "bbr") {
+      const parsed = JSON.parse(stored) as PortalSession;
+      if (parsed.slug !== slug) {
         router.replace("/portal");
         return;
       }
 
+      setPortal(parsed);
       setReady(true);
     } catch {
-      localStorage.removeItem(PORTAL_KEY);
+      localStorage.removeItem(PORTAL_STORAGE_KEY);
       router.replace("/portal");
     }
-  }, [router]);
+  }, [router, slug]);
 
   useEffect(() => {
     if (!ready) {
@@ -62,7 +70,7 @@ export default function BbrAdvisorLoginPage() {
   }, [ready]);
 
   useEffect(() => {
-    if (pin.length !== 4) {
+    if (pin.length !== 4 || !portal) {
       return;
     }
 
@@ -74,7 +82,7 @@ export default function BbrAdvisorLoginPage() {
         const response = await fetch("/api/asesores/auth/pin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pin, portal: "bbr" }),
+          body: JSON.stringify({ pin, portal: portal.slug }),
         });
         const data = (await response.json()) as {
           asesor?: {
@@ -104,7 +112,7 @@ export default function BbrAdvisorLoginPage() {
           return;
         }
       } catch {
-        // Sin fallback en producción: solo API
+        // Sin fallback en producción
       }
 
       if (cancelled) {
@@ -116,7 +124,6 @@ export default function BbrAdvisorLoginPage() {
         x: [0, -14, 14, -10, 10, 0],
         transition: { duration: 0.38 },
       });
-
       timeout = window.setTimeout(() => setPin(""), 450);
     };
 
@@ -128,7 +135,7 @@ export default function BbrAdvisorLoginPage() {
         window.clearTimeout(timeout);
       }
     };
-  }, [controls, pin, router]);
+  }, [controls, pin, portal, router]);
 
   const handleDigit = (digit: string) => {
     if (pin.length >= 4) {
@@ -144,38 +151,52 @@ export default function BbrAdvisorLoginPage() {
   };
 
   const handlePortalLogout = () => {
-    localStorage.removeItem(PORTAL_KEY);
+    localStorage.removeItem(PORTAL_STORAGE_KEY);
     localStorage.removeItem("gabi_user");
     localStorage.removeItem("gabi_desarrollo");
-    router.replace("/portal");
+    router.replace(resolvePortalLogoutPath());
   };
 
-  if (!ready) {
+  if (!ready || !portal) {
     return (
-      <main className="grid h-dvh place-items-center bg-[#F2F0E9] text-[#201044]">
-        <p className="font-semibold">Cargando portal BBR...</p>
+      <main
+        className="grid h-dvh place-items-center"
+        style={{ backgroundColor: "#F8FAFC", color: portal?.colorPrimary ?? "#13315C" }}
+      >
+        <p className="font-semibold">Cargando portal...</p>
       </main>
     );
   }
 
+  const surfaceStyle = {
+    backgroundColor: "#F8FAFC",
+    color: portal.colorPrimary,
+    ["--portal-primary" as string]: portal.colorPrimary,
+    ["--portal-accent" as string]: portal.colorAccent,
+  };
+
   return (
-    <main className="grid h-dvh max-h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bbr-surface text-bbr-purple">
+    <main className="grid h-dvh max-h-dvh grid-rows-[auto_1fr_auto] overflow-hidden" style={surfaceStyle}>
       <header className="flex shrink-0 flex-col items-center justify-center px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-3">
-        <Image
-          src="/logos/bbr-habitarea.png"
-          alt="BBR Habitarea"
-          width={420}
-          height={260}
-          priority
-          className="h-[clamp(2.5rem,8vh,3.5rem)] w-auto max-w-[min(280px,80vw)] object-contain mix-blend-multiply"
-        />
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[#201044]/55">
-          Portal comercial BBR
+        {portal.logo ? (
+          <Image
+            src={portal.logo}
+            alt={portal.nombre}
+            width={420}
+            height={260}
+            priority
+            className="h-[clamp(2.5rem,8vh,3.5rem)] w-auto max-w-[min(280px,80vw)] object-contain mix-blend-multiply"
+          />
+        ) : (
+          <p className="text-lg font-bold">{portal.nombre}</p>
+        )}
+        <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Portal comercial
         </p>
         <button
           type="button"
           onClick={handlePortalLogout}
-          className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 transition hover:text-[#201044]"
+          className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 transition hover:opacity-80"
         >
           <LogOut className="h-3 w-3" />
           Salir del portal
@@ -186,15 +207,13 @@ export default function BbrAdvisorLoginPage() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-[340px] rounded-[1.75rem] border border-[#201044]/10 bg-white p-5 shadow-xl shadow-[#201044]/10 sm:p-6"
+          className="w-full max-w-[340px] rounded-2xl border border-black/8 bg-white p-5 shadow-lg sm:p-6"
         >
           <div className="text-center">
-            <h1 className="text-xl font-black text-[#201044]">
+            <h1 className="text-xl font-bold" style={{ color: portal.colorPrimary }}>
               Acceso de asesores
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Ingresa tu PIN de 4 dígitos
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Ingresa tu PIN de 4 dígitos</p>
           </div>
 
           <motion.div animate={controls} className="my-4">
@@ -202,17 +221,17 @@ export default function BbrAdvisorLoginPage() {
               {Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className={`h-3.5 w-3.5 rounded-full border-2 transition-all ${
-                    index < pin.length
-                      ? "border-[#6cc24a] bg-[#6cc24a] shadow-md shadow-[#6cc24a]/30"
-                      : "border-slate-300 bg-slate-100"
-                  }`}
+                  className="h-3.5 w-3.5 rounded-full border-2 transition-all"
+                  style={{
+                    borderColor: index < pin.length ? portal.colorAccent : "#cbd5e1",
+                    backgroundColor: index < pin.length ? portal.colorAccent : "#f1f5f9",
+                  }}
                 />
               ))}
             </div>
             <div className="mt-2 h-5 text-center">
               {error ? (
-                <p className="text-sm font-semibold text-[#ef4444]">{error}</p>
+                <p className="text-sm font-semibold text-red-500">{error}</p>
               ) : (
                 <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
                   <LockKeyhole className="h-3 w-3" />
@@ -228,7 +247,8 @@ export default function BbrAdvisorLoginPage() {
                 key={digit}
                 type="button"
                 onClick={() => handleDigit(digit)}
-                className="flex h-[clamp(2.75rem,10.5vh,3.5rem)] items-center justify-center rounded-xl bg-[#201044] text-lg font-bold text-white shadow-md transition active:scale-[0.97] hover:bg-[#35156d]"
+                className="flex h-[clamp(2.75rem,10.5vh,3.5rem)] items-center justify-center rounded-xl text-lg font-bold text-white shadow-md transition active:scale-[0.97]"
+                style={{ backgroundColor: portal.colorPrimary }}
               >
                 {digit}
               </button>
@@ -237,14 +257,16 @@ export default function BbrAdvisorLoginPage() {
             <button
               type="button"
               onClick={() => handleDigit("0")}
-              className="flex h-[clamp(2.75rem,10.5vh,3.5rem)] items-center justify-center rounded-xl bg-[#201044] text-lg font-bold text-white shadow-md transition active:scale-[0.97] hover:bg-[#35156d]"
+              className="flex h-[clamp(2.75rem,10.5vh,3.5rem)] items-center justify-center rounded-xl text-lg font-bold text-white shadow-md transition active:scale-[0.97]"
+              style={{ backgroundColor: portal.colorPrimary }}
             >
               0
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="flex h-[clamp(2.75rem,10.5vh,3.5rem)] items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-[#201044] transition active:scale-[0.97] hover:bg-slate-100"
+              className="flex h-[clamp(2.75rem,10.5vh,3.5rem)] items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold transition active:scale-[0.97]"
+              style={{ color: portal.colorPrimary }}
             >
               Borrar
             </button>
@@ -253,7 +275,7 @@ export default function BbrAdvisorLoginPage() {
       </section>
 
       <footer className="flex shrink-0 flex-col items-center justify-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
-        <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-400">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">
           Plataforma
         </p>
         <GabiLogo variant="footer" />
