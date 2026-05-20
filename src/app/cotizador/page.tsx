@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, LogOut, MapPinned } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
 import {
   getPrototiposCotizables,
+  type CotizadorCatalog,
   type CotizadorEsquema,
 } from "@/lib/cotizador";
-import { clusters, datosBancarios, desarrollos, type Asesor, type Desarrollo } from "@/lib/data";
+import { datosBancarios, type Asesor, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
 import {
   readPortalSession,
   resolveAdvisorEntryPath,
@@ -34,17 +35,22 @@ type RecorridoSnapshot = {
   cliente?: { nombre?: string };
 };
 
-function resolveDefaultCluster(recorrido: RecorridoSnapshot | null): string {
+function resolveDefaultCluster(
+  recorrido: RecorridoSnapshot | null,
+  catalog: CotizadorCatalog,
+): string {
   const recorridoClusterId = recorrido?.clusterId?.trim();
   const recorridoCluster =
-    recorridoClusterId && clusters.some((cluster) => cluster.id === recorridoClusterId)
+    recorridoClusterId && catalog.clusters.some((cluster) => cluster.id === recorridoClusterId)
       ? recorridoClusterId
       : undefined;
 
   return (
     recorridoCluster ??
-    clusters.find((cluster) => getPrototiposCotizables(cluster.id).length > 0)?.id ??
-    clusters[0]?.id ??
+    catalog.clusters.find(
+      (cluster) => getPrototiposCotizables(cluster.id, catalog).length > 0,
+    )?.id ??
+    catalog.clusters[0]?.id ??
     ""
   );
 }
@@ -52,8 +58,9 @@ function resolveDefaultCluster(recorrido: RecorridoSnapshot | null): string {
 function resolveDefaultPrototipo(
   cluster: string,
   recorrido: RecorridoSnapshot | null,
+  catalog: CotizadorCatalog,
 ): string | undefined {
-  const prototipos = cluster ? getPrototiposCotizables(cluster) : [];
+  const prototipos = cluster ? getPrototiposCotizables(cluster, catalog) : [];
   const recorridoPrototipoId = recorrido?.prototipoId?.trim();
 
   if (
@@ -73,6 +80,7 @@ export default function CotizadorPage() {
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<SessionUser | null>(null);
   const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
+  const [catalog, setCatalog] = useState<CotizadorCatalog>({ clusters: [], prototipos: [] });
   const [portal, setPortal] = useState<PortalSession | null>(null);
   const [clusterId, setClusterId] = useState("");
   const [prototipoId, setPrototipoId] = useState<string | undefined>();
@@ -99,53 +107,76 @@ export default function CotizadorPage() {
       return;
     }
 
-    try {
-      const parsedUser = JSON.parse(storedUser) as SessionUser;
-      const selectedDevelopment = desarrollos.find(
-        (item) =>
-          item.id === storedDevelopment &&
-          parsedUser.desarrollosIds.includes(item.id) &&
-          item.estado === "activo",
-      );
+    const loadSession = async () => {
+      try {
+        const parsedUser = JSON.parse(storedUser) as SessionUser;
 
-      if (!selectedDevelopment) {
+        if (!parsedUser.desarrollosIds.includes(storedDevelopment)) {
+          localStorage.removeItem("gabi_desarrollo");
+          setSessionStatus("redirecting");
+          router.replace("/desarrollos");
+          return;
+        }
+
+        const catalogResponse = await fetch(
+          `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(storedDevelopment)}`,
+        );
+        const catalogData = (await catalogResponse.json()) as {
+          desarrollo?: Desarrollo;
+          clusters?: Cluster[];
+          prototipos?: Prototipo[];
+        };
+
+        const selectedDevelopment = catalogData.desarrollo;
+        const loadedCatalog: CotizadorCatalog = {
+          clusters: catalogData.clusters ?? [],
+          prototipos: catalogData.prototipos ?? [],
+        };
+
+        if (!selectedDevelopment || selectedDevelopment.estado !== "activo") {
+          localStorage.removeItem("gabi_desarrollo");
+          setSessionStatus("redirecting");
+          router.replace("/desarrollos");
+          return;
+        }
+
+        const storedPortal = localStorage.getItem("gabi_portal");
+        if (storedPortal) {
+          setPortal(JSON.parse(storedPortal) as PortalSession);
+        }
+
+        const recorridoRaw = localStorage.getItem(RECORRIDO_KEY);
+        const recorrido = recorridoRaw
+          ? (JSON.parse(recorridoRaw) as RecorridoSnapshot)
+          : null;
+
+        const defaultCluster = resolveDefaultCluster(recorrido, loadedCatalog);
+
+        setUser(parsedUser);
+        setDesarrollo(selectedDevelopment);
+        setCatalog(loadedCatalog);
+        setClusterId(defaultCluster);
+        setPrototipoId(resolveDefaultPrototipo(defaultCluster, recorrido, loadedCatalog));
+        setDescuento(recorrido?.descuento ?? 0);
+        setEsquema(recorrido?.esquema ?? "mensualidades");
+        setClienteNombre(recorrido?.cliente?.nombre);
+        setSessionStatus("ready");
+      } catch {
+        localStorage.removeItem("gabi_user");
         localStorage.removeItem("gabi_desarrollo");
         setSessionStatus("redirecting");
-        router.replace("/desarrollos");
-        return;
+        const portal = readPortalSession();
+        router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
       }
+    };
 
-      const storedPortal = localStorage.getItem("gabi_portal");
-      if (storedPortal) {
-        setPortal(JSON.parse(storedPortal) as PortalSession);
-      }
-
-      const recorridoRaw = localStorage.getItem(RECORRIDO_KEY);
-      const recorrido = recorridoRaw
-        ? (JSON.parse(recorridoRaw) as RecorridoSnapshot)
-        : null;
-
-      const defaultCluster = resolveDefaultCluster(recorrido);
-
-      setUser(parsedUser);
-      setDesarrollo(selectedDevelopment);
-      setClusterId(defaultCluster);
-      setPrototipoId(resolveDefaultPrototipo(defaultCluster, recorrido));
-      setDescuento(recorrido?.descuento ?? 0);
-      setEsquema(recorrido?.esquema ?? "mensualidades");
-      setClienteNombre(recorrido?.cliente?.nombre);
-      setSessionStatus("ready");
-    } catch {
-      localStorage.removeItem("gabi_user");
-      localStorage.removeItem("gabi_desarrollo");
-      setSessionStatus("redirecting");
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-    }
+    void loadSession();
   }, [router]);
 
+  const catalogMemo = useMemo(() => catalog, [catalog]);
+
   const handleClusterChange = (nextClusterId: string) => {
-    const prototipos = getPrototiposCotizables(nextClusterId);
+    const prototipos = getPrototiposCotizables(nextClusterId, catalogMemo);
     setClusterId(nextClusterId);
     setPrototipoId(prototipos[0]?.id);
     setUnidadId(undefined);
@@ -300,6 +331,7 @@ export default function CotizadorPage() {
               descuento={descuento}
               esquema={esquema}
               clienteNombre={clienteNombre}
+              catalog={catalogMemo}
               showSelectors
               showCopy
               onClusterChange={handleClusterChange}

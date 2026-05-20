@@ -2237,6 +2237,7 @@ export default function RecorridoPage() {
             descuento={state.descuento}
             esquema={state.esquema}
             clienteNombre={state.cliente.nombre}
+            catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
             showCopy
             onDescuentoChange={(value) => patchState({ descuento: value })}
             onEsquemaChange={(value) => patchState({ esquema: value })}

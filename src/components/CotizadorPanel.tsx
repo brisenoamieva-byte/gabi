@@ -9,9 +9,10 @@ import {
   getPrototiposCotizables,
   getUnidadesCotizables,
   type CotizacionResult,
+  type CotizadorCatalog,
   type CotizadorEsquema,
 } from "@/lib/cotizador";
-import { clusters, formatPrice, type DisponibilidadUnidad } from "@/lib/data";
+import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
 
 export type CotizadorPanelProps = {
   desarrolloId: string;
@@ -24,6 +25,7 @@ export type CotizadorPanelProps = {
   descuento: number;
   esquema: CotizadorEsquema;
   clienteNombre?: string;
+  catalog?: CotizadorCatalog;
   showSelectors?: boolean;
   showCopy?: boolean;
   onClusterChange?: (clusterId: string) => void;
@@ -122,6 +124,7 @@ export function CotizadorPanel({
   descuento,
   esquema,
   clienteNombre,
+  catalog,
   showSelectors = false,
   showCopy = false,
   onClusterChange,
@@ -132,6 +135,7 @@ export function CotizadorPanel({
 }: CotizadorPanelProps) {
   const [copied, setCopied] = useState(false);
   const rules = getCotizadorRules(desarrolloId);
+  const clusters = catalog?.clusters ?? [];
 
   const cotizacion = useMemo(
     () =>
@@ -143,13 +147,23 @@ export function CotizadorPanel({
         descuento,
         esquema,
         inventarioUnidades,
+        catalog,
       }),
-    [clusterId, descuento, desarrolloId, esquema, inventarioUnidades, prototipoId, unidadId],
+    [
+      catalog,
+      clusterId,
+      descuento,
+      desarrolloId,
+      esquema,
+      inventarioUnidades,
+      prototipoId,
+      unidadId,
+    ],
   );
 
   const prototipos = useMemo(
-    () => (clusterId ? getPrototiposCotizables(clusterId) : []),
-    [clusterId],
+    () => (clusterId ? getPrototiposCotizables(clusterId, catalog) : []),
+    [catalog, clusterId],
   );
 
   const unidades = useMemo(

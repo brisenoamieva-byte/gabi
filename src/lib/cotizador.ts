@@ -1,12 +1,18 @@
 import {
-  clusters,
+  clusters as fallbackClusters,
   formatPrice,
   getDisponibilidadesByCluster,
   getPrototipoById,
   getPrototiposByCluster,
+  type Cluster,
   type DisponibilidadUnidad,
   type Prototipo,
 } from "@/lib/data";
+
+export type CotizadorCatalog = {
+  clusters: Cluster[];
+  prototipos: Prototipo[];
+};
 
 export type CotizadorEsquema = "mensualidades" | "contado";
 
@@ -42,6 +48,8 @@ export type CotizacionInput = {
   esquema: CotizadorEsquema;
   /** Inventario del cluster (Supabase o fallback local). */
   inventarioUnidades?: DisponibilidadUnidad[];
+  /** Catálogo del desarrollo (Supabase o fallback). */
+  catalog?: CotizadorCatalog;
 };
 
 export type CotizacionResult = {
@@ -62,17 +70,28 @@ export type CotizacionResult = {
 export const getCotizadorRules = (desarrolloId: string) =>
   cotizadorRulesByDesarrollo[desarrolloId] ?? defaultCotizadorRules;
 
+const findCluster = (clusterId: string, catalog?: CotizadorCatalog) =>
+  catalog?.clusters.find((item) => item.id === clusterId) ??
+  fallbackClusters.find((item) => item.id === clusterId);
+
+const findPrototipo = (prototipoId: string, catalog?: CotizadorCatalog) =>
+  catalog?.prototipos.find((item) => item.id === prototipoId) ??
+  getPrototipoById(prototipoId);
+
 export const resolveCotizacionPricing = (
   clusterId: string,
   prototipoId?: string,
   unidadId?: string,
   inventarioUnidades?: DisponibilidadUnidad[],
+  catalog?: CotizadorCatalog,
 ) => {
   const units = inventarioUnidades ?? getDisponibilidadesByCluster(clusterId);
   const unidad = unidadId ? units.find((item) => item.id === unidadId) : undefined;
 
   const resolvedPrototipoId = prototipoId || unidad?.prototipoId || "";
-  const prototipo = resolvedPrototipoId ? getPrototipoById(resolvedPrototipoId) : undefined;
+  const prototipo = resolvedPrototipoId
+    ? findPrototipo(resolvedPrototipoId, catalog)
+    : undefined;
   const precioLista = unidad?.precio ?? prototipo?.precioBase ?? 0;
   const bonoMaximo = prototipo?.bonoMaximo ?? 0;
 
@@ -80,7 +99,7 @@ export const resolveCotizacionPricing = (
 };
 
 export const computeCotizacion = (input: CotizacionInput): CotizacionResult | null => {
-  const cluster = clusters.find((item) => item.id === input.clusterId);
+  const cluster = findCluster(input.clusterId, input.catalog);
   if (!cluster) {
     return null;
   }
@@ -90,6 +109,7 @@ export const computeCotizacion = (input: CotizacionInput): CotizacionResult | nu
     input.prototipoId,
     input.unidadId,
     input.inventarioUnidades,
+    input.catalog,
   );
 
   if (!precioLista || (!prototipo && !unidad)) {
@@ -135,8 +155,16 @@ export const getUnidadesCotizables = (
   return units.filter((unit) => unit.estatus === "disponible" && unit.visitable);
 };
 
-export const getPrototiposCotizables = (clusterId: string): Prototipo[] =>
-  getPrototiposByCluster(clusterId).filter((item) => item.activo && !item.soldOut);
+export const getPrototiposCotizables = (
+  clusterId: string,
+  catalog?: CotizadorCatalog,
+): Prototipo[] => {
+  const list = catalog
+    ? catalog.prototipos.filter((item) => item.clusterId === clusterId)
+    : getPrototiposByCluster(clusterId);
+
+  return list.filter((item) => item.activo && !item.soldOut);
+};
 
 export const buildCotizacionSummary = (
   cotizacion: CotizacionResult,
