@@ -400,13 +400,17 @@ export default function RecorridoPage() {
   >("idle");
   const [isRegisteringLead, setIsRegisteringLead] = useState(false);
   const [postVisita, setPostVisita] = useState<{
+    desarrolloId: string;
     desarrolloNombre: string;
+    asesorId: string;
     asesorNombre: string;
     clienteNombre: string;
+    clienteEmail?: string;
     clienteTelefono?: string;
     clusterNombre?: string;
     prototipoNombre?: string;
     precioFinal?: number;
+    initialEmailSent?: boolean;
   } | null>(null);
   const [recorridoEtapas, setRecorridoEtapas] = useState<string[]>([
     ...DEFAULT_RECORRIDO_ETAPAS,
@@ -852,7 +856,7 @@ export default function RecorridoPage() {
       writeLocalArray(LEADS_KEY, [...existingLeads, savedLead]);
       patchState({ leadId: savedLead.id });
 
-      trackVisita({
+      void trackVisita({
         tipo: "lead_registrado",
         desarrolloId,
         asesorId: lead.asesorId,
@@ -879,7 +883,7 @@ export default function RecorridoPage() {
       const queuedLead = { ...lead, crmStatus: "local" };
       writeLocalArray(LEADS_KEY, [...existingLeads, queuedLead]);
       patchState({ leadId: queuedLead.id });
-      trackVisita({
+      void trackVisita({
         tipo: "lead_registrado",
         desarrolloId,
         asesorId: lead.asesorId,
@@ -1002,7 +1006,7 @@ export default function RecorridoPage() {
     window.setTimeout(() => setCopied(false), 1800);
   };
 
-  const finishRecorrido = () => {
+  const finishRecorrido = async () => {
     let asesorId = "local";
     let asesorNombre = "Asesor";
     let desarrolloId = activeDesarrollo?.id ?? "";
@@ -1051,8 +1055,10 @@ export default function RecorridoPage() {
     localStorage.setItem(CLIENTES_KEY, JSON.stringify([...previousClients, newClient]));
     localStorage.removeItem(STORAGE_KEY);
 
+    let emailSent = false;
+
     if (asesorId !== "local" && desarrolloId) {
-      trackVisita({
+      const trackResult = await trackVisita({
         tipo: "recorrido_completado",
         desarrolloId,
         asesorId,
@@ -1068,16 +1074,21 @@ export default function RecorridoPage() {
         precioFinal: precioFinal || undefined,
         etapaAlcanzada: recorridoEtapas.length,
       });
+      emailSent = trackResult.emailSent ?? false;
     }
 
     setPostVisita({
+      desarrolloId,
       desarrolloNombre: activeDesarrollo?.nombre ?? "Desarrollo",
+      asesorId,
       asesorNombre,
       clienteNombre: state.cliente.nombre || "Prospecto",
+      clienteEmail: state.cliente.email || undefined,
       clienteTelefono: state.cliente.telefono || undefined,
       clusterNombre: selectedCluster?.nombre,
       prototipoNombre: selectedPrototipo?.nombre,
       precioFinal: precioFinal || undefined,
+      initialEmailSent: emailSent,
     });
   };
 

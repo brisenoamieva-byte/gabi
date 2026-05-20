@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendPostVisitaEmailFromVisita } from "@/lib/email/send-post-visita";
 import { insertVisita } from "@/lib/visitas/service";
 import type { VisitaInput } from "@/lib/visitas/types";
 
@@ -22,7 +23,16 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ visita: record });
+    let emailResult = null;
+    if (body.tipo === "recorrido_completado" && body.clienteEmail?.trim()) {
+      emailResult = await sendPostVisitaEmailFromVisita(body);
+    }
+
+    return NextResponse.json({
+      visita: record,
+      emailSent: emailResult?.sent ?? false,
+      emailReason: emailResult && !emailResult.sent ? emailResult.reason : undefined,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al registrar visita." },

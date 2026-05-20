@@ -1,34 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Copy, MessageCircle, X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { CheckCircle2, Copy, Loader2, Mail, MessageCircle, X } from "lucide-react";
 import {
   buildVisitaFollowUpSummary,
   buildWhatsAppUrl,
 } from "@/lib/visitas/follow-up";
 
 type PostVisitaModalProps = {
+  desarrolloId: string;
   desarrolloNombre: string;
+  asesorId: string;
   asesorNombre: string;
   clienteNombre: string;
+  clienteEmail?: string;
   clienteTelefono?: string;
   clusterNombre?: string;
   prototipoNombre?: string;
   precioFinal?: number;
+  initialEmailSent?: boolean;
   onClose: () => void;
 };
 
 export function PostVisitaModal({
+  desarrolloId,
   desarrolloNombre,
+  asesorId,
   asesorNombre,
   clienteNombre,
+  clienteEmail,
   clienteTelefono,
   clusterNombre,
   prototipoNombre,
   precioFinal,
+  initialEmailSent = false,
   onClose,
 }: PostVisitaModalProps) {
   const [copied, setCopied] = useState(false);
+  const [emailSent, setEmailSent] = useState(initialEmailSent);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   const message = buildVisitaFollowUpSummary({
     desarrolloNombre,
@@ -40,12 +51,62 @@ export function PostVisitaModal({
   });
 
   const whatsAppUrl = clienteTelefono ? buildWhatsAppUrl(clienteTelefono, message) : null;
+  const hasEmail = Boolean(clienteEmail?.trim());
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   };
+
+  const handleSendEmail = useCallback(async () => {
+    if (!clienteEmail?.trim()) {
+      return;
+    }
+
+    setEmailSending(true);
+    setEmailError("");
+
+    try {
+      const response = await fetch("/api/visitas/follow-up-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          desarrolloId,
+          asesorId,
+          asesorNombre,
+          clienteNombre,
+          clienteEmail: clienteEmail.trim(),
+          desarrolloNombre,
+          clusterNombre,
+          prototipoNombre,
+          precioFinal,
+        }),
+      });
+
+      const data = (await response.json()) as { sent?: boolean; error?: string };
+
+      if (!response.ok || !data.sent) {
+        throw new Error(data.error ?? "No se pudo enviar el correo.");
+      }
+
+      setEmailSent(true);
+    } catch (sendError) {
+      setEmailError(sendError instanceof Error ? sendError.message : "Error al enviar email");
+    } finally {
+      setEmailSending(false);
+    }
+  }, [
+    asesorId,
+    asesorNombre,
+    clienteEmail,
+    clienteNombre,
+    clusterNombre,
+    desarrolloId,
+    desarrolloNombre,
+    precioFinal,
+    prototipoNombre,
+  ]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#201044]/40 p-4 sm:items-center">
@@ -74,6 +135,19 @@ export function PostVisitaModal({
           {message}
         </pre>
 
+        {emailSent ? (
+          <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            Correo enviado a {clienteEmail}
+          </p>
+        ) : null}
+
+        {emailError ? (
+          <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+            {emailError}
+          </p>
+        ) : null}
+
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
@@ -96,6 +170,27 @@ export function PostVisitaModal({
           ) : (
             <p className="flex min-h-11 items-center justify-center rounded-xl bg-slate-50 px-4 text-xs text-slate-500">
               Sin teléfono capturado
+            </p>
+          )}
+          {hasEmail ? (
+            <button
+              type="button"
+              disabled={emailSending || emailSent}
+              onClick={() => void handleSendEmail()}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#13315C] px-4 text-sm font-bold text-white disabled:opacity-60 sm:col-span-2"
+            >
+              {emailSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : emailSent ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              {emailSent ? "Email enviado" : emailSending ? "Enviando..." : `Enviar email a ${clienteEmail}`}
+            </button>
+          ) : (
+            <p className="flex min-h-11 items-center justify-center rounded-xl bg-slate-50 px-4 text-xs text-slate-500 sm:col-span-2">
+              Sin email capturado
             </p>
           )}
         </div>
