@@ -4,6 +4,7 @@ import {
   desarrollos,
   prototipos,
 } from "@/lib/data";
+import { getDefaultRecorridoContenido } from "@/lib/catalog/recorrido-content";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
@@ -68,6 +69,7 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
         crm: item.crm,
         recorrido_etapas: [...DEFAULT_RECORRIDO_ETAPAS],
         recorrido_version: 2,
+        recorrido_contenido: getDefaultRecorridoContenido(item.id),
         activo: true,
         updated_at: new Date().toISOString(),
       },

@@ -26,7 +26,7 @@ export const canAccessModule = (profile: AdminProfile, module: AdminModule) => {
     return true;
   }
 
-  if (module === "usuarios") {
+  if (module === "usuarios" || module === "catalogo") {
     return false;
   }
 

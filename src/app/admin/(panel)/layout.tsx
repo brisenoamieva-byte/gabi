@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { getAdminScopeLabel } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
+import { listActiveDesarrollos } from "@/lib/catalog/service";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { desarrollos } from "@/lib/data";
 
 export default async function AdminLayout({
   children,
@@ -20,7 +20,10 @@ export default async function AdminLayout({
     redirect("/admin/login");
   }
 
-  const desarrolloNames = Object.fromEntries(desarrollos.map((item) => [item.id, item.nombre]));
+  const activeDesarrollos = await listActiveDesarrollos();
+  const desarrolloNames = Object.fromEntries(
+    activeDesarrollos.map((item) => [item.id, item.nombre]),
+  );
 
   return (
     <AdminShell

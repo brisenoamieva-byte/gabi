@@ -42,25 +42,25 @@ import { formatSuperficiesLabel } from "@/lib/inventario/productos-recomendados"
 import { fetchClusterInventario } from "@/lib/inventario/cluster-inventory-client";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 import {
-  bondades,
   clusters,
   datosBancarios,
   desarrollos,
   formatPrice,
   getDisponibilidadesByCluster,
   getPrototipoById,
-  grupoVinte,
-  laVistaOverview,
   prototipos as catalogPrototipos,
-  tecnicaDosMinutos,
-  tecnicasCierre,
-  zonaLaVista,
   type Cliente,
   type Cluster,
   type Desarrollo,
   type DisponibilidadUnidad,
   type Prototipo,
+  type PuntoInteres,
 } from "@/lib/data";
+import {
+  getDefaultRecorridoContenido,
+  type RecorridoContenido,
+  type RecorridoZonaContent,
+} from "@/lib/catalog/recorrido-content";
 import {
   leadRegistrationMessage,
   shouldQueueLeadForCrm,
@@ -375,9 +375,11 @@ type RecommendedAvailability = {
 
 export default function RecorridoPage() {
   const router = useRouter();
+  const defaultContenido = getDefaultRecorridoContenido("la-vista-residencial");
   const [state, setState] = useState<RecorridoState>(initialState);
   const [loaded, setLoaded] = useState(false);
   const [activeDesarrollo, setActiveDesarrollo] = useState<Desarrollo | null>(null);
+  const [activeContenido, setActiveContenido] = useState<RecorridoContenido>(defaultContenido);
   const [direction, setDirection] = useState(1);
   const [showTwoMinuteGuide, setShowTwoMinuteGuide] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
@@ -386,7 +388,7 @@ export default function RecorridoPage() {
   const [selectedAvailabilityId, setSelectedAvailabilityId] = useState<string | null>(null);
   const [showRequest, setShowRequest] = useState(false);
   const [expandedTechnique, setExpandedTechnique] = useState<string | null>(
-    tecnicasCierre[0]?.id ?? null,
+    defaultContenido.tecnicasCierre[0]?.id ?? null,
   );
   const [copied, setCopied] = useState(false);
   const [remoteAvailabilityUnits, setRemoteAvailabilityUnits] = useState<
@@ -679,12 +681,19 @@ export default function RecorridoPage() {
           clusters?: Cluster[];
           prototipos?: Prototipo[];
           recorridoEtapas?: string[];
+          recorridoContenido?: RecorridoContenido;
         };
 
         if (data.desarrollo) {
           setActiveDesarrollo(data.desarrollo);
         } else {
           setActiveDesarrollo(desarrollos.find((item) => item.id === desarrolloId) ?? null);
+        }
+
+        if (data.recorridoContenido) {
+          setActiveContenido(data.recorridoContenido);
+        } else {
+          setActiveContenido(getDefaultRecorridoContenido(desarrolloId));
         }
 
         if (data.recorridoEtapas?.length) {
@@ -1387,53 +1396,55 @@ export default function RecorridoPage() {
                 <div className="space-y-6">
                   <ProductNarrativeCard
                     step="1"
-                    title={zonaLaVista.titulo}
-                    subtitle={zonaLaVista.subtitulo}
+                    title={activeContenido.zona.titulo}
+                    subtitle={activeContenido.zona.subtitulo}
                     icon={<MapPin className="h-7 w-7" />}
                   >
                     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                      <ZoneMap />
+                      <ZoneMap zona={activeContenido.zona} />
                       <div className="space-y-4">
                         <div className="rounded-2xl bg-[#6CC24A]/15 p-5">
                           <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
                             Guion para asesor
                           </p>
                           <p className="mt-3 text-lg font-bold text-[#201044]">
-                            {zonaLaVista.mensajeAsesor}
+                            {activeContenido.zona.mensajeAsesor}
                           </p>
                         </div>
-                        <NearbyPointsPanel />
+                        <NearbyPointsPanel zona={activeContenido.zona} />
                       </div>
                     </div>
                   </ProductNarrativeCard>
 
                   <ProductNarrativeCard
                     step="2"
-                    title={grupoVinte.titulo}
-                    subtitle={grupoVinte.subtitulo}
+                    title={activeContenido.desarrollador.titulo}
+                    subtitle={activeContenido.desarrollador.subtitulo}
                     icon={<ShieldCheck className="h-7 w-7" />}
                   >
                     <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
                       <div className="rounded-[1.5rem] bg-[#201044] p-6 text-white">
-                        <div className="mb-6 flex h-20 w-56 items-center justify-start rounded-2xl bg-black/15 p-4">
-                          <Image
-                            src="/logos/grupo-vinte.png"
-                            alt="Grupo Vinte"
-                            width={260}
-                            height={110}
-                            className="h-auto max-h-12 w-full object-contain object-left"
-                          />
-                        </div>
+                        {activeContenido.desarrollador.logoPath ? (
+                          <div className="mb-6 flex h-20 w-56 items-center justify-start rounded-2xl bg-black/15 p-4">
+                            <Image
+                              src={activeContenido.desarrollador.logoPath}
+                              alt={activeContenido.desarrollador.titulo}
+                              width={260}
+                              height={110}
+                              className="h-auto max-h-12 w-full object-contain object-left"
+                            />
+                          </div>
+                        ) : null}
                         <p className="text-lg font-bold text-white/80">
-                          {grupoVinte.historia}
+                          {activeContenido.desarrollador.historia}
                         </p>
                         <p className="mt-5 rounded-2xl bg-white/10 p-4 text-base font-bold">
-                          {grupoVinte.fraseAsesor}
+                          {activeContenido.desarrollador.fraseAsesor}
                         </p>
                       </div>
                       <div className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-3">
-                          {grupoVinte.metricas.map((metrica) => (
+                          {activeContenido.desarrollador.metricas.map((metrica) => (
                             <div
                               key={metrica.valor}
                               className="rounded-2xl bg-slate-50 p-5 text-center"
@@ -1448,7 +1459,7 @@ export default function RecorridoPage() {
                           ))}
                         </div>
                         <div className="grid gap-3 md:grid-cols-2">
-                          {grupoVinte.respaldo.map((item) => (
+                          {activeContenido.desarrollador.respaldo.map((item) => (
                             <p
                               key={item}
                               className="flex gap-3 rounded-2xl bg-white p-4 text-sm font-semibold text-slate-600"
@@ -1464,32 +1475,36 @@ export default function RecorridoPage() {
 
                   <ProductNarrativeCard
                     step="3"
-                    title={laVistaOverview.titulo}
-                    subtitle={laVistaOverview.subtitulo}
+                    title={activeContenido.overview.titulo}
+                    subtitle={activeContenido.overview.subtitulo}
                     icon={<TrendingUp className="h-7 w-7" />}
                   >
                     <div className="mb-5 flex flex-col gap-5 rounded-[1.5rem] border border-[#201044]/10 bg-gradient-to-br from-white to-[#f4ead6] p-5 text-[#201044] md:flex-row md:items-center md:justify-between">
-                      <div className="flex h-36 w-full items-center justify-center rounded-2xl bg-white p-4 shadow-inner md:w-56">
-                        <Image
-                          src="/logos/la-vista-residencial-transparent.png"
-                          alt="La Vista Residencial"
-                          width={260}
-                          height={220}
-                          className="h-auto max-h-28 w-full object-contain"
-                        />
-                      </div>
+                      {activeContenido.overview.logoPath ? (
+                        <div className="flex h-36 w-full items-center justify-center rounded-2xl bg-white p-4 shadow-inner md:w-56">
+                          <Image
+                            src={activeContenido.overview.logoPath}
+                            alt={activeContenido.overview.titulo}
+                            width={260}
+                            height={220}
+                            className="h-auto max-h-28 w-full object-contain"
+                          />
+                        </div>
+                      ) : null}
                       <div className="max-w-2xl">
                         <p className="text-sm font-black uppercase tracking-[0.25em] text-[#6CC24A]">
                           Desarrollo comercializado
                         </p>
-                        <p className="mt-2 text-lg font-bold text-[#201044]/75">
-                          Presenta La Vista como comunidad integral antes de entrar al cluster específico.
-                        </p>
+                        {activeContenido.overview.guiaAsesor ? (
+                          <p className="mt-2 text-lg font-bold text-[#201044]/75">
+                            {activeContenido.overview.guiaAsesor}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
                       <div className="space-y-3">
-                        {laVistaOverview.narrativa.map((linea) => (
+                        {activeContenido.overview.narrativa.map((linea) => (
                           <p
                             key={linea}
                             className="rounded-2xl bg-slate-50 p-5 text-lg font-bold text-[#201044]"
@@ -1499,7 +1514,7 @@ export default function RecorridoPage() {
                         ))}
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
-                        {laVistaOverview.destacados.map((item) => (
+                        {activeContenido.overview.destacados.map((item) => (
                           <div
                             key={item}
                             className="rounded-2xl bg-[#6CC24A]/15 p-5 font-black text-[#201044]"
@@ -1507,7 +1522,7 @@ export default function RecorridoPage() {
                             {item}
                           </div>
                         ))}
-                        {bondades.slice(0, 4).map((bondad) => (
+                        {activeContenido.bondades.slice(0, 4).map((bondad) => (
                           <div
                             key={bondad}
                             className="rounded-2xl border border-slate-200 bg-white p-5 font-bold text-slate-600"
@@ -1972,7 +1987,7 @@ export default function RecorridoPage() {
               >
                 <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
                   <div className="space-y-4">
-                    {tecnicasCierre.map((tecnica) => {
+                    {activeContenido.tecnicasCierre.map((tecnica) => {
                       const open = expandedTechnique === tecnica.id;
 
                       return (
@@ -2193,7 +2208,7 @@ export default function RecorridoPage() {
       {showTwoMinuteGuide && (
         <Modal
           onClose={() => setShowTwoMinuteGuide(false)}
-          title={tecnicaDosMinutos.titulo}
+          title={activeContenido.tecnicaDosMinutos.titulo}
         >
           <div className="space-y-5">
             <div className="rounded-[2rem] bg-[#201044] p-6 text-white">
@@ -2210,7 +2225,7 @@ export default function RecorridoPage() {
             </div>
 
             <div className="grid gap-3">
-              {tecnicaDosMinutos.puntos.map((punto, index) => (
+              {activeContenido.tecnicaDosMinutos.puntos.map((punto, index) => (
                 <div
                   key={punto}
                   className="flex gap-4 rounded-2xl bg-[#6CC24A]/10 p-4"
@@ -2661,15 +2676,15 @@ function ProductNarrativeCard({
   );
 }
 
-function ZoneMap() {
-  const destacados = zonaLaVista.puntosCercanos.filter((punto) => punto.destacado);
+function ZoneMap({ zona }: { zona: RecorridoZonaContent }) {
+  const destacados = zona.puntosCercanos.filter((punto) => punto.destacado);
 
   return (
     <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg">
       <div className="relative h-[280px] bg-slate-100 md:h-[420px]">
         <iframe
-          title="Mapa de ubicación de La Vista Residencial"
-          src={zonaLaVista.mapaEmbedUrl}
+          title={`Mapa de ubicación · ${zona.centro}`}
+          src={zona.mapaEmbedUrl}
           className="h-full w-full border-0"
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
@@ -2678,16 +2693,16 @@ function ZoneMap() {
           <p className="text-xs font-black uppercase tracking-[0.2em] text-[#6CC24A]">
             Punto central
           </p>
-          <p className="mt-1 text-lg font-black text-[#201044]">{zonaLaVista.centro}</p>
+          <p className="mt-1 text-lg font-black text-[#201044]">{zona.centro}</p>
           <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500">
-            {zonaLaVista.direccion}
+            {zona.direccion}
           </p>
         </div>
       </div>
 
       <div className="space-y-4 p-4">
         <a
-          href={zonaLaVista.mapaUrl}
+          href={zona.mapaUrl}
           target="_blank"
           rel="noreferrer"
           className="flex min-h-14 items-center justify-center rounded-2xl bg-[#201044] px-4 text-center text-sm font-black text-white transition hover:bg-[#35156D] active:scale-95"
@@ -2727,7 +2742,7 @@ const categoriaIconMap: Record<string, LucideIcon> = {
   Entorno: Trees,
 };
 
-function NearbyPointCard({ punto }: { punto: (typeof zonaLaVista.puntosCercanos)[number] }) {
+function NearbyPointCard({ punto }: { punto: PuntoInteres }) {
   const Icon = categoriaIconMap[punto.categoria] ?? MapPin;
 
   return (
@@ -2766,19 +2781,19 @@ function NearbyPointCard({ punto }: { punto: (typeof zonaLaVista.puntosCercanos)
   );
 }
 
-function NearbyPointsPanel() {
+function NearbyPointsPanel({ zona }: { zona: RecorridoZonaContent }) {
   const grouped = useMemo(() => {
-    const map = new Map<string, typeof zonaLaVista.puntosCercanos>();
+    const map = new Map<string, PuntoInteres[]>();
 
-    for (const categoria of zonaLaVista.categoriasOrden) {
-      const items = zonaLaVista.puntosCercanos.filter((punto) => punto.categoria === categoria);
+    for (const categoria of zona.categoriasOrden) {
+      const items = zona.puntosCercanos.filter((punto) => punto.categoria === categoria);
       if (items.length) {
         map.set(categoria, items);
       }
     }
 
     return map;
-  }, []);
+  }, [zona]);
 
   return (
     <div className="max-h-[520px] space-y-5 overflow-y-auto pr-1">

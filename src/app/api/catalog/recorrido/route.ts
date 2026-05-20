@@ -3,6 +3,7 @@ import {
   getClustersForDesarrollo,
   getDesarrolloById,
   getPrototiposForDesarrollo,
+  getRecorridoContenidoForDesarrollo,
 } from "@/lib/catalog/service";
 
 export async function GET(request: Request) {
@@ -13,10 +14,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "desarrolloId requerido." }, { status: 400 });
   }
 
-  const [desarrollo, clusters, prototipos] = await Promise.all([
+  const [desarrollo, clusters, prototipos, recorridoContenido] = await Promise.all([
     getDesarrolloById(desarrolloId),
     getClustersForDesarrollo(desarrolloId),
     getPrototiposForDesarrollo(desarrolloId),
+    getRecorridoContenidoForDesarrollo(desarrolloId),
   ]);
 
   if (!desarrollo) {
@@ -29,5 +31,6 @@ export async function GET(request: Request) {
     prototipos,
     recorridoEtapas: desarrollo.recorridoEtapas,
     recorridoVersion: desarrollo.recorridoVersion,
+    recorridoContenido,
   });
 }

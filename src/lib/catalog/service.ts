@@ -9,6 +9,11 @@ import {
 } from "@/lib/data";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
+  getDefaultRecorridoContenido,
+  mergeRecorridoContenido,
+  type RecorridoContenido,
+} from "@/lib/catalog/recorrido-content";
+import {
   DEFAULT_RECORRIDO_ETAPAS,
   type ClusterRecord,
   type ComercializadoraRecord,
@@ -219,6 +224,45 @@ export const getDesarrolloById = async (id: string): Promise<DesarrolloRecord | 
   return results[0] ?? null;
 };
 
+export const listActiveDesarrollos = async (): Promise<DesarrolloRecord[]> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    return fallbackDesarrolloRecords().filter((item) => item.estado === "activo");
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("*")
+    .eq("activo", true)
+    .eq("estado", "activo")
+    .order("nombre", { ascending: true });
+
+  if (error || !data?.length) {
+    return fallbackDesarrolloRecords().filter((item) => item.estado === "activo");
+  }
+
+  return data.map(toDesarrollo);
+};
+
+export const getClustersForDesarrolloIds = async (ids: string[]): Promise<ClusterRecord[]> => {
+  if (!ids.length) {
+    return [];
+  }
+
+  const batches = await Promise.all(ids.map((id) => getClustersForDesarrollo(id)));
+  return batches.flat();
+};
+
+export const getPrototiposForDesarrolloIds = async (ids: string[]): Promise<PrototipoRecord[]> => {
+  if (!ids.length) {
+    return [];
+  }
+
+  const batches = await Promise.all(ids.map((id) => getPrototiposForDesarrollo(id)));
+  return batches.flat();
+};
+
 export const getClustersForDesarrollo = async (desarrolloId: string): Promise<ClusterRecord[]> => {
   const supabase = createSupabaseServiceClient();
 
@@ -304,4 +348,30 @@ export const getPrototipoById = async (
 ): Promise<PrototipoRecord | null> => {
   const prototipos = await getPrototiposForDesarrollo(desarrolloId);
   return prototipos.find((item) => item.id === prototipoId) ?? null;
+};
+
+export const getRecorridoContenidoForDesarrollo = async (
+  desarrolloId: string,
+): Promise<RecorridoContenido> => {
+  const defaults = getDefaultRecorridoContenido(desarrolloId);
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    return defaults;
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("recorrido_contenido")
+    .eq("id", desarrolloId)
+    .maybeSingle();
+
+  if (error || !data?.recorrido_contenido) {
+    return defaults;
+  }
+
+  return mergeRecorridoContenido(
+    defaults,
+    data.recorrido_contenido as Partial<RecorridoContenido>,
+  );
 };
