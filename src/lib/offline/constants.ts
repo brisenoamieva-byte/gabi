@@ -14,6 +14,8 @@ export type OfflinePreparedMeta = {
   errors: string[];
 };
 
+export const OFFLINE_DOC_CACHE_ORIGIN = "https://offline.gabi.mx";
+
 export const buildDocumentCacheKey = (params: {
   desarrolloId: string;
   tipo: string;
@@ -27,8 +29,9 @@ export const buildDocumentCacheKey = (params: {
     params.clusterId ?? "",
     params.prototipoId ?? "",
     params.etapa ?? "",
-  ];
-  return `gabi-doc://${parts.join("/")}`;
+  ].map((part) => encodeURIComponent(part));
+
+  return `${OFFLINE_DOC_CACHE_ORIGIN}/docs/${parts.join("/")}`;
 };
 
 export const buildInventarioStorageKey = (desarrolloId: string, clusterId: string) =>

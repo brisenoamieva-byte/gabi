@@ -28,7 +28,11 @@ export const cacheDocumentBlob = async (
       "X-Gabi-Filename": filename,
     },
   });
-  await cache.put(key, response);
+  try {
+    await cache.put(key, response);
+  } catch {
+    // Cache API only accepts http(s) URLs; download must still succeed if caching fails.
+  }
 };
 
 export const readCachedDocument = async (

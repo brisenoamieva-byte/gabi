@@ -20,7 +20,10 @@ export const isCalendarBookingUrl = (url: string) => {
   }
 };
 
-export const getDemoBookingEmbedUrl = (embedDomain = "gabi.mx") => {
+export const getDemoBookingEmbedUrl = (
+  embedDomain = "gabi.mx",
+  timezone?: string,
+) => {
   const url = getDemoBookingUrl();
 
   if (!isCalendarBookingUrl(url)) {
@@ -40,8 +43,19 @@ export const getDemoBookingEmbedUrl = (embedDomain = "gabi.mx") => {
     parsed.searchParams.set("embed", "true");
     parsed.searchParams.set("theme", "light");
     parsed.searchParams.set("layout", "month_view");
+    if (timezone) {
+      parsed.searchParams.set("cal.tz", timezone);
+    }
     return parsed.toString();
   } catch {
     return null;
+  }
+};
+
+export const getBrowserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
   }
 };

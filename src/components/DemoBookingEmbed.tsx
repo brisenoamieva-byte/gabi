@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  getBrowserTimezone,
   getDemoBookingEmbedUrl,
   getDemoBookingUrl,
   isCalendarBookingUrl,
@@ -12,13 +13,13 @@ import { ScheduleDemoButton } from "@/components/ScheduleDemoButton";
 export function DemoBookingEmbed() {
   const configured = isDemoBookingConfigured();
   const bookingUrl = getDemoBookingUrl();
-  const [embedUrl, setEmbedUrl] = useState<string | null>(() =>
-    isCalendarBookingUrl(bookingUrl) ? getDemoBookingEmbedUrl("gabi.mx") : null,
-  );
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isCalendarBookingUrl(bookingUrl)) {
-      setEmbedUrl(getDemoBookingEmbedUrl(window.location.hostname));
+      setEmbedUrl(
+        getDemoBookingEmbedUrl(window.location.hostname, getBrowserTimezone()),
+      );
     }
   }, [bookingUrl]);
 
