@@ -5,17 +5,23 @@ import { CalendarDays } from "lucide-react";
 import {
   getDemoBookingEmbedUrl,
   getDemoBookingUrl,
+  isCalendarBookingUrl,
   isDemoBookingConfigured,
 } from "@/lib/site/demo-booking";
 import { ScheduleDemoButton } from "@/components/ScheduleDemoButton";
 
 export function DemoBookingEmbed() {
-  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const configured = isDemoBookingConfigured();
+  const bookingUrl = getDemoBookingUrl();
+  const [embedUrl, setEmbedUrl] = useState<string | null>(() =>
+    isCalendarBookingUrl(bookingUrl) ? getDemoBookingEmbedUrl("gabi.mx") : null,
+  );
 
   useEffect(() => {
-    setEmbedUrl(getDemoBookingEmbedUrl(window.location.hostname));
-  }, []);
+    if (isCalendarBookingUrl(bookingUrl)) {
+      setEmbedUrl(getDemoBookingEmbedUrl(window.location.hostname));
+    }
+  }, [bookingUrl]);
 
   return (
     <section
@@ -65,7 +71,7 @@ export function DemoBookingEmbed() {
         {configured ? (
           <p className="mt-4 text-center text-sm text-[#13315C]/50">
             <a
-              href={getDemoBookingUrl()}
+              href={bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-[#13315C] underline-offset-2 hover:underline"
