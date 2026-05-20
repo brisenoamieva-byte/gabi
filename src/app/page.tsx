@@ -17,12 +17,15 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import { DemoBookingEmbed } from "@/components/DemoBookingEmbed";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
+import { ScheduleDemoButton } from "@/components/ScheduleDemoButton";
 
 const navLinks = [
   { href: "#posicionamiento", label: "Qué es gabi" },
   { href: "#producto", label: "Producto" },
   { href: "#como-funciona", label: "Cómo funciona" },
+  { href: "#agendar-demo", label: "Agendar demo" },
 ];
 
 const stats = [
@@ -201,12 +204,7 @@ export default function LandingPage() {
             ))}
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/portal/bbr"
-              className="hidden rounded-full border border-[#13315C]/15 bg-white px-4 py-2.5 text-sm font-bold text-[#13315C] transition hover:bg-[#F1F5F9] sm:inline-flex"
-            >
-              Ver demo
-            </Link>
+            <ScheduleDemoButton variant="header" label="Agendar demo" scrollToEmbed />
             <Link
               href="/portal"
               className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#13315C] px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#1A4478] active:scale-[0.98] md:px-5"
@@ -241,13 +239,13 @@ export default function LandingPage() {
                 </li>
               ))}
               <li>
-                <Link
-                  href="/portal/bbr"
+                <a
+                  href="#agendar-demo"
                   onClick={() => setMobileNavOpen(false)}
                   className="block rounded-xl px-3 py-3 text-sm font-bold text-[#2DD4BF]"
                 >
-                  Probar demo piloto →
-                </Link>
+                  Agendar demo →
+                </a>
               </li>
             </ul>
           </nav>
@@ -277,12 +275,7 @@ export default function LandingPage() {
                 Ingresar como comercializadora
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link
-                href="/portal/bbr"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#2DD4BF]/40 bg-[#2DD4BF]/10 px-6 py-4 text-base font-bold text-[#13315C] transition hover:bg-[#2DD4BF]/20"
-              >
-                Probar demo piloto
-              </Link>
+              <ScheduleDemoButton scrollToEmbed />
               <a
                 href="#como-funciona"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-[#13315C]/15 bg-white px-6 py-4 text-base font-bold text-[#13315C] transition hover:bg-[#F1F5F9]"
@@ -481,6 +474,8 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <DemoBookingEmbed />
+
       <section className="border-t border-[#13315C]/8 bg-[#13315C] px-5 py-20 md:px-8">
         <div className="mx-auto max-w-3xl text-center text-white">
           <h2 className="text-3xl font-black md:text-4xl">
@@ -499,9 +494,12 @@ export default function LandingPage() {
           </Link>
           <p className="mt-4 text-sm text-white/55">
             ¿Quieres ver el flujo antes?{" "}
-            <Link href="/portal/bbr" className="font-bold text-[#2DD4BF] underline-offset-2 hover:underline">
-              Entra al demo piloto BBR × La Vista
-            </Link>
+            <a
+              href="#agendar-demo"
+              className="font-bold text-[#2DD4BF] underline-offset-2 hover:underline"
+            >
+              Agenda una demo con nuestro equipo
+            </a>
           </p>
         </div>
       </section>
@@ -520,9 +518,9 @@ export default function LandingPage() {
               <Link href="/portal" className="text-[#13315C]/65 hover:text-[#13315C]">
                 Portal comercializadoras
               </Link>
-              <Link href="/portal/bbr" className="text-[#13315C]/65 hover:text-[#13315C]">
-                Demo piloto
-              </Link>
+              <a href="#agendar-demo" className="text-[#13315C]/65 hover:text-[#13315C]">
+                Agendar demo
+              </a>
               <Link href="/admin/login" className="text-[#13315C]/65 hover:text-[#13315C]">
                 Admin
               </Link>

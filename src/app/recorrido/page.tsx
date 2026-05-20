@@ -59,6 +59,10 @@ import {
   type DisponibilidadUnidad,
   type Prototipo,
 } from "@/lib/data";
+import {
+  leadRegistrationMessage,
+  shouldQueueLeadForCrm,
+} from "@/lib/crm/sync-policy";
 
 type ProductoFiltro = "casa" | "departamento" | "terreno";
 type ProductoSeleccion = "todos" | ProductoFiltro;
@@ -777,7 +781,7 @@ export default function RecorridoPage() {
       writeLocalArray(LEADS_KEY, [...existingLeads, savedLead]);
       patchState({ leadId: savedLead.id });
 
-      if (result.status !== "synced") {
+      if (shouldQueueLeadForCrm(result)) {
         writeLocalArray(CRM_PENDING_KEY, [
           ...readLocalArray(CRM_PENDING_KEY),
           savedLead,
@@ -785,24 +789,14 @@ export default function RecorridoPage() {
       }
 
       setClientValidationStatus("success");
-      setClientValidationMessage(
-        result.status === "synced"
-          ? "Prospecto registrado y enviado al CRM del desarrollo."
-          : "Prospecto registrado. Quedó pendiente de envío al CRM.",
-      );
+      setClientValidationMessage(leadRegistrationMessage(result));
       return true;
     } catch {
-      const queuedLead = { ...lead, crmStatus: "queued" };
+      const queuedLead = { ...lead, crmStatus: "local" };
       writeLocalArray(LEADS_KEY, [...existingLeads, queuedLead]);
-      writeLocalArray(CRM_PENDING_KEY, [
-        ...readLocalArray(CRM_PENDING_KEY),
-        queuedLead,
-      ]);
       patchState({ leadId: queuedLead.id });
       setClientValidationStatus("success");
-      setClientValidationMessage(
-        "Prospecto registrado. Quedó pendiente de envío al CRM.",
-      );
+      setClientValidationMessage("Prospecto registrado en gabi.");
       return true;
     } finally {
       setIsRegisteringLead(false);

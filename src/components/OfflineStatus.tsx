@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { CheckCircle2, CloudOff, RefreshCcw, Wifi } from "lucide-react";
+import {
+  isDesarrolloCrmEnabled,
+  shouldRemoveLeadFromCrmQueue,
+} from "@/lib/crm/sync-policy";
 
 const CRM_PENDING_KEY = "gabi_crm_pending";
 const LEADS_KEY = "gabi_leads";
@@ -25,6 +30,8 @@ type PendingLead = {
   crmStatus?: string;
 };
 
+const ASESOR_ROUTE_PREFIXES = ["/dashboard", "/desarrollos", "/recorrido", "/cotizador"];
+
 const readArray = <T,>(key: string): T[] => {
   try {
     const value = localStorage.getItem(key);
@@ -39,22 +46,60 @@ const writeArray = <T,>(key: string, value: T[]) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
+const filterActionablePending = (leads: PendingLead[], crmConfigured: boolean) => {
+  if (!crmConfigured) {
+    return [];
+  }
+
+  return leads.filter((lead) => isDesarrolloCrmEnabled(lead.desarrolloId));
+};
+
 export function OfflineStatus() {
+  const pathname = usePathname();
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncOk, setLastSyncOk] = useState(false);
+  const [crmConfigured, setCrmConfigured] = useState(false);
+  const [crmChecked, setCrmChecked] = useState(false);
 
-  const refreshPendingCount = useCallback(() => {
-    setPendingCount(readArray<PendingLead>(CRM_PENDING_KEY).length);
-  }, []);
+  const isAsesorRoute = ASESOR_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-  const syncPendingLeads = useCallback(async () => {
-    if (!navigator.onLine || syncing) {
+  const refreshPendingCount = useCallback(
+    (configured = crmConfigured) => {
+      const actionable = filterActionablePending(
+        readArray<PendingLead>(CRM_PENDING_KEY),
+        configured,
+      );
+      setPendingCount(actionable.length);
+    },
+    [crmConfigured],
+  );
+
+  const purgeNonActionablePending = useCallback((configured: boolean) => {
+    const allPending = readArray<PendingLead>(CRM_PENDING_KEY);
+
+    if (!configured) {
+      if (allPending.length) {
+        writeArray(CRM_PENDING_KEY, []);
+      }
+      setPendingCount(0);
       return;
     }
 
-    const pending = readArray<PendingLead>(CRM_PENDING_KEY);
+    const actionable = filterActionablePending(allPending, true);
+    if (actionable.length !== allPending.length) {
+      writeArray(CRM_PENDING_KEY, actionable);
+    }
+    setPendingCount(actionable.length);
+  }, []);
+
+  const syncPendingLeads = useCallback(async () => {
+    if (!navigator.onLine || syncing || !crmConfigured) {
+      return;
+    }
+
+    const pending = filterActionablePending(readArray<PendingLead>(CRM_PENDING_KEY), true);
 
     if (!pending.length) {
       setPendingCount(0);
@@ -83,9 +128,9 @@ export function OfflineStatus() {
             },
           }),
         });
-        const result = (await response.json()) as { status?: string };
+        const result = (await response.json()) as { status?: string; reason?: string };
 
-        if (result.status === "synced" || result.status === "duplicate") {
+        if (shouldRemoveLeadFromCrmQueue(result)) {
           if (lead.id) {
             syncedIds.add(lead.id);
           }
@@ -108,7 +153,39 @@ export function OfflineStatus() {
     setPendingCount(remaining.length);
     setLastSyncOk(Boolean(pending.length && !remaining.length));
     setSyncing(false);
-  }, [syncing]);
+  }, [crmConfigured, syncing]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCrmStatus = async () => {
+      try {
+        const response = await fetch("/api/crm/status");
+        const data = (await response.json()) as { configured?: boolean };
+        if (cancelled) {
+          return;
+        }
+        const configured = Boolean(data.configured);
+        setCrmConfigured(configured);
+        purgeNonActionablePending(configured);
+      } catch {
+        if (!cancelled) {
+          setCrmConfigured(false);
+          purgeNonActionablePending(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setCrmChecked(true);
+        }
+      }
+    };
+
+    void loadCrmStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [purgeNonActionablePending]);
 
   useEffect(() => {
     const updateOnlineStatus = () => {
@@ -117,33 +194,42 @@ export function OfflineStatus() {
     };
 
     updateOnlineStatus();
+    const onStorageChange = () => refreshPendingCount();
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
-    window.addEventListener("storage", refreshPendingCount);
+    window.addEventListener("storage", onStorageChange);
 
     return () => {
       window.removeEventListener("online", updateOnlineStatus);
       window.removeEventListener("offline", updateOnlineStatus);
-      window.removeEventListener("storage", refreshPendingCount);
+      window.removeEventListener("storage", onStorageChange);
     };
   }, [refreshPendingCount]);
 
   useEffect(() => {
-    if (isOnline && pendingCount) {
+    if (crmChecked && crmConfigured && isOnline && pendingCount) {
       void syncPendingLeads();
     }
-  }, [isOnline, pendingCount, syncPendingLeads]);
+  }, [crmChecked, crmConfigured, isOnline, pendingCount, syncPendingLeads]);
 
   const status = useMemo(() => {
+    if (!crmChecked) {
+      return null;
+    }
+
     if (!isOnline) {
       return {
         icon: CloudOff,
         label: "Sin internet",
-        detail: pendingCount
+        detail: crmConfigured && pendingCount
           ? `${pendingCount} prospecto(s) por enviar al CRM`
           : "Puedes seguir usando gabi con datos locales",
         className: "bg-gabi-navy text-white",
       };
+    }
+
+    if (!crmConfigured) {
+      return null;
     }
 
     if (syncing) {
@@ -174,7 +260,7 @@ export function OfflineStatus() {
     }
 
     return null;
-  }, [isOnline, lastSyncOk, pendingCount, syncing]);
+  }, [crmChecked, crmConfigured, isOnline, lastSyncOk, pendingCount, syncing]);
 
   useEffect(() => {
     if (!lastSyncOk) {
@@ -185,7 +271,7 @@ export function OfflineStatus() {
     return () => window.clearTimeout(timeout);
   }, [lastSyncOk]);
 
-  if (!status) {
+  if (!isAsesorRoute || !status) {
     return null;
   }
 
@@ -199,7 +285,7 @@ export function OfflineStatus() {
           <p className="text-sm font-black">{status.label}</p>
           <p className="text-xs font-semibold opacity-85">{status.detail}</p>
         </div>
-        {isOnline && pendingCount ? (
+        {crmConfigured && isOnline && pendingCount ? (
           <button
             type="button"
             onClick={() => void syncPendingLeads()}
