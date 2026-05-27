@@ -2,11 +2,18 @@
 // Datos locales para modo offline-first
 // La Vista Residencial - BBR Habitarea
 
+import {
+  pasajeAlamosDisponibilidades,
+  pasajeAlamosPrototipos,
+} from "@/lib/catalog/pasaje-alamos.generated";
+
 export interface Cluster {
   id: string
+  /** Desarrollo al que pertenece; por defecto La Vista en seed/import. */
+  desarrolloId?: string
   nombre: string
   slug: string
-  tipo: 'casas' | 'terrenos' | 'departamentos' | 'mixto'
+  tipo: 'casas' | 'terrenos' | 'departamentos' | 'oficinas' | 'mixto'
   totalViviendas: number
   descripcion: string
   precioDesde: number
@@ -70,7 +77,7 @@ export interface DisponibilidadUnidad {
   id: string
   clusterId: string
   unidad: string
-  tipo: 'casa' | 'departamento' | 'terreno'
+  tipo: 'casa' | 'departamento' | 'terreno' | 'oficina'
   estatus: 'disponible' | 'apartado' | 'vendido' | 'bloqueado'
   prototipoId?: string
   precio?: number
@@ -78,6 +85,14 @@ export interface DisponibilidadUnidad {
   superficieM2?: number
   superficieTerrenoM2?: number
   superficieConstruccionM2?: number
+  /** Superficie interna habitable (Pasaje Álamos). */
+  superficieInternaM2?: number
+  /** Superficie externa: terraza/balcón (Pasaje Álamos). */
+  superficieExternaM2?: number
+  /** Superficie de bodega asignada (Pasaje Álamos). */
+  superficieBodegaM2?: number
+  /** Número de cajones de estacionamiento (Pasaje Álamos). */
+  cajones?: number
   entrega?: string
   etapa?: string
   torre?: string
@@ -137,7 +152,7 @@ export interface Desarrollo {
   ubicacion: string
   descripcion: string
   precioDesde: number
-  tiposProducto: Array<'casas' | 'terrenos' | 'departamentos'>
+  tiposProducto: Array<'casas' | 'terrenos' | 'departamentos' | 'oficinas'>
   estado: 'activo' | 'proximamente'
   logo?: string
   desarrolladorLogo?: string
@@ -145,13 +160,31 @@ export interface Desarrollo {
   colorAcento: string
   /** PDF oficial del desarrollo en /public o subido en admin. */
   brochurePdf?: string
+  /** Imagen del master plan en /public (recorrido y materiales comerciales). */
+  masterPlanImage?: string
   crm: {
     provider: 'hubspot' | 'custom' | 'none'
     enabled: boolean
   }
 }
 
-export interface TecnicaCierre {
+export type DatosBancarios = {
+  razonSocial: string
+  rfc: string
+  banco: string
+  sucursal: string
+  cuenta: string
+  clabe: string
+  concepto: string
+  reportarA: string
+}
+
+export type ContactoClave = {
+  nombre: string
+  rol: string
+}
+
+export type TecnicaCierre = {
   id: string
   nombre: string
   descripcion: string
@@ -242,6 +275,55 @@ export const clusters: Cluster[] = [
     ],
     fotoPortada: '/clusters/volterra.jpg',
     logo: '/desarrollos/la-vista/logos/volterra.png',
+    activo: true
+  },
+  {
+    id: 'pasaje-alamos-departamentos',
+    desarrolloId: 'pasaje-alamos',
+    nombre: 'Departamentos',
+    slug: 'departamentos',
+    tipo: 'departamentos',
+    totalViviendas: 81,
+    descripcion:
+      '81 departamentos en 7 niveles. 12 modelos de 1, 2 o 3 recámaras con motor lobby, rooftop y amenidades compartidas.',
+    precioDesde: 5099926,
+    entregaGeneral: 'Por confirmar',
+    amenidades: [
+      'Motor lobby',
+      'Elevadores',
+      'Rooftop con vistas al centro histórico',
+      'Alberca con firepit',
+      'Family room',
+      'Zona de paquetería',
+      'Acceso al área comercial'
+    ],
+    fotoPortada: '/desarrollos/pasaje-alamos/departamentos-portada.jpg',
+    logo: '/logos/pasaje-alamos.png',
+    activo: true
+  },
+  {
+    id: 'pasaje-alamos-oficinas',
+    desarrolloId: 'pasaje-alamos',
+    nombre: 'Oficinas',
+    slug: 'oficinas',
+    tipo: 'oficinas',
+    totalViviendas: 57,
+    descripcion:
+      '57 oficinas en 6 niveles con coworking, salas de juntas, terrazas y acceso directo al pasaje comercial.',
+    precioDesde: 3905405,
+    entregaGeneral: 'Por confirmar',
+    amenidades: [
+      'Motor lobby',
+      'Elevadores',
+      'Coworking',
+      'Salas de juntas',
+      'Salas de espera',
+      'Rooftop',
+      'Zona de paquetería',
+      'Kioscos comerciales'
+    ],
+    fotoPortada: '/desarrollos/pasaje-alamos/oficinas-portada.jpg',
+    logo: '/logos/pasaje-alamos.png',
     activo: true
   }
 ]
@@ -790,9 +872,32 @@ export const desarrollos: Desarrollo[] = [
     desarrolladorLogo: '/logos/grupo-vinte.png',
     colorPrincipal: '#1B4332',
     colorAcento: '#C8A276',
+    masterPlanImage: '/desarrollos/la-vista/master-plan.png',
     crm: {
       provider: 'hubspot',
       enabled: true
+    }
+  },
+  {
+    id: 'pasaje-alamos',
+    nombre: 'Pasaje Álamos',
+    slug: 'pasaje-alamos',
+    desarrollador: 'Opera Desarrolladora',
+    comercializador: 'BBR Habitarea',
+    ubicacion: 'Álamos 2ª Sección, Querétaro, Qro.',
+    descripcion:
+      'Desarrollo de usos mixtos en el primer cuadro de Álamos: departamentos, oficinas y locales comerciales. Sin salir.',
+    precioDesde: 3905405,
+    tiposProducto: ['departamentos', 'oficinas'],
+    estado: 'activo',
+    logo: '/logos/pasaje-alamos.png',
+    desarrolladorLogo: '/logos/opera-desarrolladora.png',
+    colorPrincipal: '#242E38',
+    colorAcento: '#C7A694',
+    brochurePdf: '/documentos/pasaje-alamos/tarjetas-proceso.pdf',
+    crm: {
+      provider: 'none',
+      enabled: false
     }
   }
 ]
@@ -1052,21 +1157,215 @@ export const grupoVinte = {
 
 export const laVistaOverview = {
   titulo: 'La Vista Residencial',
-  subtitulo: 'Un desarrollo integral con privadas, parques, amenidades y una oferta diversa de producto.',
+  subtitulo:
+    'Comunidad planeada de 210 ha con solo 4,000 viviendas, reserva natural y amenidades integradas.',
   narrativa: [
-    'La Vista combina casas, departamentos dúplex y terrenos dentro de privadas con amenidades independientes.',
-    'El parque central de 4.2 hectáreas y el parque deportivo elevan la experiencia diaria del residente.',
-    'La doble seguridad, los servicios cercanos y la oferta educativa fortalecen la plusvalía.'
+    'La Vista agrupa casas, departamentos y terrenos en clusters como Oliveto, Benevento y Volterra, con plazas comerciales y parques centrales.',
+    'Reserva natural de 60 ha, parque central de 6,400 m² y sport park con pádel, basketball y futbol 5.',
+    'Acceso controlado único; a 12 min de Los Arcos y de la Universidad Anáhuac. Cercanía a H-E-B, Walmart y Home Depot.'
   ],
   destacados: [
-    '3 privadas con amenidades exclusivas',
-    'Parque central de 4.2 hectáreas',
-    'Parque deportivo con pádel, basketball y futbol 5',
-    'Casas, departamentos y terrenos de entrega inmediata o programada'
-  ]
+    'Solo 4,000 viviendas en 210 hectáreas',
+    '60 ha de reserva natural + 4.4 ha de áreas verdes',
+    'Parque central 6,400 m² · Sport park 4,135 m²',
+    'Plaza Green Town y Plaza La Vista · acceso controlado'
+  ],
+  masterPlanImage: '/desarrollos/la-vista/master-plan.png',
+  masterPlanStats: [
+    { valor: '4,000', etiqueta: 'Viviendas' },
+    { valor: '210 ha', etiqueta: 'Superficie total' },
+    { valor: '60 ha', etiqueta: 'Reserva natural' },
+    { valor: '12 min', etiqueta: 'Los Arcos · Anáhuac' }
+  ] as Array<{ valor: string; etiqueta: string }>
 }
 
-export const datosBancarios = {
+export const enrichDesarrolloFromStatic = (remote: Desarrollo): Desarrollo => {
+  const local = desarrollos.find((item) => item.id === remote.id)
+  if (!local) {
+    return remote
+  }
+
+  return {
+    ...remote,
+    brochurePdf: remote.brochurePdf ?? local.brochurePdf,
+    masterPlanImage: remote.masterPlanImage ?? local.masterPlanImage
+  }
+}
+
+export const zonaPasajeAlamos = {
+  titulo: 'Primer cuadro de Álamos',
+  subtitulo:
+    'Avenida Industrialización #09 — circuito Álamos con restaurantes, supers, bancos y servicios a menos de 1 km.',
+  centro: 'Pasaje Álamos',
+  direccion: 'Av. Industrialización #09, Álamos 2ª Sección, Querétaro, Qro.',
+  mapaEmbedUrl:
+    'https://maps.google.com/maps?q=Av.+Industrializaci%C3%B3n+9,+%C3%81lamos+2da+Secc,+76220+Quer%C3%A9taro,+Qro.&t=m&z=15&output=embed',
+  mapaUrl: 'https://maps.app.goo.gl/TmuXEeubV1CvK7Y97',
+  mensajeAsesor:
+    'Antes de hablar de producto, ancla la decisión en ubicación: el único desarrollo mixto en Álamos, con todo a un paso — vivienda, trabajo y consumo sin salir del pasaje.',
+  categoriasOrden: [
+    'Supermercados',
+    'Restaurantes',
+    'Café',
+    'Bancos',
+    'Salud y belleza',
+    'Deportes',
+    'Parques',
+    'Entorno',
+  ],
+  puntosCercanos: [
+    {
+      id: 'heb-alamos',
+      nombre: 'H-E-B',
+      categoria: 'Supermercados',
+      tiempo: '< 1 km',
+      detalle: 'Supermercado de referencia para compra semanal a pie del desarrollo.',
+      destacado: true,
+    },
+    {
+      id: 'walmart-alamos',
+      nombre: 'Walmart',
+      categoria: 'Supermercados',
+      tiempo: '< 1 km',
+      detalle: 'Gran formato con abarrotes, hogar y consumo diario.',
+    },
+    {
+      id: 'costco-alamos',
+      nombre: 'Costco',
+      categoria: 'Supermercados',
+      tiempo: '< 1 km',
+      detalle: 'Club de precios para compras de volumen y servicios.',
+      destacado: true,
+    },
+    {
+      id: 'restaurantes-alamos',
+      nombre: 'Restaurantes de autor',
+      categoria: 'Restaurantes',
+      tiempo: '< 1 km',
+      detalle:
+        'La Barra Verde, Las Estancia Argentina, Andador 58, Nicos, 52-60, Mochomos, Restaurante el 9.',
+      destacado: true,
+    },
+    {
+      id: 'cafes-alamos',
+      nombre: 'Cafeterías',
+      categoria: 'Café',
+      tiempo: '< 1 km',
+      detalle: 'MUEN Coffee Shop, Pan de Lucio, Silverio Urban Coffee, Claudinette, D Concha & Nata.',
+    },
+    {
+      id: 'bancos-alamos',
+      nombre: 'Bancos',
+      categoria: 'Bancos',
+      tiempo: '< 1 km',
+      detalle: 'Citibanamex, Scotiabank, BBVA, Santander y Sanborns.',
+    },
+    {
+      id: 'salud-alamos',
+      nombre: 'Salud y farmacias',
+      categoria: 'Salud y belleza',
+      tiempo: '< 1 km',
+      detalle:
+        'Clínica Integral Care, Dental Clinic, Similares, Farmacia Guadalajara, Benavides y centros de belleza.',
+    },
+    {
+      id: 'deportes-alamos',
+      nombre: 'Gimnasios y deporte',
+      categoria: 'Deportes',
+      tiempo: '< 1 km',
+      detalle: 'Station 24 Fitness, Troop, FIT Factory, Ponte en Forma, Natación Álamos y cancha de fútbol.',
+    },
+    {
+      id: 'parques-alamos',
+      nombre: 'Parques y cultura',
+      categoria: 'Parques',
+      tiempo: '< 1 km',
+      detalle: 'Parque las Hadas, Parque de Álamos, Parroquia de la Inmaculada Concepción, La Fábrica.',
+    },
+    {
+      id: 'centro-historico-qro',
+      nombre: 'Centro Histórico de Querétaro',
+      categoria: 'Entorno',
+      tiempo: 'Minutos',
+      detalle: 'Vistas al centro desde rooftops residencial y de oficinas.',
+      destacado: true,
+    },
+    {
+      id: 'unico-mixto',
+      nombre: 'Único desarrollo mixto en Álamos',
+      categoria: 'Entorno',
+      tiempo: 'En el predio',
+      detalle: 'Residencial + oficinas + retail bajo un mismo pasaje; no hay alternativa comparable en la zona.',
+      destacado: true,
+    },
+  ] satisfies PuntoInteres[],
+}
+
+export const pasajeAlamosDesarrollador = {
+  titulo: 'Opera Desarrolladora',
+  subtitulo: 'Experiencia en proyectos residenciales y centros de negocio desde 2010.',
+  historia:
+    'Opera Desarrolladora desarrolla Pasaje Álamos, un proyecto de usos mixtos en Álamos 2ª Sección que integra vivienda, oficinas y comercio. Enfoque en funcionalidad, plusvalía y experiencia del usuario.',
+  metricas: [
+    { valor: 'Desde 2010', etiqueta: 'en el mercado' },
+    { valor: '81', etiqueta: 'departamentos' },
+    { valor: '57', etiqueta: 'oficinas' },
+    { valor: '12', etiqueta: 'modelos residenciales' },
+  ],
+  respaldo: [
+    'Desarrolladora con proyectos residenciales y corporativos en México',
+    'Único desarrollo mixto en la zona de Álamos',
+    'Productos de nivel medio-alto diseñados para plusvalía',
+    'Amenidades de autor: motor lobby, rooftop, alberca, firepit, coworking',
+  ],
+  fraseAsesor:
+    'Aquí no solo eliges m²: eliges un ecosistema donde vivir, trabajar y consumir converge en un solo pasaje.',
+}
+
+export const pasajeAlamosOverview = {
+  titulo: 'Pasaje Álamos',
+  subtitulo: 'Vive, trabaja y consume. Sin salir. A un paso de todo.',
+  narrativa: [
+    'Proyecto de usos mixtos en Álamos 2ª Sección: residencial, oficinas y locales comerciales bajo un mismo techo.',
+    '81 departamentos en 7 niveles y 57 oficinas en 6 niveles, con 4 niveles de estacionamiento.',
+    'Motor lobby, rooftops con vista al centro, alberca con firepit, coworking y salas de juntas.',
+  ],
+  destacados: [
+    '81 departamentos · 12 modelos (1, 2 y 3 recámaras)',
+    '57 oficinas en 6 niveles',
+    '4 niveles de estacionamiento',
+    'Locales comerciales y kioscos en planta baja',
+    'A un paso de H-E-B, Costco, Walmart, restaurantes y bancos',
+  ],
+}
+
+export const bondadesPasajeAlamos = [
+  'Desarrollo de usos mixtos: residencial, oficinas y comercio',
+  '81 departamentos con 12 modelos · 57 oficinas en formato centro de negocios',
+  'Ubicación estratégica en Álamos 2ª Sección, Querétaro',
+  'Acceso inmediato a vialidades principales y Blvd. Bernardo Quintana',
+  'Motor lobby, estacionamiento subterráneo, rooftop y coworking',
+  'Integración con zona comercial y servicios a menos de 1 km',
+  'Cerca de Centro Histórico, H-E-B, Walmart, Costco, restaurantes y gimnasios',
+  'Superficies de ~71 m² a más de 200 m² con terrazas y home office',
+]
+
+export const tecnicaDosMinutosPasajeAlamos = {
+  titulo: 'Técnica de 2 Minutos',
+  tiempo: 120,
+  puntos: [
+    'Pasaje Álamos es un desarrollo de usos mixtos en Álamos 2ª Sección, Querétaro',
+    'Integra vida residencial, espacios de trabajo y comercio en un solo lugar',
+    '81 departamentos y 57 oficinas en dos torres con múltiples niveles',
+    'Superficies de ~71 m² a más de 200 m², con terrazas, home office y áreas sociales',
+    'Sobre Av. Industrialización, a metros de Blvd. Bernardo Quintana',
+    'Conectividad al Centro Histórico y alta actividad comercial en la zona',
+    'Concepto: reducir traslados y concentrar actividades clave en un solo punto',
+    'Desarrollado por Opera Desarrolladora, con experiencia desde 2010',
+  ],
+}
+
+export const datosBancariosLaVista: DatosBancarios = {
   razonSocial: 'PROMOTORA DE VIVIENDAS INTEGRALES S.A DE C.V.',
   rfc: 'PVI020927QR3',
   banco: 'BANCOMER',
@@ -1074,37 +1373,70 @@ export const datosBancarios = {
   cuenta: '0110130907',
   clabe: '0121-8000-110130-9070',
   concepto: 'NOMBRE, DESARROLLO Y NUM. DE VIVIENDA',
-  reportarA: 'cobranza.lavista@vinte.com'
+  reportarA: 'cobranza.lavista@vinte.com',
 }
 
-export const contactosClave = [
+/** Datos confirmados con cobranza BBR — fideicomiso del proyecto Pasaje Álamos. */
+export const datosBancariosPasajeAlamos: DatosBancarios = {
+  razonSocial: 'FIDEICOMISO 6486/2023 GFM',
+  rfc: 'FGF230324PZ9',
+  banco: 'Banca Mifel',
+  sucursal: '—',
+  cuenta: '01600640948',
+  clabe: '042180016006409483',
+  concepto: 'NOMBRE, PRODUCTO Y NUM. DE UNIDAD · PASAJE ÁLAMOS',
+  reportarA: 'cobranza@bbrhabitarea.com',
+}
+
+/** @deprecated Usar getDatosBancarios(desarrolloId) */
+export const datosBancarios = datosBancariosLaVista
+
+export const getDatosBancarios = (desarrolloId?: string | null): DatosBancarios => {
+  if (desarrolloId === 'pasaje-alamos') {
+    return datosBancariosPasajeAlamos
+  }
+  return datosBancariosLaVista
+}
+
+export const contactosClaveLaVista: ContactoClave[] = [
   { nombre: 'Paty', rol: 'Actualiza disponibilidades' },
   { nombre: 'Penélope', rol: 'Documentos Enkontrol' },
   { nombre: 'Irwin', rol: 'Cotizaciones/simuladores' },
   { nombre: 'Esteban/Salma', rol: 'Registro visitas caseta' },
-  { nombre: 'Lucía', rol: 'Tarjetas de proceso digitales' }
+  { nombre: 'Lucía', rol: 'Tarjetas de proceso digitales' },
 ]
 
-// Funciones helper
-export const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price)
+export const contactosClavePasajeAlamos: ContactoClave[] = [
+  { nombre: 'Gerente comercial', rol: 'Seguimiento prospectos tipo A (24 h / semanal)' },
+  { nombre: 'Asesor', rol: 'Seguimiento semanal y registro en CRM / afluencia' },
+  { nombre: 'Cobranza BBR', rol: 'Anticipos, datos bancarios y formalización' },
+]
+
+export const getContactosClave = (desarrolloId?: string | null): ContactoClave[] => {
+  if (desarrolloId === 'pasaje-alamos') {
+    return contactosClavePasajeAlamos
+  }
+  return contactosClaveLaVista
 }
+
+/** @deprecated Usar getContactosClave(desarrolloId) */
+export const contactosClave = contactosClaveLaVista
+
+// Funciones helper
+export { formatPrice, roundMoney } from '@/lib/format/money'
 
 export const getClusterById = (id: string): Cluster | undefined => {
   return clusters.find(c => c.id === id)
 }
 
 export const getPrototiposByCluster = (clusterId: string): Prototipo[] => {
-  return prototipos.filter(p => p.clusterId === clusterId && p.activo)
+  return [...prototipos, ...pasajeAlamosPrototipos].filter(
+    (p) => p.clusterId === clusterId && p.activo,
+  )
 }
 
 export const getPrototipoById = (id: string): Prototipo | undefined => {
-  return prototipos.find(p => p.id === id)
+  return [...prototipos, ...pasajeAlamosPrototipos].find((p) => p.id === id)
 }
 
 export const getDisponibilidadPlanoByCluster = (clusterId: string): DisponibilidadPlano | undefined => {
@@ -1112,7 +1444,9 @@ export const getDisponibilidadPlanoByCluster = (clusterId: string): Disponibilid
 }
 
 export const getDisponibilidadesByCluster = (clusterId: string): DisponibilidadUnidad[] => {
-  return disponibilidades.filter(unidad => unidad.clusterId === clusterId)
+  return [...disponibilidades, ...pasajeAlamosDisponibilidades].filter(
+    (unidad) => unidad.clusterId === clusterId,
+  )
 }
 
 export const validatePin = (pin: string): Asesor | undefined => {

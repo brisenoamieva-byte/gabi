@@ -43,7 +43,7 @@ const emptyDesarrolloForm = {
   colorAcento: "#2DD4BF",
 };
 
-const productoOptions = ["casa", "departamento", "terreno"] as const;
+const productoOptions = ["casa", "departamento", "terreno", "oficina"] as const;
 
 const portalPasswordHint = (slug: string) =>
   `PORTAL_${slug.toUpperCase().replace(/-/g, "_")}_PASSWORD`;

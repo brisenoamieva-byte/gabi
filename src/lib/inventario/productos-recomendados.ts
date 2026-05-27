@@ -1,4 +1,5 @@
 import type { DisponibilidadUnidad } from "@/lib/data";
+import { formatAreaM2 } from "@/lib/format/money";
 
 export type ProductoRecomendadoRecord = {
   id: string;
@@ -12,6 +13,10 @@ export type ProductoRecomendadoRecord = {
   superficie_m2: number | null;
   superficie_terreno_m2: number | null;
   superficie_construccion_m2: number | null;
+  superficie_interna_m2?: number | null;
+  superficie_externa_m2?: number | null;
+  superficie_bodega_m2?: number | null;
+  cajones?: number | null;
   entrega: string | null;
   etapa: string | null;
   torre: string | null;
@@ -90,25 +95,32 @@ export const formatSuperficiesLabel = (unit: Pick<
 
   if (unit.tipo === "terreno") {
     const value = terreno ?? legacy;
-    return value ? `${value} m² terreno` : "";
+    const formatted = formatAreaM2(value);
+    return formatted ? `${formatted} terreno` : "";
   }
 
   if (unit.tipo === "departamento") {
     const value = construccion ?? legacy;
-    return value ? `${value} m² construcción` : "";
+    const formatted = formatAreaM2(value);
+    return formatted ? `${formatted} construcción` : "";
   }
 
   const parts: string[] = [];
   const terrenoValue = terreno ?? (legacy && !construccion ? legacy : undefined);
   const construccionValue = construccion ?? (legacy && terreno ? legacy : legacy);
 
-  if (terrenoValue) {
-    parts.push(`${terrenoValue} m² terreno`);
+  const terrenoLabel = formatAreaM2(terrenoValue);
+  if (terrenoLabel) {
+    parts.push(`${terrenoLabel} terreno`);
   }
-  if (construccionValue && construccionValue !== terrenoValue) {
-    parts.push(`${construccionValue} m² construcción`);
+  const construccionLabel = formatAreaM2(construccionValue);
+  if (construccionLabel && construccionValue !== terrenoValue) {
+    parts.push(`${construccionLabel} construcción`);
   } else if (construccion && !terreno) {
-    parts.push(`${construccion} m² construcción`);
+    const solo = formatAreaM2(construccion);
+    if (solo) {
+      parts.push(`${solo} construcción`);
+    }
   }
 
   return parts.join(" · ");
@@ -128,6 +140,10 @@ export const mapProductoRecomendadoToUnidad = (
     prototipoId: row.prototipo_id ?? undefined,
     precio: row.precio ?? undefined,
     ...superficies,
+    superficieInternaM2: row.superficie_interna_m2 ?? undefined,
+    superficieExternaM2: row.superficie_externa_m2 ?? undefined,
+    superficieBodegaM2: row.superficie_bodega_m2 ?? undefined,
+    cajones: row.cajones ?? undefined,
     entrega: row.entrega ?? undefined,
     etapa: row.etapa ?? undefined,
     torre: row.torre ?? undefined,

@@ -110,6 +110,9 @@ const collectAssetUrls = (desarrolloId: string) => {
   if (desarrollo?.desarrolladorLogo) {
     urls.add(desarrollo.desarrolladorLogo);
   }
+  if (desarrollo?.masterPlanImage) {
+    urls.add(desarrollo.masterPlanImage);
+  }
 
   clusters.forEach((cluster) => {
     if (cluster.logo) {

@@ -7,7 +7,12 @@ import {
   type Desarrollo,
   type Prototipo,
 } from "@/lib/data";
+import { pasajeAlamosPrototipos } from "@/lib/catalog/pasaje-alamos.generated";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import {
+  applyDesarrolloCodeDefaults,
+  applyRecorridoCodeDefaults,
+} from "@/lib/catalog/code-sync";
 import {
   getDefaultRecorridoContenido,
   mergeRecorridoContenido,
@@ -22,6 +27,24 @@ import {
 } from "@/lib/catalog/types";
 
 const LA_VISTA_ID = "la-vista-residencial";
+
+const clusterDesarrolloId = (clusterId: string) =>
+  fallbackClusters.find((cluster) => cluster.id === clusterId)?.desarrolloId ?? LA_VISTA_ID;
+
+const fallbackPrototiposAll = (): Prototipo[] => [
+  ...fallbackPrototipos,
+  ...pasajeAlamosPrototipos,
+];
+
+const fallbackClustersForDesarrollo = (desarrolloId: string): ClusterRecord[] =>
+  fallbackClusters
+    .filter((cluster) => (cluster.desarrolloId ?? LA_VISTA_ID) === desarrolloId)
+    .map((cluster) => ({ ...cluster, desarrolloId }));
+
+const fallbackPrototiposForDesarrollo = (desarrolloId: string): PrototipoRecord[] =>
+  fallbackPrototiposAll()
+    .filter((item) => clusterDesarrolloId(item.clusterId) === desarrolloId)
+    .map((prototipo) => ({ ...prototipo, desarrolloId }));
 
 const toComercializadora = (row: {
   id: string;
@@ -61,29 +84,30 @@ const toDesarrollo = (row: {
   crm: Desarrollo["crm"] | null;
   recorrido_etapas: string[] | null;
   recorrido_version: number | null;
-}): DesarrolloRecord => ({
-  id: row.id,
-  comercializadoraId: row.comercializadora_id,
-  nombre: row.nombre,
-  slug: row.slug,
-  desarrollador: row.desarrollador ?? "",
-  comercializador: row.comercializadora_id,
-  ubicacion: row.ubicacion ?? "",
-  descripcion: row.descripcion ?? "",
-  precioDesde: Number(row.precio_desde ?? 0),
-  tiposProducto: (row.tipos_producto ?? []) as Desarrollo["tiposProducto"],
-  estado: row.estado,
-  logo: row.logo ?? undefined,
-  desarrolladorLogo: row.desarrollador_logo ?? undefined,
-  colorPrincipal: row.color_principal ?? "#13315C",
-  colorAcento: row.color_acento ?? "#2DD4BF",
-  brochurePdf: row.brochure_pdf ?? undefined,
-  crm: row.crm ?? { provider: "none", enabled: false },
-  recorridoEtapas: row.recorrido_etapas?.length
-    ? row.recorrido_etapas
-    : [...DEFAULT_RECORRIDO_ETAPAS],
-  recorridoVersion: row.recorrido_version ?? 2,
-});
+}): DesarrolloRecord =>
+  applyDesarrolloCodeDefaults({
+    id: row.id,
+    comercializadoraId: row.comercializadora_id,
+    nombre: row.nombre,
+    slug: row.slug,
+    desarrollador: row.desarrollador ?? "",
+    comercializador: row.comercializadora_id,
+    ubicacion: row.ubicacion ?? "",
+    descripcion: row.descripcion ?? "",
+    precioDesde: Number(row.precio_desde ?? 0),
+    tiposProducto: (row.tipos_producto ?? []) as Desarrollo["tiposProducto"],
+    estado: row.estado,
+    logo: row.logo ?? undefined,
+    desarrolladorLogo: row.desarrollador_logo ?? undefined,
+    colorPrincipal: row.color_principal ?? "#13315C",
+    colorAcento: row.color_acento ?? "#2DD4BF",
+    brochurePdf: row.brochure_pdf ?? undefined,
+    crm: row.crm ?? { provider: "none", enabled: false },
+    recorridoEtapas: row.recorrido_etapas?.length
+      ? row.recorrido_etapas
+      : [...DEFAULT_RECORRIDO_ETAPAS],
+    recorridoVersion: row.recorrido_version ?? 2,
+  });
 
 const fallbackComercializadora = (slug: string): ComercializadoraRecord | null => {
   const match = fallbackComercializadores.find((item) => item.slug === slug);
@@ -267,9 +291,7 @@ export const getClustersForDesarrollo = async (desarrolloId: string): Promise<Cl
   const supabase = createSupabaseServiceClient();
 
   if (!supabase) {
-    return fallbackClusters
-      .filter(() => desarrolloId === LA_VISTA_ID)
-      .map((cluster) => ({ ...cluster, desarrolloId }));
+    return fallbackClustersForDesarrollo(desarrolloId);
   }
 
   const { data, error } = await supabase
@@ -280,9 +302,7 @@ export const getClustersForDesarrollo = async (desarrolloId: string): Promise<Cl
     .order("orden", { ascending: true });
 
   if (error || !data?.length) {
-    return fallbackClusters
-      .filter(() => desarrolloId === LA_VISTA_ID)
-      .map((cluster) => ({ ...cluster, desarrolloId }));
+    return fallbackClustersForDesarrollo(desarrolloId);
   }
 
   return data.map((row) => ({
@@ -298,12 +318,7 @@ export const getPrototiposForDesarrollo = async (
   const supabase = createSupabaseServiceClient();
 
   if (!supabase) {
-    return fallbackPrototipos
-      .filter((item) => {
-        const cluster = fallbackClusters.find((c) => c.id === item.clusterId);
-        return Boolean(cluster) && desarrolloId === LA_VISTA_ID;
-      })
-      .map((prototipo) => ({ ...prototipo, desarrolloId }));
+    return fallbackPrototiposForDesarrollo(desarrolloId);
   }
 
   const { data, error } = await supabase
@@ -313,9 +328,7 @@ export const getPrototiposForDesarrollo = async (
     .eq("activo", true);
 
   if (error || !data?.length) {
-    return fallbackPrototipos
-      .filter(() => desarrolloId === LA_VISTA_ID)
-      .map((prototipo) => ({ ...prototipo, desarrolloId }));
+    return fallbackPrototiposForDesarrollo(desarrolloId);
   }
 
   return data.map((row) => ({
@@ -357,7 +370,7 @@ export const getRecorridoContenidoForDesarrollo = async (
   const supabase = createSupabaseServiceClient();
 
   if (!supabase) {
-    return defaults;
+    return applyRecorridoCodeDefaults(desarrolloId, defaults);
   }
 
   const { data, error } = await supabase
@@ -367,11 +380,14 @@ export const getRecorridoContenidoForDesarrollo = async (
     .maybeSingle();
 
   if (error || !data?.recorrido_contenido) {
-    return defaults;
+    return applyRecorridoCodeDefaults(desarrolloId, defaults);
   }
 
-  return mergeRecorridoContenido(
-    defaults,
-    data.recorrido_contenido as Partial<RecorridoContenido>,
+  return applyRecorridoCodeDefaults(
+    desarrolloId,
+    mergeRecorridoContenido(
+      defaults,
+      data.recorrido_contenido as Partial<RecorridoContenido>,
+    ),
   );
 };

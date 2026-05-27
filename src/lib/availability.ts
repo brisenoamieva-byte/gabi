@@ -29,6 +29,7 @@ const countByTipo = (units: DisponibilidadUnidad[]) => ({
   departamento: units.filter((unit) => unit.tipo === "departamento").length,
   casa: units.filter((unit) => unit.tipo === "casa").length,
   terreno: units.filter((unit) => unit.tipo === "terreno").length,
+  oficina: units.filter((unit) => unit.tipo === "oficina").length,
 });
 
 const inferLayoutMode = (
@@ -46,7 +47,7 @@ const inferLayoutMode = (
   const counts = countByTipo(units);
   const activeTypes = Object.values(counts).filter((count) => count > 0).length;
 
-  if (counts.departamento === units.length) {
+  if (counts.departamento === units.length || counts.oficina === units.length) {
     return "departamentos";
   }
 
@@ -80,7 +81,7 @@ const buildAdvisorHint = (
 
 const inferSuggestedTypeFilter = (
   units: DisponibilidadUnidad[],
-  preferredTypes: Array<"casa" | "departamento" | "terreno">,
+  preferredTypes: Array<DisponibilidadUnidad["tipo"]>,
 ): AvailabilityConfig["suggestedTypeFilter"] => {
   if (preferredTypes.length !== 1) {
     return "todos";
@@ -95,7 +96,7 @@ const inferSuggestedTypeFilter = (
 export const resolveAvailabilityConfig = (
   units: DisponibilidadUnidad[],
   plano?: DisponibilidadPlano,
-  preferredProductTypes: Array<"casa" | "departamento" | "terreno"> = [],
+  preferredProductTypes: Array<DisponibilidadUnidad["tipo"]> = [],
   curated = false,
 ): AvailabilityConfig => {
   const layoutMode = inferLayoutMode(units, plano);
@@ -110,13 +111,13 @@ export const resolveAvailabilityConfig = (
 };
 
 export const mapProductoFiltroToAvailabilityTipo = (
-  productTypes: Array<"casa" | "departamento" | "terreno" | "todos">,
-): Array<"casa" | "departamento" | "terreno"> => {
+  productTypes: Array<"casa" | "departamento" | "terreno" | "oficina" | "todos">,
+): Array<DisponibilidadUnidad["tipo"]> => {
   if (productTypes.includes("todos") || productTypes.length !== 1) {
     return [];
   }
 
   return productTypes.filter(
-    (type): type is "casa" | "departamento" | "terreno" => type !== "todos",
+    (type): type is DisponibilidadUnidad["tipo"] => type !== "todos",
   );
 };

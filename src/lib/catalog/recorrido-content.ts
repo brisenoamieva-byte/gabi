@@ -1,10 +1,15 @@
 import {
   bondades,
+  bondadesPasajeAlamos,
   grupoVinte,
   laVistaOverview,
+  pasajeAlamosDesarrollador,
+  pasajeAlamosOverview,
   tecnicaDosMinutos,
+  tecnicaDosMinutosPasajeAlamos,
   tecnicasCierre,
   zonaLaVista,
+  zonaPasajeAlamos,
   type PuntoInteres,
   type TecnicaCierre,
 } from "@/lib/data";
@@ -38,6 +43,8 @@ export type RecorridoOverviewContent = {
   destacados: string[];
   logoPath?: string;
   guiaAsesor?: string;
+  masterPlanImage?: string;
+  masterPlanStats?: Array<{ valor: string; etiqueta: string }>;
 };
 
 export type RecorridoTecnicaDosMinutos = {
@@ -67,13 +74,40 @@ const laVistaDefaults = (): RecorridoContenido => ({
     ...laVistaOverview,
     narrativa: [...laVistaOverview.narrativa],
     destacados: [...laVistaOverview.destacados],
+    masterPlanStats: laVistaOverview.masterPlanStats
+      ? [...laVistaOverview.masterPlanStats]
+      : undefined,
     logoPath: "/logos/la-vista-residencial-transparent.png",
     guiaAsesor:
-      "Presenta La Vista como comunidad integral antes de entrar al cluster específico.",
+      "Presenta La Vista como comunidad integral: usa el master plan para ubicar clusters, plazas y amenidades antes de elegir producto.",
   },
   bondades: [...bondades],
   tecnicasCierre: [...tecnicasCierre],
   tecnicaDosMinutos: { ...tecnicaDosMinutos, puntos: [...tecnicaDosMinutos.puntos] },
+});
+
+const pasajeAlamosDefaults = (): RecorridoContenido => ({
+  zona: { ...zonaPasajeAlamos, puntosCercanos: [...zonaPasajeAlamos.puntosCercanos] },
+  desarrollador: {
+    ...pasajeAlamosDesarrollador,
+    metricas: [...pasajeAlamosDesarrollador.metricas],
+    respaldo: [...pasajeAlamosDesarrollador.respaldo],
+    logoPath: "/logos/opera-desarrolladora.png",
+  },
+  overview: {
+    ...pasajeAlamosOverview,
+    narrativa: [...pasajeAlamosOverview.narrativa],
+    destacados: [...pasajeAlamosOverview.destacados],
+    logoPath: "/logos/pasaje-alamos.png",
+    guiaAsesor:
+      "Presenta Pasaje Álamos como ecosistema mixto antes de elegir departamento u oficina. Ancla en 'Sin salir' y ubicación.",
+  },
+  bondades: [...bondadesPasajeAlamos],
+  tecnicasCierre: [...tecnicasCierre],
+  tecnicaDosMinutos: {
+    ...tecnicaDosMinutosPasajeAlamos,
+    puntos: [...tecnicaDosMinutosPasajeAlamos.puntos],
+  },
 });
 
 const emptyContenido = (): RecorridoContenido => ({
@@ -110,6 +144,10 @@ const emptyContenido = (): RecorridoContenido => ({
 export const getDefaultRecorridoContenido = (desarrolloId: string): RecorridoContenido => {
   if (desarrolloId === "la-vista-residencial") {
     return laVistaDefaults();
+  }
+
+  if (desarrolloId === "pasaje-alamos") {
+    return pasajeAlamosDefaults();
   }
 
   return emptyContenido();

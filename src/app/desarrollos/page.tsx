@@ -12,6 +12,7 @@ import {
   resolveAdvisorEntryPath,
   type PortalSession,
 } from "@/lib/portal/session";
+import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
 import type { Asesor } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 
@@ -43,7 +44,10 @@ export default function DesarrollosPage() {
       const loadDesarrollos = async () => {
         setLoadingCatalog(true);
         try {
-          const ids = parsedUser.desarrollosIds.join(",");
+          const freshUser = (await refreshStoredAsesorSession(parsedUser)) ?? parsedUser;
+          setUser(freshUser);
+
+          const ids = freshUser.desarrollosIds.join(",");
           const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
           const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
           setDesarrollosDisponibles(data.desarrollos ?? []);

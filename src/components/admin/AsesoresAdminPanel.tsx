@@ -163,6 +163,7 @@ export function AsesoresAdminPanel({
         desarrollos?: number;
         clusters?: number;
         prototipos?: number;
+        inventarioPasaje?: number;
         error?: string;
       };
 
@@ -173,7 +174,8 @@ export function AsesoresAdminPanel({
       setSuccess(
         `Catálogo importado: ${data.comercializadoras ?? 0} comercializadora(s), ` +
           `${data.desarrollos ?? 0} desarrollo(s), ${data.clusters ?? 0} cluster(s), ` +
-          `${data.prototipos ?? 0} prototipo(s).`,
+          `${data.prototipos ?? 0} prototipo(s), ` +
+          `${data.inventarioPasaje ?? 0} unidad(es) Pasaje Álamos.`,
       );
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Error al importar catálogo");
@@ -557,8 +559,9 @@ export function AsesoresAdminPanel({
           </p>
           <h2 className="mt-2 text-xl font-black text-[#13315C]">Importar catálogo piloto</h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Carga comercializadoras, desarrollos, clusters y prototipos desde el seed BBR / La Vista.
-            Ejecuta esto una vez después de aplicar la migración 013 en Supabase.
+            Carga comercializadoras, desarrollos, clusters, prototipos e inventario Pasaje Álamos
+            desde el código (equivalente a <code className="text-xs">npm run sync</code> en tu PC).
+            Aplica antes las migraciones en Supabase (<code className="text-xs">npm run db:migrate:hint</code>).
           </p>
           <button
             type="button"

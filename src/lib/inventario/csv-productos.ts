@@ -26,7 +26,7 @@ export type ProductosCsvRow = Record<(typeof PRODUCTOS_CSV_HEADERS)[number], str
 export type TemplateCsvOptions = {
   clusterNombre?: string;
   desarrolloNombre?: string;
-  clusterTipo?: "casas" | "departamentos" | "mixto" | "terrenos";
+  clusterTipo?: "casas" | "departamentos" | "mixto" | "terrenos" | "oficinas";
   prototipos?: Array<{ nombre: string }>;
 };
 
@@ -155,6 +155,23 @@ export const templateCsv = (options?: TemplateCsvOptions) => {
         notas: "",
       });
     }
+  } else if (clusterTipo === "oficinas") {
+    examples.push({
+      orden: "1",
+      unidad: "Oficina 306",
+      tipo: "oficina",
+      prototipo: p0,
+      precio: "6400000",
+      superficie_terreno_m2: "",
+      superficie_construccion_m2: "131",
+      entrega: "Inmediata",
+      etapa: "Nivel 3",
+      visitable: "si",
+      razones_venta: "Vista Álamos | Coworking incluido",
+      instruccion_recorrido: "Mostrar sala de juntas y rooftop",
+      nota_acceso: "",
+      notas: "",
+    });
   } else {
     examples.push({
       orden: "1",

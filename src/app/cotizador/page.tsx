@@ -11,7 +11,8 @@ import {
   type CotizadorCatalog,
   type CotizadorEsquema,
 } from "@/lib/cotizador";
-import { datosBancarios, type Asesor, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
+import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
+import { getDatosBancarios, type Asesor, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
 import {
   readPortalSession,
   resolveAdvisorEntryPath,
@@ -87,7 +88,21 @@ export default function CotizadorPage() {
   const [unidadId, setUnidadId] = useState<string | undefined>();
   const [descuento, setDescuento] = useState(0);
   const [esquema, setEsquema] = useState<CotizadorEsquema>("mensualidades");
+  const [pasajeEsquema, setPasajeEsquema] = useState<PasajeEsquemaPago>("contado");
+  const [pasajeLibreEnganche, setPasajeLibreEnganche] = useState(0.2);
+  const [pasajeLibreMensualidades, setPasajeLibreMensualidades] = useState(0.15);
+  const [pasajeLibreFechaFiniquito, setPasajeLibreFechaFiniquito] = useState<
+    string | undefined
+  >();
+  const [pasajeLibreSinMensEnganche, setPasajeLibreSinMensEnganche] = useState(0.2);
+  const [pasajeLibreSinMensPago, setPasajeLibreSinMensPago] = useState(0.2);
+  const [pasajeLibreSinMensFechaPago, setPasajeLibreSinMensFechaPago] = useState<
+    string | undefined
+  >();
+  const [pasajeLibreSinMensFechaFiniquito, setPasajeLibreSinMensFechaFiniquito] =
+    useState<string | undefined>();
   const [clienteNombre, setClienteNombre] = useState<string | undefined>();
+  const [prospectoRegistrado, setProspectoRegistrado] = useState<string | undefined>();
   const [copiedBank, setCopiedBank] = useState(false);
 
   useEffect(() => {
@@ -159,7 +174,9 @@ export default function CotizadorPage() {
         setPrototipoId(resolveDefaultPrototipo(defaultCluster, recorrido, loadedCatalog));
         setDescuento(recorrido?.descuento ?? 0);
         setEsquema(recorrido?.esquema ?? "mensualidades");
-        setClienteNombre(recorrido?.cliente?.nombre);
+        const nombreRecorrido = recorrido?.cliente?.nombre?.trim() || undefined;
+        setClienteNombre(nombreRecorrido);
+        setProspectoRegistrado(nombreRecorrido);
         setSessionStatus("ready");
       } catch {
         localStorage.removeItem("gabi_user");
@@ -172,6 +189,26 @@ export default function CotizadorPage() {
 
     void loadSession();
   }, [router]);
+
+  useEffect(() => {
+    if (sessionStatus !== "ready") {
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(RECORRIDO_KEY);
+      const recorrido = raw ? (JSON.parse(raw) as RecorridoSnapshot) : {};
+      localStorage.setItem(
+        RECORRIDO_KEY,
+        JSON.stringify({
+          ...recorrido,
+          cliente: { ...recorrido.cliente, nombre: clienteNombre ?? "" },
+        }),
+      );
+    } catch {
+      // Ignorar errores de almacenamiento local.
+    }
+  }, [clienteNombre, sessionStatus]);
 
   const catalogMemo = useMemo(() => catalog, [catalog]);
 
@@ -194,16 +231,21 @@ export default function CotizadorPage() {
     clusterId || undefined,
   );
 
+  const activeDatosBancarios = useMemo(
+    () => getDatosBancarios(desarrollo?.id),
+    [desarrollo?.id],
+  );
+
   const copyBankData = async () => {
     const text = [
-      datosBancarios.razonSocial,
-      `RFC: ${datosBancarios.rfc}`,
-      `Banco: ${datosBancarios.banco}`,
-      `Sucursal: ${datosBancarios.sucursal}`,
-      `Cuenta: ${datosBancarios.cuenta}`,
-      `CLABE: ${datosBancarios.clabe}`,
-      `Concepto: ${datosBancarios.concepto}`,
-      `Reportar a: ${datosBancarios.reportarA}`,
+      activeDatosBancarios.razonSocial,
+      `RFC: ${activeDatosBancarios.rfc}`,
+      `Banco: ${activeDatosBancarios.banco}`,
+      `Sucursal: ${activeDatosBancarios.sucursal}`,
+      `Cuenta: ${activeDatosBancarios.cuenta}`,
+      `CLABE: ${activeDatosBancarios.clabe}`,
+      `Concepto: ${activeDatosBancarios.concepto}`,
+      `Reportar a: ${activeDatosBancarios.reportarA}`,
     ].join("\n");
 
     await navigator.clipboard.writeText(text);
@@ -250,37 +292,39 @@ export default function CotizadorPage() {
     <main className="min-h-screen bg-[#F2F0E9] text-[#1e293b]">
       <header className="border-b border-[#201044]/10 bg-white px-4 py-4 shadow-sm sm:px-6 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
-            {portal?.logo ? (
-              <Image
-                src={portal.logo}
-                alt={portal.nombre}
-                width={420}
-                height={260}
-                className="mt-0.5 h-9 w-auto shrink-0 object-contain mix-blend-multiply sm:mt-0 sm:h-10"
-              />
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            {desarrollo.logo ? (
+              <div className="flex h-[4.25rem] w-[10.5rem] shrink-0 items-center justify-center rounded-2xl border border-[#201044]/8 bg-[#F2F0E9] px-3 py-2 shadow-sm">
+                <Image
+                  src={desarrollo.logo}
+                  alt={desarrollo.nombre}
+                  width={220}
+                  height={88}
+                  className="h-auto max-h-14 w-full object-contain"
+                  priority
+                />
+              </div>
             ) : null}
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6cc24a] sm:text-[11px]">
                 Cotización express
               </p>
               <h1 className="mt-1 text-balance text-xl font-black leading-tight text-[#201044] sm:text-2xl md:text-[1.75rem]">
-                Cotizador
-                <span className="font-bold text-[#201044]/55"> · {desarrollo.nombre}</span>
+                {desarrollo.nombre}
               </h1>
               <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-[0.9375rem]">
-                {clienteNombre ? (
-                  <>
-                    Cliente:{" "}
-                    <span className="font-semibold text-[#201044]">{clienteNombre}</span>
-                    {" · "}
-                    inventario real o prototipo
-                  </>
-                ) : (
-                  "Arma números rápidos con inventario real o prototipo."
-                )}
+                Simulador con inventario real · PDF listo para enviar
               </p>
             </div>
+            {portal?.logo ? (
+              <Image
+                src={portal.logo}
+                alt={portal.nombre}
+                width={120}
+                height={48}
+                className="hidden h-8 w-auto shrink-0 object-contain opacity-70 sm:block"
+              />
+            ) : null}
           </div>
 
           <div className="flex flex-wrap gap-2 lg:shrink-0 lg:justify-end">
@@ -311,19 +355,13 @@ export default function CotizadorPage() {
       </header>
 
       <section className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 md:px-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
-        <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-lg shadow-[#201044]/5 sm:rounded-[1.75rem] sm:p-6 md:p-8">
-          <div className="border-b border-slate-100 pb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
-              Configuración
-            </p>
-            <h2 className="mt-1.5 text-lg font-black text-[#201044] sm:text-xl">
-              Producto y números
-            </h2>
-          </div>
-          <div className="mt-5 sm:mt-6">
+        <div className="rounded-2xl border border-[#201044]/8 bg-white p-4 shadow-lg shadow-[#201044]/5 sm:rounded-[1.75rem] sm:p-6 md:p-7">
+          <div className="mt-1 sm:mt-0">
             <CotizadorPanel
               desarrolloId={desarrollo.id}
               desarrolloNombre={desarrollo.nombre}
+              desarrolloLogo={desarrollo.logo}
+              prospectoRegistrado={prospectoRegistrado}
               clusterId={clusterId}
               prototipoId={prototipoId}
               unidadId={unidadId}
@@ -331,14 +369,33 @@ export default function CotizadorPage() {
               descuento={descuento}
               esquema={esquema}
               clienteNombre={clienteNombre}
+              asesorNombre={user?.nombre}
               catalog={catalogMemo}
               showSelectors
               showCopy
+              showPdf
               onClusterChange={handleClusterChange}
               onPrototipoChange={handlePrototipoChange}
               onUnidadChange={setUnidadId}
               onDescuentoChange={setDescuento}
               onEsquemaChange={setEsquema}
+              pasajeEsquema={pasajeEsquema}
+              pasajeLibreEnganche={pasajeLibreEnganche}
+              pasajeLibreMensualidades={pasajeLibreMensualidades}
+              pasajeLibreFechaFiniquito={pasajeLibreFechaFiniquito}
+              pasajeLibreSinMensEnganche={pasajeLibreSinMensEnganche}
+              pasajeLibreSinMensPago={pasajeLibreSinMensPago}
+              pasajeLibreSinMensFechaPago={pasajeLibreSinMensFechaPago}
+              pasajeLibreSinMensFechaFiniquito={pasajeLibreSinMensFechaFiniquito}
+              onPasajeEsquemaChange={setPasajeEsquema}
+              onPasajeLibreEngancheChange={setPasajeLibreEnganche}
+              onPasajeLibreMensualidadesChange={setPasajeLibreMensualidades}
+              onPasajeLibreFechaFiniquitoChange={setPasajeLibreFechaFiniquito}
+              onPasajeLibreSinMensEngancheChange={setPasajeLibreSinMensEnganche}
+              onPasajeLibreSinMensPagoChange={setPasajeLibreSinMensPago}
+              onPasajeLibreSinMensFechaPagoChange={setPasajeLibreSinMensFechaPago}
+              onPasajeLibreSinMensFechaFiniquitoChange={setPasajeLibreSinMensFechaFiniquito}
+              onClienteNombreChange={setClienteNombre}
             />
           </div>
         </div>
@@ -355,7 +412,7 @@ export default function CotizadorPage() {
                   Razón social
                 </dt>
                 <dd className="mt-0.5 break-words text-[0.9375rem] font-semibold leading-snug text-slate-700">
-                  {datosBancarios.razonSocial}
+                  {activeDatosBancarios.razonSocial}
                 </dd>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -363,13 +420,13 @@ export default function CotizadorPage() {
                   <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                     RFC
                   </dt>
-                  <dd className="mt-0.5 font-semibold text-slate-700">{datosBancarios.rfc}</dd>
+                  <dd className="mt-0.5 font-semibold text-slate-700">{activeDatosBancarios.rfc}</dd>
                 </div>
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                     Banco
                   </dt>
-                  <dd className="mt-0.5 font-semibold text-slate-700">{datosBancarios.banco}</dd>
+                  <dd className="mt-0.5 font-semibold text-slate-700">{activeDatosBancarios.banco}</dd>
                 </div>
               </div>
               <div>
@@ -377,7 +434,7 @@ export default function CotizadorPage() {
                   CLABE
                 </dt>
                 <dd className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-slate-700">
-                  {datosBancarios.clabe}
+                  {activeDatosBancarios.clabe}
                 </dd>
               </div>
               <div>
@@ -385,7 +442,7 @@ export default function CotizadorPage() {
                   Concepto
                 </dt>
                 <dd className="mt-0.5 text-sm leading-relaxed text-slate-500">
-                  {datosBancarios.concepto}
+                  {activeDatosBancarios.concepto}
                 </dd>
               </div>
             </dl>

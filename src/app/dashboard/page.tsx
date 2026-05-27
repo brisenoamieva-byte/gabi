@@ -21,6 +21,7 @@ import {
   readPortalSession,
   resolveAdvisorEntryPath,
 } from "@/lib/portal/session";
+import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
 import { formatPrice, type Asesor, type Desarrollo } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
@@ -71,8 +72,9 @@ export default function DashboardPage() {
     const loadSession = async () => {
       try {
         const parsedUser = JSON.parse(storedUser) as SessionUser;
+        const freshUser = (await refreshStoredAsesorSession(parsedUser)) ?? parsedUser;
 
-        if (!parsedUser.desarrollosIds.includes(storedDevelopment)) {
+        if (!freshUser.desarrollosIds.includes(storedDevelopment)) {
           localStorage.removeItem("gabi_desarrollo");
           router.replace("/desarrollos");
           return;
@@ -94,7 +96,7 @@ export default function DashboardPage() {
           setPortal(portal);
         }
 
-        setUser(parsedUser);
+        setUser(freshUser);
         setDesarrollo(selectedDevelopment);
       } catch {
         localStorage.removeItem("gabi_user");

@@ -14,7 +14,7 @@ import { parseRazonesVenta } from "@/lib/inventario/productos-recomendados";
 import type { ProductoRecomendadoRecord } from "@/lib/inventario/productos-recomendados";
 import { superficieColumnHint } from "@/lib/inventario/csv-productos";
 
-const tipos = ["casa", "departamento", "terreno"] as const;
+const tipos = ["casa", "departamento", "terreno", "oficina"] as const;
 
 export type EditableProductoRow = {
   id: string;

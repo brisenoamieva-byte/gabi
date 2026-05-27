@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -31,19 +31,38 @@ import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { PostVisitaModal } from "@/components/recorrido/PostVisitaModal";
 import { trackVisita } from "@/lib/visitas/client";
+import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
+import {
+  isPasajeDepartamentosCluster,
+} from "@/lib/catalog/pasaje-alamos-acabados";
+import {
+  computePasajeSimulador,
+  formatMonthYear,
+  formatPctShort,
+  PASAJE_FECHA_ENTREGA,
+  type PasajeEsquemaPago,
+  type PasajeUnidadTipo,
+} from "@/lib/cotizador/pasaje-simulador";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import {
   availabilityViewDescription,
   mapProductoFiltroToAvailabilityTipo,
   resolveAvailabilityConfig,
 } from "@/lib/availability";
+import {
+  getPrecioDesdePrototipo,
+  getUnidadesPorPrototipo,
+  prototipoMuestraPrecioDesde,
+} from "@/lib/inventario/prototipo-precios";
+import { formatAreaM2 } from "@/lib/format/money";
 import { formatSuperficiesLabel } from "@/lib/inventario/productos-recomendados";
 import { fetchClusterInventario } from "@/lib/inventario/cluster-inventory-client";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 import {
   clusters,
-  datosBancarios,
+  enrichDesarrolloFromStatic,
+  getDatosBancarios,
   desarrollos,
   formatPrice,
   getDisponibilidadesByCluster,
@@ -71,7 +90,7 @@ import {
   resolveAdvisorEntryPath,
 } from "@/lib/portal/session";
 
-type ProductoFiltro = "casa" | "departamento" | "terreno";
+type ProductoFiltro = "casa" | "departamento" | "terreno" | "oficina";
 type ProductoSeleccion = "todos" | ProductoFiltro;
 type RecamarasFiltro = "2" | "3" | "4+";
 type RecamarasSeleccion = "cualquiera" | RecamarasFiltro;
@@ -98,8 +117,17 @@ type RecorridoState = {
   recamarasFiltro: RecamarasSeleccion[];
   clusterId: string;
   prototipoId: string;
+  unidadId: string;
   descuento: number;
   esquema: "mensualidades" | "contado";
+  pasajeEsquema?: PasajeEsquemaPago;
+  pasajeLibreEnganche?: number;
+  pasajeLibreMensualidades?: number;
+  pasajeLibreFechaFiniquito?: string;
+  pasajeLibreSinMensEnganche?: number;
+  pasajeLibreSinMensPago?: number;
+  pasajeLibreSinMensFechaPago?: string;
+  pasajeLibreSinMensFechaFiniquito?: string;
 };
 
 const STORAGE_KEY = "gabi_recorrido_actual";
@@ -193,13 +221,14 @@ const initialState: RecorridoState = {
   recamarasFiltro: ["cualquiera"],
   clusterId: "",
   prototipoId: "",
+  unidadId: "",
   descuento: 0,
   esquema: "mensualidades",
 };
 
 const money = (value: number) => formatPrice(Math.max(0, value));
 const PRICE_STEP = 250000;
-const priceOptions = [
+const DEFAULT_PRICE_OPTIONS = [
   2500000,
   3000000,
   3500000,
@@ -211,6 +240,32 @@ const priceOptions = [
   6500000,
   7000000,
 ];
+
+const roundDownToStep = (value: number) =>
+  Math.floor(value / PRICE_STEP) * PRICE_STEP;
+
+const roundUpToStep = (value: number) =>
+  Math.ceil(value / PRICE_STEP) * PRICE_STEP;
+
+const buildPriceOptionsFromRange = (
+  minPrice: number,
+  maxPrice: number,
+): number[] => {
+  if (!Number.isFinite(minPrice) || !Number.isFinite(maxPrice) || maxPrice <= 0) {
+    return DEFAULT_PRICE_OPTIONS;
+  }
+
+  const start = Math.max(0, roundDownToStep(minPrice));
+  const end = Math.max(start + PRICE_STEP, roundUpToStep(maxPrice));
+  const stops = Math.min(40, Math.ceil((end - start) / PRICE_STEP) + 1);
+  const options: number[] = [];
+
+  for (let i = 0; i < stops; i += 1) {
+    options.push(start + i * PRICE_STEP);
+  }
+
+  return options;
+};
 
 type StoredContact = {
   id?: string;
@@ -254,7 +309,34 @@ const productTypeOptions: { value: ProductoSeleccion; label: string }[] = [
   { value: "casa", label: "Casa" },
   { value: "departamento", label: "Departamento" },
   { value: "terreno", label: "Terreno" },
+  { value: "oficina", label: "Oficina" },
 ];
+
+const desarrolloTipoToProducto: Record<
+  Desarrollo["tiposProducto"][number],
+  ProductoFiltro
+> = {
+  casas: "casa",
+  departamentos: "departamento",
+  terrenos: "terreno",
+  oficinas: "oficina",
+};
+
+const getProductTypeOptionsForDesarrollo = (
+  desarrollo: Desarrollo | null,
+): { value: ProductoSeleccion; label: string }[] => {
+  const allowed = new Set<ProductoFiltro>(
+    (desarrollo?.tiposProducto ?? []).map((tipo) => desarrolloTipoToProducto[tipo]),
+  );
+
+  if (allowed.size === 0) {
+    return productTypeOptions;
+  }
+
+  return productTypeOptions.filter(
+    (option) => option.value === "todos" || allowed.has(option.value),
+  );
+};
 
 const normalizeProductoTipo = (value: unknown): ProductoSeleccion[] => {
   if (Array.isArray(value)) {
@@ -301,6 +383,10 @@ const hasTerrenos = (cluster: Cluster) =>
 const getProductoTipo = (cluster: Cluster, prototipo: Prototipo): ProductoFiltro => {
   const name = prototipo.nombre.toLowerCase();
 
+  if (cluster.tipo === "oficinas") {
+    return "oficina";
+  }
+
   if (cluster.tipo === "departamentos" || name.includes("tarento")) {
     return "departamento";
   }
@@ -312,6 +398,7 @@ const productTypeLabels: Record<ProductoFiltro, string> = {
   casa: "Casas",
   departamento: "Departamentos",
   terreno: "Terrenos",
+  oficina: "Oficinas",
 };
 
 const getClusterProductLabels = (
@@ -324,6 +411,10 @@ const getClusterProductLabels = (
   prototipos.forEach((prototipo) => {
     productTypes.add(getProductoTipo(cluster, prototipo));
   });
+
+  if (cluster.tipo === "oficinas" && productTypes.size === 0) {
+    productTypes.add("oficina");
+  }
 
   if (includeTerrenos) {
     productTypes.add("terreno");
@@ -364,6 +455,7 @@ const availabilityTypeLabel: Record<"todos" | DisponibilidadUnidad["tipo"], stri
   casa: "Casas",
   departamento: "Deptos",
   terreno: "Terrenos",
+  oficina: "Oficinas",
 };
 
 type RecommendedAvailability = {
@@ -383,6 +475,7 @@ export default function RecorridoPage() {
   const [direction, setDirection] = useState(1);
   const [showTwoMinuteGuide, setShowTwoMinuteGuide] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
+  const [prospectoCotizadorRegistrado, setProspectoCotizadorRegistrado] = useState("");
   const [showAvailability, setShowAvailability] = useState(false);
   const [availabilityClusterId, setAvailabilityClusterId] = useState<string | null>(null);
   const [selectedAvailabilityId, setSelectedAvailabilityId] = useState<string | null>(null);
@@ -421,6 +514,100 @@ export default function RecorridoPage() {
     () => normalizeProductoTipo(state.productoTipo),
     [state.productoTipo],
   );
+  const availableProductOptions = useMemo(
+    () => getProductTypeOptionsForDesarrollo(activeDesarrollo),
+    [activeDesarrollo],
+  );
+  const availableProductValues = useMemo(
+    () => new Set(availableProductOptions.map((option) => option.value)),
+    [availableProductOptions],
+  );
+
+  useEffect(() => {
+    if (!activeDesarrollo) {
+      return;
+    }
+
+    const current = normalizeProductoTipo(state.productoTipo);
+    const pruned = current.filter((value) => availableProductValues.has(value));
+    const next = pruned.length ? pruned : (["todos"] as ProductoSeleccion[]);
+
+    if (
+      next.length !== current.length ||
+      next.some((value, index) => value !== current[index])
+    ) {
+      setState((prev) => ({ ...prev, productoTipo: next }));
+    }
+  }, [activeDesarrollo, availableProductValues, state.productoTipo]);
+
+  const desarrolloPriceRange = useMemo(() => {
+    const desarrolloClusters = activeDesarrollo
+      ? activeClusters.filter(
+          (cluster) => !cluster.desarrolloId || cluster.desarrolloId === activeDesarrollo.id,
+        )
+      : activeClusters;
+    const clusterIds = new Set(desarrolloClusters.map((cluster) => cluster.id));
+    const desarrolloPrototipos = activePrototipos.filter((prototipo) =>
+      clusterIds.has(prototipo.clusterId),
+    );
+
+    if (!desarrolloPrototipos.length) {
+      return { min: DEFAULT_PRICE_OPTIONS[0], max: DEFAULT_PRICE_OPTIONS.at(-1) ?? 7000000 };
+    }
+
+    const precios = desarrolloPrototipos
+      .map((prototipo) => {
+        const unidades = getUnidadesPorPrototipo(
+          getDisponibilidadesByCluster(prototipo.clusterId),
+          prototipo.id,
+        );
+        return getPrecioDesdePrototipo(prototipo, unidades);
+      })
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (!precios.length) {
+      return { min: DEFAULT_PRICE_OPTIONS[0], max: DEFAULT_PRICE_OPTIONS.at(-1) ?? 7000000 };
+    }
+
+    return {
+      min: Math.min(...precios),
+      max: Math.max(...precios),
+    };
+  }, [activeDesarrollo, activeClusters, activePrototipos]);
+
+  const priceOptions = useMemo(
+    () => buildPriceOptionsFromRange(desarrolloPriceRange.min, desarrolloPriceRange.max),
+    [desarrolloPriceRange.min, desarrolloPriceRange.max],
+  );
+
+  const lastSyncedDesarrolloIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!activeDesarrollo) {
+      return;
+    }
+
+    if (lastSyncedDesarrolloIdRef.current === activeDesarrollo.id) {
+      return;
+    }
+
+    lastSyncedDesarrolloIdRef.current = activeDesarrollo.id;
+
+    const desiredMin = roundDownToStep(desarrolloPriceRange.min);
+    const desiredMax = roundUpToStep(desarrolloPriceRange.max);
+
+    setState((prev) => {
+      if (prev.precioMinimo <= desiredMin && prev.precioMaximo >= desiredMax) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        precioMinimo: Math.min(prev.precioMinimo, desiredMin),
+        precioMaximo: Math.max(prev.precioMaximo, desiredMax),
+      };
+    });
+  }, [activeDesarrollo, desarrolloPriceRange.min, desarrolloPriceRange.max]);
   const selectedRooms = useMemo(
     () => normalizeRecamarasFiltro(state.recamarasFiltro),
     [state.recamarasFiltro],
@@ -430,17 +617,30 @@ export default function RecorridoPage() {
     state.clusterId || undefined,
   );
 
+  const clusterInventario = useMemo(() => {
+    if (!state.clusterId) {
+      return [];
+    }
+
+    return cotizadorInventario.length > 0
+      ? cotizadorInventario
+      : getDisponibilidadesByCluster(state.clusterId);
+  }, [cotizadorInventario, state.clusterId]);
+
   const filteredPrototiposByCluster = useMemo(() => {
     const byCluster = new Map<string, Prototipo[]>();
     activeClusters.forEach((cluster) => {
+      const clusterInventario = getDisponibilidadesByCluster(cluster.id);
       const matches = activePrototipos
         .filter((item) => item.clusterId === cluster.id)
         .filter((prototipo) => {
         const productType = getProductoTipo(cluster, prototipo);
         const matchesType = matchesProductoTipo(productType, selectedProductTypes);
+        const unidades = getUnidadesPorPrototipo(clusterInventario, prototipo.id);
+        const precioReferencia = getPrecioDesdePrototipo(prototipo, unidades);
         const matchesPrice =
-          prototipo.precioFinal >= state.precioMinimo &&
-          prototipo.precioFinal <= state.precioMaximo;
+          precioReferencia >= state.precioMinimo &&
+          precioReferencia <= state.precioMaximo;
         const matchesRooms = matchesRecamaras(
           prototipo.recamaras,
           selectedRooms,
@@ -492,6 +692,19 @@ export default function RecorridoPage() {
     : [];
   const selectedPrototipo = clusterPrototipos.find(
     (prototipo) => prototipo.id === state.prototipoId,
+  );
+  const unidadesPrototipoSeleccionado = useMemo(
+    () =>
+      selectedPrototipo
+        ? getUnidadesPorPrototipo(clusterInventario, selectedPrototipo.id)
+        : [],
+    [clusterInventario, selectedPrototipo],
+  );
+  const precioDesdePrototipoSeleccionado = selectedPrototipo
+    ? getPrecioDesdePrototipo(selectedPrototipo, unidadesPrototipoSeleccionado)
+    : 0;
+  const muestraPrecioDesdePrototipo = prototipoMuestraPrecioDesde(
+    unidadesPrototipoSeleccionado,
   );
   const availabilityCluster =
     activeClusters.find((cluster) => cluster.id === availabilityClusterId) ?? selectedCluster;
@@ -632,7 +845,10 @@ export default function RecorridoPage() {
     [availabilityUnits, isCuratedAvailability, selectedProductTypes],
   );
   const selectedAvailability =
-    availabilityUnits.find((unit) => unit.id === selectedAvailabilityId) ??
+    (selectedAvailabilityId
+      ? clusterInventario.find((unit) => unit.id === selectedAvailabilityId) ??
+        availabilityUnits.find((unit) => unit.id === selectedAvailabilityId)
+      : undefined) ??
     recommendedAvailability[0]?.unit ??
     availabilityUnits.find((unit) => unit.estatus === "disponible") ??
     availabilityUnits[0];
@@ -642,6 +858,63 @@ export default function RecorridoPage() {
   const precioFinal = selectedPrototipo
     ? selectedPrototipo.precioBase - state.descuento
     : 0;
+
+  const pasajeSimuladorResult = useMemo(() => {
+    if (activeDesarrollo?.id !== "pasaje-alamos") return null;
+    const unidadElegida = state.unidadId
+      ? clusterInventario.find((unit) => unit.id === state.unidadId) ??
+        cotizadorInventario.find((unit) => unit.id === state.unidadId)
+      : selectedAvailability ??
+        cotizadorInventario.find((unit) => unit.prototipoId === selectedPrototipo?.id);
+    const precioLista = unidadElegida?.precio ?? selectedPrototipo?.precioBase ?? 0;
+    if (precioLista <= 0) return null;
+
+    const tipo: PasajeUnidadTipo =
+      unidadElegida?.tipo === "oficina" || selectedCluster?.tipo === "oficinas"
+        ? "oficina"
+        : "departamento";
+
+    const parseISO = (value?: string) => {
+      if (!value) return undefined;
+      const parts = value.split("-").map(Number);
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return undefined;
+      return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+    };
+
+    return computePasajeSimulador({
+      precioLista,
+      tipo,
+      esquema: state.pasajeEsquema ?? "contado",
+      libre: {
+        enganchePct: state.pasajeLibreEnganche ?? 0.2,
+        mensualidadesPct: state.pasajeLibreMensualidades ?? 0.15,
+        fechaFiniquito: parseISO(state.pasajeLibreFechaFiniquito),
+      },
+      libreSinMens: {
+        enganchePct: state.pasajeLibreSinMensEnganche ?? 0.2,
+        pagoPct: state.pasajeLibreSinMensPago ?? 0.2,
+        fechaPagoIntermedio: parseISO(state.pasajeLibreSinMensFechaPago),
+        fechaFiniquito: parseISO(state.pasajeLibreSinMensFechaFiniquito),
+      },
+    });
+  }, [
+    activeDesarrollo?.id,
+    clusterInventario,
+    cotizadorInventario,
+    selectedAvailability,
+    selectedCluster?.tipo,
+    selectedPrototipo?.id,
+    selectedPrototipo?.precioBase,
+    state.unidadId,
+    state.pasajeEsquema,
+    state.pasajeLibreEnganche,
+    state.pasajeLibreFechaFiniquito,
+    state.pasajeLibreMensualidades,
+    state.pasajeLibreSinMensEnganche,
+    state.pasajeLibreSinMensFechaFiniquito,
+    state.pasajeLibreSinMensFechaPago,
+    state.pasajeLibreSinMensPago,
+  ]);
 
   const tags = useMemo(() => {
     const list: { label: string; className: string }[] = [];
@@ -660,6 +933,32 @@ export default function RecorridoPage() {
 
     return list;
   }, [state.cliente.familia, state.cliente.objetivo, state.cliente.presupuesto]);
+
+  const [asesorNombre, setAsesorNombre] = useState<string | undefined>();
+
+  const masterPlanImage = useMemo(() => {
+    return (
+      activeDesarrollo?.masterPlanImage ??
+      activeContenido.overview.masterPlanImage ??
+      null
+    );
+  }, [activeContenido.overview.masterPlanImage, activeDesarrollo?.masterPlanImage]);
+
+  const masterPlanStats = useMemo(() => {
+    return activeContenido.overview.masterPlanStats ?? [];
+  }, [activeContenido.overview.masterPlanStats]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("gabi_user");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { nombre?: string };
+        if (parsed?.nombre) setAsesorNombre(parsed.nombre);
+      }
+    } catch {
+      // Ignorar parse errors en localStorage.
+    }
+  }, []);
 
   useEffect(() => {
     const portal = readPortalSession();
@@ -689,7 +988,7 @@ export default function RecorridoPage() {
         };
 
         if (data.desarrollo) {
-          setActiveDesarrollo(data.desarrollo);
+          setActiveDesarrollo(enrichDesarrolloFromStatic(data.desarrollo));
         } else {
           setActiveDesarrollo(desarrollos.find((item) => item.id === desarrolloId) ?? null);
         }
@@ -742,6 +1041,14 @@ export default function RecorridoPage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
   }, [loaded, state]);
+
+  const prevShowQuoteRef = useRef(false);
+  useEffect(() => {
+    if (showQuote && !prevShowQuoteRef.current) {
+      setProspectoCotizadorRegistrado(state.cliente.nombre.trim());
+    }
+    prevShowQuoteRef.current = showQuote;
+  }, [showQuote, state.cliente.nombre]);
 
   const patchState = (patch: Partial<RecorridoState>) => {
     setState((current) => ({ ...current, ...patch }));
@@ -925,6 +1232,7 @@ export default function RecorridoPage() {
       ...patch,
       clusterId: "",
       prototipoId: "",
+      unidadId: "",
       descuento: 0,
     }));
     setShowQuote(false);
@@ -977,7 +1285,8 @@ export default function RecorridoPage() {
   };
 
   const handleClusterSelect = (clusterId: string) => {
-    patchState({ clusterId, prototipoId: "", descuento: 0 });
+    patchState({ clusterId, prototipoId: "", unidadId: "", descuento: 0 });
+    setSelectedAvailabilityId(null);
     setShowQuote(false);
   };
 
@@ -985,20 +1294,68 @@ export default function RecorridoPage() {
     const prototipo = clusterPrototipos.find((item) => item.id === prototipoId);
     patchState({
       prototipoId,
+      unidadId: "",
       descuento: prototipo ? Math.min(state.descuento, prototipo.bonoMaximo) : 0,
+    });
+    setSelectedAvailabilityId(null);
+  };
+
+  const handlePrototipoUnidadSelect = (unidadId: string) => {
+    const unit =
+      clusterInventario.find((item) => item.id === unidadId) ??
+      availabilityUnits.find((item) => item.id === unidadId);
+    const prototipoFromUnit = unit?.prototipoId
+      ? activePrototipos.find((item) => item.id === unit.prototipoId)
+      : undefined;
+
+    setSelectedAvailabilityId(unidadId);
+    patchState({
+      unidadId,
+      ...(unit?.prototipoId ? { prototipoId: unit.prototipoId } : {}),
+      descuento: prototipoFromUnit
+        ? Math.min(state.descuento, prototipoFromUnit.bonoMaximo)
+        : state.descuento,
     });
   };
 
+  const openCotizador = (unidadId?: string) => {
+    const resolvedUnidadId = unidadId ?? state.unidadId ?? selectedAvailabilityId ?? "";
+    const unit =
+      (resolvedUnidadId
+        ? clusterInventario.find((item) => item.id === resolvedUnidadId) ??
+          availabilityUnits.find((item) => item.id === resolvedUnidadId)
+        : undefined) ?? selectedAvailability;
+
+    patchState({
+      clusterId: unit?.clusterId ?? state.clusterId,
+      prototipoId: unit?.prototipoId ?? state.prototipoId,
+      unidadId: unit?.id ?? "",
+      descuento: 0,
+    });
+
+    if (unit?.id) {
+      setSelectedAvailabilityId(unit.id);
+    }
+
+    setShowAvailability(false);
+    setShowQuote(true);
+  };
+
+  const activeDatosBancarios = useMemo(
+    () => getDatosBancarios(activeDesarrollo?.id),
+    [activeDesarrollo?.id],
+  );
+
   const copyBankData = async () => {
     const text = [
-      datosBancarios.razonSocial,
-      `RFC: ${datosBancarios.rfc}`,
-      `Banco: ${datosBancarios.banco}`,
-      `Sucursal: ${datosBancarios.sucursal}`,
-      `Cuenta: ${datosBancarios.cuenta}`,
-      `CLABE: ${datosBancarios.clabe}`,
-      `Concepto: ${datosBancarios.concepto}`,
-      `Reportar a: ${datosBancarios.reportarA}`,
+      activeDatosBancarios.razonSocial,
+      `RFC: ${activeDatosBancarios.rfc}`,
+      `Banco: ${activeDatosBancarios.banco}`,
+      `Sucursal: ${activeDatosBancarios.sucursal}`,
+      `Cuenta: ${activeDatosBancarios.cuenta}`,
+      `CLABE: ${activeDatosBancarios.clabe}`,
+      `Concepto: ${activeDatosBancarios.concepto}`,
+      `Reportar a: ${activeDatosBancarios.reportarA}`,
     ].join("\n");
 
     await navigator.clipboard.writeText(text);
@@ -1543,6 +1900,44 @@ export default function RecorridoPage() {
                         ))}
                       </div>
                     </div>
+                    {masterPlanImage ? (
+                      <div className="mt-6 space-y-4">
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
+                            Master plan
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-500">
+                            Ubica clusters, plazas, parques y accesos con el cliente antes de
+                            filtrar producto.
+                          </p>
+                        </div>
+                        <div className="overflow-hidden rounded-2xl border border-[#201044]/10 bg-white shadow-inner">
+                          <Image
+                            src={masterPlanImage}
+                            alt={`Master plan · ${activeContenido.overview.titulo}`}
+                            width={1600}
+                            height={1200}
+                            className="h-auto w-full object-contain"
+                            priority={false}
+                          />
+                        </div>
+                        {masterPlanStats.length > 0 ? (
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {masterPlanStats.map((stat) => (
+                              <div
+                                key={stat.etiqueta}
+                                className="rounded-2xl bg-[#1B4332]/10 p-4 text-center"
+                              >
+                                <p className="text-2xl font-black text-[#1B4332]">{stat.valor}</p>
+                                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                                  {stat.etiqueta}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {activeDesarrollo ? (
                       <div className="mt-5">
                         <DocumentDownloadButton
@@ -1594,7 +1989,7 @@ export default function RecorridoPage() {
                     <div className="grid gap-5 lg:grid-cols-[1fr_1fr_0.8fr]">
                       <Field label="Tipo de producto">
                         <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2">
-                          {productTypeOptions.map((option) => (
+                          {availableProductOptions.map((option) => (
                             <button
                               key={option.value}
                               type="button"
@@ -1823,7 +2218,15 @@ export default function RecorridoPage() {
                       <SectionTitle title={`Prototipos en ${selectedCluster.nombre}`} />
                       {clusterPrototipos.length ? (
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                          {clusterPrototipos.map((prototipo) => (
+                          {clusterPrototipos.map((prototipo) => {
+                            const unidades = getUnidadesPorPrototipo(
+                              clusterInventario,
+                              prototipo.id,
+                            );
+                            const precioDesde = getPrecioDesdePrototipo(prototipo, unidades);
+                            const desde = prototipoMuestraPrecioDesde(unidades);
+
+                            return (
                             <button
                               key={prototipo.id}
                               type="button"
@@ -1849,14 +2252,22 @@ export default function RecorridoPage() {
                                 {prototipo.nombre}
                               </h3>
                               <p className="mt-2 font-black text-[#6CC24A]">
-                                {money(prototipo.precioFinal)}
+                                {desde ? "Desde " : ""}
+                                {money(precioDesde)}
                               </p>
+                              {unidades.length > 0 ? (
+                                <p className="mt-1 text-xs font-semibold text-slate-500">
+                                  {unidades.length}{" "}
+                                  {unidades.length === 1 ? "unidad" : "unidades"} en inventario
+                                </p>
+                              ) : null}
                               <p className="mt-3 text-sm text-slate-500">
-                                {prototipo.construccionM2} m² | {prototipo.recamaras} rec. |{" "}
-                                {prototipo.banos} baños
+                                {formatAreaM2(prototipo.construccionM2) || "—"} |{" "}
+                                {prototipo.recamaras} rec. | {prototipo.banos} baños
                               </p>
                             </button>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="rounded-[2rem] bg-white p-6 shadow-lg">
@@ -1931,14 +2342,56 @@ export default function RecorridoPage() {
                           </div>
                         ) : null}
                         <p className="mt-2 text-2xl font-black text-[#6CC24A]">
-                          <span className="mr-3 text-lg text-slate-400 line-through">
-                            {money(selectedPrototipo.precioBase)}
-                          </span>
-                          {money(selectedPrototipo.precioFinal)}
+                          {muestraPrecioDesdePrototipo ? (
+                            <>
+                              Desde {money(precioDesdePrototipoSeleccionado)}
+                              <span className="mt-1 block text-sm font-semibold text-slate-500">
+                                {unidadesPrototipoSeleccionado.length} unidades de este modelo;
+                                el precio varía por nivel y ubicación.
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="mr-3 text-lg text-slate-400 line-through">
+                                {money(selectedPrototipo.precioBase)}
+                              </span>
+                              {money(precioDesdePrototipoSeleccionado)}
+                            </>
+                          )}
                         </p>
+                        {unidadesPrototipoSeleccionado.length > 0 ? (
+                          <div className="mt-6 space-y-3">
+                            <h3 className="text-lg font-black text-[#201044]">
+                              {selectedCluster?.tipo === "oficinas"
+                                ? "Oficinas disponibles de este modelo"
+                                : selectedCluster?.tipo === "departamentos"
+                                  ? "Departamentos disponibles de este modelo"
+                                  : "Unidades disponibles de este modelo"}
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                              Elige la unidad concreta para cotizar con su precio de lista.
+                            </p>
+                            <div className="space-y-3">
+                              {unidadesPrototipoSeleccionado.map((unidad) => (
+                                <AvailabilityUnitCard
+                                  key={unidad.id}
+                                  unit={unidad}
+                                  selected={selectedAvailabilityId === unidad.id}
+                                  onSelect={() => handlePrototipoUnidadSelect(unidad.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                         <div className="mt-5 grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
-                          <Spec label="Construcción" value={`${selectedPrototipo.construccionM2} m²`} />
-                          <Spec label="Terreno" value={`${selectedPrototipo.terrenoM2 ?? "-"} m²`} />
+                          <Spec
+                            label="Construcción"
+                            value={formatAreaM2(selectedPrototipo.construccionM2) || "—"}
+                          />
+                          <Spec
+                            label="Terreno"
+                            value={formatAreaM2(selectedPrototipo.terrenoM2) || "—"}
+                          />
                           <Spec label="Recámaras" value={`${selectedPrototipo.recamaras}`} />
                           <Spec label="Baños" value={`${selectedPrototipo.banos}`} />
                           <Spec label="Niveles" value={`${selectedPrototipo.niveles}`} />
@@ -1953,12 +2406,18 @@ export default function RecorridoPage() {
                       </div>
 
                       <div className="space-y-5">
-                        <ListBox
-                          title="Equipamiento incluido"
-                          items={selectedPrototipo.equipamientoIncluido}
-                          positive
-                        />
-                        <ListBox title="No incluye" items={selectedPrototipo.noIncluye} />
+                        {isPasajeDepartamentosCluster(selectedCluster?.id) ? (
+                          <PasajeAcabadosPanel />
+                        ) : (
+                          <>
+                            <ListBox
+                              title="Equipamiento incluido"
+                              items={selectedPrototipo.equipamientoIncluido}
+                              positive
+                            />
+                            <ListBox title="No incluye" items={selectedPrototipo.noIncluye} />
+                          </>
+                        )}
                         <div className="grid gap-3 sm:grid-cols-2">
                           <button
                             type="button"
@@ -1977,7 +2436,7 @@ export default function RecorridoPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setShowQuote(true)}
+                            onClick={() => openCotizador()}
                             className="rounded-2xl bg-[#6CC24A] px-5 py-5 text-lg font-black text-white shadow-lg active:scale-95"
                           >
                             Cotizar ahora
@@ -2198,17 +2657,10 @@ export default function RecorridoPage() {
                 recommendation={selectedAvailabilityRecommendation}
                 onShow={() => selectedAvailability && setSelectedAvailabilityId(selectedAvailability.id)}
                 onQuote={() => {
-                  if (!selectedAvailability?.prototipoId) {
+                  if (!selectedAvailability?.id) {
                     return;
                   }
-
-                  patchState({
-                    clusterId: selectedAvailability.clusterId,
-                    prototipoId: selectedAvailability.prototipoId,
-                    descuento: 0,
-                  });
-                  setShowAvailability(false);
-                  setShowQuote(true);
+                  openCotizador(selectedAvailability.id);
                 }}
               />
             </div>
@@ -2259,14 +2711,51 @@ export default function RecorridoPage() {
             desarrolloNombre={activeDesarrollo.nombre}
             clusterId={state.clusterId}
             prototipoId={state.prototipoId}
+            unidadId={state.unidadId || undefined}
             inventarioUnidades={cotizadorInventario}
+            onUnidadChange={(id) => patchState({ unidadId: id ?? "" })}
             descuento={state.descuento}
             esquema={state.esquema}
             clienteNombre={state.cliente.nombre}
+            desarrolloLogo={activeDesarrollo.logo}
+            prospectoRegistrado={prospectoCotizadorRegistrado}
+            asesorNombre={asesorNombre}
             catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
             showCopy
+            showPdf
             onDescuentoChange={(value) => patchState({ descuento: value })}
             onEsquemaChange={(value) => patchState({ esquema: value })}
+            pasajeEsquema={state.pasajeEsquema ?? "contado"}
+            pasajeLibreEnganche={state.pasajeLibreEnganche}
+            pasajeLibreMensualidades={state.pasajeLibreMensualidades}
+            pasajeLibreFechaFiniquito={state.pasajeLibreFechaFiniquito}
+            pasajeLibreSinMensEnganche={state.pasajeLibreSinMensEnganche}
+            pasajeLibreSinMensPago={state.pasajeLibreSinMensPago}
+            pasajeLibreSinMensFechaPago={state.pasajeLibreSinMensFechaPago}
+            pasajeLibreSinMensFechaFiniquito={state.pasajeLibreSinMensFechaFiniquito}
+            onPasajeEsquemaChange={(value) => patchState({ pasajeEsquema: value })}
+            onPasajeLibreEngancheChange={(value) =>
+              patchState({ pasajeLibreEnganche: value })
+            }
+            onPasajeLibreMensualidadesChange={(value) =>
+              patchState({ pasajeLibreMensualidades: value })
+            }
+            onPasajeLibreFechaFiniquitoChange={(value) =>
+              patchState({ pasajeLibreFechaFiniquito: value })
+            }
+            onPasajeLibreSinMensEngancheChange={(value) =>
+              patchState({ pasajeLibreSinMensEnganche: value })
+            }
+            onPasajeLibreSinMensPagoChange={(value) =>
+              patchState({ pasajeLibreSinMensPago: value })
+            }
+            onPasajeLibreSinMensFechaPagoChange={(value) =>
+              patchState({ pasajeLibreSinMensFechaPago: value })
+            }
+            onPasajeLibreSinMensFechaFiniquitoChange={(value) =>
+              patchState({ pasajeLibreSinMensFechaFiniquito: value })
+            }
+            onClienteNombreChange={(nombre) => patchCliente({ nombre })}
           />
         </Modal>
       )}
@@ -2282,15 +2771,66 @@ export default function RecorridoPage() {
             <SummaryBox title="Producto seleccionado">
               <p>{selectedCluster?.nombre || "Sin cluster"}</p>
               <p>{selectedPrototipo?.nombre || "Sin prototipo"}</p>
-              <p className="font-black text-[#6CC24A]">{money(precioFinal)}</p>
+              <p className="font-black text-[#6CC24A]">
+                {money(pasajeSimuladorResult?.precioTotal ?? precioFinal)}
+              </p>
+              {pasajeSimuladorResult ? (
+                <p className="text-xs text-slate-500">
+                  Lista {money(pasajeSimuladorResult.precioLista)} · Contado{" "}
+                  {money(pasajeSimuladorResult.precioContado)}
+                </p>
+              ) : null}
             </SummaryBox>
+            {pasajeSimuladorResult ? (
+              <SummaryBox title={`Esquema · ${pasajeSimuladorResult.esquemaLabel}`}>
+                <p>
+                  Enganche ({formatPctShort(pasajeSimuladorResult.enganchePct)}):{" "}
+                  <strong>{money(pasajeSimuladorResult.enganche)}</strong>
+                </p>
+                {pasajeSimuladorResult.numMensualidades &&
+                pasajeSimuladorResult.mensualidadCliente ? (
+                  <p>
+                    {pasajeSimuladorResult.numMensualidades} mensualidades de{" "}
+                    <strong>{money(pasajeSimuladorResult.mensualidadCliente)}</strong>
+                    {pasajeSimuladorResult.fechaPrimerMes &&
+                    pasajeSimuladorResult.fechaUltimoMes
+                      ? ` · ${formatMonthYear(pasajeSimuladorResult.fechaPrimerMes)} → ${formatMonthYear(
+                          pasajeSimuladorResult.fechaUltimoMes,
+                        )}`
+                      : ""}
+                  </p>
+                ) : null}
+                {pasajeSimuladorResult.pagoIntermedio &&
+                pasajeSimuladorResult.pagoIntermedioPct ? (
+                  <p>
+                    Pago ({formatPctShort(pasajeSimuladorResult.pagoIntermedioPct)}):{" "}
+                    <strong>{money(pasajeSimuladorResult.pagoIntermedio)}</strong>
+                    {pasajeSimuladorResult.fechaPagoIntermedio
+                      ? ` en ${formatMonthYear(pasajeSimuladorResult.fechaPagoIntermedio)}`
+                      : ""}
+                  </p>
+                ) : null}
+                {pasajeSimuladorResult.finiquito ? (
+                  <p>
+                    Finiquito ({formatPctShort(pasajeSimuladorResult.finiquitoPct ?? 0)}):{" "}
+                    <strong>{money(pasajeSimuladorResult.finiquito)}</strong>
+                    {pasajeSimuladorResult.fechaFiniquito
+                      ? ` en ${formatMonthYear(pasajeSimuladorResult.fechaFiniquito)}`
+                      : ""}
+                  </p>
+                ) : null}
+                <p className="text-xs text-slate-500">
+                  Entrega estimada: {formatMonthYear(PASAJE_FECHA_ENTREGA)}
+                </p>
+              </SummaryBox>
+            ) : null}
             <SummaryBox title="Datos bancarios">
-              <p>{datosBancarios.razonSocial}</p>
-              <p>RFC: {datosBancarios.rfc}</p>
-              <p>Banco: {datosBancarios.banco}</p>
-              <p>Cuenta: {datosBancarios.cuenta}</p>
-              <p>CLABE: {datosBancarios.clabe}</p>
-              <p>Concepto: {datosBancarios.concepto}</p>
+              <p>{activeDatosBancarios.razonSocial}</p>
+              <p>RFC: {activeDatosBancarios.rfc}</p>
+              <p>Banco: {activeDatosBancarios.banco}</p>
+              <p>Cuenta: {activeDatosBancarios.cuenta}</p>
+              <p>CLABE: {activeDatosBancarios.clabe}</p>
+              <p>Concepto: {activeDatosBancarios.concepto}</p>
             </SummaryBox>
             <div className="flex flex-col gap-3">
               <button

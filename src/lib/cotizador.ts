@@ -8,6 +8,7 @@ import {
   type DisponibilidadUnidad,
   type Prototipo,
 } from "@/lib/data";
+import { roundMoney } from "@/lib/format/money";
 
 export type CotizadorCatalog = {
   clusters: Cluster[];
@@ -26,6 +27,12 @@ export type CotizadorRules = {
 export const cotizadorRulesByDesarrollo: Record<string, CotizadorRules> = {
   "la-vista-residencial": {
     enganchePct: 0.1,
+    apartado: 50000,
+    descuentoStep: 5000,
+    esquemas: ["mensualidades", "contado"],
+  },
+  "pasaje-alamos": {
+    enganchePct: 0.3,
     apartado: 50000,
     descuentoStep: 5000,
     esquemas: ["mensualidades", "contado"],
@@ -117,10 +124,10 @@ export const computeCotizacion = (input: CotizacionInput): CotizacionResult | nu
   }
 
   const rules = getCotizadorRules(input.desarrolloId);
-  const descuento = Math.min(Math.max(0, input.descuento), bonoMaximo);
-  const precioFinal = Math.max(0, precioLista - descuento);
-  const enganche = precioFinal * rules.enganchePct;
-  const saldoEnganche = Math.max(enganche - rules.apartado, 0);
+  const descuento = roundMoney(Math.min(Math.max(0, input.descuento), bonoMaximo));
+  const precioFinal = roundMoney(Math.max(0, precioLista - descuento));
+  const enganche = roundMoney(precioFinal * rules.enganchePct);
+  const saldoEnganche = roundMoney(Math.max(enganche - rules.apartado, 0));
 
   const tipoLabel =
     unidad?.tipo === "terreno"
@@ -132,12 +139,12 @@ export const computeCotizacion = (input: CotizacionInput): CotizacionResult | nu
           : "Unidad";
 
   return {
-    precioLista,
-    bonoMaximo,
+    precioLista: roundMoney(precioLista),
+    bonoMaximo: roundMoney(bonoMaximo),
     descuento,
     precioFinal,
     enganche,
-    apartado: rules.apartado,
+    apartado: roundMoney(rules.apartado),
     saldoEnganche,
     esquema: input.esquema,
     clusterNombre: cluster.nombre,

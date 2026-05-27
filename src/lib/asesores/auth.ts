@@ -81,3 +81,37 @@ export const authenticateAsesorByPin = async (
     source: "fallback",
   };
 };
+
+export const getAsesorSessionById = async (id: string): Promise<AsesorSession | null> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("asesores")
+      .select("id, nombre, email, rol, activo, desarrollos_ids")
+      .eq("id", id)
+      .eq("activo", true)
+      .maybeSingle();
+
+    if (!error && data) {
+      return toSession(data as AsesorAuthRow);
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
+  const fallback = fallbackAsesores.find((item) => item.id === id && item.activo);
+  if (!fallback) {
+    return null;
+  }
+
+  return {
+    id: fallback.id,
+    nombre: fallback.nombre,
+    email: fallback.email,
+    rol: fallback.rol,
+    desarrollosIds: fallback.desarrollosIds,
+  };
+};

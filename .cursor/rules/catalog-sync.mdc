@@ -1,0 +1,20 @@
+---
+description: Sincronizar catálogo con Supabase tras cambios en datos del proyecto
+globs:
+  - src/lib/data.ts
+  - src/lib/catalog/**
+  - scripts/pasaje-alamos-catalog.json
+  - scripts/build-pasaje-alamos-catalog.cjs
+  - supabase/migrations/**
+alwaysApply: false
+---
+
+# Catálogo y Supabase
+
+Cuando edites archivos de catálogo, recorrido, inventario Pasaje o migraciones SQL:
+
+1. **Ejecuta tú** `npm run sync` en `bbr-asesores-guia` (o confirma que `predev` lo hará al siguiente `npm run dev`).
+2. Si el sync falla por columnas SQL, indica al usuario que aplique la migración en Supabase SQL Editor (no uses `npm` en Supabase).
+3. Assets en `public/` no pasan por sync: se despliegan con git push.
+
+El usuario no debe memorizar pasos: automatiza el sync cuando sea posible y avisa en una frase si hace falta acción manual (migración SQL o variables en Vercel).

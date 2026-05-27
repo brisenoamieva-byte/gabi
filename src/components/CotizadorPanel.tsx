@@ -13,10 +13,17 @@ import {
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
+import {
+  PasajeSimuladorPanel,
+  type PasajeSimuladorPanelProps,
+} from "@/components/PasajeSimuladorPanel";
+import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
 
 export type CotizadorPanelProps = {
   desarrolloId: string;
   desarrolloNombre: string;
+  desarrolloLogo?: string;
+  prospectoRegistrado?: string;
   clusterId: string;
   prototipoId?: string;
   unidadId?: string;
@@ -25,14 +32,34 @@ export type CotizadorPanelProps = {
   descuento: number;
   esquema: CotizadorEsquema;
   clienteNombre?: string;
+  asesorNombre?: string;
   catalog?: CotizadorCatalog;
   showSelectors?: boolean;
   showCopy?: boolean;
+  showPdf?: boolean;
   onClusterChange?: (clusterId: string) => void;
   onPrototipoChange?: (prototipoId: string | undefined) => void;
   onUnidadChange?: (unidadId: string | undefined) => void;
   onDescuentoChange?: (descuento: number) => void;
   onEsquemaChange?: (esquema: CotizadorEsquema) => void;
+  /** Estado del simulador Pasaje Álamos (esquemas avanzados). */
+  pasajeEsquema?: PasajeEsquemaPago;
+  pasajeLibreEnganche?: number;
+  pasajeLibreMensualidades?: number;
+  pasajeLibreFechaFiniquito?: string;
+  pasajeLibreSinMensEnganche?: number;
+  pasajeLibreSinMensPago?: number;
+  pasajeLibreSinMensFechaPago?: string;
+  pasajeLibreSinMensFechaFiniquito?: string;
+  onPasajeEsquemaChange?: PasajeSimuladorPanelProps["onEsquemaChange"];
+  onPasajeLibreEngancheChange?: PasajeSimuladorPanelProps["onLibreEngancheChange"];
+  onPasajeLibreMensualidadesChange?: PasajeSimuladorPanelProps["onLibreMensualidadesChange"];
+  onPasajeLibreFechaFiniquitoChange?: PasajeSimuladorPanelProps["onLibreFechaFiniquitoChange"];
+  onPasajeLibreSinMensEngancheChange?: PasajeSimuladorPanelProps["onLibreSinMensEngancheChange"];
+  onPasajeLibreSinMensPagoChange?: PasajeSimuladorPanelProps["onLibreSinMensPagoChange"];
+  onPasajeLibreSinMensFechaPagoChange?: PasajeSimuladorPanelProps["onLibreSinMensFechaPagoChange"];
+  onPasajeLibreSinMensFechaFiniquitoChange?: PasajeSimuladorPanelProps["onLibreSinMensFechaFiniquitoChange"];
+  onClienteNombreChange?: PasajeSimuladorPanelProps["onClienteNombreChange"];
 };
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -114,7 +141,52 @@ function ToggleGroup({
   );
 }
 
-export function CotizadorPanel({
+export function CotizadorPanel(props: CotizadorPanelProps) {
+  if (props.desarrolloId === "pasaje-alamos") {
+    return (
+      <PasajeSimuladorPanel
+        desarrolloId={props.desarrolloId}
+        desarrolloNombre={props.desarrolloNombre}
+        desarrolloLogo={props.desarrolloLogo}
+        prospectoRegistrado={props.prospectoRegistrado}
+        clusterId={props.clusterId}
+        prototipoId={props.prototipoId}
+        unidadId={props.unidadId}
+        inventarioUnidades={props.inventarioUnidades}
+        catalog={props.catalog}
+        clienteNombre={props.clienteNombre}
+        asesorNombre={props.asesorNombre}
+        showSelectors={props.showSelectors}
+        showCopy={props.showCopy}
+        showPdf={props.showPdf ?? props.showCopy}
+        esquema={props.pasajeEsquema}
+        libreEnganchePct={props.pasajeLibreEnganche}
+        libreMensualidadesPct={props.pasajeLibreMensualidades}
+        libreFechaFiniquito={props.pasajeLibreFechaFiniquito}
+        libreSinMensEnganchePct={props.pasajeLibreSinMensEnganche}
+        libreSinMensPagoPct={props.pasajeLibreSinMensPago}
+        libreSinMensFechaPago={props.pasajeLibreSinMensFechaPago}
+        libreSinMensFechaFiniquito={props.pasajeLibreSinMensFechaFiniquito}
+        onClusterChange={props.onClusterChange}
+        onPrototipoChange={props.onPrototipoChange}
+        onUnidadChange={props.onUnidadChange}
+        onEsquemaChange={props.onPasajeEsquemaChange}
+        onLibreEngancheChange={props.onPasajeLibreEngancheChange}
+        onLibreMensualidadesChange={props.onPasajeLibreMensualidadesChange}
+        onLibreFechaFiniquitoChange={props.onPasajeLibreFechaFiniquitoChange}
+        onLibreSinMensEngancheChange={props.onPasajeLibreSinMensEngancheChange}
+        onLibreSinMensPagoChange={props.onPasajeLibreSinMensPagoChange}
+        onLibreSinMensFechaPagoChange={props.onPasajeLibreSinMensFechaPagoChange}
+        onLibreSinMensFechaFiniquitoChange={props.onPasajeLibreSinMensFechaFiniquitoChange}
+        onClienteNombreChange={props.onClienteNombreChange}
+      />
+    );
+  }
+
+  return <GenericCotizadorPanel {...props} />;
+}
+
+function GenericCotizadorPanel({
   desarrolloId,
   desarrolloNombre,
   clusterId,
