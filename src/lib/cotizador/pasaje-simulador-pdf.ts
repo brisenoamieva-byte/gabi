@@ -353,7 +353,7 @@ export async function downloadPasajeSimuladorPdf(
   const { resultado: r } = input;
   const ahorroEsquema = Math.max(0, r.precioLista - r.precioTotal);
 
-  let y = PAGE.marginTop;
+  let y: number = PAGE.marginTop;
   y = drawHeader(doc, y, contentW, input, logo, fechaDoc);
 
   // —— Producto (specs en 3 columnas) ——
