@@ -177,6 +177,24 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   <span>{detail.medio_publicitario ?? detail.medio_contacto ?? "—"}</span>
                 </div>
                 <div className="flex justify-between gap-4">
+                  <span className="text-slate-500">Flags</span>
+                  <span className="flex flex-wrap justify-end gap-1">
+                    {detail.es_spam ? (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                        Spam
+                      </span>
+                    ) : null}
+                    {detail.es_duplicado ? (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                        Duplicado
+                      </span>
+                    ) : null}
+                    {!detail.es_spam && !detail.es_duplicado ? (
+                      <span className="text-slate-600">—</span>
+                    ) : null}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
                   <span className="text-slate-500">ID Xperience</span>
                   <span>{detail.xperience_id ?? "—"}</span>
                 </div>

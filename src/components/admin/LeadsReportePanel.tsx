@@ -174,24 +174,13 @@ export function LeadsReportePanel({ desarrollos, scopeLabel }: LeadsReportePanel
       return [];
     }
     return [
-      { label: "Leads totales", value: reporte.total, icon: Users },
+      { label: "Leads válidos", value: reporte.total, icon: Users },
+      { label: "Spam", value: reporte.spam, icon: BarChart3 },
+      { label: "Duplicados", value: reporte.duplicados, icon: BarChart3 },
       {
         label: "Cotizaciones",
         value: reporte.cotizaciones,
         icon: BarChart3,
-      },
-      {
-        label: "En negociación+",
-        value:
-          (reporte.porEtapa.negociacion ?? 0) +
-          (reporte.porEtapa.apartado ?? 0) +
-          (reporte.porEtapa.vendido ?? 0),
-        icon: BarChart3,
-      },
-      {
-        label: "Apartados / vendidos",
-        value: (reporte.porEtapa.apartado ?? 0) + (reporte.porEtapa.vendido ?? 0),
-        icon: Users,
       },
     ];
   }, [reporte]);
@@ -322,6 +311,26 @@ export function LeadsReportePanel({ desarrollos, scopeLabel }: LeadsReportePanel
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-black text-gabi-forest">Por calificación</h3>
+              <div className="mt-4 space-y-2">
+                {Object.entries(reporte.porCalificacion)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([calificacion, total]) => (
+                    <div
+                      key={calificacion}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                    >
+                      <span className="text-sm font-semibold text-gabi-forest">{calificacion}</span>
+                      <span className="text-sm font-bold text-gabi-sand">{total}</span>
+                    </div>
+                  ))}
+                {!Object.keys(reporte.porCalificacion).length ? (
+                  <p className="text-sm text-slate-500">Sin leads en el periodo.</p>
+                ) : null}
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-black text-gabi-forest">Por etapa</h3>
               <div className="mt-4 space-y-2">

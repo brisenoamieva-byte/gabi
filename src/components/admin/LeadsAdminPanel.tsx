@@ -30,7 +30,7 @@ type CampanaOption = {
 };
 
 type ViewMode = "lista" | "tablero";
-type LeadTab = "leads" | "spam";
+type LeadTab = "leads" | "spam" | "duplicados";
 
 const currentMonthRange = () => {
   const now = new Date();
@@ -63,6 +63,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
   const [showNewLead, setShowNewLead] = useState(false);
   const [newNombre, setNewNombre] = useState("");
   const [creating, setCreating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const loadAsesores = useCallback(async () => {
     if (!desarrolloId) {
@@ -119,6 +120,10 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
         params.set("campanaId", campanaFilter);
       }
       params.set("spam", leadTab === "spam" ? "only" : "exclude");
+      params.set(
+        "duplicados",
+        leadTab === "duplicados" ? "only" : leadTab === "spam" ? "include" : "exclude",
+      );
       if (search) {
         params.set("search", search);
       }
@@ -190,6 +195,38 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
       prev.map((row) => (row.id === prospectoId ? { ...row, etapa } : row)),
     );
     void loadLeads();
+  };
+
+  const handleSyncInteligencia = async () => {
+    if (!desarrolloId) {
+      return;
+    }
+
+    setSyncing(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/prospectos/sync-inteligencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ desarrolloId }),
+      });
+
+      const data = (await response.json()) as {
+        result?: { duplicados: number; scoresUpdated: number };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo sincronizar.");
+      }
+
+      void loadLeads();
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : "Error al sincronizar.");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleCreateLead = async (event: React.FormEvent) => {
@@ -267,7 +304,17 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
               >
                 Spam
               </button>
+              <button
+                type="button"
+                onClick={() => setLeadTab("duplicados")}
+                className={`rounded-lg px-3 py-1.5 text-sm font-bold ${
+                  leadTab === "duplicados" ? "bg-gabi-forest text-white" : "text-slate-600"
+                }`}
+              >
+                Duplicados
+              </button>
             </div>
+            {leadTab === "leads" ? (
             <div className="flex rounded-xl border border-slate-200 p-1">
               <button
                 type="button"
@@ -297,6 +344,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
                 Lista
               </button>
             </div>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -314,6 +362,15 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
             >
               <Download className="h-4 w-4" />
               Exportar
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSyncInteligencia()}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Sincronizando…" : "Duplicados e iScore"}
             </button>
             <button
               type="button"
@@ -514,7 +571,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
           <p className="px-6 py-12 text-center text-sm text-slate-500">
             No hay leads con el filtro actual.
           </p>
-        ) : viewMode === "tablero" ? (
+        ) : leadTab === "leads" && viewMode === "tablero" ? (
           <LeadsKanbanBoard
             prospectos={prospectos}
             onSelect={setSelectedId}

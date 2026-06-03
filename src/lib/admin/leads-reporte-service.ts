@@ -1,5 +1,6 @@
 import { listProspectos } from "@/lib/admin/prospectos-service";
 import type { AdminProfile } from "@/lib/admin/types";
+import { calificacionLabel } from "@/lib/comercial/xperience-leads";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 
@@ -17,7 +18,10 @@ export type LeadsReporteAsesor = {
 export type LeadsReporte = {
   total: number;
   cotizaciones: number;
+  spam: number;
+  duplicados: number;
   porEtapa: Record<string, number>;
+  porCalificacion: Record<string, number>;
   porDia: LeadsReporteDia[];
   porAsesor: LeadsReporteAsesor[];
 };
@@ -61,16 +65,31 @@ export const getLeadsReporte = async (
       desde: filters.desde,
       hasta: filters.hasta,
       campanaId: filters.campanaId,
+      spam: "include",
+      duplicados: "include",
     },
     profile,
   );
 
   const porEtapa: Record<string, number> = {};
+  const porCalificacion: Record<string, number> = {};
   const porDiaMap = new Map<string, number>();
   const porAsesorMap = new Map<string, LeadsReporteAsesor>();
+  let spam = 0;
+  let duplicados = 0;
 
   for (const prospecto of prospectos) {
     porEtapa[prospecto.etapa] = (porEtapa[prospecto.etapa] ?? 0) + 1;
+
+    const calKey = calificacionLabel(prospecto.calificacion);
+    porCalificacion[calKey] = (porCalificacion[calKey] ?? 0) + 1;
+
+    if (prospecto.es_spam) {
+      spam += 1;
+    }
+    if (prospecto.es_duplicado) {
+      duplicados += 1;
+    }
 
     const fecha = prospecto.created_at.slice(0, 10);
     porDiaMap.set(fecha, (porDiaMap.get(fecha) ?? 0) + 1);
@@ -128,9 +147,12 @@ export const getLeadsReporte = async (
   }
 
   return {
-    total: prospectos.length,
+    total: prospectos.filter((item) => !item.es_spam && !item.es_duplicado).length,
     cotizaciones,
+    spam,
+    duplicados,
     porEtapa,
+    porCalificacion,
     porDia,
     porAsesor: Array.from(porAsesorMap.values()).sort((a, b) => b.total - a.total),
   };

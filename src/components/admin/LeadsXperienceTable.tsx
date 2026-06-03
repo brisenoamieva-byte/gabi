@@ -82,7 +82,7 @@ export function LeadsXperienceTable({
             const canal = row.campanaCanal ?? row.medio_contacto;
 
             return (
-              <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50/80">
+              <tr key={row.id} className={`border-t border-slate-100 hover:bg-slate-50/80 ${row.es_duplicado ? "bg-amber-50/50" : ""}`}>
                 <td className="px-4 py-3">
                   <button
                     type="button"
@@ -113,6 +113,11 @@ export function LeadsXperienceTable({
                 <td className="px-4 py-3">
                   <p className="font-semibold text-gabi-forest">
                     {normalizeLeadNombre(row.nombre)}
+                    {row.es_duplicado ? (
+                      <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                        Dup
+                      </span>
+                    ) : null}
                   </p>
                   <p className="truncate text-slate-600">{row.email ?? "—"}</p>
                   <p className="text-slate-600">{row.telefono ?? "—"}</p>

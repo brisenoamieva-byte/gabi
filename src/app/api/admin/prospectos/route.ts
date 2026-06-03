@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   const desde = searchParams.get("desde") ?? undefined;
   const hasta = searchParams.get("hasta") ?? undefined;
   const spam = searchParams.get("spam") as "exclude" | "only" | "include" | null;
+  const duplicados = searchParams.get("duplicados") as "exclude" | "only" | "include" | null;
   const withResumen = searchParams.get("resumen") === "1";
 
   if (!desarrolloId) {
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
     hasta,
     campanaId,
     spam: spam ?? "exclude",
+    duplicados: duplicados ?? "exclude",
   };
 
   try {

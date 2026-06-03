@@ -7,6 +7,11 @@ import {
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import type { CotizacionRecord, ProspectoRecord } from "@/lib/comercial/sembrado-status";
+import {
+  computeIscore,
+  computeSellerScore,
+  pickDuplicateIds,
+} from "@/lib/comercial/lead-scoring";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { VisitaTipo } from "@/lib/visitas/types";
 
@@ -44,6 +49,7 @@ export type UpdateProspectoInput = {
   sellerScore?: number | null;
   asignadoPor?: string;
   esSpam?: boolean;
+  esDuplicado?: boolean;
 };
 
 export type ProspectoInput = {
@@ -108,6 +114,7 @@ export const listProspectos = async (
     campanaId?: string;
     fechaEn?: "created" | "updated";
     spam?: "exclude" | "only" | "include";
+    duplicados?: "exclude" | "only" | "include";
   },
   profile?: AdminProfile,
 ): Promise<ProspectoListRow[]> => {
@@ -152,6 +159,12 @@ export const listProspectos = async (
     query = query.eq("es_spam", false);
   }
 
+  if (filters.duplicados === "only") {
+    query = query.eq("es_duplicado", true);
+  } else if (filters.duplicados !== "include") {
+    query = query.eq("es_duplicado", false);
+  }
+
   if (filters.desde) {
     const fechaColumn = filters.fechaEn === "updated" ? "updated_at" : "created_at";
     query = query.gte(fechaColumn, `${filters.desde}T00:00:00.000Z`);
@@ -193,6 +206,7 @@ export const getProspectosResumen = async (
     campanaId?: string;
     fechaEn?: "created" | "updated";
     spam?: "exclude" | "only" | "include";
+    duplicados?: "exclude" | "only" | "include";
   },
 ): Promise<ProspectosResumen> => {
   const prospectos = await listProspectos({ desarrolloId, ...filters }, profile);
@@ -334,6 +348,19 @@ export const updateProspecto = async (
   }
   if (input.esSpam !== undefined) {
     patch.es_spam = input.esSpam;
+  }
+  if (input.esDuplicado !== undefined) {
+    patch.es_duplicado = input.esDuplicado;
+  }
+
+  if (input.calificacion !== undefined || input.etapa !== undefined || input.esDuplicado !== undefined) {
+    const merged = { ...existing, ...patch } as ProspectoRecord;
+    if (input.iscore === undefined) {
+      patch.iscore = computeIscore(merged);
+    }
+    if (input.sellerScore === undefined) {
+      patch.seller_score = computeSellerScore(merged);
+    }
   }
 
   const { error } = await supabase.from("prospectos").update(patch).eq("id", id);
@@ -601,4 +628,71 @@ export const saveCotizacion = async (input: CotizacionInput) => {
   }
 
   return data;
+};
+
+export type LeadIntelligenceSyncResult = {
+  total: number;
+  duplicados: number;
+  scoresUpdated: number;
+};
+
+export const syncLeadIntelligenceForDesarrollo = async (
+  desarrolloId: string,
+  profile: AdminProfile,
+): Promise<LeadIntelligenceSyncResult> => {
+  if (!canAccessDesarrollo(profile, desarrolloId)) {
+    throw new Error("No tienes permiso para este desarrollo.");
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data, error } = await supabase
+    .from("prospectos")
+    .select("*")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("activo", true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const prospectos = (data ?? []) as ProspectoRecord[];
+  const duplicateIds = pickDuplicateIds(prospectos);
+  let scoresUpdated = 0;
+
+  for (const prospecto of prospectos) {
+    const esDuplicado = duplicateIds.has(prospecto.id);
+    const iscore = computeIscore({ ...prospecto, es_duplicado: esDuplicado });
+    const sellerScore = computeSellerScore({ ...prospecto, es_duplicado: esDuplicado });
+
+    if (
+      prospecto.es_duplicado !== esDuplicado ||
+      prospecto.iscore !== iscore ||
+      prospecto.seller_score !== sellerScore
+    ) {
+      const { error: updateError } = await supabase
+        .from("prospectos")
+        .update({
+          es_duplicado: esDuplicado,
+          iscore,
+          seller_score: sellerScore,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", prospecto.id);
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+      scoresUpdated += 1;
+    }
+  }
+
+  return {
+    total: prospectos.length,
+    duplicados: duplicateIds.size,
+    scoresUpdated,
+  };
 };
