@@ -6,6 +6,7 @@ import type { Desarrollo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer";
+import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
 import {
   estatusSembradoLabel,
   LA_VISTA_RESIDENCIAL_ID,
@@ -34,6 +35,8 @@ function SembradoTable({
   onRegistrarApartado,
   onCompletarApartado,
   onVerOperacion,
+  onEditUnidad,
+  onToggleVisitable,
 }: {
   filas: SembradoUnidadRow[];
   estatusFilter: string;
@@ -41,6 +44,8 @@ function SembradoTable({
   onRegistrarApartado: (unidadId: string) => void;
   onCompletarApartado: (unidadId: string) => void;
   onVerOperacion: (operacionId: string) => void;
+  onEditUnidad: (row: SembradoUnidadRow) => void;
+  onToggleVisitable: (row: SembradoUnidadRow) => void;
 }) {
   const rowsToShow = useMemo(() => {
     if (estatusFilter) {
@@ -68,6 +73,8 @@ function SembradoTable({
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-4 py-3">Unidad</th>
+            <th className="px-4 py-3">Recorrido</th>
+            <th className="px-4 py-3">Precio lista</th>
             <th className="px-4 py-3">Lista</th>
             <th className="px-4 py-3">Estatus</th>
             <th className="px-4 py-3">Cliente</th>
@@ -92,14 +99,35 @@ function SembradoTable({
             return (
               <tr
                 key={row.unidadId}
-                className={`border-t border-slate-100 ${op ? "cursor-pointer hover:bg-slate-50" : apartadoPendiente ? "bg-amber-50/40" : ""}`}
-                onClick={() => {
-                  if (op) {
-                    onVerOperacion(op.id);
-                  }
-                }}
+                className={`border-t border-slate-100 ${op ? "hover:bg-slate-50" : apartadoPendiente ? "bg-amber-50/40" : ""}`}
               >
-                <td className="px-4 py-3 font-bold text-gabi-forest">{row.unidad}</td>
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => onEditUnidad(row)}
+                    className="font-bold text-gabi-forest hover:underline"
+                  >
+                    {row.unidad}
+                  </button>
+                  <p className="text-xs text-slate-400">{row.tipo}</p>
+                </td>
+                <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => onToggleVisitable(row)}
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                      row.visitable
+                        ? "bg-sky-100 text-sky-800"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                    title={row.visitable ? "Visible en recorrido" : "Oculta en recorrido"}
+                  >
+                    {row.visitable ? "Sí" : "No"}
+                  </button>
+                </td>
+                <td className="px-4 py-3 tabular-nums text-slate-600">
+                  {row.precio ? formatPrice(row.precio) : "—"}
+                </td>
                 <td className="px-4 py-3 text-slate-600">{row.listaPrecios ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span
@@ -125,33 +153,40 @@ function SembradoTable({
                   {saldo != null ? formatPrice(saldo) : "—"}
                 </td>
                 <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
-                  {puedeApartar ? (
+                  <div className="flex flex-wrap gap-1">
                     <button
                       type="button"
-                      onClick={() => onRegistrarApartado(row.unidadId)}
-                      className="rounded-lg border border-gabi-forest/20 px-2 py-1 text-xs font-bold text-gabi-forest hover:bg-gabi-forest/5"
-                    >
-                      Apartado
-                    </button>
-                  ) : apartadoPendiente ? (
-                    <button
-                      type="button"
-                      onClick={() => onCompletarApartado(row.unidadId)}
-                      className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                    >
-                      Completar
-                    </button>
-                  ) : op ? (
-                    <button
-                      type="button"
-                      onClick={() => onVerOperacion(op.id)}
+                      onClick={() => onEditUnidad(row)}
                       className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
                     >
-                      Ver
+                      Unidad
                     </button>
-                  ) : (
-                    "—"
-                  )}
+                    {puedeApartar ? (
+                      <button
+                        type="button"
+                        onClick={() => onRegistrarApartado(row.unidadId)}
+                        className="rounded-lg border border-gabi-forest/20 px-2 py-1 text-xs font-bold text-gabi-forest hover:bg-gabi-forest/5"
+                      >
+                        Apartado
+                      </button>
+                    ) : apartadoPendiente ? (
+                      <button
+                        type="button"
+                        onClick={() => onCompletarApartado(row.unidadId)}
+                        className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                      >
+                        Completar
+                      </button>
+                    ) : op ? (
+                      <button
+                        type="button"
+                        onClick={() => onVerOperacion(op.id)}
+                        className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                      >
+                        Operación
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             );
@@ -215,7 +250,7 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
     defaultSegmentoForDesarrollo(desarrollos[0]?.id ?? ""),
   );
   const [estatusFilter, setEstatusFilter] = useState("");
-  const [showAllUnits, setShowAllUnits] = useState(false);
+  const [showAllUnits, setShowAllUnits] = useState(true);
   const [filas, setFilas] = useState<SembradoUnidadRow[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [loading, setLoading] = useState(true);
@@ -226,6 +261,7 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
   );
   const [apartadoUnidadId, setApartadoUnidadId] = useState<string | undefined>();
   const [operacionId, setOperacionId] = useState<string | null>(null);
+  const [unidadEdit, setUnidadEdit] = useState<SembradoUnidadRow | null>(null);
 
   const unidadesDisponibles = useMemo(
     () => filas.filter((row) => !row.operacion && row.estatusInventario === "disponible"),
@@ -309,8 +345,25 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
 
   useEffect(() => {
     setEstatusFilter("");
-    setShowAllUnits(false);
+    setShowAllUnits(true);
   }, [desarrolloId, segmento]);
+
+  const toggleVisitable = async (row: SembradoUnidadRow) => {
+    try {
+      const response = await fetch(`/api/admin/sembrado/unidades/${row.unidadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitable: !row.visitable }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo actualizar.");
+      }
+      void loadSembrado();
+    } catch (toggleError) {
+      setError(toggleError instanceof Error ? toggleError.message : "Error al actualizar.");
+    }
+  };
 
   useEffect(() => {
     setSegmento(defaultSegmentoForDesarrollo(desarrolloId));
@@ -341,13 +394,13 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
               Control gerencia
             </p>
-            <h2 className="text-2xl font-black text-gabi-forest">Sembrado de ventas</h2>
+            <h2 className="text-2xl font-black text-gabi-forest">Sembrado y disponibilidad</h2>
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
               {esPasajeAlamos
-                ? `Administración separada por producto — ${segmentoConfig?.label.toLowerCase() ?? ""}.`
+                ? `Inventario completo y operaciones — ${segmentoConfig?.label.toLowerCase() ?? ""}.`
                 : esLaVista
-                  ? `Administración por cluster — ${segmentoConfig?.label ?? "La Vista"}.`
-                  : "Vista operativa por unidad: estatus comercial, cliente, precios y cobranza."}
+                  ? `Inventario completo por cluster — ${segmentoConfig?.label ?? "La Vista"}.`
+                  : "Todas las unidades del desarrollo: estatus comercial, precios, cobranza y curación para recorrido."}
               {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
             </p>
           </div>
@@ -408,7 +461,7 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
               onChange={(event) => setEstatusFilter(event.target.value)}
               className="rounded-xl border border-slate-200 px-3 py-2"
             >
-              <option value="">Todos (con operación)</option>
+              <option value="">Todos</option>
               {estatusOptions.map(([estatus, count]) => (
                 <option key={estatus} value={estatus}>
                   {estatusSembradoLabel[estatus] ?? estatus} ({count})
@@ -420,11 +473,11 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
           <label className="flex items-end gap-2 pb-2 text-sm">
             <input
               type="checkbox"
-              checked={showAllUnits}
-              onChange={(event) => setShowAllUnits(event.target.checked)}
+              checked={!showAllUnits}
+              onChange={(event) => setShowAllUnits(!event.target.checked)}
               className="rounded border-slate-300"
             />
-            <span className="font-semibold text-slate-600">Ver todas las unidades</span>
+            <span className="font-semibold text-slate-600">Solo con operación activa</span>
           </label>
         </div>
       </div>
@@ -503,6 +556,8 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
             onRegistrarApartado={(unidadId) => openApartadoModal(unidadId, "registrar")}
             onCompletarApartado={(unidadId) => openApartadoModal(unidadId, "completar")}
             onVerOperacion={setOperacionId}
+            onEditUnidad={setUnidadEdit}
+            onToggleVisitable={(row) => void toggleVisitable(row)}
           />
         )}
       </div>
@@ -528,6 +583,14 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
         <OperacionDetailDrawer
           operacionId={operacionId}
           onClose={() => setOperacionId(null)}
+          onSuccess={() => void loadSembrado()}
+        />
+      ) : null}
+
+      {unidadEdit ? (
+        <SembradoUnidadDrawer
+          row={unidadEdit}
+          onClose={() => setUnidadEdit(null)}
           onSuccess={() => void loadSembrado()}
         />
       ) : null}

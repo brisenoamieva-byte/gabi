@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { listOperaciones } from "@/lib/admin/operaciones-service";
 import { listProductosRecomendados } from "@/lib/admin/inventario-service";
+import { applyOperacionEstatusToUnidad } from "@/lib/comercial/unidad-disponibilidad";
 import { mapProductoRecomendadoToUnidad } from "@/lib/inventario/productos-recomendados";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -17,8 +19,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const rows = await listProductosRecomendados({ desarrolloId, clusterId });
-    const productos = rows.map(mapProductoRecomendadoToUnidad);
+    const [rows, operaciones] = await Promise.all([
+      listProductosRecomendados({ desarrolloId, clusterId }),
+      listOperaciones({ desarrolloId }),
+    ]);
+
+    const operacionByUnidad = new Map(operaciones.map((item) => [item.unidad_id, item]));
+    const productos = rows.map((row) => {
+      const merged = applyOperacionEstatusToUnidad(row, operacionByUnidad.get(row.id) ?? null);
+      return mapProductoRecomendadoToUnidad(merged);
+    });
+
     return NextResponse.json({ productos, curated: productos.length > 0 });
   } catch (error) {
     return NextResponse.json(

@@ -2,6 +2,7 @@ import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import { getProspectoById } from "@/lib/admin/prospectos-service";
 import { prospectoEtapaFromSembrado } from "@/lib/comercial/prospecto-etapas";
+import { resolveUnidadEstatus } from "@/lib/comercial/unidad-disponibilidad";
 import {
   LA_VISTA_RESIDENCIAL_ID,
   LA_VISTA_SEMBRADO_SEGMENTOS,
@@ -10,8 +11,12 @@ import {
   sembradoToInventarioEstatus,
   type OperacionComercialRecord,
   type SembradoUnidadRow,
+  type UnidadCuracionInput,
 } from "@/lib/comercial/sembrado-status";
-import type { ProductoRecomendadoRecord } from "@/lib/inventario/productos-recomendados";
+import {
+  syncSuperficieLegacyFields,
+  type ProductoRecomendadoRecord,
+} from "@/lib/inventario/productos-recomendados";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export const listOperaciones = async (
@@ -132,7 +137,19 @@ export const listSembradoUnidades = async (
       tipo: unit.tipo,
       clusterId: unit.cluster_id,
       listaPrecios: unit.lista_precios ?? operacion?.lista_precios ?? null,
-      estatusInventario: unit.estatus,
+      precio: unit.precio ?? operacion?.precio_lista ?? null,
+      prototipoId: unit.prototipo_id ?? null,
+      superficieTerrenoM2: unit.superficie_terreno_m2 ?? null,
+      superficieConstruccionM2: unit.superficie_construccion_m2 ?? null,
+      etapa: unit.etapa ?? null,
+      orden: unit.orden ?? 0,
+      visitable: unit.visitable ?? false,
+      prioridadComercial: unit.prioridad_comercial ?? "media",
+      razonesVenta: unit.razones_venta ?? [],
+      ubicacionComercial: unit.ubicacion_comercial ?? null,
+      instruccionRecorrido: unit.instruccion_recorrido ?? null,
+      notaAcceso: unit.nota_acceso ?? null,
+      estatusInventario: resolveUnidadEstatus(unit.estatus, operacion),
       entregado: unit.entregado ?? false,
       escriturado: unit.escriturado ?? false,
       operacion,
@@ -152,7 +169,9 @@ export const getSembradoResumen = async (
   const resumen: Record<string, number> = { Disponibles: 0 };
 
   for (const row of rows) {
-    const key = row.operacion?.estatus_sembrado ?? "Disponibles";
+    const key =
+      row.operacion?.estatus_sembrado ??
+      (row.estatusInventario === "apartado" ? "Apartado pendiente" : "Disponibles");
     resumen[key] = (resumen[key] ?? 0) + 1;
   }
 
@@ -974,4 +993,80 @@ export const updateOperacionComercial = async (
       comprobacion,
     } as OperacionComercialRecord,
   };
+};
+
+export const updateUnidadCuracion = async (
+  unidadId: string,
+  input: UnidadCuracionInput,
+  profile: AdminProfile,
+) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("disponibilidad_unidades")
+    .select("*")
+    .eq("id", unidadId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+  if (!existing) {
+    throw new Error("Unidad no encontrada.");
+  }
+
+  const unit = existing as ProductoRecomendadoRecord;
+  if (!canAccessDesarrollo(profile, unit.desarrollo_id)) {
+    throw new Error("No tienes permiso para esta unidad.");
+  }
+
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.precio !== undefined) patch.precio = input.precio;
+  if (input.prototipoId !== undefined) patch.prototipo_id = input.prototipoId;
+  if (input.etapa !== undefined) patch.etapa = input.etapa?.trim() || null;
+  if (input.orden !== undefined) patch.orden = input.orden;
+  if (input.visitable !== undefined) patch.visitable = input.visitable;
+  if (input.prioridadComercial !== undefined) {
+    patch.prioridad_comercial = input.prioridadComercial;
+  }
+  if (input.razonesVenta !== undefined) patch.razones_venta = input.razonesVenta;
+  if (input.ubicacionComercial !== undefined) {
+    patch.ubicacion_comercial = input.ubicacionComercial?.trim() || null;
+  }
+  if (input.instruccionRecorrido !== undefined) {
+    patch.instruccion_recorrido = input.instruccionRecorrido?.trim() || null;
+  }
+  if (input.notaAcceso !== undefined) patch.nota_acceso = input.notaAcceso?.trim() || null;
+
+  if (input.superficieTerrenoM2 !== undefined || input.superficieConstruccionM2 !== undefined) {
+    const tipo = unit.tipo;
+    const terreno =
+      input.superficieTerrenoM2 !== undefined
+        ? input.superficieTerrenoM2
+        : unit.superficie_terreno_m2;
+    const construccion =
+      input.superficieConstruccionM2 !== undefined
+        ? input.superficieConstruccionM2
+        : unit.superficie_construccion_m2;
+    Object.assign(patch, syncSuperficieLegacyFields(tipo, terreno, construccion));
+  }
+
+  const { data, error } = await supabase
+    .from("disponibilidad_unidades")
+    .update(patch)
+    .eq("id", unidadId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as ProductoRecomendadoRecord;
 };

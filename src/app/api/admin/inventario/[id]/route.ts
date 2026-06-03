@@ -36,6 +36,13 @@ export async function PATCH(
       activo?: boolean;
     };
 
+    if (body.estatus !== undefined) {
+      return NextResponse.json(
+        { error: "La disponibilidad se administra en Sembrado, no aquí." },
+        { status: 400 },
+      );
+    }
+
     const producto = await updateProductoRecomendado(params.id, body);
     return NextResponse.json({ producto });
   } catch (error) {

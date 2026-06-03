@@ -197,9 +197,36 @@ export type SembradoUnidadRow = {
   tipo: string;
   clusterId: string;
   listaPrecios: string | null;
+  precio: number | null;
+  prototipoId: string | null;
+  superficieTerrenoM2: number | null;
+  superficieConstruccionM2: number | null;
+  etapa: string | null;
+  orden: number;
+  visitable: boolean;
+  prioridadComercial: "alta" | "media" | "baja";
+  razonesVenta: string[];
+  ubicacionComercial: string | null;
+  instruccionRecorrido: string | null;
+  notaAcceso: string | null;
   estatusInventario: InventarioEstatus;
   entregado: boolean;
   escriturado: boolean;
   operacion: OperacionComercialRecord | null;
   totalCobrado: number;
+};
+
+export type UnidadCuracionInput = {
+  precio?: number | null;
+  prototipoId?: string | null;
+  superficieTerrenoM2?: number | null;
+  superficieConstruccionM2?: number | null;
+  etapa?: string | null;
+  orden?: number;
+  visitable?: boolean;
+  prioridadComercial?: "alta" | "media" | "baja";
+  razonesVenta?: string[];
+  ubicacionComercial?: string | null;
+  instruccionRecorrido?: string | null;
+  notaAcceso?: string | null;
 };

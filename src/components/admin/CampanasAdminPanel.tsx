@@ -8,6 +8,9 @@ import type { CampanaRecord, CampanaTipo } from "@/lib/admin/campanas-service";
 type CampanasAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  /** Oculta cabecera y selector; usa `initialDesarrolloId` fijo. */
+  embedded?: boolean;
+  initialDesarrolloId?: string;
 };
 
 const tipoLabel: Record<CampanaTipo, string> = {
@@ -15,8 +18,15 @@ const tipoLabel: Record<CampanaTipo, string> = {
   offline: "Offline",
 };
 
-export function CampanasAdminPanel({ desarrollos, scopeLabel }: CampanasAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+export function CampanasAdminPanel({
+  desarrollos,
+  scopeLabel,
+  embedded = false,
+  initialDesarrolloId,
+}: CampanasAdminPanelProps) {
+  const [desarrolloId, setDesarrolloId] = useState(
+    embedded ? (initialDesarrolloId ?? "") : (desarrollos[0]?.id ?? ""),
+  );
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,6 +66,12 @@ export function CampanasAdminPanel({ desarrollos, scopeLabel }: CampanasAdminPan
       setLoading(false);
     }
   }, [desarrolloId]);
+
+  useEffect(() => {
+    if (embedded && initialDesarrolloId) {
+      setDesarrolloId(initialDesarrolloId);
+    }
+  }, [embedded, initialDesarrolloId]);
 
   useEffect(() => {
     void loadCampanas();
@@ -121,53 +137,67 @@ export function CampanasAdminPanel({ desarrollos, scopeLabel }: CampanasAdminPan
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">CRM</p>
-            <h2 className="text-2xl font-black text-gabi-forest">Campañas</h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Canales de captación por desarrollo — atribución de leads (Online / Offline).
-              {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowNew(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
-            >
-              <Plus className="h-4 w-4" />
-              Campaña
-            </button>
-            <button
-              type="button"
-              onClick={() => void loadCampanas()}
-              className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Actualizar
-            </button>
-          </div>
-        </div>
+  const actionButtons = (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={() => setShowNew(true)}
+        className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
+      >
+        <Plus className="h-4 w-4" />
+        Campaña
+      </button>
+      <button
+        type="button"
+        onClick={() => void loadCampanas()}
+        className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Actualizar
+      </button>
+    </div>
+  );
 
-        <label className="mt-5 block max-w-xs text-sm">
-          <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
-          <select
-            value={desarrolloId}
-            onChange={(event) => setDesarrolloId(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2"
-          >
-            {desarrollos.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+  return (
+    <div className={embedded ? "space-y-4" : "space-y-6"}>
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black text-gabi-forest">Campañas</h3>
+            <p className="text-sm text-slate-500">Canales de captación y atribución de leads.</p>
+          </div>
+          {actionButtons}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">CRM</p>
+              <h2 className="text-2xl font-black text-gabi-forest">Campañas</h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                Canales de captación por desarrollo — atribución de leads (Online / Offline).
+                {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
+              </p>
+            </div>
+            {actionButtons}
+          </div>
+
+          <label className="mt-5 block max-w-xs text-sm">
+            <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
+            <select
+              value={desarrolloId}
+              onChange={(event) => setDesarrolloId(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2"
+            >
+              {desarrollos.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

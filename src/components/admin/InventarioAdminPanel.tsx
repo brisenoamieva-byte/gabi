@@ -184,19 +184,24 @@ export function InventarioAdminPanel({
 
       <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
-          Paso 2 · Productos para mostrar
+          Recorrido · Curación comercial
         </p>
         <h2 className="mt-2 text-2xl font-black text-[#13315C]">
-          Lista curada para el recorrido
+          Unidades para mostrar en visita
         </h2>
         {scopeLabel ? (
           <p className="mt-2 inline-flex rounded-full bg-[#13315C]/5 px-3 py-1 text-xs font-semibold text-[#13315C]">
             Alcance: {scopeLabel}
           </p>
         ) : null}
+        <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          La <strong>disponibilidad</strong> (disponible, apartado, vendido) se administra en{" "}
+          <strong>Sembrado</strong>. Aquí solo defines qué unidades enseñar en recorrido/cotizador:
+          orden, razones de venta, instrucciones y visibilidad.
+        </div>
         <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Edita la tabla como Excel, importa CSV o agrega filas. El PDF sigue siendo el inventario
-          completo.
+          Edita la tabla, importa CSV o agrega filas. El estatus mostrado refleja el sembrado en
+          tiempo real (solo lectura aquí).
         </p>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">

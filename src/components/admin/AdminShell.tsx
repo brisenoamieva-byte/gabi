@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2 } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { adminRolLabel, canAccessModule } from "@/lib/admin/permissions";
@@ -19,6 +19,7 @@ const navIcons = {
   "/admin/sembrado": ClipboardList,
   "/admin/leads": UserRound,
   "/admin/campanas": Megaphone,
+  "/admin/desarrollos": Building2,
 } as const;
 
 const navModules: Record<string, AdminModule> = {
@@ -32,6 +33,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/sembrado": "sembrado",
   "/admin/leads": "leads",
   "/admin/campanas": "leads",
+  "/admin/desarrollos": "leads",
 };
 
 type AdminShellProps = {
@@ -46,7 +48,8 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
 
   const navItems = [
     { href: "/admin/documentos", label: "Documentos", ready: true },
-    { href: "/admin/inventario", label: "Productos", ready: true },
+    { href: "/admin/inventario", label: "Recorrido", ready: true },
+    { href: "/admin/desarrollos", label: "Desarrollos", ready: true },
     { href: "/admin/leads", label: "Leads", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },

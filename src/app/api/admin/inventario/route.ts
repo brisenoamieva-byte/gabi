@@ -9,6 +9,8 @@ import {
   updateProductoRecomendado,
   getProductoRecomendadoById,
 } from "@/lib/admin/inventario-service";
+import { listOperaciones } from "@/lib/admin/operaciones-service";
+import { applyOperacionEstatusToUnidad } from "@/lib/comercial/unidad-disponibilidad";
 import { getAdminSession } from "@/lib/admin/session";
 import type { ProductoRecomendadoInput } from "@/lib/inventario/productos-recomendados";
 
@@ -27,10 +29,20 @@ export async function GET(request: Request) {
   const clusterId = searchParams.get("clusterId") ?? undefined;
 
   try {
-    const productos = await listProductosRecomendados(
+    const rows = await listProductosRecomendados(
       { desarrolloId, clusterId, includeInactive: true },
       session.profile,
     );
+
+    let productos = rows;
+    if (desarrolloId) {
+      const operaciones = await listOperaciones({ desarrolloId }, session.profile);
+      const operacionByUnidad = new Map(operaciones.map((item) => [item.unidad_id, item]));
+      productos = rows.map((row) =>
+        applyOperacionEstatusToUnidad(row, operacionByUnidad.get(row.id) ?? null),
+      );
+    }
+
     return NextResponse.json({ productos });
   } catch (error) {
     return NextResponse.json(
