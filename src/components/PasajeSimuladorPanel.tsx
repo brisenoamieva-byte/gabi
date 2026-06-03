@@ -26,6 +26,7 @@ import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
 import { enrichPasajeUnidad } from "@/lib/catalog/pasaje-unidad-detalles";
 import { isPasajeDepartamentosCluster } from "@/lib/catalog/pasaje-alamos-acabados";
 import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
+import { saveCotizacionClient } from "@/lib/comercial/save-cotizacion-client";
 
 export type PasajeSimuladorPanelProps = {
   desarrolloId: string;
@@ -40,6 +41,10 @@ export type PasajeSimuladorPanelProps = {
   catalog?: CotizadorCatalog;
   clienteNombre?: string;
   asesorNombre?: string;
+  asesorId?: string;
+  prospectoId?: string;
+  clienteEmail?: string;
+  clienteTelefono?: string;
   esquema?: PasajeEsquemaPago;
   libreEnganchePct?: number;
   libreMensualidadesPct?: number;
@@ -376,6 +381,7 @@ const buildResumen = (
 };
 
 export function PasajeSimuladorPanel({
+  desarrolloId,
   desarrolloNombre,
   desarrolloLogo,
   prospectoRegistrado,
@@ -386,6 +392,10 @@ export function PasajeSimuladorPanel({
   catalog,
   clienteNombre,
   asesorNombre,
+  asesorId,
+  prospectoId,
+  clienteEmail,
+  clienteTelefono,
   esquema = "contado",
   libreEnganchePct,
   libreMensualidadesPct,
@@ -537,6 +547,26 @@ export function PasajeSimuladorPanel({
     } catch {
       // El portapapeles puede fallar en HTTP/permisos.
     }
+
+    saveCotizacionClient({
+      desarrolloId,
+      asesorId,
+      prospectoId,
+      clienteNombre,
+      clienteEmail,
+      clienteTelefono,
+      unidadId: unidad?.id,
+      clusterId,
+      prototipoId,
+      unidadNumero: unidad?.unidad,
+      tipoUnidad: tipo === "oficina" ? "oficina" : "departamento",
+      precioLista: resultado.precioLista,
+      esquemaPago: resultado.esquemaLabel,
+      descuentoPct: resultado.descuentoEfectivoPct,
+      precioTotal: resultado.precioTotal,
+      payload: { resultado, pdfContext, origen: "pasaje_simulador" },
+    });
+
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   };
@@ -552,6 +582,26 @@ export function PasajeSimuladorPanel({
         desarrolloLogo,
         resultado,
         ...pdfContext,
+      });
+
+      saveCotizacionClient({
+        desarrolloId,
+        asesorId,
+        prospectoId,
+        clienteNombre,
+        clienteEmail,
+        clienteTelefono,
+        unidadId: unidad?.id,
+        clusterId,
+        prototipoId,
+        unidadNumero: unidad?.unidad,
+        tipoUnidad: tipo === "oficina" ? "oficina" : "departamento",
+        precioLista: resultado.precioLista,
+        esquemaPago: resultado.esquemaLabel,
+        descuentoPct: resultado.descuentoEfectivoPct,
+        precioTotal: resultado.precioTotal,
+        pdfGenerado: true,
+        payload: { resultado, pdfContext, origen: "pasaje_simulador_pdf" },
       });
     } finally {
       setPdfLoading(false);

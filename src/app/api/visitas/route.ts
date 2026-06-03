@@ -15,8 +15,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Tipo de visita inválido." }, { status: 400 });
     }
 
-    const record = await insertVisita(body);
-    if (!record) {
+    const result = await insertVisita(body);
+    if (!result) {
       return NextResponse.json(
         { error: "No se pudo registrar la visita (servidor)." },
         { status: 503 },
@@ -29,7 +29,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      visita: record,
+      visita: result.visita,
+      prospectoId: result.prospectoId,
       emailSent: emailResult?.sent ?? false,
       emailReason: emailResult && !emailResult.sent ? emailResult.reason : undefined,
     });

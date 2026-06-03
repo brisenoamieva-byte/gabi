@@ -935,6 +935,7 @@ export default function RecorridoPage() {
   }, [state.cliente.familia, state.cliente.objetivo, state.cliente.presupuesto]);
 
   const [asesorNombre, setAsesorNombre] = useState<string | undefined>();
+  const [asesorId, setAsesorId] = useState<string | undefined>();
 
   const masterPlanImage = useMemo(() => {
     return (
@@ -952,8 +953,9 @@ export default function RecorridoPage() {
     try {
       const raw = localStorage.getItem("gabi_user");
       if (raw) {
-        const parsed = JSON.parse(raw) as { nombre?: string };
+        const parsed = JSON.parse(raw) as { id?: string; nombre?: string };
         if (parsed?.nombre) setAsesorNombre(parsed.nombre);
+        if (parsed?.id) setAsesorId(parsed.id);
       }
     } catch {
       // Ignorar parse errors en localStorage.
@@ -2717,9 +2719,12 @@ export default function RecorridoPage() {
             descuento={state.descuento}
             esquema={state.esquema}
             clienteNombre={state.cliente.nombre}
+            clienteEmail={state.cliente.email}
+            clienteTelefono={state.cliente.telefono}
             desarrolloLogo={activeDesarrollo.logo}
             prospectoRegistrado={prospectoCotizadorRegistrado}
             asesorNombre={asesorNombre}
+            asesorId={asesorId}
             catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
             showCopy
             showPdf

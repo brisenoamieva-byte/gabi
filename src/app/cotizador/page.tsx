@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, LogOut, MapPinned } from "lucide-react";
+import { ArrowLeft, Copy, LogOut, MapPinned, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,9 +17,13 @@ import {
   readPortalSession,
   resolveAdvisorEntryPath,
 } from "@/lib/portal/session";
+import {
+  readCotizadorProspectoId,
+  RECORRIDO_SNAPSHOT_KEY,
+} from "@/lib/asesores/prefill-cotizador-client";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 
-const RECORRIDO_KEY = "gabi_recorrido_actual";
+const RECORRIDO_KEY = RECORRIDO_SNAPSHOT_KEY;
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
 
@@ -33,7 +37,7 @@ type RecorridoSnapshot = {
   prototipoId?: string;
   descuento?: number;
   esquema?: CotizadorEsquema;
-  cliente?: { nombre?: string };
+  cliente?: { nombre?: string; email?: string; telefono?: string };
 };
 
 function resolveDefaultCluster(
@@ -102,7 +106,10 @@ export default function CotizadorPage() {
   const [pasajeLibreSinMensFechaFiniquito, setPasajeLibreSinMensFechaFiniquito] =
     useState<string | undefined>();
   const [clienteNombre, setClienteNombre] = useState<string | undefined>();
+  const [clienteEmail, setClienteEmail] = useState<string | undefined>();
+  const [clienteTelefono, setClienteTelefono] = useState<string | undefined>();
   const [prospectoRegistrado, setProspectoRegistrado] = useState<string | undefined>();
+  const [prospectoId, setProspectoId] = useState<string | undefined>();
   const [copiedBank, setCopiedBank] = useState(false);
 
   useEffect(() => {
@@ -176,7 +183,10 @@ export default function CotizadorPage() {
         setEsquema(recorrido?.esquema ?? "mensualidades");
         const nombreRecorrido = recorrido?.cliente?.nombre?.trim() || undefined;
         setClienteNombre(nombreRecorrido);
+        setClienteEmail(recorrido?.cliente?.email?.trim() || undefined);
+        setClienteTelefono(recorrido?.cliente?.telefono?.trim() || undefined);
         setProspectoRegistrado(nombreRecorrido);
+        setProspectoId(readCotizadorProspectoId() ?? undefined);
         setSessionStatus("ready");
       } catch {
         localStorage.removeItem("gabi_user");
@@ -328,6 +338,15 @@ export default function CotizadorPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 lg:shrink-0 lg:justify-end">
+            {prospectoId ? (
+              <Link
+                href="/mis-leads"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#6cc24a]/30 bg-[#6cc24a]/10 px-4 text-sm font-semibold text-[#201044] shadow-sm transition hover:bg-[#6cc24a]/15 sm:min-h-12 sm:flex-none sm:rounded-2xl sm:px-5"
+              >
+                <UsersRound className="h-4 w-4" />
+                Mis prospectos
+              </Link>
+            ) : null}
             <Link
               href="/dashboard"
               className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#201044]/12 bg-white px-4 text-sm font-semibold text-[#201044] shadow-sm transition hover:bg-slate-50 sm:min-h-12 sm:flex-none sm:rounded-2xl sm:px-5"
@@ -369,7 +388,11 @@ export default function CotizadorPage() {
               descuento={descuento}
               esquema={esquema}
               clienteNombre={clienteNombre}
+              clienteEmail={clienteEmail}
+              clienteTelefono={clienteTelefono}
               asesorNombre={user?.nombre}
+              asesorId={user?.id}
+              prospectoId={prospectoId}
               catalog={catalogMemo}
               showSelectors
               showCopy

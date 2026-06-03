@@ -14,6 +14,11 @@ import {
 } from "@/lib/cotizador";
 import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
 import {
+  calcDescuentoPct,
+  resolveTipoUnidadFromInventario,
+  saveCotizacionClient,
+} from "@/lib/comercial/save-cotizacion-client";
+import {
   PasajeSimuladorPanel,
   type PasajeSimuladorPanelProps,
 } from "@/components/PasajeSimuladorPanel";
@@ -33,6 +38,10 @@ export type CotizadorPanelProps = {
   esquema: CotizadorEsquema;
   clienteNombre?: string;
   asesorNombre?: string;
+  asesorId?: string;
+  prospectoId?: string;
+  clienteEmail?: string;
+  clienteTelefono?: string;
   catalog?: CotizadorCatalog;
   showSelectors?: boolean;
   showCopy?: boolean;
@@ -156,6 +165,10 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         catalog={props.catalog}
         clienteNombre={props.clienteNombre}
         asesorNombre={props.asesorNombre}
+        asesorId={props.asesorId}
+        prospectoId={props.prospectoId}
+        clienteEmail={props.clienteEmail}
+        clienteTelefono={props.clienteTelefono}
         showSelectors={props.showSelectors}
         showCopy={props.showCopy}
         showPdf={props.showPdf ?? props.showCopy}
@@ -196,6 +209,10 @@ function GenericCotizadorPanel({
   descuento,
   esquema,
   clienteNombre,
+  asesorId,
+  prospectoId,
+  clienteEmail,
+  clienteTelefono,
   catalog,
   showSelectors = false,
   showCopy = false,
@@ -262,6 +279,29 @@ function GenericCotizadorPanel({
     } catch {
       // El portapapeles puede fallar en HTTP o sin permisos del navegador.
     }
+
+    const unidad = unidadId
+      ? inventarioUnidades?.find((item) => item.id === unidadId)
+      : undefined;
+
+    saveCotizacionClient({
+      desarrolloId,
+      asesorId,
+      prospectoId,
+      clienteNombre,
+      clienteEmail,
+      clienteTelefono,
+      clusterId,
+      prototipoId,
+      unidadId,
+      unidadNumero: unidad?.unidad ?? result.unidadNombre,
+      tipoUnidad: resolveTipoUnidadFromInventario(unidad),
+      precioLista: result.precioLista,
+      esquemaPago: result.esquema === "mensualidades" ? "Mensualidades" : "Contado",
+      descuentoPct: calcDescuentoPct(result.descuento, result.precioLista),
+      precioTotal: result.precioFinal,
+      payload: { cotizacion: result, origen: "cotizador_generico" },
+    });
 
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);

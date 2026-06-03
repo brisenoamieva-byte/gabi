@@ -29,6 +29,9 @@ export type ProductoRecomendadoRecord = {
   ubicacion_comercial: string | null;
   instruccion_recorrido: string | null;
   nota_acceso: string | null;
+  lista_precios?: string | null;
+  entregado?: boolean;
+  escriturado?: boolean;
   activo: boolean;
   updated_at: string;
 };

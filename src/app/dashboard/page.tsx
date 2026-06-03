@@ -9,6 +9,7 @@ import {
   ChevronRight,
   LogOut,
   MapPinned,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -40,6 +41,12 @@ type QuickAction = {
 };
 
 const quickActions: QuickAction[] = [
+  {
+    title: "Mis prospectos",
+    description: "Seguimiento de tus leads",
+    icon: UsersRound,
+    href: "/mis-leads",
+  },
   {
     title: "Cotizador",
     description: "Precio y opciones en visita",

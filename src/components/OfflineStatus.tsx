@@ -30,7 +30,7 @@ type PendingLead = {
   crmStatus?: string;
 };
 
-const ASESOR_ROUTE_PREFIXES = ["/dashboard", "/desarrollos", "/recorrido", "/cotizador"];
+const ASESOR_ROUTE_PREFIXES = ["/dashboard", "/desarrollos", "/recorrido", "/cotizador", "/mis-leads"];
 
 const readArray = <T,>(key: string): T[] => {
   try {

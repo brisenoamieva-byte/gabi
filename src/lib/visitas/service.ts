@@ -1,7 +1,13 @@
 import type { AdminProfile } from "@/lib/admin/types";
 import { assertDesarrolloAccess, filterDesarrollosForAdmin } from "@/lib/admin/permissions";
+import { syncProspectoFromVisita } from "@/lib/admin/prospectos-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { VisitaInput, VisitaRecord, VisitasResumen } from "@/lib/visitas/types";
+
+export type VisitaInsertResult = {
+  visita: VisitaRecord;
+  prospectoId: string | null;
+};
 
 const toRecord = (row: {
   id: string;
@@ -74,7 +80,7 @@ export const validateAsesorForVisita = async (
   return { ok: true, nombre: data.nombre as string };
 };
 
-export const insertVisita = async (input: VisitaInput): Promise<VisitaRecord | null> => {
+export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResult | null> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return null;
@@ -114,7 +120,26 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaRecord | n
     throw new Error(error?.message ?? "No se pudo registrar la visita.");
   }
 
-  return toRecord(data);
+  const visita = toRecord(data);
+
+  let prospectoId: string | null = null;
+  try {
+    const prospecto = await syncProspectoFromVisita({
+      visitaId: visita.id,
+      tipo: input.tipo,
+      desarrolloId: input.desarrolloId,
+      asesorId: input.asesorId,
+      clienteNombre: input.clienteNombre,
+      clienteEmail: input.clienteEmail,
+      clienteTelefono: input.clienteTelefono,
+      medioContacto: input.medioContacto,
+    });
+    prospectoId = prospecto?.id ?? null;
+  } catch (syncError) {
+    console.error("No se pudo sincronizar prospecto desde visita:", syncError);
+  }
+
+  return { visita, prospectoId };
 };
 
 export const getVisitasResumen = async (
