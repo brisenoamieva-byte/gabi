@@ -12,6 +12,7 @@ import {
   prospectoEtapaLabel,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
+import { NIVELES_INTERES, nivelInteresLabel } from "@/lib/comercial/prospecto-interes";
 
 type LeadsAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -49,6 +50,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
   const [etapaFilter, setEtapaFilter] = useState("");
   const [asesorFilter, setAsesorFilter] = useState("");
   const [campanaFilter, setCampanaFilter] = useState("");
+  const [interesFilter, setInteresFilter] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -119,6 +121,9 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
       if (campanaFilter) {
         params.set("campanaId", campanaFilter);
       }
+      if (interesFilter) {
+        params.set("nivelInteres", interesFilter);
+      }
       params.set("spam", leadTab === "spam" ? "only" : "exclude");
       params.set(
         "duplicados",
@@ -154,7 +159,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
     } finally {
       setLoading(false);
     }
-  }, [desarrolloId, viewMode, etapaFilter, asesorFilter, campanaFilter, search, desde, hasta, leadTab]);
+  }, [desarrolloId, viewMode, etapaFilter, asesorFilter, campanaFilter, interesFilter, search, desde, hasta, leadTab]);
 
   useEffect(() => {
     void loadAsesores();
@@ -477,6 +482,22 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
             </select>
           </label>
 
+          <label className="block text-sm">
+            <span className="mb-1 block font-semibold text-slate-600">Interés</span>
+            <select
+              value={interesFilter}
+              onChange={(event) => setInteresFilter(event.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2"
+            >
+              <option value="">Todos</option>
+              {NIVELES_INTERES.map((nivel) => (
+                <option key={nivel} value={nivel}>
+                  {nivelInteresLabel[nivel]}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="block min-w-[12rem] flex-1 text-sm">
             <span className="mb-1 block font-semibold text-slate-600">Buscar</span>
             <div className="relative">
@@ -544,8 +565,8 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
           {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
-          {error.includes("es_spam") || error.includes("xperience_id") ? (
-            <p className="mt-1 text-xs">Aplica la migración 020_xperience_lead_fields.sql en Supabase.</p>
+          {error.includes("es_spam") || error.includes("xperience_id") || error.includes("nivel_interes") ? (
+            <p className="mt-1 text-xs">Aplica las migraciones 020 y 021 en Supabase.</p>
           ) : null}
         </div>
       ) : null}

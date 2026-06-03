@@ -45,6 +45,7 @@ export type UpdateProspectoInput = {
   tipoInversion?: string | null;
   campanaId?: string | null;
   calificacion?: string;
+  nivelInteres?: string | null;
   iscore?: number | null;
   sellerScore?: number | null;
   asignadoPor?: string;
@@ -115,6 +116,7 @@ export const listProspectos = async (
     fechaEn?: "created" | "updated";
     spam?: "exclude" | "only" | "include";
     duplicados?: "exclude" | "only" | "include";
+    nivelInteres?: string;
   },
   profile?: AdminProfile,
 ): Promise<ProspectoListRow[]> => {
@@ -165,6 +167,10 @@ export const listProspectos = async (
     query = query.eq("es_duplicado", false);
   }
 
+  if (filters.nivelInteres) {
+    query = query.eq("nivel_interes", filters.nivelInteres);
+  }
+
   if (filters.desde) {
     const fechaColumn = filters.fechaEn === "updated" ? "updated_at" : "created_at";
     query = query.gte(fechaColumn, `${filters.desde}T00:00:00.000Z`);
@@ -207,6 +213,7 @@ export const getProspectosResumen = async (
     fechaEn?: "created" | "updated";
     spam?: "exclude" | "only" | "include";
     duplicados?: "exclude" | "only" | "include";
+    nivelInteres?: string;
   },
 ): Promise<ProspectosResumen> => {
   const prospectos = await listProspectos({ desarrolloId, ...filters }, profile);
@@ -337,6 +344,9 @@ export const updateProspecto = async (
     patch.calificacion = input.calificacion.trim() || null;
     patch.es_spam = input.calificacion.trim().toLowerCase().startsWith("descartado");
   }
+  if (input.nivelInteres !== undefined) {
+    patch.nivel_interes = input.nivelInteres || null;
+  }
   if (input.iscore !== undefined) {
     patch.iscore = input.iscore;
   }
@@ -353,7 +363,7 @@ export const updateProspecto = async (
     patch.es_duplicado = input.esDuplicado;
   }
 
-  if (input.calificacion !== undefined || input.etapa !== undefined || input.esDuplicado !== undefined) {
+  if (input.calificacion !== undefined || input.etapa !== undefined || input.esDuplicado !== undefined || input.nivelInteres !== undefined) {
     const merged = { ...existing, ...patch } as ProspectoRecord;
     if (input.iscore === undefined) {
       patch.iscore = computeIscore(merged);

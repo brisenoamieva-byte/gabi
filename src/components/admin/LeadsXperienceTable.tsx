@@ -9,6 +9,10 @@ import {
   normalizeLeadNombre,
   scoreBadgeColor,
 } from "@/lib/comercial/xperience-leads";
+import {
+  nivelInteresLabelOrDefault,
+  nivelInteresColorOrDefault,
+} from "@/lib/comercial/prospecto-interes";
 
 type LeadsXperienceTableProps = {
   prospectos: ProspectoListRow[];
@@ -72,6 +76,7 @@ export function LeadsXperienceTable({
             <th className="px-4 py-3">Vendedor</th>
             <th className="px-4 py-3">Asignado por</th>
             <th className="px-4 py-3">Calificación</th>
+            <th className="px-4 py-3">Interés</th>
             <th className="px-4 py-3">iScore</th>
             <th className="px-4 py-3">seller</th>
           </tr>
@@ -130,6 +135,13 @@ export function LeadsXperienceTable({
                     className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${calificacionColor(row.calificacion)}`}
                   >
                     {calificacionLabel(row.calificacion)}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${nivelInteresColorOrDefault(row.nivel_interes)}`}
+                  >
+                    {nivelInteresLabelOrDefault(row.nivel_interes)}
                   </span>
                 </td>
                 <td className="px-4 py-3">

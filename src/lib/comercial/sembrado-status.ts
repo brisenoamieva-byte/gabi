@@ -115,6 +115,7 @@ export type ProspectoRecord = {
   xperience_id: number | null;
   producto_nombre: string | null;
   calificacion: string | null;
+  nivel_interes: string | null;
   iscore: number | null;
   seller_score: number | null;
   asignado_por: string | null;

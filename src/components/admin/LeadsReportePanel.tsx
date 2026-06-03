@@ -352,6 +352,23 @@ export function LeadsReportePanel({ desarrollos, scopeLabel }: LeadsReportePanel
             </div>
 
             <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-black text-gabi-forest">Por interés</h3>
+              <div className="mt-4 space-y-2">
+                {Object.entries(reporte.porInteres)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([interes, total]) => (
+                    <div
+                      key={interes}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                    >
+                      <span className="text-sm font-semibold text-gabi-forest">{interes}</span>
+                      <span className="text-sm font-bold text-gabi-sand">{total}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-black text-gabi-forest">Por asesor</h3>
               {reporte.porAsesor.length ? (
                 <div className="mt-4 space-y-2">

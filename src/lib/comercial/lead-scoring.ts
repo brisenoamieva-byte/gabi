@@ -46,6 +46,7 @@ export const computeIscore = (
     | "asesor_id"
     | "origen_ciudad"
     | "es_duplicado"
+    | "nivel_interes"
   >,
 ): number => {
   if (calificacionEsSpam(prospecto.calificacion) || prospecto.es_spam || prospecto.es_duplicado) {
@@ -83,6 +84,12 @@ export const computeIscore = (
   }
   if (prospecto.origen_ciudad?.trim()) {
     score += 1;
+  }
+
+  if (prospecto.nivel_interes === "alto") {
+    score += 6;
+  } else if (prospecto.nivel_interes === "bajo") {
+    score += 2;
   }
 
   return Math.min(score, 30);

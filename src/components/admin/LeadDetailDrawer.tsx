@@ -13,6 +13,7 @@ import {
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import { XPERIENCE_CALIFICACIONES } from "@/lib/comercial/xperience-leads";
+import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
 
 type LeadDetailDrawerProps = {
   prospectoId: string;
@@ -47,6 +48,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [notas, setNotas] = useState("");
   const [campanaId, setCampanaId] = useState("");
   const [calificacion, setCalificacion] = useState("Sin Calificar");
+  const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
 
@@ -71,6 +73,13 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         setNotas(data.prospecto.notas ?? "");
         setCampanaId(data.prospecto.campana_id ?? "");
         setCalificacion(data.prospecto.calificacion ?? "Sin Calificar");
+        setNivelInteres(
+          data.prospecto.nivel_interes === "sin_interes" ||
+            data.prospecto.nivel_interes === "bajo" ||
+            data.prospecto.nivel_interes === "alto"
+            ? data.prospecto.nivel_interes
+            : "",
+        );
 
         const campParams = new URLSearchParams({
           desarrolloId: data.prospecto.desarrollo_id,
@@ -104,6 +113,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
           notas,
           campanaId: campanaId || null,
           calificacion,
+          nivelInteres: nivelInteres || null,
         }),
       });
 
@@ -237,6 +247,23 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   {XPERIENCE_CALIFICACIONES.map((item) => (
                     <option key={item} value={item}>
                       {item}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Nivel de interés">
+                <select
+                  value={nivelInteres}
+                  onChange={(event) =>
+                    setNivelInteres(event.target.value as NivelInteres | "")
+                  }
+                  className={inputClass}
+                >
+                  <option value="">Sin definir</option>
+                  {NIVELES_INTERES.map((item) => (
+                    <option key={item} value={item}>
+                      {nivelInteresLabel[item]}
                     </option>
                   ))}
                 </select>

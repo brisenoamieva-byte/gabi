@@ -1,6 +1,7 @@
 import { listProspectos } from "@/lib/admin/prospectos-service";
 import type { AdminProfile } from "@/lib/admin/types";
 import { calificacionLabel } from "@/lib/comercial/xperience-leads";
+import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 
@@ -22,6 +23,7 @@ export type LeadsReporte = {
   duplicados: number;
   porEtapa: Record<string, number>;
   porCalificacion: Record<string, number>;
+  porInteres: Record<string, number>;
   porDia: LeadsReporteDia[];
   porAsesor: LeadsReporteAsesor[];
 };
@@ -73,6 +75,7 @@ export const getLeadsReporte = async (
 
   const porEtapa: Record<string, number> = {};
   const porCalificacion: Record<string, number> = {};
+  const porInteres: Record<string, number> = {};
   const porDiaMap = new Map<string, number>();
   const porAsesorMap = new Map<string, LeadsReporteAsesor>();
   let spam = 0;
@@ -83,6 +86,9 @@ export const getLeadsReporte = async (
 
     const calKey = calificacionLabel(prospecto.calificacion);
     porCalificacion[calKey] = (porCalificacion[calKey] ?? 0) + 1;
+
+    const interesKey = nivelInteresLabelOrDefault(prospecto.nivel_interes);
+    porInteres[interesKey] = (porInteres[interesKey] ?? 0) + 1;
 
     if (prospecto.es_spam) {
       spam += 1;
@@ -153,6 +159,7 @@ export const getLeadsReporte = async (
     duplicados,
     porEtapa,
     porCalificacion,
+    porInteres,
     porDia,
     porAsesor: Array.from(porAsesorMap.values()).sort((a, b) => b.total - a.total),
   };
