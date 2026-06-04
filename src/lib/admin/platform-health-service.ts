@@ -109,14 +109,28 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       ? "Módulo expedientes disponible." : "Falta expediente_documentos — aplica 022.",
   });
 
-  const comisionOk = await probeTable("solicitudes_comision");
+  const comisionTableOk = await probeTable("solicitudes_comision");
+  let comisionSchemaOk = comisionTableOk;
+  if (comisionTableOk) {
+    const supabase = createSupabaseServiceClient();
+    if (supabase) {
+      const { error } = await supabase
+        .from("solicitudes_comision")
+        .select("precio_venta")
+        .limit(1);
+      comisionSchemaOk = !error;
+    }
+  }
   checks.push({
     id: "023",
     label: "Solicitudes de comisión",
     migrationFile: "023_expediente_comisiones.sql",
-    ok: comisionOk,
-    detail: comisionOk
-      ? "Módulo comisiones disponible." : "Falta solicitudes_comision — aplica 023.",
+    ok: comisionTableOk && comisionSchemaOk,
+    detail: !comisionTableOk
+      ? "Falta solicitudes_comision — aplica 023."
+      : comisionSchemaOk
+        ? "Módulo comisiones disponible."
+        : "Tabla con esquema antiguo — aplica 025_solicitudes_comision_align.sql.",
   });
 
   const capturaOk = await probeTable("lead_captura_logs");

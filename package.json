@@ -18,6 +18,7 @@
     "leads:import:xperience": "node scripts/import-xperience-leads.mjs",
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",
+    "drive:test": "node --import tsx scripts/drive-test.mjs",
     "predev": "node scripts/check-supabase-env.mjs && node scripts/catalog-sync-if-needed.mjs",
     "prebuild": "node scripts/generate-gabi-pwa-icons.mjs"
   },
@@ -27,6 +28,7 @@
     "@supabase/supabase-js": "^2.105.4",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
+    "googleapis": "^173.0.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.14.0",

@@ -8,6 +8,11 @@ import {
 } from "@/lib/comercial/expediente-checklist";
 import type { OperacionComercialRecord } from "@/lib/comercial/sembrado-status";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import {
+  getGoogleDriveOperacionFolderUrl,
+  isGoogleDriveConfiguredForDesarrollo,
+} from "@/lib/integrations/google-drive-config";
+import { uploadExpedienteToGoogleDrive } from "@/lib/integrations/google-drive-service";
 
 const BUCKET = "gabi-expedientes";
 const SIGNED_URL_TTL_SECONDS = 60 * 15;
@@ -35,6 +40,8 @@ export type ExpedienteDocumentoRecord = {
   activo: boolean;
   subido_por: string | null;
   notas: string | null;
+  drive_file_id?: string | null;
+  drive_web_view_link?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -60,6 +67,8 @@ export type ExpedienteDetail = {
   documentos: ExpedienteDocumentoRecord[];
   progreso: ReturnType<typeof computeChecklistProgreso>;
   checklist: ReturnType<typeof getExpedienteChecklist>;
+  driveFolderUrl: string | null;
+  driveConfigured: boolean;
 };
 
 const assertMime = (file: File) => {
@@ -231,6 +240,10 @@ export const getExpedienteDetail = async (
     documentos: docs,
     progreso,
     checklist: getExpedienteChecklist(operacion.desarrollo_id as string),
+    driveFolderUrl: (operacion.drive_folder_id as string | null)
+      ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
+      : null,
+    driveConfigured: isGoogleDriveConfiguredForDesarrollo(operacion.desarrollo_id as string),
   };
 };
 
@@ -318,29 +331,90 @@ export const uploadExpedienteDocumento = async (input: {
     throw new Error(uploadError.message);
   }
 
-  const { data, error } = await supabase
-    .from("expediente_documentos")
-    .insert({
-      operacion_id: input.operacionId,
-      desarrollo_id: detail.operacion.desarrollo_id,
-      prospecto_id: detail.operacion.prospecto_id,
-      tipo: codigo.toLowerCase(),
-      checklist_codigo: codigo,
-      etapa_checklist: input.etapaChecklist ?? null,
-      nombre: input.nombre.trim(),
-      nombre_archivo: safeName,
-      storage_path: storagePath,
-      mime_type: mimeType,
-      tamano_bytes: input.file.size,
-      subido_por: input.adminId,
-      notas: input.notas?.trim() || null,
-      activo: true,
-    })
-    .select("*")
-    .single();
+  let driveFileId: string | null = null;
+  let driveWebViewLink: string | null = null;
+  let driveFolderId: string | null =
+    (detail.operacion as { drive_folder_id?: string | null }).drive_folder_id ?? null;
+
+  if (isGoogleDriveConfiguredForDesarrollo(detail.operacion.desarrollo_id)) {
+    try {
+      const driveResult = await uploadExpedienteToGoogleDrive({
+        desarrolloId: detail.operacion.desarrollo_id,
+        operacionId: input.operacionId,
+        clienteNombre: detail.operacion.cliente_nombre,
+        unidadNumero: detail.unidadNumero,
+        checklistCodigo: codigo,
+        fileName: safeName,
+        mimeType,
+        buffer,
+        existingFolderId: driveFolderId,
+      });
+      driveFileId = driveResult.fileId;
+      driveWebViewLink = driveResult.webViewLink;
+      driveFolderId = driveResult.folderId;
+    } catch (driveError) {
+      await supabase.storage.from(BUCKET).remove([storagePath]);
+      throw new Error(
+        driveError instanceof Error
+          ? `Google Drive: ${driveError.message}`
+          : "No se pudo subir a Google Drive.",
+      );
+    }
+  }
+
+  const insertRow: Record<string, unknown> = {
+    operacion_id: input.operacionId,
+    desarrollo_id: detail.operacion.desarrollo_id,
+    prospecto_id: detail.operacion.prospecto_id,
+    tipo: codigo.toLowerCase(),
+    checklist_codigo: codigo,
+    etapa_checklist: input.etapaChecklist ?? null,
+    nombre: input.nombre.trim(),
+    nombre_archivo: safeName,
+    storage_path: storagePath,
+    mime_type: mimeType,
+    tamano_bytes: input.file.size,
+    subido_por: input.adminId,
+    notas: input.notas?.trim() || null,
+    activo: true,
+  };
+
+  if (driveFileId) {
+    insertRow.drive_file_id = driveFileId;
+    insertRow.drive_web_view_link = driveWebViewLink;
+  }
+
+  const { data, error } = await supabase.from("expediente_documentos").insert(insertRow).select("*").single();
+
+  if (error && driveFileId && /drive_/.test(error.message)) {
+    const fallbackRow = { ...insertRow };
+    delete fallbackRow.drive_file_id;
+    delete fallbackRow.drive_web_view_link;
+    const retry = await supabase.from("expediente_documentos").insert(fallbackRow).select("*").single();
+    if (retry.error) {
+      throw new Error(
+        `${retry.error.message} (Aplica también 026_google_drive_expediente.sql para guardar enlaces Drive.)`,
+      );
+    }
+    return mapDocumento(retry.data as Record<string, unknown>);
+  }
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (driveFolderId && driveFolderId !== (detail.operacion as { drive_folder_id?: string | null }).drive_folder_id) {
+    const { error: folderError } = await supabase
+      .from("operaciones_comerciales")
+      .update({
+        drive_folder_id: driveFolderId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", input.operacionId);
+
+    if (folderError && !folderError.message.includes("drive_folder_id")) {
+      throw new Error(folderError.message);
+    }
   }
 
   return mapDocumento(data as Record<string, unknown>);
@@ -439,6 +513,16 @@ export const getExpedienteDocumentoSignedUrl = async (
     throw new Error("No tienes permiso para este documento.");
   }
 
+  const driveLink = documento.drive_web_view_link as string | null | undefined;
+  if (driveLink) {
+    return {
+      url: driveLink,
+      filename: documento.nombre_archivo as string,
+      mimeType: documento.mime_type as string,
+      source: "google_drive" as const,
+    };
+  }
+
   const { data: signed, error: signedError } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(documento.storage_path as string, SIGNED_URL_TTL_SECONDS);
@@ -451,6 +535,7 @@ export const getExpedienteDocumentoSignedUrl = async (
     url: signed.signedUrl,
     filename: documento.nombre_archivo as string,
     mimeType: documento.mime_type as string,
+    source: "supabase" as const,
   };
 };
 

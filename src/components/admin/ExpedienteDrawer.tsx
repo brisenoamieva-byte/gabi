@@ -426,6 +426,21 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
                   detail.operacion.estatus_sembrado}
               </p>
             ) : null}
+            {detail?.driveFolderUrl ? (
+              <a
+                href={detail.driveFolderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-sky-700 hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Abrir carpeta en Google Drive
+              </a>
+            ) : detail?.driveConfigured ? (
+              <p className="mt-2 text-xs text-sky-700">
+                Google Drive conectado — la carpeta del cliente se crea al subir el primer documento.
+              </p>
+            ) : null}
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
             <X className="h-5 w-5" />

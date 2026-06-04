@@ -35,10 +35,16 @@ create unique index if not exists expediente_documentos_operacion_codigo_activo_
   on public.expediente_documentos (operacion_id, checklist_codigo)
   where activo = true and checklist_codigo not in ('OTRO', 'otro');
 
+alter table public.expediente_documentos
+  alter column tipo drop not null;
+
 alter table public.operaciones_comerciales
   add column if not exists enganche_cubierto boolean not null default false,
   add column if not exists enganche_cubierto_at timestamptz,
   add column if not exists enganche_cubierto_por uuid references public.admin_profiles (id) on delete set null,
+  add column if not exists expediente_formalizado boolean not null default false,
+  add column if not exists expediente_formalizado_at timestamptz,
+  add column if not exists expediente_formalizado_por uuid references public.admin_profiles (id) on delete set null,
   add column if not exists persona_moral boolean not null default false;
 
 create table if not exists public.solicitudes_comision (

@@ -53,11 +53,22 @@ export function PlatformHealthBanner() {
                 : "Parseur sin secreto en el servidor"}
             </p>
             <p className="mt-1 text-xs opacity-90">
-              Algunas funciones de Leads (spam, iScore, duplicados) o comisiones pueden fallar hasta
-              aplicar el SQL en el proyecto Supabase.
-              {showParseurWarning
-                ? " En producción configura PARSEUR_WEBHOOK_SECRET."
-                : null}
+              {pending.length ? (
+                <>
+                  Algunas funciones de Leads (spam, iScore, duplicados) o comisiones pueden fallar
+                  hasta aplicar el SQL en el proyecto Supabase.
+                  {showParseurWarning ? " En producción configura también PARSEUR_WEBHOOK_SECRET." : null}
+                </>
+              ) : (
+                <>
+                  Las migraciones están al día. Añade{" "}
+                  <code className="rounded bg-white/70 px-1">PARSEUR_WEBHOOK_SECRET</code> en{" "}
+                  <code className="rounded bg-white/70 px-1">.env.local</code>, reinicia{" "}
+                  <code className="rounded bg-white/70 px-1">npm run dev</code> y usa el mismo valor
+                  en Vercel y en Parseur (header{" "}
+                  <code className="rounded bg-white/70 px-1">Authorization: Bearer …</code>).
+                </>
+              )}
             </p>
           </div>
         </div>
