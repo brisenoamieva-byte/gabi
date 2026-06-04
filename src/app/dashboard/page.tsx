@@ -53,6 +53,12 @@ const quickActions: QuickAction[] = [
     icon: Calculator,
     href: "/cotizador",
   },
+  {
+    title: "Disponibilidad",
+    description: "Unidades y estatus del sembrado",
+    icon: Building2,
+    href: "/disponibilidad",
+  },
 ];
 
 export default function DashboardPage() {
