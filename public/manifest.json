@@ -1,7 +1,7 @@
 {
-  "name": "gabi - Guía para Asesores de Bienes Inmuebles",
+  "name": "gabi - Plataforma comercial inmobiliaria",
   "short_name": "gabi",
-  "description": "Guía comercial inmobiliaria para recorridos estructurados. No es un CRM.",
+  "description": "Plataforma comercial integral: recorrido, cotizador, CRM, sembrado y métricas para comercializadoras inmobiliarias.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

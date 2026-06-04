@@ -2,6 +2,7 @@ import { listProspectos } from "@/lib/admin/prospectos-service";
 import type { AdminProfile } from "@/lib/admin/types";
 import { calificacionLabel } from "@/lib/comercial/xperience-leads";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
+import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 
@@ -16,11 +17,19 @@ export type LeadsReporteAsesor = {
   total: number;
 };
 
+export type LeadsEmbudoEtapa = {
+  etapa: string;
+  label: string;
+  total: number;
+  pctDelTotal: number;
+};
+
 export type LeadsReporte = {
   total: number;
   cotizaciones: number;
   spam: number;
   duplicados: number;
+  embudo: LeadsEmbudoEtapa[];
   porEtapa: Record<string, number>;
   porCalificacion: Record<string, number>;
   porInteres: Record<string, number>;
@@ -74,15 +83,23 @@ export const getLeadsReporte = async (
   );
 
   const porEtapa: Record<string, number> = {};
+  const embudoMap: Record<string, number> = {};
   const porCalificacion: Record<string, number> = {};
   const porInteres: Record<string, number> = {};
   const porDiaMap = new Map<string, number>();
   const porAsesorMap = new Map<string, LeadsReporteAsesor>();
   let spam = 0;
   let duplicados = 0;
+  let validos = 0;
 
   for (const prospecto of prospectos) {
     porEtapa[prospecto.etapa] = (porEtapa[prospecto.etapa] ?? 0) + 1;
+
+    const esValido = !prospecto.es_spam && !prospecto.es_duplicado;
+    if (esValido) {
+      validos += 1;
+      embudoMap[prospecto.etapa] = (embudoMap[prospecto.etapa] ?? 0) + 1;
+    }
 
     const calKey = calificacionLabel(prospecto.calificacion);
     porCalificacion[calKey] = (porCalificacion[calKey] ?? 0) + 1;
@@ -152,11 +169,31 @@ export const getLeadsReporte = async (
     cotizaciones = count ?? 0;
   }
 
+  const embudoEtapas: ProspectoEtapa[] = [
+    "nuevo",
+    "contactado",
+    "cotizo",
+    "negociacion",
+    "apartado",
+    "vendido",
+  ];
+
+  const embudo: LeadsEmbudoEtapa[] = embudoEtapas.map((etapa) => {
+    const total = embudoMap[etapa] ?? 0;
+    return {
+      etapa,
+      label: prospectoEtapaLabel[etapa],
+      total,
+      pctDelTotal: validos > 0 ? Math.round((total / validos) * 100) : 0,
+    };
+  });
+
   return {
-    total: prospectos.filter((item) => !item.es_spam && !item.es_duplicado).length,
+    total: validos,
     cotizaciones,
     spam,
     duplicados,
+    embudo,
     porEtapa,
     porCalificacion,
     porInteres,

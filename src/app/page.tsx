@@ -2,9 +2,13 @@
 
 import {
   ArrowRight,
+  BarChart3,
   Building2,
+  Calculator,
+  Kanban,
   Menu,
   Route,
+  Sprout,
   WifiOff,
   X,
 } from "lucide-react";
@@ -15,16 +19,17 @@ import { DemoBookingEmbed } from "@/components/DemoBookingEmbed";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
 import { ScheduleDemoButton } from "@/components/ScheduleDemoButton";
 
-const RECORRIDO_ETAPAS = [
-  "Confianza",
-  "Necesidades",
-  "Desarrollo",
-  "Producto",
-  "Cierre",
+const COMMERCIAL_FLOW = [
+  "Prospecto",
+  "Recorrido",
+  "Cotización",
+  "CRM",
+  "Sembrado",
+  "Venta",
 ] as const;
 
 const navLinks = [
-  { href: "#producto", label: "Producto" },
+  { href: "#producto", label: "Plataforma" },
   { href: "#agendar-demo", label: "Demo" },
 ];
 
@@ -33,25 +38,47 @@ const features = [
     icon: Route,
     title: "Recorrido guiado",
     description:
-      "El asesor avanza con guion, materiales y cotizador. Sin improvisar ni saltarse lo importante.",
+      "Guion, materiales y captura del prospecto en showroom o campo. El asesor avanza sin improvisar.",
   },
   {
-    icon: WifiOff,
-    title: "Listo sin internet",
+    icon: Calculator,
+    title: "Cotizador integrado",
     description:
-      "Precarga inventario y documentos antes de la visita. En showroom, sigue aunque falle el wifi.",
+      "Cotiza con inventario real del desarrollo. Cada propuesta queda ligada al lead y al asesor.",
+  },
+  {
+    icon: Kanban,
+    title: "CRM de leads",
+    description:
+      "Pipeline comercial, seguimiento por asesor, spam, duplicados e interés — visible para gerencia.",
+  },
+  {
+    icon: Sprout,
+    title: "Sembrado e inventario",
+    description:
+      "Disponibilidad, apartados y operaciones comerciales en una sola fuente de verdad por unidad.",
+  },
+  {
+    icon: BarChart3,
+    title: "Métricas y campañas",
+    description:
+      "Reportes por desarrollo, canales de captación y KPIs del embudo comercial.",
   },
   {
     icon: Building2,
-    title: "Por desarrollo",
+    title: "Multi-desarrollo",
     description:
-      "Clusters, prototipos y precios del proyecto que comercializas. Cada cliente ve su contexto.",
+      "Clusters, prototipos, precios y equipos por proyecto. Cada comercializadora opera su cartera.",
   },
 ];
 
-function ProductPreview() {
-  const activeStage = 1;
+const platformHighlights = [
+  { label: "Recorrido", detail: "Etapa 2 · Necesidades" },
+  { label: "Mis leads", detail: "12 activos · 3 cotizaron" },
+  { label: "Sembrado", detail: "84 disponibles · 6 apartados" },
+] as const;
 
+function ProductPreview() {
   return (
     <div className="relative mx-auto w-full max-w-md lg:max-w-none">
       <div
@@ -60,21 +87,24 @@ function ProductPreview() {
       />
       <div className="relative overflow-hidden rounded-2xl border border-gabi-navy/10 bg-white shadow-[0_24px_48px_-12px_rgba(19,49,92,0.12)]">
         <div className="flex items-center justify-between border-b border-gabi-line px-4 py-3">
-          <span className="text-xs font-medium text-gabi-muted">Recorrido · La Vista</span>
-          <span className="rounded-md bg-gabi-surface px-2 py-0.5 text-[10px] font-semibold text-gabi-navy/70">
-            Etapa {activeStage + 1} de {RECORRIDO_ETAPAS.length}
+          <span className="text-xs font-medium text-gabi-muted">gabi · La Vista</span>
+          <span className="rounded-md bg-gabi-teal/10 px-2 py-0.5 text-[10px] font-semibold text-gabi-teal">
+            Plataforma integral
           </span>
         </div>
 
         <div className="p-4 sm:p-5">
-          <p className="text-base font-semibold text-gabi-navy">Necesidades del cliente</p>
+          <p className="text-base font-semibold text-gabi-navy">Ciclo comercial conectado</p>
+          <p className="mt-1 text-xs text-gabi-navy/55">
+            Del primer contacto al apartado, sin saltar entre herramientas.
+          </p>
 
-          <div className="mt-3 flex gap-1 overflow-x-auto pb-1">
-            {RECORRIDO_ETAPAS.map((stage, index) => (
+          <div className="mt-3 flex flex-wrap gap-1">
+            {COMMERCIAL_FLOW.map((stage, index) => (
               <span
                 key={stage}
-                className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold ${
-                  index <= activeStage
+                className={`rounded-md px-2 py-1 text-[10px] font-semibold ${
+                  index <= 3
                     ? "bg-gabi-navy text-white"
                     : "bg-gabi-surface text-gabi-muted"
                 }`}
@@ -84,15 +114,16 @@ function ProductPreview() {
             ))}
           </div>
 
-          <div className="mt-4 space-y-2 rounded-xl bg-gabi-surface p-3.5">
-            <div className="flex justify-between text-sm">
-              <span className="text-gabi-navy/70">Presupuesto</span>
-              <span className="font-semibold text-gabi-navy">$5.4M</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gabi-navy/70">Interés</span>
-              <span className="text-gabi-navy/80">Casa · 3 rec.</span>
-            </div>
+          <div className="mt-4 space-y-2">
+            {platformHighlights.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between rounded-xl bg-gabi-surface px-3.5 py-2.5 text-sm"
+              >
+                <span className="font-medium text-gabi-navy">{item.label}</span>
+                <span className="text-xs text-gabi-navy/60">{item.detail}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -167,13 +198,15 @@ export default function LandingPage() {
       <section className="px-5 pb-16 pt-14 md:px-8 md:pb-24 md:pt-20">
         <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <div>
-            <p className="text-sm font-medium text-gabi-teal">Guía comercial inmobiliaria</p>
+            <p className="text-sm font-medium text-gabi-teal">
+              Plataforma comercial inmobiliaria integral
+            </p>
             <h1 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight sm:text-[2.75rem]">
-              Cada visita, bien guiada.
+              Del prospecto a la venta, en un solo lugar.
             </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-gabi-navy/65">
-              gabi acompaña al asesor en showroom y campo: qué presentar, cómo cotizar y cuándo
-              registrar al prospecto. El seguimiento queda en tu CRM.
+            <p className="mt-5 max-w-lg text-base leading-relaxed text-gabi-navy/65">
+              gabi unifica recorrido, cotización, CRM, sembrado y métricas para que asesores y
+              gerencia operen el ciclo comercial completo — en showroom, campo y oficina.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <ScheduleDemoButton variant="hero" label="Agendar demo" scrollToEmbed />
@@ -191,17 +224,18 @@ export default function LandingPage() {
 
       <section id="producto" className="border-t border-gabi-line bg-gabi-surface px-5 py-16 md:px-8 md:py-20">
         <div className="mx-auto max-w-5xl">
-          <div className="max-w-xl">
+          <div className="max-w-2xl">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Hecha para la visita, no para el pipeline.
+              Más que una guía: tu operación comercial completa.
             </h2>
             <p className="mt-3 text-base leading-relaxed text-gabi-navy/60">
-              No sustituye tu CRM. Hace el trabajo del momento: guiar la presentación, cotizar en
-              contexto y capturar al prospecto antes de que se enfríe.
+              Antes acompañaba la visita. Hoy conecta cada etapa del embudo — captación, presentación,
+              cotización, seguimiento, apartado y reportes — en una plataforma pensada para
+              comercializadoras inmobiliarias en México.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <article
                 key={feature.title}
@@ -216,10 +250,29 @@ export default function LandingPage() {
             ))}
           </div>
 
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <article className="rounded-xl border border-gabi-navy/8 bg-white p-5">
+              <WifiOff className="h-5 w-5 text-gabi-navy/70" strokeWidth={1.75} />
+              <h3 className="mt-3 text-base font-semibold">Lista para la visita</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-gabi-navy/60">
+                Precarga inventario y documentos antes de salir al showroom. El recorrido sigue
+                aunque falle el wifi.
+              </p>
+            </article>
+            <article className="rounded-xl border border-gabi-navy/8 bg-white p-5">
+              <Building2 className="h-5 w-5 text-gabi-navy/70" strokeWidth={1.75} />
+              <h3 className="mt-3 text-base font-semibold">Roles claros</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-gabi-navy/60">
+                El asesor opera en campo con PIN. Gerencia administra leads, sembrado, campañas y
+                reportes desde el panel central.
+              </p>
+            </article>
+          </div>
+
           <p className="mt-10 max-w-2xl text-sm leading-relaxed text-gabi-navy/50">
-            La comercializadora entra con su cuenta. El asesor abre gabi con PIN y arranca el
-            recorrido del desarrollo que toca. Sin configuraciones raras ni curva de aprendizaje
-            larga.
+            La comercializadora entra con su cuenta, elige desarrollo y arranca: recorrido con
+            cliente, registro de leads, cotización o revisión de disponibilidad. Sin integraciones
+            frágiles ni datos repartidos en hojas de cálculo.
           </p>
         </div>
       </section>
@@ -231,7 +284,7 @@ export default function LandingPage() {
           <div>
             <p className="text-sm font-semibold text-gabi-navy">¿Ya usas gabi?</p>
             <p className="mt-1 text-sm text-gabi-navy/55">
-              Instálala en tu tablet para recorridos en showroom.
+              Instálala en tu tablet para operar recorridos, leads y cotizaciones en showroom.
             </p>
           </div>
           <InstallGabiApp variant="compact" />
@@ -244,7 +297,7 @@ export default function LandingPage() {
             <div>
               <GabiLogo variant="platform" />
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-gabi-navy/45">
-                Guía comercial para comercializadoras inmobiliarias en México.
+                Plataforma comercial integral para comercializadoras inmobiliarias en México.
               </p>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">

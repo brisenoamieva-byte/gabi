@@ -30,3 +30,24 @@ export const nivelInteresColorOrDefault = (value?: string | null) => {
   }
   return "bg-slate-50 text-slate-500";
 };
+
+/** Mapea etiquetas libres (Parseur / Xperience) al valor GABI. */
+export const nivelInteresFromLabel = (label: string): NivelInteres | null => {
+  const normalized = label
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (normalized.includes("alto") || normalized.includes("high")) {
+    return "alto";
+  }
+  if (normalized.includes("bajo") || normalized.includes("low")) {
+    return "bajo";
+  }
+  if (normalized.includes("sin interes") || normalized.includes("sin_interes")) {
+    return "sin_interes";
+  }
+
+  return null;
+};

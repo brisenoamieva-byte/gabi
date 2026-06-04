@@ -5,6 +5,7 @@ import { Building2, Home, Layers, Loader2, Plus, RefreshCw } from "lucide-react"
 import type { Desarrollo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
+import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer";
 import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
 import {
@@ -261,6 +262,7 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
   );
   const [apartadoUnidadId, setApartadoUnidadId] = useState<string | undefined>();
   const [operacionId, setOperacionId] = useState<string | null>(null);
+  const [expedienteOperacionId, setExpedienteOperacionId] = useState<string | null>(null);
   const [unidadEdit, setUnidadEdit] = useState<SembradoUnidadRow | null>(null);
 
   const unidadesDisponibles = useMemo(
@@ -584,6 +586,17 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
           operacionId={operacionId}
           onClose={() => setOperacionId(null)}
           onSuccess={() => void loadSembrado()}
+          onOpenExpediente={(id) => {
+            setOperacionId(null);
+            setExpedienteOperacionId(id);
+          }}
+        />
+      ) : null}
+
+      {expedienteOperacionId ? (
+        <ExpedienteDrawer
+          operacionId={expedienteOperacionId}
+          onClose={() => setExpedienteOperacionId(null)}
         />
       ) : null}
 

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+  createProspectoForAsesor,
   getProspectosResumenForAsesor,
   listProspectosForAsesor,
+  type AsesorCreateProspectoInput,
 } from "@/lib/asesores/prospectos-service";
 
 export async function GET(request: Request) {
@@ -30,6 +32,36 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al listar prospectos." },
+      { status: 400 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as AsesorCreateProspectoInput & { asesorId?: string };
+    const asesorId = body.asesorId?.trim();
+
+    if (!asesorId || !body.desarrolloId?.trim() || !body.nombre?.trim()) {
+      return NextResponse.json(
+        { error: "Completa asesor, desarrollo y nombre." },
+        { status: 400 },
+      );
+    }
+
+    const prospecto = await createProspectoForAsesor(asesorId, {
+      desarrolloId: body.desarrolloId.trim(),
+      nombre: body.nombre.trim(),
+      email: body.email,
+      telefono: body.telefono,
+      medioContacto: body.medioContacto,
+      notas: body.notas,
+    });
+
+    return NextResponse.json({ prospecto }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Error al crear prospecto." },
       { status: 400 },
     );
   }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Desarrollo } from "@/lib/data";
 import { LeadsReportePanel } from "@/components/admin/LeadsReportePanel";
+import { ComisionesAdminPanel } from "@/components/admin/ComisionesAdminPanel";
 import { SembradoReportePanel } from "@/components/admin/SembradoReportePanel";
 import { VisitasMetricasPanel } from "@/components/admin/VisitasMetricasPanel";
 
@@ -11,7 +12,7 @@ type MetricasAdminPanelProps = {
   scopeLabel?: string;
 };
 
-type MetricasTab = "visitas" | "leads" | "sembrado";
+type MetricasTab = "visitas" | "leads" | "sembrado" | "comisiones";
 
 export function MetricasAdminPanel({ desarrollos, scopeLabel }: MetricasAdminPanelProps) {
   const [tab, setTab] = useState<MetricasTab>("leads");
@@ -31,6 +32,7 @@ export function MetricasAdminPanel({ desarrollos, scopeLabel }: MetricasAdminPan
           [
             { id: "leads" as const, label: "Leads" },
             { id: "sembrado" as const, label: "Sembrado" },
+            { id: "comisiones" as const, label: "Comisiones" },
             { id: "visitas" as const, label: "Visitas" },
           ] as const
         ).map((item) => (
@@ -53,6 +55,8 @@ export function MetricasAdminPanel({ desarrollos, scopeLabel }: MetricasAdminPan
         <LeadsReportePanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
       ) : tab === "sembrado" ? (
         <SembradoReportePanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
+      ) : tab === "comisiones" ? (
+        <ComisionesAdminPanel desarrollos={desarrollos} scopeLabel={scopeLabel} focusPendientes />
       ) : (
         <VisitasMetricasPanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
       )}

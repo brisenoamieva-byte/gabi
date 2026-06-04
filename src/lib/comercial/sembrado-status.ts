@@ -91,6 +91,10 @@ export type OperacionComercialRecord = {
   cancelada: boolean;
   cancelada_at: string | null;
   comprobacion: number | null;
+  enganche_cubierto?: boolean;
+  enganche_cubierto_at?: string | null;
+  enganche_cubierto_por?: string | null;
+  persona_moral?: boolean;
   created_at: string;
   updated_at: string;
 };

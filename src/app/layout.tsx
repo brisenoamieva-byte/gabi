@@ -16,9 +16,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "gabi - Guía para Asesores de Bienes Inmuebles",
+  title: "gabi - Plataforma comercial inmobiliaria integral",
   description:
-    "Guía digital para asesores inmobiliarios: estructura cada recorrido comercial desde la visita hasta el cierre. No es un CRM.",
+    "Plataforma comercial inmobiliaria: recorrido guiado, cotizador, CRM de leads, sembrado, campañas y métricas para comercializadoras en México.",
   manifest: "/manifest.json",
   icons: {
     icon: [

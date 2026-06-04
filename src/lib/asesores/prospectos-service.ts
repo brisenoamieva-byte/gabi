@@ -1,7 +1,10 @@
 import {
+  createProspecto,
+  findProspectoByContact,
   getProspectoById,
   getProspectosResumen,
   listProspectos,
+  upsertProspectoFromVisita,
   type ProspectoDetail,
   type ProspectosResumen,
   type ProspectoListRow,
@@ -71,9 +74,58 @@ export const getProspectoForAsesor = async (
   return prospecto;
 };
 
+export type AsesorCreateProspectoInput = {
+  desarrolloId: string;
+  nombre: string;
+  email?: string;
+  telefono?: string;
+  medioContacto?: string;
+  notas?: string;
+};
+
 export type AsesorUpdateProspectoInput = {
   etapa?: string;
   notas?: string;
+};
+
+export const createProspectoForAsesor = async (
+  asesorId: string,
+  input: AsesorCreateProspectoInput,
+): Promise<ProspectoDetail> => {
+  await assertAsesorDesarrollo(asesorId, input.desarrolloId);
+
+  const nombre = input.nombre.trim();
+  if (!nombre) {
+    throw new Error("Nombre requerido.");
+  }
+
+  const email = input.email?.trim();
+  const telefono = input.telefono?.trim();
+
+  if (email || telefono) {
+    const existing = await findProspectoByContact(input.desarrolloId, email, telefono);
+    if (existing?.asesor_id && existing.asesor_id !== asesorId) {
+      throw new Error("Ya existe un prospecto con ese contacto asignado a otro asesor.");
+    }
+  }
+
+  const prospectoInput = {
+    desarrolloId: input.desarrolloId,
+    nombre,
+    email,
+    telefono,
+    medioContacto: input.medioContacto?.trim(),
+    asesorId,
+    etapa: "nuevo" as const,
+    notas: input.notas?.trim(),
+  };
+
+  const record =
+    email || telefono
+      ? await upsertProspectoFromVisita(prospectoInput)
+      : await createProspecto(prospectoInput);
+
+  return getProspectoForAsesor(asesorId, record.id);
 };
 
 export const updateProspectoForAsesor = async (

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Kanban, LayoutList, Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
+import { CapturaLogsPanel } from "@/components/admin/CapturaLogsPanel";
 import { LeadDetailDrawer } from "@/components/admin/LeadDetailDrawer";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { exportLeadsCsv, LeadsXperienceTable } from "@/components/admin/LeadsXperienceTable";
@@ -17,6 +18,10 @@ import { NIVELES_INTERES, nivelInteresLabel } from "@/lib/comercial/prospecto-in
 type LeadsAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  initialDesarrolloId?: string;
+  initialAsesorId?: string;
+  initialDesde?: string;
+  initialHasta?: string;
 };
 
 type AsesorOption = {
@@ -31,7 +36,7 @@ type CampanaOption = {
 };
 
 type ViewMode = "lista" | "tablero";
-type LeadTab = "leads" | "spam" | "duplicados";
+type LeadTab = "leads" | "spam" | "duplicados" | "captura";
 
 const currentMonthRange = () => {
   const now = new Date();
@@ -43,16 +48,25 @@ const currentMonthRange = () => {
   };
 };
 
-export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+export function LeadsAdminPanel({
+  desarrollos,
+  scopeLabel,
+  initialDesarrolloId,
+  initialAsesorId,
+  initialDesde,
+  initialHasta,
+}: LeadsAdminPanelProps) {
+  const [desarrolloId, setDesarrolloId] = useState(
+    initialDesarrolloId ?? desarrollos[0]?.id ?? "",
+  );
   const [leadTab, setLeadTab] = useState<LeadTab>("leads");
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
   const [etapaFilter, setEtapaFilter] = useState("");
-  const [asesorFilter, setAsesorFilter] = useState("");
+  const [asesorFilter, setAsesorFilter] = useState(initialAsesorId ?? "");
   const [campanaFilter, setCampanaFilter] = useState("");
   const [interesFilter, setInteresFilter] = useState("");
-  const [desde, setDesde] = useState("");
-  const [hasta, setHasta] = useState("");
+  const [desde, setDesde] = useState(initialDesde ?? "");
+  const [hasta, setHasta] = useState(initialHasta ?? "");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [prospectos, setProspectos] = useState<ProspectoListRow[]>([]);
@@ -66,6 +80,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
   const [newNombre, setNewNombre] = useState("");
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const prevDesarrolloId = useRef<string | null>(null);
 
   const loadAsesores = useCallback(async () => {
     if (!desarrolloId) {
@@ -164,13 +179,20 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
   useEffect(() => {
     void loadAsesores();
     void loadCampanas();
-    setAsesorFilter("");
-    setCampanaFilter("");
-  }, [loadAsesores, loadCampanas]);
+
+    if (prevDesarrolloId.current !== null && prevDesarrolloId.current !== desarrolloId) {
+      setAsesorFilter("");
+      setCampanaFilter("");
+    }
+    prevDesarrolloId.current = desarrolloId;
+  }, [loadAsesores, loadCampanas, desarrolloId]);
 
   useEffect(() => {
+    if (leadTab === "captura") {
+      return;
+    }
     void loadLeads();
-  }, [loadLeads]);
+  }, [loadLeads, leadTab]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -318,6 +340,15 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
               >
                 Duplicados
               </button>
+              <button
+                type="button"
+                onClick={() => setLeadTab("captura")}
+                className={`rounded-lg px-3 py-1.5 text-sm font-bold ${
+                  leadTab === "captura" ? "bg-gabi-forest text-white" : "text-slate-600"
+                }`}
+              >
+                Captura
+              </button>
             </div>
             {leadTab === "leads" ? (
             <div className="flex rounded-xl border border-slate-200 p-1">
@@ -350,6 +381,8 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
               </button>
             </div>
             ) : null}
+            {leadTab !== "captura" ? (
+            <>
             <button
               type="button"
               onClick={() => {
@@ -393,6 +426,8 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
               <RefreshCw className="h-4 w-4" />
               Actualizar
             </button>
+            </>
+            ) : null}
           </div>
         </div>
 
@@ -412,6 +447,8 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
             </select>
           </label>
 
+          {leadTab !== "captura" ? (
+          <>
           <label className="block text-sm">
             <span className="mb-1 block font-semibold text-slate-600">Desde</span>
             <input
@@ -510,8 +547,11 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
               />
             </div>
           </label>
+          </>
+          ) : null}
         </div>
 
+        {leadTab !== "captura" ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -535,9 +575,21 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
             Todas las fechas
           </button>
         </div>
+        ) : null}
       </div>
 
-      {resumen ? (
+      {leadTab === "captura" ? (
+        <CapturaLogsPanel
+          desarrolloId={desarrolloId}
+          campanas={campanas}
+          onOpenProspecto={(prospectoId) => {
+            setLeadTab("leads");
+            setSelectedId(prospectoId);
+          }}
+        />
+      ) : null}
+
+      {leadTab !== "captura" && resumen ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {PROSPECTO_ETAPAS.filter((etapa) => (resumen.porEtapa[etapa] ?? 0) > 0).map((etapa) => (
             <button
@@ -562,7 +614,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
         </div>
       ) : null}
 
-          {error ? (
+      {leadTab !== "captura" && error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
           {error.includes("es_spam") || error.includes("xperience_id") || error.includes("nivel_interes") ? (
@@ -571,6 +623,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
         </div>
       ) : null}
 
+      {leadTab !== "captura" ? (
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-5 py-4">
           <h3 className="text-lg font-black text-gabi-forest">
@@ -606,6 +659,7 @@ export function LeadsAdminPanel({ desarrollos, scopeLabel }: LeadsAdminPanelProp
           />
         )}
       </div>
+      ) : null}
 
       {selectedId ? (
         <LeadDetailDrawer

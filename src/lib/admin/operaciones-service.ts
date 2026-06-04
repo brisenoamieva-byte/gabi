@@ -774,6 +774,7 @@ export type UpdateOperacionInput = {
   medioPublicitario?: string;
   observacionesPagos?: string;
   observaciones?: string;
+  personaMoral?: boolean;
   cobranza?: Array<{ mes: string; monto: number }>;
 };
 
@@ -902,6 +903,9 @@ export const updateOperacionComercial = async (
   }
   if (input.observaciones !== undefined) {
     patch.observaciones = input.observaciones.trim() || null;
+  }
+  if (input.personaMoral !== undefined) {
+    patch.persona_moral = input.personaMoral;
   }
 
   const { error: updateError } = await supabase

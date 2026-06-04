@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2 } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen } from "lucide-react";
+import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { adminRolLabel, canAccessModule } from "@/lib/admin/permissions";
@@ -17,6 +18,7 @@ const navIcons = {
   "/admin/usuarios": Shield,
   "/admin/guion": BookOpen,
   "/admin/sembrado": ClipboardList,
+  "/admin/expedientes": FolderOpen,
   "/admin/leads": UserRound,
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
@@ -31,6 +33,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/usuarios": "usuarios",
   "/admin/guion": "guion",
   "/admin/sembrado": "sembrado",
+  "/admin/expedientes": "expedientes",
   "/admin/leads": "leads",
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
@@ -53,6 +56,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/leads", label: "Leads", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },
+    { href: "/admin/expedientes", label: "Expedientes", ready: true },
     { href: "/admin/asesores", label: "Asesores", ready: true },
     { href: "/admin/metricas", label: "Reportes", ready: true },
     { href: "/admin/guion", label: "Guion", ready: true },
@@ -125,7 +129,10 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
           </nav>
         </aside>
 
-        <main>{children}</main>
+        <main>
+          <PlatformHealthBanner />
+          {children}
+        </main>
       </div>
     </div>
   );

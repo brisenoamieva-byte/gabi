@@ -7,6 +7,7 @@ import {
   Kanban,
   LayoutList,
   Loader2,
+  Plus,
   RefreshCw,
   Save,
   Search,
@@ -49,6 +50,16 @@ const PERIOD_OPTIONS: Array<{ id: LeadPeriodFilter; label: string }> = [
   { id: "30d", label: "Activos 30 días" },
   { id: "month", label: "Activos este mes" },
 ];
+
+const MEDIO_CONTACTO_OPTIONS = [
+  { value: "contacto-directo", label: "Contacto Directo" },
+  { value: "referido", label: "Referido" },
+  { value: "medios-digitales", label: "Medios Digitales" },
+  { value: "pase", label: "Pase" },
+  { value: "inmobiliaria-externo", label: "Inmobiliaria/externo" },
+  { value: "espectacular", label: "Espectacular" },
+  { value: "cross-selling", label: "Cross Selling" },
+] as const;
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#201044] focus:outline-none focus:ring-2 focus:ring-[#201044]/15";
@@ -301,6 +312,13 @@ export function AsesorLeadsPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showNewLead, setShowNewLead] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newNombre, setNewNombre] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newTelefono, setNewTelefono] = useState("");
+  const [newMedioContacto, setNewMedioContacto] = useState("contacto-directo");
+  const [newNotas, setNewNotas] = useState("");
 
   const periodRange = useMemo(() => leadPeriodToRange(periodFilter), [periodFilter]);
 
@@ -376,6 +394,57 @@ export function AsesorLeadsPanel({
     void loadLeads();
   };
 
+  const resetNewLeadForm = () => {
+    setNewNombre("");
+    setNewEmail("");
+    setNewTelefono("");
+    setNewMedioContacto("contacto-directo");
+    setNewNotas("");
+  };
+
+  const handleCreateLead = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newNombre.trim()) {
+      return;
+    }
+
+    setCreating(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/asesores/prospectos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          asesorId,
+          desarrolloId,
+          nombre: newNombre.trim(),
+          email: newEmail.trim() || undefined,
+          telefono: newTelefono.trim() || undefined,
+          medioContacto: newMedioContacto,
+          notas: newNotas.trim() || undefined,
+        }),
+      });
+
+      const data = (await response.json()) as { prospecto?: ProspectoListRow; error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo crear el lead.");
+      }
+
+      setShowNewLead(false);
+      resetNewLeadForm();
+      if (data.prospecto?.id) {
+        setSelectedId(data.prospecto.id);
+      }
+      void loadLeads();
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : "Error al crear.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const etapasActivas = useMemo(
     () =>
       Object.entries(resumen?.porEtapa ?? {})
@@ -421,6 +490,17 @@ export function AsesorLeadsPanel({
             >
               <Kanban className="h-4 w-4" />
               Tablero
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                resetNewLeadForm();
+                setShowNewLead(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 py-2 text-sm font-bold text-[#201044]"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo lead
             </button>
             <button
               type="button"
@@ -501,7 +581,9 @@ export function AsesorLeadsPanel({
           </div>
         ) : !prospectos.length ? (
           <p className="px-6 py-16 text-center text-sm text-slate-500">
-            Aún no tienes prospectos registrados. Haz un recorrido o cotiza para que aparezcan aquí.
+            Aún no tienes prospectos registrados. Crea uno con{" "}
+            <strong className="font-semibold text-[#201044]">Nuevo lead</strong>, haz un recorrido o
+            cotiza para que aparezcan aquí.
           </p>
         ) : viewMode === "tablero" ? (
           <LeadsKanbanBoard
@@ -555,6 +637,87 @@ export function AsesorLeadsPanel({
           onClose={() => setSelectedId(null)}
           onUpdated={() => void loadLeads()}
         />
+      ) : null}
+
+      {showNewLead ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form
+            onSubmit={(event) => void handleCreateLead(event)}
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+          >
+            <h3 className="text-lg font-black text-[#201044]">Nuevo lead</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Registro manual asignado a ti en {desarrolloNombre}.
+            </p>
+            <label className="mt-4 block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Nombre *</span>
+              <input
+                required
+                autoFocus
+                value={newNombre}
+                onChange={(event) => setNewNombre(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Email</span>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(event) => setNewEmail(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Teléfono</span>
+              <input
+                type="tel"
+                value={newTelefono}
+                onChange={(event) => setNewTelefono(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Medio de contacto</span>
+              <select
+                value={newMedioContacto}
+                onChange={(event) => setNewMedioContacto(event.target.value)}
+                className={inputClass}
+              >
+                {MEDIO_CONTACTO_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Notas</span>
+              <textarea
+                value={newNotas}
+                onChange={(event) => setNewNotas(event.target.value)}
+                className={`${inputClass} min-h-[80px]`}
+                placeholder="Contexto inicial, referido, próximo paso…"
+              />
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowNewLead(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={creating}
+                className="rounded-xl bg-[#201044] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {creating ? "Guardando…" : "Crear lead"}
+              </button>
+            </div>
+          </form>
+        </div>
       ) : null}
     </div>
   );

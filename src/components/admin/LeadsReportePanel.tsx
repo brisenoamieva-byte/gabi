@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BarChart3, Loader2, Users } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
-import type { LeadsReporte } from "@/lib/admin/leads-reporte-service";
+import type { LeadsEmbudoEtapa, LeadsReporte } from "@/lib/admin/leads-reporte-service";
 import {
   PROSPECTO_ETAPAS,
   prospectoEtapaLabel,
@@ -33,6 +33,48 @@ const currentMonthRange = () => {
     hasta: end.toISOString().slice(0, 10),
   };
 };
+
+function LeadsEmbudoChart({ embudo, cotizaciones }: { embudo: LeadsEmbudoEtapa[]; cotizaciones: number }) {
+  const max = Math.max(...embudo.map((item) => item.total), cotizaciones, 1);
+
+  return (
+    <div className="mt-6 space-y-3">
+      {embudo.map((item) => (
+        <div key={item.etapa}>
+          <div className="mb-1 flex items-center justify-between text-sm">
+            <span className="font-semibold text-gabi-forest">{item.label}</span>
+            <span className="tabular-nums text-slate-600">
+              {item.total}{" "}
+              <span className="text-xs text-slate-400">({item.pctDelTotal}%)</span>
+            </span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-gabi-forest transition-all"
+              style={{ width: `${Math.max((item.total / max) * 100, item.total ? 4 : 0)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+      <div>
+        <div className="mb-1 flex items-center justify-between text-sm">
+          <span className="font-semibold text-violet-800">Cotizaciones (periodo)</span>
+          <span className="tabular-nums text-slate-600">{cotizaciones}</span>
+        </div>
+        <div className="h-3 overflow-hidden rounded-full bg-violet-50">
+          <div
+            className="h-full rounded-full bg-violet-500"
+            style={{ width: `${Math.max((cotizaciones / max) * 100, cotizaciones ? 4 : 0)}%` }}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-slate-500">
+        Leads válidos por etapa actual (excluye spam y duplicados). Las cotizaciones pueden ser
+        mayores que “Cotizó” si hay varias por prospecto.
+      </p>
+    </div>
+  );
+}
 
 function LeadsBarChart({ series }: { series: LeadsReporte["porDia"] }) {
   const max = Math.max(...series.map((item) => item.total), 1);
@@ -298,6 +340,14 @@ export function LeadsReportePanel({ desarrollos, scopeLabel }: LeadsReportePanel
                 <p className="mt-1 text-xs text-slate-400">{selectedDesarrollo?.nombre}</p>
               </div>
             ))}
+          </div>
+
+          <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-black text-gabi-forest">Embudo comercial</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Distribución de leads válidos en el pipeline del periodo.
+            </p>
+            <LeadsEmbudoChart embudo={reporte.embudo} cotizaciones={reporte.cotizaciones} />
           </div>
 
           <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">

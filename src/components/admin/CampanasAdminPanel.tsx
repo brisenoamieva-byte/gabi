@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, RefreshCw } from "lucide-react";
+import { Check, Copy, Loader2, Plus, RefreshCw } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { CampanaRecord, CampanaTipo } from "@/lib/admin/campanas-service";
+import { buildParseurWebhookUrl } from "@/lib/comercial/parseur-webhook-url";
 
 type CampanasAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -17,6 +18,36 @@ const tipoLabel: Record<CampanaTipo, string> = {
   online: "Online",
   offline: "Offline",
 };
+
+function WebhookCopyButton({ campanaId }: { campanaId: string }) {
+  const [copied, setCopied] = useState(false);
+  const url =
+    typeof window !== "undefined"
+      ? buildParseurWebhookUrl(campanaId, window.location.origin)
+      : buildParseurWebhookUrl(campanaId);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copia la URL del webhook:", url);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => void handleCopy()}
+      className="inline-flex items-center gap-1 rounded-lg border border-gabi-forest/15 px-2.5 py-1.5 text-xs font-bold text-gabi-forest hover:bg-gabi-forest/5"
+      title={url}
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? "Copiado" : "Copiar URL"}
+    </button>
+  );
+}
 
 export function CampanasAdminPanel({
   desarrollos,
@@ -227,6 +258,7 @@ export function CampanasAdminPanel({
                   <th className="px-4 py-3">Nombre / Canal</th>
                   <th className="px-4 py-3">Tipo</th>
                   <th className="px-4 py-3">Email Parseur</th>
+                  <th className="px-4 py-3">Webhook GABI</th>
                 </tr>
               </thead>
               <tbody>
@@ -264,6 +296,13 @@ export function CampanasAdminPanel({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{campana.parseur_email ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {campana.activo ? (
+                        <WebhookCopyButton campanaId={campana.id} />
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -322,6 +361,11 @@ export function CampanasAdminPanel({
                   className="w-full rounded-xl border border-slate-200 px-3 py-2"
                   placeholder="i.desarrollo@in.parseur.com"
                 />
+                <p className="mt-1 text-xs text-slate-500">
+                  Opcional si usas la URL de webhook por campaña. En Parseur configura POST con header{" "}
+                  <code className="rounded bg-slate-100 px-1">Authorization: Bearer</code> y tu{" "}
+                  <code className="rounded bg-slate-100 px-1">PARSEUR_WEBHOOK_SECRET</code>.
+                </p>
               </label>
             </div>
             <div className="mt-5 flex justify-end gap-2">

@@ -389,7 +389,7 @@ export const updateProspecto = async (
 const normalizeEmail = (value?: string) => value?.trim().toLowerCase() || null;
 const normalizePhoneDigits = (value?: string) => value?.replace(/\D/g, "") || null;
 
-const findProspectoByContact = async (
+export const findProspectoByContact = async (
   desarrolloId: string,
   email?: string,
   telefono?: string,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Save, X } from "lucide-react";
+import { FolderOpen, Loader2, Save, X } from "lucide-react";
 import type { OperacionDetail } from "@/lib/admin/operaciones-service";
 import {
   ESTATUS_SEMBRADO,
@@ -18,6 +18,7 @@ type OperacionDetailDrawerProps = {
   operacionId: string;
   onClose: () => void;
   onSuccess: () => void;
+  onOpenExpediente?: (operacionId: string) => void;
 };
 
 type FormState = {
@@ -35,6 +36,7 @@ type FormState = {
   medioPublicitario: string;
   observacionesPagos: string;
   observaciones: string;
+  personaMoral: boolean;
   cobranza: Record<string, string>;
 };
 
@@ -86,6 +88,7 @@ const detailToForm = (detail: OperacionDetail): FormState => {
     medioPublicitario: op.medio_publicitario ?? "",
     observacionesPagos: op.observaciones_pagos ?? "",
     observaciones: op.observaciones ?? "",
+    personaMoral: Boolean(op.persona_moral),
     cobranza,
   };
 };
@@ -94,6 +97,7 @@ export function OperacionDetailDrawer({
   operacionId,
   onClose,
   onSuccess,
+  onOpenExpediente,
 }: OperacionDetailDrawerProps) {
   const [detail, setDetail] = useState<OperacionDetail | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
@@ -190,6 +194,7 @@ export function OperacionDetailDrawer({
           medioPublicitario: form.medioPublicitario || undefined,
           observacionesPagos: form.observacionesPagos || undefined,
           observaciones: form.observaciones || undefined,
+          personaMoral: form.personaMoral,
           cobranza,
         }),
       });
@@ -295,6 +300,17 @@ export function OperacionDetailDrawer({
                       className={inputClass}
                     />
                   </Field>
+                  <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={form.personaMoral}
+                      onChange={(event) => patch({ personaMoral: event.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    <span className="font-semibold text-slate-600">
+                      Persona moral (incluye acta constitutiva, poder e ID apoderado en checklist)
+                    </span>
+                  </label>
                   <Field label="Fecha apartado">
                     <input
                       type="date"
@@ -386,7 +402,17 @@ export function OperacionDetailDrawer({
           </div>
 
           {form ? (
-            <div className="border-t border-slate-100 p-5">
+            <div className="space-y-2 border-t border-slate-100 p-5">
+              {onOpenExpediente ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenExpediente(operacionId)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gabi-forest/15 bg-white px-4 py-3 text-sm font-bold text-gabi-forest"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  Ver expediente del cliente
+                </button>
+              ) : null}
               <button
                 type="submit"
                 disabled={saving || loading}

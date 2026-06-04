@@ -1,7 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, KeyRound, Loader2, Pencil, Plus, Shield, Trash2, UserCheck, UserX, X } from "lucide-react";
+import {
+  BarChart3,
+  Download,
+  ExternalLink,
+  KeyRound,
+  Loader2,
+  Pencil,
+  Plus,
+  Shield,
+  Trash2,
+  UserCheck,
+  UserX,
+  X,
+} from "lucide-react";
+import type { AsesorKpi, AsesoresKpisResult } from "@/lib/admin/asesores-kpi-service";
 import type { Desarrollo } from "@/lib/data";
 import {
   ALL_ASESOR_ROLES,
@@ -38,6 +53,29 @@ const withAdminSyncMessage = (base: string, adminSync?: AdminSyncPayload) =>
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+const currentMonthRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    desde: start.toISOString().slice(0, 10),
+    hasta: end.toISOString().slice(0, 10),
+  };
+};
+
+const formatConversion = (value: number | null) => (value === null ? "—" : `${value}%`);
+
+const buildLeadsHref = (desarrolloId: string, asesorId: string, desde: string, hasta: string) => {
+  const params = new URLSearchParams({ desarrolloId, asesorId });
+  if (desde) {
+    params.set("desde", desde);
+  }
+  if (hasta) {
+    params.set("hasta", hasta);
+  }
+  return `/admin/leads?${params.toString()}`;
+};
+
 export function AsesoresAdminPanel({
   desarrollos,
   scopeLabel,
@@ -63,6 +101,10 @@ export function AsesoresAdminPanel({
   const [form, setForm] = useState(emptyForm);
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
   const [revealedPins, setRevealedPins] = useState<Array<{ nombre: string; pin: string }>>([]);
+  const [kpiDesde, setKpiDesde] = useState("");
+  const [kpiHasta, setKpiHasta] = useState("");
+  const [kpis, setKpis] = useState<AsesoresKpisResult | null>(null);
+  const [kpiLoading, setKpiLoading] = useState(false);
 
   const desarrolloNames = useMemo(
     () => Object.fromEntries(desarrollos.map((item) => [item.id, item.nombre])),
@@ -126,9 +168,44 @@ export function AsesoresAdminPanel({
     }
   }, [desarrolloId]);
 
+  const loadKpis = useCallback(async () => {
+    if (!desarrolloId) {
+      setKpis(null);
+      return;
+    }
+
+    setKpiLoading(true);
+    try {
+      const params = new URLSearchParams({ desarrolloId });
+      if (kpiDesde) {
+        params.set("desde", kpiDesde);
+      }
+      if (kpiHasta) {
+        params.set("hasta", kpiHasta);
+      }
+
+      const response = await fetch(`/api/admin/asesores/kpis?${params.toString()}`);
+      const data = (await response.json()) as AsesoresKpisResult & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron cargar las métricas.");
+      }
+
+      setKpis(data);
+    } catch {
+      setKpis(null);
+    } finally {
+      setKpiLoading(false);
+    }
+  }, [desarrolloId, kpiDesde, kpiHasta]);
+
   useEffect(() => {
     void loadAsesores();
   }, [loadAsesores]);
+
+  useEffect(() => {
+    void loadKpis();
+  }, [loadKpis]);
 
   useEffect(() => {
     if (!desarrolloId && desarrollos[0]?.id) {
@@ -858,6 +935,93 @@ export function AsesoresAdminPanel({
         </div>
       ) : null}
 
+      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
+              Métricas comerciales
+            </p>
+            <h3 className="mt-1 text-lg font-black text-[#13315C]">Rendimiento por asesor</h3>
+            <p className="mt-1 max-w-2xl text-xs text-slate-500">
+              Leads válidos, cotizaciones y apartados del periodo. Haz clic en un número de leads para
+              ver el detalle en la bandeja comercial.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Desde
+              </span>
+              <input
+                type="date"
+                value={kpiDesde}
+                onChange={(event) => setKpiDesde(event.target.value)}
+                className="input-cotizador min-w-[140px]"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Hasta
+              </span>
+              <input
+                type="date"
+                value={kpiHasta}
+                onChange={(event) => setKpiHasta(event.target.value)}
+                className="input-cotizador min-w-[140px]"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                const range = currentMonthRange();
+                setKpiDesde(range.desde);
+                setKpiHasta(range.hasta);
+              }}
+              className="inline-flex min-h-11 items-center rounded-xl border border-[#13315C]/15 px-3 text-xs font-bold text-[#13315C]"
+            >
+              Este mes
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setKpiDesde("");
+                setKpiHasta("");
+              }}
+              className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600"
+            >
+              Todo
+            </button>
+          </div>
+        </div>
+
+        {kpiLoading ? (
+          <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Calculando métricas…
+          </div>
+        ) : kpis ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              { label: "Leads", value: kpis.totales.leads },
+              { label: "Cotizaciones", value: kpis.totales.cotizaciones },
+              { label: "Apartados", value: kpis.totales.apartados },
+              { label: "Vendidos", value: kpis.totales.vendidos },
+              { label: "Conv. lead→cotiz.", value: formatConversion(kpis.totales.conversionPct) },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xl font-black text-[#13315C]">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
       <div className="overflow-hidden rounded-2xl border border-[#13315C]/8 bg-white shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center gap-2 p-10 text-sm font-semibold text-slate-500">
@@ -870,14 +1034,33 @@ export function AsesoresAdminPanel({
               <thead className="border-b border-slate-100 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Asesor</th>
-                  <th className="px-4 py-3">Rol en el desarrollo</th>
+                  <th className="px-4 py-3">Rol</th>
+                  <th className="px-4 py-3 text-right">
+                    <span className="inline-flex items-center gap-1">
+                      <BarChart3 className="h-3.5 w-3.5" />
+                      Leads
+                    </span>
+                  </th>
+                  <th className="px-4 py-3 text-right">Cotiz.</th>
+                  <th className="px-4 py-3 text-right">Apart.</th>
+                  <th className="px-4 py-3 text-right">Conv.</th>
                   <th className="px-4 py-3">Desarrollo</th>
                   <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {asesores.map((asesor) => (
+                {asesores.map((asesor) => {
+                  const kpi: AsesorKpi = kpis?.porAsesor[asesor.id] ?? {
+                    asesorId: asesor.id,
+                    leads: 0,
+                    cotizaciones: 0,
+                    apartados: 0,
+                    vendidos: 0,
+                    conversionPct: null,
+                  };
+
+                  return (
                   <tr key={asesor.id} className="border-b border-slate-100 last:border-0">
                     <td className="px-4 py-4">
                       <p className="font-bold text-[#13315C]">{asesor.nombre}</p>
@@ -899,6 +1082,32 @@ export function AsesoresAdminPanel({
                           </option>
                         ))}
                       </select>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      {kpi.leads > 0 ? (
+                        <Link
+                          href={buildLeadsHref(desarrolloId, asesor.id, kpiDesde, kpiHasta)}
+                          className="inline-flex items-center gap-1 font-bold text-[#13315C] underline-offset-2 hover:underline"
+                          title="Ver leads de este asesor"
+                        >
+                          {kpi.leads}
+                          <ExternalLink className="h-3 w-3 opacity-60" />
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-slate-400">0</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-slate-700">
+                      {kpi.cotizaciones}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-slate-700">
+                      {kpi.apartados}
+                      {kpi.vendidos > 0 ? (
+                        <span className="ml-1 text-xs text-emerald-700">+{kpi.vendidos} vend.</span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-slate-600">
+                      {formatConversion(kpi.conversionPct)}
                     </td>
                     <td className="px-4 py-4 text-xs text-slate-600">
                       {asesor.desarrollosIds
@@ -977,7 +1186,8 @@ export function AsesoresAdminPanel({
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
