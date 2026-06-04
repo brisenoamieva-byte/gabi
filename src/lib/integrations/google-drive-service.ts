@@ -66,29 +66,31 @@ export const testGoogleDriveConnection = async (
     throw new Error("Faltan GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL o GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.");
   }
 
-  const { data, error } = await drive.files.get({
-    fileId: rootFolderId,
-    fields: "id,name,mimeType,driveId",
-    ...driveParams,
-  });
+  try {
+    const { data } = await drive.files.get({
+      fileId: rootFolderId,
+      fields: "id,name,mimeType,driveId",
+      ...driveParams,
+    });
 
-  if (error) {
+    if (!data.id) {
+      throw new Error("No se encontró la carpeta raíz en Drive.");
+    }
+
+    return {
+      ok: true,
+      folderName: data.name ?? "Carpeta GABI",
+      folderId: data.id,
+    };
+  } catch (caught) {
     const hint =
       rootFolderId.includes("aBcDe") || rootFolderId.length < 20
         ? " Revisa GOOGLE_DRIVE_PASAJE_ALAMOS_FOLDER_ID: debe ser el ID real de tu carpeta en Drive (no el ejemplo del README)."
         : " Verifica que la cuenta de servicio tenga acceso a esa carpeta o unidad compartida.";
-    throw new Error(`${error.message}.${hint}`);
+    const message =
+      caught instanceof Error ? caught.message : "Error al conectar con Google Drive.";
+    throw new Error(`${message}.${hint}`);
   }
-
-  if (!data.id) {
-    throw new Error("No se encontró la carpeta raíz en Drive.");
-  }
-
-  return {
-    ok: true,
-    folderName: data.name ?? "Carpeta GABI",
-    folderId: data.id,
-  };
 };
 
 export const ensureOperacionDriveFolder = async (input: {
@@ -123,7 +125,7 @@ export const ensureOperacionDriveFolder = async (input: {
     `${input.clienteNombre} — Unidad ${input.unidadNumero}`,
   );
 
-  const { data, error } = await drive.files.create({
+  const { data } = await drive.files.create({
     requestBody: {
       name: folderName,
       mimeType: "application/vnd.google-apps.folder",
@@ -133,8 +135,8 @@ export const ensureOperacionDriveFolder = async (input: {
     ...driveParams,
   });
 
-  if (error || !data.id) {
-    throw new Error(error?.message ?? "No se pudo crear la carpeta en Drive.");
+  if (!data.id) {
+    throw new Error("No se pudo crear la carpeta en Drive.");
   }
 
   return {
@@ -169,7 +171,7 @@ export const uploadExpedienteToGoogleDrive = async (input: {
 
   const driveFileName = sanitizeFolderName(`${input.checklistCodigo}-${input.fileName}`);
 
-  const { data, error } = await drive.files.create({
+  const { data } = await drive.files.create({
     requestBody: {
       name: driveFileName,
       parents: [folderId],
@@ -182,8 +184,8 @@ export const uploadExpedienteToGoogleDrive = async (input: {
     ...driveParams,
   });
 
-  if (error || !data.id) {
-    throw new Error(error?.message ?? "No se pudo subir el archivo a Drive.");
+  if (!data.id) {
+    throw new Error("No se pudo subir el archivo a Drive.");
   }
 
   return {
