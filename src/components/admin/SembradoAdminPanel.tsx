@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, Home, Layers, Loader2, Plus, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Building2, Home, Layers, Loader2, Plus, RefreshCw, Smartphone } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
@@ -433,6 +434,15 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
               <RefreshCw className="h-4 w-4" />
               Actualizar
             </button>
+            <Link
+              href={`/disponibilidad?from=admin&desarrolloId=${encodeURIComponent(desarrolloId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
+            >
+              <Smartphone className="h-4 w-4" />
+              Vista campo
+            </Link>
           </div>
         </div>
 
