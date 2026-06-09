@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { GoogleMap, InfoWindow, Marker, useJsApiLoader } from "@react-google-maps/api";
 import {
@@ -8,9 +8,13 @@ import {
   getDesarrolloUbicacion,
 } from "@/lib/corredor/coordinates";
 import { getDesarrolloLogoUrl } from "@/lib/corredor/desarrollo-logos";
-import { getGoogleMapsApiKey } from "@/lib/corredor/google-maps-config";
+import {
+  getGoogleMapsApiKey,
+  getGoogleMapsSetupHint,
+} from "@/lib/corredor/google-maps-config";
 import { buildCorredorMarkerIcon } from "@/lib/corredor/marker-icons";
 import type { CorredorDesarrollo } from "@/lib/corredor/types";
+import { CorredorMapEmbed } from "@/components/corredor/CorredorMapEmbed";
 import { CorredorMapSchematic } from "@/components/corredor/CorredorMapSchematic";
 
 type CorredorGoogleMapProps = {
@@ -33,6 +37,12 @@ const mapOptions = {
   gestureHandling: "greedy" as const,
 };
 
+function mapShowsGoogleError(container: HTMLElement | null): boolean {
+  if (!container) return false;
+  const text = container.textContent ?? "";
+  return text.includes("Something went wrong") || text.includes("Oops!");
+}
+
 export function CorredorGoogleMap({
   desarrollos,
   selectedId,
@@ -41,10 +51,21 @@ export function CorredorGoogleMap({
   className = "",
 }: CorredorGoogleMapProps) {
   const apiKey = getGoogleMapsApiKey();
+  const [mapFailed, setMapFailed] = useState(false);
+  const mapWrapperRef = useRef<HTMLDivElement>(null);
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: "gabi-corredor-maps",
     googleMapsApiKey: apiKey,
   });
+
+  useEffect(() => {
+    const previous = window.gm_authFailure;
+    window.gm_authFailure = () => setMapFailed(true);
+    return () => {
+      window.gm_authFailure = previous;
+    };
+  }, []);
 
   const markers = useMemo(() => {
     const list = singleDesarrolloId
@@ -70,21 +91,36 @@ export function CorredorGoogleMap({
   const defaultZoom = singleDesarrolloId ? 14 : selectedId ? 13 : 11;
   const hayAproximadas = markers.some((m) => m.aproximada);
 
-  if (!apiKey || loadError) {
+  const handleMapLoad = useCallback(() => {
+    window.setTimeout(() => {
+      if (mapShowsGoogleError(mapWrapperRef.current)) {
+        setMapFailed(true);
+      }
+    }, 1500);
+  }, []);
+
+  const fallbackNotice = (
+    <p className="mt-2 text-center text-xs text-slate-500">
+      {loadError || mapFailed
+        ? `Mapa interactivo no disponible. ${getGoogleMapsSetupHint()}`
+        : !apiKey
+          ? process.env.NODE_ENV === "development"
+            ? "Agrega NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en .env.local y reinicia npm run dev."
+            : "Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en Vercel. Redespliega tras agregarla."
+          : null}
+    </p>
+  );
+
+  if (!apiKey || loadError || mapFailed) {
     return (
       <div className={className}>
+        <CorredorMapEmbed lat={mapCenter.lat} lng={mapCenter.lng} zoom={defaultZoom} />
         <CorredorMapSchematic
           desarrollos={desarrollos}
           selectedId={selectedId}
           onSelect={onSelect}
         />
-        <p className="mt-2 text-center text-xs text-slate-500">
-          {loadError
-            ? "No se pudo cargar Google Maps. Revisa restricciones de dominio y que Maps JavaScript API esté activa."
-            : process.env.NODE_ENV === "development"
-              ? "Agrega NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en .env.local y reinicia npm run dev."
-              : "Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en Vercel (Environment Variables). Redespliega tras agregarla."}
-        </p>
+        {fallbackNotice}
       </div>
     );
   }
@@ -103,13 +139,17 @@ export function CorredorGoogleMap({
 
   return (
     <div className={className}>
-      <div className="relative h-72 overflow-hidden rounded-2xl border border-[#201044]/10 shadow-sm md:h-96">
+      <div
+        ref={mapWrapperRef}
+        className="relative h-72 overflow-hidden rounded-2xl border border-[#201044]/10 shadow-sm md:h-96"
+      >
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
           center={mapCenter}
           zoom={defaultZoom}
           options={mapOptions}
           onClick={() => onSelect("")}
+          onLoad={handleMapLoad}
         >
           {markers.map(({ desarrollo, lat, lng, aproximada }) => {
             const active = selectedId === desarrollo.id;
@@ -132,6 +172,7 @@ export function CorredorGoogleMap({
             >
               <div className="max-w-[200px] p-1 text-sm">
                 {getDesarrolloLogoUrl(selectedMarker.desarrollo) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={getDesarrolloLogoUrl(selectedMarker.desarrollo)}
                     alt=""
@@ -166,4 +207,10 @@ export function CorredorGoogleMap({
       ) : null}
     </div>
   );
+}
+
+declare global {
+  interface Window {
+    gm_authFailure?: () => void;
+  }
 }
