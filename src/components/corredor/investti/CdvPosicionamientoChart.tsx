@@ -55,7 +55,10 @@ export function CdvPosicionamientoChart({
   const zonaRight = scaleX(METRAJE_RECOMENDADO_MAX, metrajeMin, metrajeMax);
 
   return (
-    <InvesttiFigure caption="Tamaño del círculo = lotes vendidos al mes.">
+    <InvesttiFigure
+      caption="Tamaño del círculo = lotes vendidos al mes."
+      className="investti-print-figure-compact"
+    >
       <InvesttiChartHeader
         title="Precio y metraje — corredor sur"
         subtitle="Promedio de m² vs. $/m²"

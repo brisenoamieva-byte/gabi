@@ -3,7 +3,7 @@
 @media print {
   @page {
     size: letter portrait;
-    margin: 0.42in 0.48in;
+    margin: 0.38in 0.45in;
   }
 
   html,
@@ -33,50 +33,74 @@
     padding: 0 !important;
   }
 
-  /* Portada — una hoja */
+  /* Portada compacta — continúa con sección 01 en la misma hoja */
   .investti-print-cover {
     box-sizing: border-box;
-    break-after: page;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    min-height: 9.6in;
-    page-break-after: always;
-    padding-bottom: 0.2in !important;
-    padding-top: 0.15in !important;
+    break-after: auto;
+    display: block;
+    min-height: 0;
+    page-break-after: auto;
+    padding-bottom: 0.06in !important;
+    padding-top: 0.1in !important;
   }
 
   .investti-print-cover h1 {
-    font-size: 21pt !important;
+    font-size: 19pt !important;
     line-height: 1.15 !important;
   }
 
   .investti-print-cover .text-2xl {
-    font-size: 16pt !important;
+    font-size: 15pt !important;
   }
 
-  /* Secciones — nueva hoja */
-  .investti-print-section {
-    break-before: page;
-    page-break-before: always;
+  .investti-print-cover-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .investti-print-cover-stats .text-2xl {
+    font-size: 14pt !important;
+  }
+
+  /* Sección 01 tras portada, misma hoja */
+  .investti-print-section-start {
+    border-top-width: 1px !important;
+    break-before: auto;
+    margin-top: 0 !important;
+    page-break-before: auto;
     padding-top: 0.12in !important;
   }
 
-  .investti-print-section:first-of-type {
-    break-before: auto;
-    page-break-before: auto;
+  .investti-print-page-end {
+    break-after: page;
+    page-break-after: always;
+    padding-bottom: 0.06in !important;
+  }
+
+  /* Secciones 02 y 03 — nueva hoja */
+  .investti-print-section-major {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 0.1in !important;
+  }
+
+  .investti-print-section {
+    border-top-width: 1px !important;
+    margin-top: 0 !important;
   }
 
   .investti-print-break {
-    break-before: page;
-    page-break-before: always;
+    break-before: auto !important;
+    page-break-before: auto !important;
     padding-top: 0.08in;
   }
 
-  .investti-print-footer {
-    break-before: page;
-    page-break-before: always;
-    padding-top: 0.15in !important;
+  .investti-print-document-footer {
+    break-before: auto;
+    break-inside: avoid-page;
+    margin-top: 0.12in !important;
+    page-break-before: auto;
+    page-break-inside: avoid;
+    padding-top: 0.1in !important;
   }
 
   /* Espaciado compacto */
@@ -88,30 +112,24 @@
     margin-top: 0 !important;
   }
 
-  .investti-print-section {
-    border-top-width: 1px !important;
-    margin-top: 0 !important;
-    padding-top: 0.14in !important;
-  }
-
   .investti-print-section .mb-6 {
-    margin-bottom: 0.1in !important;
+    margin-bottom: 0.08in !important;
   }
 
   .investti-print-section .mt-8 {
-    margin-top: 0.1in !important;
+    margin-top: 0.08in !important;
   }
 
   .investti-print-section .space-y-8 > * + * {
-    margin-top: 0.12in !important;
-  }
-
-  .investti-print-section .space-y-6 > * + * {
     margin-top: 0.1in !important;
   }
 
+  .investti-print-section .space-y-6 > * + * {
+    margin-top: 0.08in !important;
+  }
+
   .investti-print-section h2 {
-    font-size: 14pt !important;
+    font-size: 13pt !important;
     line-height: 1.2 !important;
   }
 
@@ -119,23 +137,27 @@
   .investti-print-section li,
   .investti-print-section td,
   .investti-print-section th {
-    font-size: 9pt !important;
-    line-height: 1.35 !important;
+    font-size: 8.75pt !important;
+    line-height: 1.32 !important;
   }
 
   .investti-print-section .text-\[13px\],
   .investti-print-section .text-\[12px\] {
-    font-size: 8.5pt !important;
+    font-size: 8.25pt !important;
   }
 
   .investti-print-section .text-\[1\.35rem\],
   .investti-print-section .text-xl {
-    font-size: 12pt !important;
+    font-size: 11pt !important;
   }
 
   .investti-print-section .text-\[1\.5rem\],
   .investti-print-section .text-\[1\.35rem\] {
-    font-size: 13pt !important;
+    font-size: 12pt !important;
+  }
+
+  .investti-print-cover .text-\[15px\] {
+    font-size: 9.5pt !important;
   }
 
   /* Figuras y gráficas */
@@ -147,6 +169,10 @@
   .investti-print-figure-tall {
     break-inside: auto !important;
     page-break-inside: auto !important;
+  }
+
+  .investti-print-figure-compact svg {
+    max-height: 2.45in !important;
   }
 
   .investti-report-article svg,
@@ -186,42 +212,56 @@
     -webkit-print-color-adjust: exact !important;
   }
 
+  .investti-print-etapa4-stats {
+    font-size: 8pt !important;
+  }
+
+  .investti-print-etapa4-stats .text-\[1\.65rem\] {
+    font-size: 12pt !important;
+  }
+
   .investti-print-competencia-grid {
     display: block !important;
   }
 
   .investti-print-competencia-grid > * + * {
-    margin-top: 0.14in !important;
+    margin-top: 0.12in !important;
   }
 
   /* Matriz / tablas */
   .investti-print-section table {
-    font-size: 7.5pt !important;
+    font-size: 7.25pt !important;
   }
 
   .investti-print-section .px-8,
   .investti-print-section .md\:px-12,
   .investti-print-section .px-5,
   .investti-print-section .md\:px-6,
-  .investti-print-section .md\:px-10 {
+  .investti-print-section .md\:px-10,
+  .investti-print-cover .px-8,
+  .investti-print-cover .md\:px-12 {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
   .investti-print-section .py-10,
   .investti-print-section .md\:py-12,
-  .investti-print-section .md\:py-14 {
-    padding-bottom: 0.08in !important;
-    padding-top: 0.08in !important;
+  .investti-print-section .md\:py-14,
+  .investti-print-cover .py-10,
+  .investti-print-cover .md\:py-12 {
+    padding-bottom: 0.06in !important;
+    padding-top: 0.06in !important;
   }
 
   /* Enlaces del plano — solo texto */
-  .investti-print-section a {
+  .investti-print-section a,
+  .investti-print-document-footer a {
     color: inherit !important;
     text-decoration: underline !important;
   }
 
-  .investti-print-section a[href]::after {
+  .investti-print-section a[href]::after,
+  .investti-print-document-footer a[href]::after {
     content: none !important;
   }
 }

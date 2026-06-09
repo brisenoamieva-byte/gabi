@@ -17,8 +17,8 @@ export function GabiPrintBar({
   useEffect(() => {
     const prep = () => {
       requestAnimationFrame(() => {
-        prepareInvesttiChartsForPrint();
-        requestAnimationFrame(prepareInvesttiChartsForPrint);
+        prepareInvesttiChartsForPrint(titulo);
+        requestAnimationFrame(() => prepareInvesttiChartsForPrint(titulo));
       });
     };
 
@@ -28,12 +28,12 @@ export function GabiPrintBar({
       window.removeEventListener("beforeprint", prep);
       window.removeEventListener("afterprint", resetInvesttiChartsAfterPrint);
     };
-  }, []);
+  }, [titulo]);
 
   const handlePrint = () => {
-    prepareInvesttiChartsForPrint();
+    prepareInvesttiChartsForPrint(titulo);
     requestAnimationFrame(() => {
-      prepareInvesttiChartsForPrint();
+      prepareInvesttiChartsForPrint(titulo);
       window.print();
     });
   };
@@ -44,7 +44,7 @@ export function GabiPrintBar({
         <div className="min-w-0">
           <p className="truncate text-[12px] font-medium text-neutral-700">{titulo}</p>
           <p className="hidden text-[11px] text-neutral-400 sm:block">
-            Una hoja carta por sección · «Guardar como PDF» · activa «Gráficos de fondo»
+            «Guardar como PDF» · desactiva «Encabezados y pies de página» · activa «Gráficos de fondo»
           </p>
         </div>
         <button

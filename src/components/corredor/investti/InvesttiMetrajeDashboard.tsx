@@ -76,6 +76,7 @@ export function InvesttiMetrajeDashboard() {
           number="01"
           title="Recomendación"
           lead="Resumen ejecutivo para definir la siguiente etapa."
+          printVariant="after-cover"
         >
           <InvesttiCallout title="BBR Habitarea propone">
             <p className={`${investtiReport.serif} text-[1.35rem] leading-snug text-[#1C1830]`}>
@@ -94,12 +95,13 @@ export function InvesttiMetrajeDashboard() {
           number="02"
           title="Inventario y demanda"
           lead="Qué se ha vendido, qué queda y cómo encaja el plano Etapa 4."
+          printVariant="major"
         >
           <CdvMatrizEstrategica />
           <div className="mt-8">
             <CdvInventarioDemandaChart />
           </div>
-          <div className="investti-print-break mt-8">
+          <div className="mt-8">
             <CdvEtapa4LotificacionReview />
           </div>
         </InvesttiSection>
@@ -108,6 +110,7 @@ export function InvesttiMetrajeDashboard() {
           number="03"
           title="Contexto de mercado"
           lead="Referencia del corredor sur — sin fines de comercialización de terceros."
+          printVariant="major"
         >
           <div className="space-y-8">
             <CorredorMetrajeRangeChart
@@ -132,7 +135,7 @@ export function InvesttiMetrajeDashboard() {
           </div>
         </InvesttiSection>
 
-        <footer className={`investti-print-footer border-t ${investtiReport.rule} pt-8`}>
+        <footer className={`investti-print-document-footer border-t ${investtiReport.rule} pt-8`}>
           <p className={investtiReport.label}>Fuente</p>
           <p className={`${investtiReport.sans} mt-3 text-[12px] leading-relaxed text-neutral-600`}>
             {CDV_SEMBRADO_FUENTE} · precios lista CDV feb 2026 · comparativo corredor sur jun 2026.

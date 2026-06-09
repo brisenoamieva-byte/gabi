@@ -70,7 +70,9 @@ export function InvesttiReportCover({
       </div>
 
       {children ? (
-        <div className={`${investtiReport.sans} mt-10 grid gap-px bg-neutral-300 sm:grid-cols-2 lg:grid-cols-4`}>
+        <div
+          className={`${investtiReport.sans} investti-print-cover-stats mt-10 grid gap-px bg-neutral-300 sm:grid-cols-3`}
+        >
           {children}
         </div>
       ) : null}
@@ -101,15 +103,24 @@ export function InvesttiSection({
   title,
   lead,
   children,
+  printVariant = "default",
 }: {
   number: string;
   title: string;
   lead?: string;
   children: ReactNode;
+  printVariant?: "default" | "after-cover" | "major";
 }) {
+  const printClass =
+    printVariant === "after-cover"
+      ? "investti-print-section-start investti-print-page-end"
+      : printVariant === "major"
+        ? "investti-print-section-major"
+        : "";
+
   return (
     <section
-      className={`investti-print-section border-t ${investtiReport.rule} pt-10 first:border-t-0 first:pt-0`}
+      className={`investti-print-section border-t ${investtiReport.rule} pt-10 first:border-t-0 first:pt-0 ${printClass}`}
     >
       <div className="mb-6 flex gap-4">
         <span
@@ -138,12 +149,14 @@ export function InvesttiSection({
 export function InvesttiFigure({
   caption,
   children,
+  className = "",
 }: {
   caption?: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <figure className="investti-print-figure">
+    <figure className={`investti-print-figure ${className}`.trim()}>
       <div className={`border ${investtiReport.rule} bg-white`}>{children}</div>
       {caption ? (
         <figcaption className={`${investtiReport.caption} mt-2 px-0.5`}>{caption}</figcaption>
