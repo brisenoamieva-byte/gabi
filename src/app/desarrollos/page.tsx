@@ -6,6 +6,7 @@ import { ArrowRight, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   getDesarrolloIniciales,
@@ -17,7 +18,7 @@ import {
   type PortalSession,
 } from "@/lib/portal/session";
 import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
-import { enrichDesarrolloFromStatic, formatPrice, type Asesor } from "@/lib/data";
+import { formatPrice, type Asesor } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
 
@@ -65,7 +66,7 @@ export default function DesarrollosPage() {
           const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
           const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
           setDesarrollosDisponibles(
-            (data.desarrollos ?? []).map((item) => enrichDesarrolloFromStatic(item)),
+            (data.desarrollos ?? []).map((item) => applyDesarrolloCodeDefaults(item)),
           );
         } catch {
           setDesarrollosDisponibles([]);
