@@ -14,11 +14,17 @@ export const applyRecorridoCodeDefaults = (
 ): RecorridoContenido => {
   const defaults = getDefaultRecorridoContenido(desarrolloId);
   const defaultOverview = defaults.overview;
+  const defaultDesarrollador = defaults.desarrollador;
 
   return {
     ...contenido,
+    desarrollador: {
+      ...contenido.desarrollador,
+      logoPath: defaultDesarrollador.logoPath ?? contenido.desarrollador.logoPath,
+    },
     overview: {
       ...contenido.overview,
+      logoPath: defaultOverview.logoPath ?? contenido.overview.logoPath,
       masterPlanImage:
         defaultOverview.masterPlanImage ?? contenido.overview.masterPlanImage,
       masterPlanStats: defaultOverview.masterPlanStats?.length

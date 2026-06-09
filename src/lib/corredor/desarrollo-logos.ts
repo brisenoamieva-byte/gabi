@@ -17,6 +17,7 @@ export const CORREDOR_DESARROLLO_LOGOS: Partial<Record<string, string>> = {
   "real-del-bosque": "/corredor/logos/REAL-DEL-BOSQUE.jpg",
   simate: "/corredor/logos/SIMATE.jpg",
   "valle-cardinal": "/corredor/logos/VALLE-CARDINAL.jpg",
+  "canadas-la-porta": "/corredor/desarrolladores/investti.jpg",
   velasur: "/corredor/logos/VELASUR.jpg",
 };
 

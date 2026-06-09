@@ -1946,13 +1946,22 @@ export default function RecorridoPage() {
                       </div>
                     ) : null}
                     {activeDesarrollo ? (
-                      <div className="mt-5">
-                        <DocumentDownloadButton
-                          compact
-                          variant="desarrollo"
-                          desarrolloId={activeDesarrollo.id}
-                          label="Brochure del desarrollo"
-                        />
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {activeDesarrollo.brochurePdf ? (
+                          <DocumentDownloadButton
+                            compact
+                            variant="desarrollo"
+                            desarrolloId={activeDesarrollo.id}
+                            label="Brochure del desarrollo"
+                          />
+                        ) : null}
+                        {activeDesarrollo.tarjetasProcesoPdf ? (
+                          <DocumentDownloadButton
+                            compact
+                            variant="tarjetas-proceso"
+                            desarrolloId={activeDesarrollo.id}
+                          />
+                        ) : null}
                       </div>
                     ) : null}
                   </ProductNarrativeCard>

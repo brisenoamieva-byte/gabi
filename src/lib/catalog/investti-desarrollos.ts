@@ -1,6 +1,11 @@
 import type { Cluster, Desarrollo } from "@/lib/data";
 import { getCorredorDesarrolloById } from "@/lib/corredor/zona-sur-seed";
+import { getDesarrolloLogoUrl } from "@/lib/corredor/desarrollo-logos";
 import { isInvesttiSimuladorDesarrollo } from "@/lib/corredor/investti-simulador";
+import {
+  INVESTTI_DESARROLLO_LOGOS,
+  INVESTTI_TARJETAS_PROCESO,
+} from "@/lib/catalog/investti-recorrido-data";
 
 /** Desarrollos Grupo Investti en catálogo gabi (recorrido + cotizador). */
 export const INVESTTI_CATALOG_DESARROLLO_IDS = [
@@ -42,6 +47,7 @@ function corredorToDesarrollo(
   if (!corredor) {
     throw new Error(`Desarrollo corredor no encontrado: ${id}`);
   }
+  const logo = INVESTTI_DESARROLLO_LOGOS[id];
   return {
     id,
     nombre: corredor.nombre,
@@ -51,7 +57,9 @@ function corredorToDesarrollo(
     precioDesde: corredor.ticketDesde,
     tiposProducto: ["terrenos"],
     estado: "activo",
+    logo,
     brochurePdf: corredor.brochureUrl,
+    tarjetasProcesoPdf: INVESTTI_TARJETAS_PROCESO[id],
     ...INVESTTI_BRAND,
     ...overrides,
   };
@@ -67,6 +75,8 @@ const canadasLaPortaDesarrollo: Desarrollo = {
   precioDesde: 900_000,
   tiposProducto: ["terrenos"],
   estado: "activo",
+  logo: INVESTTI_DESARROLLO_LOGOS["canadas-la-porta"],
+  tarjetasProcesoPdf: INVESTTI_TARJETAS_PROCESO["canadas-la-porta"],
   ...INVESTTI_BRAND,
 };
 
@@ -77,19 +87,26 @@ export const investtiCatalogDesarrollos: Desarrollo[] = [
   canadasLaPortaDesarrollo,
 ];
 
-export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map((d) => ({
-  id: `${d.id}-terrenos`,
-  nombre: "Terrenos",
-  slug: "terrenos",
-  desarrolloId: d.id,
-  tipo: "terrenos" as const,
-  totalViviendas: 0,
-  descripcion: "Lotes residenciales · simulador oficial Investti en cotización",
-  precioDesde: d.precioDesde,
-  entregaGeneral: "Por confirmar",
-  amenidades: [],
-  fotoPortada: "",
-  logo: d.desarrolladorLogo ?? "",
-  activo: true,
-  brochurePdf: d.brochurePdf,
-}));
+export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map((d) => {
+  const corredor = getCorredorDesarrolloById(d.id);
+  const projectLogo = getDesarrolloLogoUrl({ id: d.id }) ?? d.logo ?? "";
+  return {
+    id: `${d.id}-terrenos`,
+    nombre: "Terrenos",
+    slug: "terrenos",
+    desarrolloId: d.id,
+    tipo: "terrenos" as const,
+    totalViviendas: corredor?.totalLotes ?? 0,
+    descripcion:
+      corredor?.notas?.split(".")[0] ??
+      "Lotes residenciales · simulador oficial Investti en cotización",
+    precioDesde: d.precioDesde,
+    entregaGeneral: "Por confirmar",
+    amenidades: corredor?.amenidades?.slice(0, 8) ?? [],
+    fotoPortada: projectLogo,
+    logo: projectLogo,
+    activo: true,
+    brochurePdf: d.brochurePdf,
+    tarjetasProcesoPdf: d.tarjetasProcesoPdf,
+  };
+});

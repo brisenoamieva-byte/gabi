@@ -34,6 +34,8 @@ export interface Cluster {
   activo: boolean
   /** PDF oficial del cluster en /public o subido en admin. */
   brochurePdf?: string
+  /** Tarjetas de proceso de ventas (guión asesor). */
+  tarjetasProcesoPdf?: string
 }
 
 export interface Prototipo {
@@ -166,6 +168,8 @@ export interface Desarrollo {
   colorAcento: string
   /** PDF oficial del desarrollo en /public o subido en admin. */
   brochurePdf?: string
+  /** Tarjetas de proceso de ventas (guión asesor). */
+  tarjetasProcesoPdf?: string
   /** Imagen del master plan en /public (recorrido y materiales comerciales). */
   masterPlanImage?: string
   crm: {
@@ -1195,8 +1199,10 @@ export const enrichDesarrolloFromStatic = (remote: Desarrollo): Desarrollo => {
 
   return {
     ...remote,
+    logo: remote.logo ?? local.logo,
     brochurePdf: remote.brochurePdf ?? local.brochurePdf,
-    masterPlanImage: remote.masterPlanImage ?? local.masterPlanImage
+    tarjetasProcesoPdf: remote.tarjetasProcesoPdf ?? local.tarjetasProcesoPdf,
+    masterPlanImage: remote.masterPlanImage ?? local.masterPlanImage,
   }
 }
 
@@ -1423,9 +1429,19 @@ export const contactosClavePasajeAlamos: ContactoClave[] = [
   { nombre: 'Cobranza BBR', rol: 'Anticipos, datos bancarios y formalización' },
 ]
 
+export const contactosClaveInvestti: ContactoClave[] = [
+  { nombre: 'Control Gerencia Investti', rol: 'Lista vigente, metrajes y condiciones comerciales' },
+  { nombre: 'Gerente comercial BBR', rol: 'Seguimiento prospectos tipo A (24 h / semanal)' },
+  { nombre: 'Asesor', rol: 'Seguimiento semanal · afluencia y CRM' },
+  { nombre: 'Cobranza BBR', rol: 'Apartados, datos bancarios y formalización' },
+]
+
 export const getContactosClave = (desarrolloId?: string | null): ContactoClave[] => {
   if (desarrolloId === 'pasaje-alamos') {
     return contactosClavePasajeAlamos
+  }
+  if (desarrolloId && INVESTTI_DESARROLLO_IDS.includes(desarrolloId)) {
+    return contactosClaveInvestti
   }
   return contactosClaveLaVista
 }

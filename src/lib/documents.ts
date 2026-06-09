@@ -136,6 +136,23 @@ export const downloadDesarrolloBrochure = async (desarrolloId: string) => {
   throw new DocumentNotAvailableError("Brochure del desarrollo");
 };
 
+export const downloadTarjetasProceso = async (desarrolloId: string) => {
+  const desarrollo = desarrollos.find((item) => item.id === desarrolloId);
+  if (!desarrollo) {
+    throw new Error("Desarrollo no encontrado.");
+  }
+
+  if (desarrollo.tarjetasProcesoPdf) {
+    await downloadStaticFile(
+      desarrollo.tarjetasProcesoPdf,
+      `${slugify(desarrollo.nombre)}-tarjetas-proceso.pdf`,
+    );
+    return;
+  }
+
+  throw new DocumentNotAvailableError("Tarjetas de proceso");
+};
+
 export const downloadClusterBrochure = async (clusterId: string, desarrolloId: string) => {
   const cluster = getClusterById(clusterId);
   const desarrollo = desarrollos.find((item) => item.id === desarrolloId);
