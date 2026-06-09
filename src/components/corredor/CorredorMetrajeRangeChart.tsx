@@ -121,7 +121,7 @@ export function CorredorMetrajeRangeChart({
   }
 
   const sortControls = (
-    <div className={`flex flex-wrap gap-1 ${isReport ? "mt-3" : ""}`}>
+    <div className={`gabi-no-print flex flex-wrap gap-1 ${isReport ? "mt-3" : ""}`}>
       {SORT_OPTIONS.map((opt) => (
         <button
           key={opt.id}

@@ -31,15 +31,14 @@ export function InvesttiReportCover({
   children?: ReactNode;
 }) {
   return (
-    <header className={`border-b ${investtiReport.rule} px-8 py-10 md:px-12 md:py-12`}>
+    <header
+      className={`investti-print-cover border-b ${investtiReport.rule} px-8 py-10 md:px-12 md:py-12`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-8">
         <div className="space-y-4">
           <BbrHabitareaLogo height={40} priority />
           <p className={`${investtiReport.sans} text-[12px] text-neutral-600`}>
             Elaborado por BBR Habitarea
-          </p>
-          <p className={`${investtiReport.caption} mt-1.5 max-w-sm`}>
-            {BBR_INVESTTI_RELACION.corto}
           </p>
         </div>
         <div className="flex flex-col items-end gap-5">
@@ -53,17 +52,15 @@ export function InvesttiReportCover({
               <dd className="mt-0.5 tabular-nums">{date}</dd>
             </div>
             <div>
-              <dt className={investtiReport.label}>Clasificación</dt>
-              <dd className="mt-0.5">Uso interno · Comercial</dd>
+              <dd className="mt-0.5 text-[12px] text-neutral-600">Uso interno · Comercial</dd>
             </div>
           </dl>
         </div>
       </div>
 
       <div className="mt-10 max-w-2xl">
-        <p className={investtiReport.label}>Nota de mercado</p>
         <h1
-          className={`${investtiReport.serif} mt-3 text-[1.75rem] font-normal leading-[1.2] text-[#1C1830] md:text-[2.125rem]`}
+          className={`${investtiReport.serif} text-[1.75rem] font-normal leading-[1.2] text-[#1C1830] md:text-[2.125rem]`}
         >
           {title}
         </h1>
@@ -111,7 +108,9 @@ export function InvesttiSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`border-t ${investtiReport.rule} pt-10 first:border-t-0 first:pt-0`}>
+    <section
+      className={`investti-print-section border-t ${investtiReport.rule} pt-10 first:border-t-0 first:pt-0`}
+    >
       <div className="mb-6 flex gap-4">
         <span
           className={`${investtiReport.sans} shrink-0 pt-0.5 text-[11px] font-medium tabular-nums text-neutral-400`}
@@ -144,7 +143,7 @@ export function InvesttiFigure({
   children: ReactNode;
 }) {
   return (
-    <figure>
+    <figure className="investti-print-figure">
       <div className={`border ${investtiReport.rule} bg-white`}>{children}</div>
       {caption ? (
         <figcaption className={`${investtiReport.caption} mt-2 px-0.5`}>{caption}</figcaption>

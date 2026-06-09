@@ -14,7 +14,7 @@ export const ESTUDIOS_REGISTRY: EstudioListItem[] = [
   {
     slug: "investti-cdv-metraje",
     titulo: "Cañadas del Valle · Metraje y demanda",
-    subtitulo: "Nota de mercado · Inventario, apartados y estrategia de precios",
+    subtitulo: "Inventario, apartados y estrategia de precios",
     ubicacion: "Corregidora, Querétaro",
     cliente: "Grupo Investti / BBR Habitarea",
     fecha: "2026",

@@ -53,7 +53,7 @@ export function CdvMatrizEstrategica() {
         />
       </div>
       <InvesttiFootnote>
-        El % en 200–250 m² es del inventario original de ese tramo (vendido + apartado sobre el
+        El % en 200–250 m² es del inventario original de ese rango (vendido + apartado sobre el
         total de lotes en ese metraje), no del total de ventas del proyecto. La mediana en apartados
         es el metraje que ocupan hoy los apartados vigentes en sembrado.
       </InvesttiFootnote>

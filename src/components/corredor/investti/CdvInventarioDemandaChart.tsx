@@ -25,7 +25,7 @@ export function CdvInventarioDemandaChart() {
     <InvesttiFigure caption="Vendido = ventas + apartados. El % de cada rango es cuánto del inventario que había en ese metraje ya salió — no es su peso dentro del total de ventas del proyecto.">
       <InvesttiChartHeader
         title="Ventas e inventario por metraje"
-        subtitle="Por rango de m² · % = vendido sobre inventario del tramo"
+        subtitle="Por rango de m² · % = vendido sobre inventario del rango"
         legend={
           <>
             <InvesttiLegendItem color="#201044" label="Vendido" />

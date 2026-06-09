@@ -34,7 +34,11 @@ import {
 import { CDV_ETAPA4_LOTIFICACION_FUENTE } from "@/lib/corredor/cdv-etapa4-lotificacion";
 import { CDV_SEMBRADO_FUENTE, CDV_SEMBRADO_RESUMEN } from "@/lib/corredor/cdv-sembrado-analisis";
 import { CDV_SEMBRADO_TEMPORAL } from "@/lib/corredor/cdv-sembrado-temporal.generated";
-import { CORREDOR_DESARROLLOS } from "@/lib/corredor/zona-sur-seed";
+import {
+  CORREDOR_DESARROLLOS_ANALISIS,
+  countCorredorDesarrollosAnalisis,
+} from "@/lib/corredor/corredor-analisis";
+import { ValleCardinalClustersPanel } from "@/components/corredor/investti/ValleCardinalClustersPanel";
 import { formatPrice, formatTicket } from "@/lib/data";
 
 export function InvesttiMetrajeDashboard() {
@@ -43,6 +47,8 @@ export function InvesttiMetrajeDashboard() {
   const absorcionRanking = getAbsorcionRanking();
   const gapData = getGapChartData();
   const competidoresDirectos = getCompetidoresDirectosCDV();
+  const totalDesarrollosAnalisis = countCorredorDesarrollosAnalisis();
+  const sinAbsorcion = CORREDOR_DESARROLLOS_ANALISIS.filter((d) => d.absorcionMes == null).length;
 
   const gapBounds = useMemo(() => {
     const metrajes = gapData.map((p) => p.metrajeMedio);
@@ -56,7 +62,7 @@ export function InvesttiMetrajeDashboard() {
   }, [gapData]);
 
   return (
-    <article className={investtiReport.body}>
+    <article className={`${investtiReport.body} investti-report-article`}>
       <InvesttiReportCover
         title="Metraje recomendado — nueva etapa Cañadas del Valle"
         subtitle="Con base en el sembrado de Control Gerencia, el corredor sur y los precios de lista. Objetivo: definir cuántos m² conviene desarrollar en la siguiente etapa."
@@ -92,7 +98,9 @@ export function InvesttiMetrajeDashboard() {
           lead="Etapa actual (160–250 m²), propuesta BBR (220–260 m²) y plano VoBo de Etapa 4."
         >
           <CdvMatrizEstrategica />
-          <CdvEtapa4LotificacionReview />
+          <div className="investti-print-break mt-8">
+            <CdvEtapa4LotificacionReview />
+          </div>
         </InvesttiSection>
 
         <InvesttiSection
@@ -148,7 +156,7 @@ export function InvesttiMetrajeDashboard() {
           <div className="space-y-8">
             <CorredorMetrajeRangeChart
               presentation="report"
-              desarrollos={CORREDOR_DESARROLLOS}
+              desarrollos={CORREDOR_DESARROLLOS_ANALISIS}
               linkToFicha={false}
               highlightBand={{
                 min: recomendacion.rangoMin,
@@ -156,10 +164,12 @@ export function InvesttiMetrajeDashboard() {
                 label: `${recomendacion.rangoMin}–${recomendacion.rangoMax} m²`,
               }}
               title="Metrajes en el corredor sur"
-              subtitle="12 desarrollos. La franja sombreada es la propuesta para CDV (220–260 m²)."
+              subtitle={`${totalDesarrollosAnalisis} desarrollos. La franja sombreada es la propuesta para CDV (220–260 m²).`}
             />
 
-            <div className="grid gap-8 lg:grid-cols-2">
+            <ValleCardinalClustersPanel />
+
+            <div className="investti-print-break investti-print-competencia-grid grid gap-8 lg:grid-cols-2">
               <CdvPosicionamientoChart
                 puntos={gapData}
                 metrajeMin={gapBounds.metrajeMin}
@@ -200,16 +210,18 @@ export function InvesttiMetrajeDashboard() {
                   })}
                 </div>
                 <p className={`${investtiReport.caption} border-t ${investtiReport.rule} px-5 py-3`}>
-                  Cuatro desarrollos sin dato de ventas mensuales.
+                  {sinAbsorcion} desarrollo{sinAbsorcion === 1 ? "" : "s"} sin dato de ventas mensuales.
                 </p>
               </div>
             </div>
 
-            <CdvCompetenciaMatrix cdv={cdv} competidores={competidoresDirectos} />
+            <div className="investti-print-break">
+              <CdvCompetenciaMatrix cdv={cdv} competidores={competidoresDirectos} />
+            </div>
           </div>
         </InvesttiSection>
 
-        <footer className={`border-t ${investtiReport.rule} pt-8`}>
+        <footer className={`investti-print-footer border-t ${investtiReport.rule} pt-8`}>
           <p className={investtiReport.label}>Fuentes</p>
           <div className={`${investtiReport.sans} mt-4 space-y-3 text-[12px] leading-relaxed text-neutral-600`}>
             <p>
@@ -228,7 +240,8 @@ export function InvesttiMetrajeDashboard() {
               {CDV_ETAPA4_LOTIFICACION_FUENTE}. Superficies del plano son estimadas; validar con tabla ARVT.
             </p>
             <p>
-              <strong className="font-medium text-neutral-800">Corredor:</strong> 12 desarrollos; precios $
+              <strong className="font-medium text-neutral-800">Corredor:</strong> {totalDesarrollosAnalisis}{" "}
+              desarrollos; precios $
               {CORREDOR_STATS.precioMinM2.toLocaleString("es-MX")}–$
               {CORREDOR_STATS.precioMaxM2.toLocaleString("es-MX")}/m². {CORREDOR_CONTEXTO.fuente}
             </p>

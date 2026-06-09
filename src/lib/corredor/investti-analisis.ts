@@ -5,6 +5,10 @@ import {
 import { getCdvTemporalEvidencia } from "./cdv-sembrado-temporal";
 import { getEtapa4EvidenciaRecomendacion } from "./cdv-etapa4-lotificacion";
 import { CORREDOR_STATS } from "./contexto-mercado";
+import {
+  CORREDOR_DESARROLLOS_ANALISIS,
+  countCorredorDesarrollosAnalisis,
+} from "./corredor-analisis";
 import { CORREDOR_DESARROLLOS } from "./zona-sur-seed";
 import type { CorredorDesarrollo } from "./types";
 
@@ -31,6 +35,7 @@ export const CDV_COMPETIDORES_IDS = [
   "el-condado",
   "real-del-bosque",
   "simate",
+  "valle-cardinal",
 ] as const;
 
 export type FilaMatrizMetraje = {
@@ -105,7 +110,7 @@ export function getInvesttiDesarrollos(): CorredorDesarrollo[] {
 }
 
 export function buildMatrizMetraje(
-  desarrollos = CORREDOR_DESARROLLOS,
+  desarrollos = CORREDOR_DESARROLLOS_ANALISIS,
   nichoMin = METRAJE_NICHO_MIN,
   nichoMax = METRAJE_NICHO_MAX,
 ): FilaMatrizMetraje[] {
@@ -135,7 +140,7 @@ export function buildMatrizMetraje(
 }
 
 export function getAbsorcionRanking(
-  desarrollos = CORREDOR_DESARROLLOS,
+  desarrollos = CORREDOR_DESARROLLOS_ANALISIS,
 ): Array<FilaMatrizMetraje & { ranking: number }> {
   const conDato = buildMatrizMetraje(desarrollos).filter((r) => r.absorcionMes != null);
   return conDato
@@ -143,7 +148,7 @@ export function getAbsorcionRanking(
     .map((r, i) => ({ ...r, ranking: i + 1 }));
 }
 
-export function getGapChartData(desarrollos = CORREDOR_DESARROLLOS): PuntoGap[] {
+export function getGapChartData(desarrollos = CORREDOR_DESARROLLOS_ANALISIS): PuntoGap[] {
   return desarrollos.map((d) => ({
     id: d.id,
     nombre: d.nombre,
@@ -214,10 +219,11 @@ export function buildRecomendacionMetraje(): RecomendacionMetraje {
       getEtapa4EvidenciaRecomendacion(METRAJE_RECOMENDADO_MIN, METRAJE_RECOMENDADO_MAX),
       getCdvTemporalEvidencia()[0],
       lider?.esCanadasDelValle
-        ? "CDV lidera la absorción entre los 12 desarrollos del corredor sur."
+        ? `CDV lidera la absorción entre los ${countCorredorDesarrollosAnalisis()} desarrollos del corredor sur.`
         : `${lider?.nombre} referencia de mercado con ${lider?.absorcionMes} lotes/mes.`,
+      "Valle Cardinal (km 18, 413): biodesarrollo con clústeres Hacienda Higuera y Cortijo Miravalle — mismo master plan, no desarrollos independientes. Ticket ~$735K en 150–194 m².",
     ],
-    competidoresEnNicho: CORREDOR_DESARROLLOS.filter(
+    competidoresEnNicho: CORREDOR_DESARROLLOS_ANALISIS.filter(
       (d) =>
         d.id !== CANADAS_DEL_VALLE_ID &&
         solapaMetraje(d, METRAJE_NICHO_MIN, METRAJE_NICHO_MAX) !== "no",
@@ -232,7 +238,7 @@ export function countCompetidoresEnNicho(
   min = METRAJE_NICHO_MIN,
   max = METRAJE_NICHO_MAX,
 ): number {
-  return CORREDOR_DESARROLLOS.filter(
+  return CORREDOR_DESARROLLOS_ANALISIS.filter(
     (d) =>
       d.id !== CANADAS_DEL_VALLE_ID &&
       d.desarrolladorId !== INVESTTI_DESARROLLADOR_ID &&

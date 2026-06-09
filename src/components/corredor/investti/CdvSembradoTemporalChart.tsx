@@ -37,7 +37,7 @@ function scaleY(v: number, min: number, max: number) {
 }
 
 export function CdvSembradoTemporalChart() {
-  const { insights, serieMensual, conclusiones, pronostico, fuente } = CDV_SEMBRADO_TEMPORAL;
+  const { insights, serieMensual, conclusiones, fuente } = CDV_SEMBRADO_TEMPORAL;
   const n = serieMensual.length;
 
   const maxOps = Math.max(...serieMensual.map((s) => s.total), 1);
@@ -201,49 +201,18 @@ export function CdvSembradoTemporalChart() {
         </svg>
       </div>
 
-      <div className="grid gap-6 border-t border-neutral-200 p-5 md:grid-cols-2 md:p-6">
-        <div>
-            <h4 className={`${investtiReport.serif} text-[1rem] text-[#1C1830]`}>Qué muestra la gráfica</h4>
-          <ol className={`${investtiReport.sans} mt-3 space-y-2.5`}>
-            {conclusiones.map((c, i) => (
-              <li key={c} className="flex gap-2.5 text-[13px] leading-relaxed text-neutral-700">
-                <span className="shrink-0 tabular-nums text-neutral-400">
-                  {String(i + 1).padStart(2, "0")}.
-                </span>
-                {c}
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        {pronostico.length > 0 ? (
-          <div>
-            <h4 className={`${investtiReport.serif} text-[1rem] text-[#1C1830]`}>
-              Proyección — próximos 6 meses
-            </h4>
-            <p className={`${investtiReport.caption} mt-1`}>
-              Estimación orientativa. No es compromiso de ventas.
-            </p>
-            <table className={`${investtiReport.sans} mt-3 w-full border-collapse text-[12px]`}>
-              <thead>
-                <tr className="border-b border-neutral-200 text-[10px] uppercase tracking-wide text-neutral-500">
-                  <th className="py-2 pr-3 text-left font-medium">Mes</th>
-                  <th className="py-2 pr-3 text-left font-medium">Ventas est.</th>
-                  <th className="py-2 text-left font-medium">Mediana m²</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pronostico.map((p) => (
-                  <tr key={p.ym} className="border-b border-neutral-100">
-                    <td className="py-2 pr-3">{labelMes(p.ym)}</td>
-                    <td className="py-2 pr-3 tabular-nums">{p.opsEstimadas}</td>
-                    <td className="py-2 tabular-nums">{p.medianaM2Proyectada} m²</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
+      <div className="border-t border-neutral-200 p-5 md:p-6">
+        <h4 className={`${investtiReport.serif} text-[1rem] text-[#1C1830]`}>Qué muestra la gráfica</h4>
+        <ol className={`${investtiReport.sans} mt-3 space-y-2.5`}>
+          {conclusiones.map((c, i) => (
+            <li key={c} className="flex gap-2.5 text-[13px] leading-relaxed text-neutral-700">
+              <span className="shrink-0 tabular-nums text-neutral-400">
+                {String(i + 1).padStart(2, "0")}.
+              </span>
+              {c}
+            </li>
+          ))}
+        </ol>
       </div>
 
       <InvesttiFootnote>{fuente}</InvesttiFootnote>

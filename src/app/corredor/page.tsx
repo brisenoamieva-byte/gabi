@@ -92,7 +92,7 @@ export default function CorredorPage() {
         >
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
-              Nota de mercado · Grupo Investti
+              Grupo Investti
             </p>
             <h2 className="mt-1 font-[Georgia,'Times_New_Roman',serif] text-lg text-[#1C1830] md:text-xl">
               Metraje recomendado — nueva etapa Cañadas del Valle

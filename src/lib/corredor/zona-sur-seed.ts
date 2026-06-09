@@ -532,35 +532,6 @@ export const CORREDOR_DESARROLLOS: CorredorDesarrollo[] = [
     ],
   },
   {
-    id: "arroyo-del-pedregal",
-    nombre: "Arroyo del Pedregal",
-    kmCorredor: null,
-    kmLabel: "Noria",
-    desarrollador: "Arroyo del Pedregal",
-    desarrolladorId: "arroyo-del-pedregal",
-    municipio: "corregidora",
-    carretera: "noria",
-    loteMinM2: 72,
-    loteMaxM2: 120,
-    precioMinM2: 5500,
-    precioMaxM2: 7000,
-    ticketDesde: 450_000,
-    absorcionMes: null,
-    totalLotes: null,
-    enganchePct: null,
-    plazoMeses: null,
-    amenidades: ["Casa club"],
-    amenidadTags: ["casa-club"],
-    notas: "Datos parciales en estudio comparativo.",
-    ubicacion: {
-      lat: 20.5033002,
-      lng: -100.3830604,
-      aproximada: false,
-      mapsUrl: "https://maps.app.goo.gl/eMWnG4761sPnjLGj6",
-    },
-    mapQuery: "Arroyo del Pedregal Noria Querétaro",
-  },
-  {
     id: "valle-cardinal",
     nombre: "Valle Cardinal",
     kmCorredor: 18,
@@ -578,8 +549,20 @@ export const CORREDOR_DESARROLLOS: CorredorDesarrollo[] = [
     totalLotes: null,
     enganchePct: null,
     plazoMeses: null,
-    amenidades: ["Lagos", "Pádel", "Usos múltiples", "Skate park", "Camping", "Viñedos", "Alberca", "Gimnasio"],
-    amenidadTags: ["lago", "padel", "casa-club", "camping", "alberca", "gym-exterior"],
+    amenidades: [
+      "Parque lineal 90,000+ m²",
+      "Lagos y arroyo",
+      "Pádel",
+      "Camping",
+      "Viñedo",
+      "Skate park",
+      "Tirolesa infantil",
+      "Reserva natural La Peña de Cristo",
+    ],
+    amenidadTags: ["lago", "padel", "camping", "tirolesa", "bike-park", "areas-verdes", "senderos"],
+    notas:
+      "Biodesarrollo Huimilpan · Blvd. Metropolitano · 90+ ha. Hacienda Higuera y Cortijo Miravalle son clústeres del mismo master plan (ebooks mayo 2026), no desarrollos independientes.",
+    brochureUrl: "/corredor/brochures/valle-cardinal-hacienda-higuera.pdf",
     ubicacion: {
       lat: 20.423159,
       lng: -100.2983034,
@@ -587,6 +570,14 @@ export const CORREDOR_DESARROLLOS: CorredorDesarrollo[] = [
       mapsUrl: "https://maps.app.goo.gl/h8Lgq3Dd736QjxPz9",
     },
     mapQuery: "Valle Cardinal Huimilpan Querétaro",
+    guiaAsesor:
+      "Un solo biodesarrollo con etapas comercializadas por clúster. Hacienda Higuera (79 lotes, Torres Romero) y Cortijo Miravalle comparten amenidades maestras y parque central.",
+    argumentosVenta: [
+      "413 km 18 — mismo corredor que Faro y Ciudad Maderas",
+      "Ticket de entrada ~$735K con lotes 150–194 m²",
+      "Biodesarrollo con reserva natural y parque lineal sin cruces vehiculares",
+      "Amenidades diferenciadoras: camping, viñedo, mirador, pádel",
+    ],
   },
 ];
 
@@ -603,7 +594,6 @@ export const CORREDOR_DESARROLLADORES = [
   { id: "grupo-velas", nombre: "Grupo Velas", proyectos: ["velasur"] },
   { id: "sucot", nombre: "SUCOT", proyectos: ["real-del-bosque"] },
   { id: "valle-cardinal", nombre: "Valle Cardinal", proyectos: ["valle-cardinal"] },
-  { id: "arroyo-del-pedregal", nombre: "Arroyo del Pedregal", proyectos: ["arroyo-del-pedregal"] },
 ];
 
 export const CORREDOR_ZONA: CorredorZonaContexto = {

@@ -1,0 +1,200 @@
+/* Estudio Investti / CDV — exportación PDF carta */
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.42in 0.48in;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    overflow: visible !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .gabi-report-print {
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+
+  .gabi-report-print > .px-4,
+  .gabi-report-print > div {
+    padding: 0 !important;
+  }
+
+  .gabi-report-print .investti-report-sheet {
+    box-shadow: none !important;
+    max-width: 100% !important;
+  }
+
+  .investti-report-article {
+    padding: 0 !important;
+  }
+
+  /* Portada — una hoja */
+  .investti-print-cover {
+    box-sizing: border-box;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 9.6in;
+    page-break-after: always;
+    padding-bottom: 0.2in !important;
+    padding-top: 0.15in !important;
+  }
+
+  .investti-print-cover h1 {
+    font-size: 21pt !important;
+    line-height: 1.15 !important;
+  }
+
+  .investti-print-cover .text-2xl {
+    font-size: 16pt !important;
+  }
+
+  /* Secciones — nueva hoja */
+  .investti-print-section {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 0.12in !important;
+  }
+
+  .investti-print-section:first-of-type {
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  .investti-print-break {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 0.08in;
+  }
+
+  .investti-print-footer {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 0.15in !important;
+  }
+
+  /* Espaciado compacto */
+  .investti-report-article .mt-12 {
+    margin-top: 0 !important;
+  }
+
+  .investti-report-article .space-y-12 > * + * {
+    margin-top: 0 !important;
+  }
+
+  .investti-print-section {
+    border-top-width: 1px !important;
+    margin-top: 0 !important;
+    padding-top: 0.14in !important;
+  }
+
+  .investti-print-section .mb-6 {
+    margin-bottom: 0.1in !important;
+  }
+
+  .investti-print-section .mt-8 {
+    margin-top: 0.1in !important;
+  }
+
+  .investti-print-section .space-y-8 > * + * {
+    margin-top: 0.12in !important;
+  }
+
+  .investti-print-section .space-y-6 > * + * {
+    margin-top: 0.1in !important;
+  }
+
+  .investti-print-section h2 {
+    font-size: 14pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .investti-print-section p,
+  .investti-print-section li,
+  .investti-print-section td,
+  .investti-print-section th {
+    font-size: 9pt !important;
+    line-height: 1.35 !important;
+  }
+
+  .investti-print-section .text-\[13px\],
+  .investti-print-section .text-\[12px\] {
+    font-size: 8.5pt !important;
+  }
+
+  .investti-print-section .text-\[1\.35rem\],
+  .investti-print-section .text-xl {
+    font-size: 12pt !important;
+  }
+
+  .investti-print-section .text-\[1\.5rem\],
+  .investti-print-section .text-\[1\.35rem\] {
+    font-size: 13pt !important;
+  }
+
+  /* Figuras y gráficas */
+  .investti-print-figure {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .investti-print-figure svg {
+    max-height: 2.35in !important;
+    width: 100% !important;
+  }
+
+  .investti-print-figure .overflow-x-auto,
+  .investti-print-figure .overflow-x-hidden {
+    overflow: visible !important;
+  }
+
+  .investti-print-figure .min-w-\[36rem\] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .investti-print-competencia-grid {
+    display: block !important;
+  }
+
+  .investti-print-competencia-grid > * + * {
+    margin-top: 0.14in !important;
+  }
+
+  /* Matriz / tablas */
+  .investti-print-section table {
+    font-size: 7.5pt !important;
+  }
+
+  .investti-print-section .px-8,
+  .investti-print-section .md\:px-12,
+  .investti-print-section .px-5,
+  .investti-print-section .md\:px-6,
+  .investti-print-section .md\:px-10 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .investti-print-section .py-10,
+  .investti-print-section .md\:py-12,
+  .investti-print-section .md\:py-14 {
+    padding-bottom: 0.08in !important;
+    padding-top: 0.08in !important;
+  }
+
+  /* Enlaces del plano — solo texto */
+  .investti-print-section a {
+    color: inherit !important;
+    text-decoration: underline !important;
+  }
+
+  .investti-print-section a[href]::after {
+    content: none !important;
+  }
+}
