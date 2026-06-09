@@ -98,7 +98,7 @@ export default function CorredorPage() {
               Metraje recomendado — nueva etapa Cañadas del Valle
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-600">
-              Sembrado v.4, corredor sur y propuesta 220–260 m² · {CORREDOR_DATOS_ACTUALIZADOS}
+              Propuesta BBR para nueva etapa · {CORREDOR_DATOS_ACTUALIZADOS}
             </p>
           </div>
           <span className="inline-flex items-center gap-2 border border-[#201044]/20 px-4 py-2 text-sm text-[#201044]">

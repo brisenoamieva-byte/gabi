@@ -2,13 +2,8 @@ import {
   CDV_SEMBRADO_RESUMEN,
   sellThroughEnRango,
 } from "./cdv-sembrado-analisis";
-import { getCdvTemporalEvidencia } from "./cdv-sembrado-temporal";
 import { getEtapa4EvidenciaRecomendacion } from "./cdv-etapa4-lotificacion";
-import { CORREDOR_STATS } from "./contexto-mercado";
-import {
-  CORREDOR_DESARROLLOS_ANALISIS,
-  countCorredorDesarrollosAnalisis,
-} from "./corredor-analisis";
+import { CORREDOR_DESARROLLOS_ANALISIS } from "./corredor-analisis";
 import { CORREDOR_DESARROLLOS } from "./zona-sur-seed";
 import { getMetrajePromedio } from "./metraje-chart";
 import type { CorredorDesarrollo } from "./types";
@@ -193,8 +188,6 @@ function lineaTicketsCompetenciaDirecta(): string {
 export function buildRecomendacionMetraje(): RecomendacionMetraje {
   const cdv = getCanadasDelValle();
   const matriz = buildMatrizMetraje();
-  const absorcionRanking = getAbsorcionRanking();
-  const lider = absorcionRanking[0];
 
   const ticketEstimadoMin = Math.round(METRAJE_RECOMENDADO_MIN * cdv.precioMinM2);
   const ticketEstimadoMax = Math.round(METRAJE_RECOMENDADO_MAX * cdv.precioMaxM2);
@@ -206,18 +199,12 @@ export function buildRecomendacionMetraje(): RecomendacionMetraje {
     rangoMax: METRAJE_RECOMENDADO_MAX,
     titulo: `Nueva etapa Cañadas del Valle: ${METRAJE_RECOMENDADO_MIN}–${METRAJE_RECOMENDADO_MAX} m²`,
     resumen:
-      `En 200–250 m² el inventario de la etapa actual está casi agotado: ${st200_250.min}–${st200_250.max}% de ese tramo ya se vendió y quedan ${r.disponibles200a250} lotes. Los apartados activos piden ~${r.medianaApartadoM2} m². Proponemos ${METRAJE_RECOMENDADO_MIN}–${METRAJE_RECOMENDADO_MAX} m² para reponer producto donde el mercado ya compra, sin duplicar los ${r.disponibles160a200} lotes en 160–200 m² que aún tenemos.`,
+      `El tramo de 200–250 m² está casi agotado (${r.disponibles200a250} lotes libres; ${st200_250.min}–${st200_250.max}% ya vendido). Los apartados activos promedian ${r.medianaApartadoM2} m². Conviene reponer en ${METRAJE_RECOMENDADO_MIN}–${METRAJE_RECOMENDADO_MAX} m² sin repetir los ${r.disponibles160a200} lotes chicos que aún hay en etapa actual.`,
     evidencia: [
-      `Sembrado v.4: ${r.demanda200a250} ventas o apartados en 200–250 m²; ${st200_250.min}–${st200_250.max}% del inventario de ese tramo ya vendido o apartado; quedan ${r.disponibles200a250} lotes.`,
-      `Apartados activos con mediana de ${r.medianaApartadoM2} m² — encajan en ${METRAJE_RECOMENDADO_MIN}–${METRAJE_RECOMENDADO_MAX} m².`,
-      `Etapa actual: ${r.disponibles160a200} lotes libres en 160–200 m². La nueva etapa no debe repetir ese tamaño.`,
-      `Ticket estimado $${ticketEstimadoMin.toLocaleString("es-MX")} – $${ticketEstimadoMax.toLocaleString("es-MX")}, comparable a ${lineaTicketsCompetenciaDirecta()}.`,
-      `CDV vende ${cdv.absorcionMes} lotes/mes (${Math.round((cdv.absorcionMes ?? 0) / CORREDOR_STATS.absorcionPromMes)}× el promedio del corredor).`,
+      `${r.demanda200a250} ventas o apartados históricos en 200–250 m² — el tramo con más demanda probada.`,
+      `Apartados vigentes: mediana ${r.medianaApartadoM2} m², dentro de la propuesta.`,
+      `Ticket ${formatTicketReferencia(ticketEstimadoMin)} – ${formatTicketReferencia(ticketEstimadoMax)}, en línea con ${lineaTicketsCompetenciaDirecta()}.`,
       getEtapa4EvidenciaRecomendacion(METRAJE_RECOMENDADO_MIN, METRAJE_RECOMENDADO_MAX),
-      getCdvTemporalEvidencia()[0],
-      lider?.esCanadasDelValle
-        ? `CDV lidera la absorción entre los ${countCorredorDesarrollosAnalisis()} desarrollos del corredor sur.`
-        : `${lider?.nombre} referencia de mercado con ${lider?.absorcionMes} lotes/mes.`,
     ],
     competidoresEnNicho: CORREDOR_DESARROLLOS_ANALISIS.filter(
       (d) =>

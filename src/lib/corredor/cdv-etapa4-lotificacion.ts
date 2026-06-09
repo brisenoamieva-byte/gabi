@@ -94,8 +94,8 @@ export function evaluarAlineacionEtapa4(
       ? "El plano de Etapa 4 encaja con 220–260 m²"
       : "El plano de Etapa 4 requiere ajustes en los extremos",
     resumen: centroEnBanda
-      ? `Con las medidas del plano VoBo, la mediana estimada es ~${e.medianaM2} m² — dentro de la propuesta ${recomendadoMin}–${recomendadoMax} m².`
-      : `La mediana del plano (~${e.medianaM2} m²) cae en ${recomendadoMin}–${recomendadoMax} m², pero hay lotes fuera de ese rango que conviene revisar.`,
+      ? `El plano VoBo encaja: mediana ~${e.medianaM2} m² dentro de ${recomendadoMin}–${recomendadoMax} m².`
+      : `Mediana del plano ~${e.medianaM2} m²; revisar lotes fuera de ${recomendadoMin}–${recomendadoMax} m² antes de lista.`,
     puntos: [
       `Solo lotes nuevos Etapa 4 (${CDV_ETAPA4_LOTES_NUEVOS.criterio.toLowerCase()}, ${CDV_ETAPA4_LOTES_NUEVOS.numeracion}).`,
       `Lote más pequeño revisado: ~${e.minM2} m² (anotación CAD: ${e.minM2PlanoCad} m²). No hay lotes de 160 m² en esta etapa.`,
@@ -119,5 +119,5 @@ export function getEtapa4EvidenciaRecomendacion(
   recomendadoMax: number,
 ): string {
   const a = evaluarAlineacionEtapa4(recomendadoMin, recomendadoMax);
-  return `Plano Etapa 4 (VoBo Investti): mediana ~${CDV_ETAPA4_METRAJE_ESTIMADO.medianaM2} m² — ${a.nivel === "alta" ? "alineado" : "parcialmente alineado"} con ${recomendadoMin}–${recomendadoMax} m².`;
+  return `Plano Etapa 4: mediana ~${CDV_ETAPA4_METRAJE_ESTIMADO.medianaM2} m², ${a.nivel === "alta" ? "alineado" : "revisar extremos"} con ${recomendadoMin}–${recomendadoMax} m².`;
 }

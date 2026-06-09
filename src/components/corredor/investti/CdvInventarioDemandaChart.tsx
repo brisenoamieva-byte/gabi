@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  CDV_SEMBRADO_FUENTE,
-  CDV_SEMBRADO_RANGOS,
-} from "@/lib/corredor/cdv-sembrado-analisis";
+import { CDV_SEMBRADO_RANGOS } from "@/lib/corredor/cdv-sembrado-analisis";
 import {
   METRAJE_RECOMENDADO_MAX,
   METRAJE_RECOMENDADO_MIN,
@@ -11,7 +8,6 @@ import {
 import {
   InvesttiChartHeader,
   InvesttiFigure,
-  InvesttiFootnote,
   InvesttiLegendItem,
   investtiReport,
 } from "@/components/corredor/investti/InvesttiReportUi";
@@ -22,10 +18,10 @@ export function CdvInventarioDemandaChart() {
   );
 
   return (
-    <InvesttiFigure caption="Vendido = ventas + apartados. El % de cada rango es cuánto del inventario que había en ese metraje ya salió — no es su peso dentro del total de ventas del proyecto.">
+    <InvesttiFigure caption="Vendido incluye ventas y apartados. El % indica cuánto del inventario de cada rango ya salió.">
       <InvesttiChartHeader
-        title="Ventas e inventario por metraje"
-        subtitle="Por rango de m² · % = vendido sobre inventario del rango"
+        title="Inventario por metraje"
+        subtitle="Sembrado v.4 · rangos resaltados = propuesta 220–260 m²"
         legend={
           <>
             <InvesttiLegendItem color="#201044" label="Vendido" />
@@ -69,7 +65,6 @@ export function CdvInventarioDemandaChart() {
           );
         })}
       </div>
-      <InvesttiFootnote>{CDV_SEMBRADO_FUENTE}</InvesttiFootnote>
     </InvesttiFigure>
   );
 }
