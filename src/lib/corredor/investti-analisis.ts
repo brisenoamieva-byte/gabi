@@ -221,7 +221,6 @@ export function buildRecomendacionMetraje(): RecomendacionMetraje {
       lider?.esCanadasDelValle
         ? `CDV lidera la absorción entre los ${countCorredorDesarrollosAnalisis()} desarrollos del corredor sur.`
         : `${lider?.nombre} referencia de mercado con ${lider?.absorcionMes} lotes/mes.`,
-      "Valle Cardinal (km 18, 413): biodesarrollo con clústeres Hacienda Higuera y Cortijo Miravalle — mismo master plan, no desarrollos independientes. Ticket ~$735K en 150–194 m².",
     ],
     competidoresEnNicho: CORREDOR_DESARROLLOS_ANALISIS.filter(
       (d) =>

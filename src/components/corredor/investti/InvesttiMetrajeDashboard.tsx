@@ -38,7 +38,6 @@ import {
   CORREDOR_DESARROLLOS_ANALISIS,
   countCorredorDesarrollosAnalisis,
 } from "@/lib/corredor/corredor-analisis";
-import { ValleCardinalClustersPanel } from "@/components/corredor/investti/ValleCardinalClustersPanel";
 import { formatPrice, formatTicket } from "@/lib/data";
 
 export function InvesttiMetrajeDashboard() {
@@ -166,8 +165,6 @@ export function InvesttiMetrajeDashboard() {
               title="Metrajes en el corredor sur"
               subtitle={`${totalDesarrollosAnalisis} desarrollos. La franja sombreada es la propuesta para CDV (220–260 m²).`}
             />
-
-            <ValleCardinalClustersPanel />
 
             <div className="investti-print-break investti-print-competencia-grid grid gap-8 lg:grid-cols-2">
               <CdvPosicionamientoChart

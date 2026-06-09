@@ -560,8 +560,7 @@ export const CORREDOR_DESARROLLOS: CorredorDesarrollo[] = [
       "Reserva natural La Peña de Cristo",
     ],
     amenidadTags: ["lago", "padel", "camping", "tirolesa", "bike-park", "areas-verdes", "senderos"],
-    notas:
-      "Biodesarrollo Huimilpan · Blvd. Metropolitano · 90+ ha. Hacienda Higuera y Cortijo Miravalle son clústeres del mismo master plan (ebooks mayo 2026), no desarrollos independientes.",
+    notas: "Biodesarrollo Huimilpan · km 18 (413) · 90+ ha · parque lineal 90,000+ m². Fuente: ebooks mayo 2026.",
     brochureUrl: "/corredor/brochures/valle-cardinal-hacienda-higuera.pdf",
     ubicacion: {
       lat: 20.423159,
@@ -571,7 +570,7 @@ export const CORREDOR_DESARROLLOS: CorredorDesarrollo[] = [
     },
     mapQuery: "Valle Cardinal Huimilpan Querétaro",
     guiaAsesor:
-      "Un solo biodesarrollo con etapas comercializadas por clúster. Hacienda Higuera (79 lotes, Torres Romero) y Cortijo Miravalle comparten amenidades maestras y parque central.",
+      "Biodesarrollo en Huimilpan con ticket de entrada accesible. Destaca parque lineal, reserva natural y amenidades outdoor (camping, viñedo, pádel).",
     argumentosVenta: [
       "413 km 18 — mismo corredor que Faro y Ciudad Maderas",
       "Ticket de entrada ~$735K con lotes 150–194 m²",
