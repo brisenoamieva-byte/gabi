@@ -85,7 +85,7 @@ function BarRow({
       <span className="w-8 shrink-0 text-[10px] text-neutral-500">{label}</span>
       <div className="relative h-4 flex-1 bg-neutral-100">
         <div
-          className="absolute inset-y-0 left-0"
+          className="investti-print-bar absolute inset-y-0 left-0"
           style={{
             width: `${Math.max(pct, value ? 2 : 0)}%`,
             backgroundColor: color,

@@ -301,7 +301,7 @@ export function CorredorMetrajeRangeChart({
 
                     <div className="relative h-9">
                       <div
-                        className={`absolute top-1/2 -translate-y-1/2 transition-all ${barStyle(d, selected, isReport)} ${
+                        className={`investti-print-bar absolute top-1/2 -translate-y-1/2 transition-all ${barStyle(d, selected, isReport)} ${
                           isReport
                             ? selected
                               ? "h-2.5"
@@ -383,7 +383,7 @@ export function CorredorMetrajeRangeChart({
 
   if (isReport) {
     return (
-      <figure>
+      <figure className="investti-print-figure investti-print-figure-tall">
         <div className={`border ${investtiReport.rule} bg-white`}>
           <InvesttiChartHeader
             title={title}

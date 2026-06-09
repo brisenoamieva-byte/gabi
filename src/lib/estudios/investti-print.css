@@ -144,19 +144,46 @@
     page-break-inside: avoid;
   }
 
+  .investti-print-figure-tall {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .investti-report-article svg,
   .investti-print-figure svg {
-    max-height: 2.35in !important;
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    overflow: visible !important;
     width: 100% !important;
   }
 
+  .investti-report-article .overflow-x-auto,
+  .investti-report-article .overflow-x-hidden,
+  .investti-report-article .overflow-hidden,
   .investti-print-figure .overflow-x-auto,
-  .investti-print-figure .overflow-x-hidden {
+  .investti-print-figure .overflow-x-hidden,
+  .investti-print-figure .overflow-hidden {
     overflow: visible !important;
   }
 
+  .investti-report-article .min-w-\[36rem\],
   .investti-print-figure .min-w-\[36rem\] {
     min-width: 0 !important;
     width: 100% !important;
+  }
+
+  .investti-print-bar,
+  .investti-report-article [style*="background-color"],
+  .investti-report-article [style*="backgroundColor"] {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .investti-report-article figure .absolute[class*="bg-"] {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
   .investti-print-competencia-grid {
