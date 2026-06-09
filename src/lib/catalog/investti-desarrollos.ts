@@ -81,7 +81,10 @@ const canadasLaPortaDesarrollo: Desarrollo = {
 };
 
 export const investtiCatalogDesarrollos: Desarrollo[] = [
-  corredorToDesarrollo("canadas-del-valle"),
+  corredorToDesarrollo("canadas-del-valle", {
+    descripcion:
+      "80+ ha en El Patol · 2,200 lotes · 30+ amenidades. Etapa 1 160–250 m² + premium vista cañada. Líder del corredor sur: 15 lotes/mes.",
+  }),
   corredorToDesarrollo("canadas-del-arroyo"),
   corredorToDesarrollo("simate"),
   canadasLaPortaDesarrollo,
@@ -98,11 +101,13 @@ export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map
     tipo: "terrenos" as const,
     totalViviendas: corredor?.totalLotes ?? 0,
     descripcion:
-      corredor?.notas?.split(".")[0] ??
-      "Lotes residenciales · simulador oficial Investti en cotización",
+      d.id === "canadas-del-valle"
+        ? "Etapa 1 160–250 m² + premium vista cañada · nueva etapa 220–260 m² recomendada · simulador oficial Investti"
+        : (corredor?.notas?.split(".")[0] ??
+          "Lotes residenciales · simulador oficial Investti en cotización"),
     precioDesde: d.precioDesde,
     entregaGeneral: "Por confirmar",
-    amenidades: corredor?.amenidades?.slice(0, 8) ?? [],
+    amenidades: corredor?.amenidades ?? [],
     fotoPortada: projectLogo,
     logo: projectLogo,
     activo: true,

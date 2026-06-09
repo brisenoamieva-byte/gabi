@@ -77,6 +77,86 @@ const POIS_METROPOLITANO: PuntoInteres[] = [
   },
 ];
 
+/** POIs específicos CDV — brochure 2026 + corredor sur (homologado a densidad de La Vista). */
+const POIS_CDV_VALLE: PuntoInteres[] = [
+  {
+    id: "km-85-metropolitano",
+    nombre: "Blvd. Metropolitano km 8.5",
+    categoria: "Conectividad",
+    tiempo: "Acceso directo",
+    detalle:
+      "Entrada El Patol · caseta 24/7 · 3 carriles de entrada y salida · corredor sur Santa Bárbara–Huimilpan.",
+    destacado: true,
+  },
+  {
+    id: "el-patol",
+    nombre: "El Patol · reservas naturales",
+    categoria: "Entorno",
+    tiempo: "En el desarrollo",
+    detalle:
+      "Más de 1,500 árboles, río natural, espejos de agua y contacto directo con la naturaleza.",
+    destacado: true,
+  },
+  {
+    id: "cimatario",
+    nombre: "Parque Nacional El Cimatario",
+    categoria: "Entorno",
+    tiempo: "Pie del cerro",
+    detalle: "2,400 ha de reserva natural — pulmón verde de Querétaro.",
+    destacado: true,
+  },
+  {
+    id: "preserve-country",
+    nombre: "Preserve Country",
+    categoria: "Entorno",
+    tiempo: "Vecino directo",
+    detalle: "Fraccionamiento premium en km 8–9 — contexto de plusvalía del corredor Metropolitano.",
+  },
+  {
+    id: "fontanar",
+    nombre: "Zona Fontanar / Plaza Constituyentes",
+    categoria: "Comercio",
+    tiempo: "~6 km",
+    detalle: "Costco, Chedraui, servicios y retail de la zona sur.",
+    destacado: true,
+  },
+  {
+    id: "colegios-sur",
+    nombre: "Red de colegios privados sur",
+    categoria: "Educación",
+    tiempo: "10–15 min",
+    detalle: "Fontanar, Kidu, Alberi y opciones de educación privada en Corregidora.",
+  },
+  {
+    id: "tec-milenio",
+    nombre: "Tec Milenio / educación superior",
+    categoria: "Educación",
+    tiempo: "15 min",
+    detalle: "Universidades y colegios privados del corredor sur.",
+  },
+  {
+    id: "hospitales-sur",
+    nombre: "Hospitales y servicios de salud",
+    categoria: "Salud",
+    tiempo: "15 min",
+    detalle: "Red hospitalaria de Corregidora y zona metropolitana.",
+  },
+  {
+    id: "centro-qro",
+    nombre: "Centro de Querétaro",
+    categoria: "Conectividad",
+    tiempo: "20–25 min",
+    detalle: "Servicios, empleo y vida urbana de la capital.",
+  },
+  {
+    id: "aeropuerto-qro",
+    nombre: "Aeropuerto Intercontinental de Querétaro",
+    categoria: "Conectividad",
+    tiempo: "25–30 min",
+    detalle: "Conexión a CDMX, Monterrey y rutas corporativas nacionales.",
+  },
+];
+
 const POIS_SIMATE: PuntoInteres[] = [
   {
     id: "cimatario",
@@ -111,6 +191,7 @@ type InvesttiRecorridoStatic = {
   overviewSubtitulo: string;
   narrativa: string[];
   destacados: string[];
+  masterPlanImage?: string;
   masterPlanStats?: Array<{ valor: string; etiqueta: string }>;
   bondades: string[];
   tecnicaDosMinutos: string[];
@@ -119,61 +200,55 @@ type InvesttiRecorridoStatic = {
 
 export const investtiRecorridoById: Record<InvesttiCatalogDesarrolloId, InvesttiRecorridoStatic> = {
   "canadas-del-valle": {
-    zonaSubtitulo: "km 8.5 · Blvd. Metropolitano · El Patol",
+    zonaSubtitulo:
+      "Blvd. Metropolitano km 8.5 · El Patol — corredor sur con mayor absorción y naturaleza única en Querétaro.",
     mapQuery: "Cañadas del Valle, Blvd. Metropolitano km 8.5, El Patol, Corregidora, Querétaro",
     mapaUrl: "https://maps.app.goo.gl/LYyDBWzE2vatqZMr6",
     mensajeAsesor:
-      "Antes de hablar de metraje, ancla ubicación y naturaleza: El Patol, plusvalía del km 8.5 y escala Investti. Luego recorrido en camioneta y cierre en camper.",
+      "Antes de hablar de metraje, ancla la decisión en ubicación: km 8.5 Metropolitano, naturaleza El Patol y Cimatario, servicios a 6 km y el ritmo de venta del corredor. Luego recorrido en camioneta, presentación en camper y simulador oficial.",
     categoriasOrden: ["Entorno", "Conectividad", "Comercio", "Educación", "Salud"],
-    puntosCercanos: [
-      {
-        id: "el-patol",
-        nombre: "El Patol · reservas naturales",
-        categoria: "Entorno",
-        tiempo: "En desarrollo",
-        detalle: "Paisaje con río, más de 1,500 árboles y contacto directo con la naturaleza.",
-        destacado: true,
-      },
-      ...POIS_METROPOLITANO,
-    ],
-    overviewSubtitulo: "80+ ha · 2,200 lotes · líder del corredor sur",
+    puntosCercanos: POIS_CDV_VALLE,
+    overviewSubtitulo: "80+ ha · 2,200 lotes · 30+ amenidades · líder del corredor sur",
     narrativa: [
-      "Cañadas del Valle ofrece paisajes únicos en Querétaro: más de 1,500 árboles, un río natural y más de 30 amenidades sin salir de casa.",
-      "Etapa 1 en venta 160–250 m²; nueva etapa recomendada 220–260 m² donde el sembrado muestra mayor demanda.",
-      "Zona con plusvalía histórica ~12% anual, precios competitivos en preventa y financiamiento propio hasta 36 meses.",
+      "Cañadas del Valle es el desarrollo de terrenos más grande de Grupo Investti en el km 8.5 del Metropolitano: más de 80 hectáreas, 2,200 lotes, 150,000 m² de áreas verdes y un río natural con más de 1,500 árboles de alturas superiores a 30 m.",
+      "Etapa 1 en venta de 160 a 250 m² (brochure feb 2026) más línea premium con vista a la cañada; nueva etapa recomendada 220–260 m² donde el sembrado y los apartados muestran mayor demanda (mediana ~225 m²).",
+      "Más de 30 amenidades integradas: puente colgante, bike park, casa club, pádel, huerto urbano, parque para perros, tirolesa, restaurante y terraza de eventos — 5 km de andadores y ciclopistas.",
+      "Ticket desde $875,000 · 15 lotes/mes (3× la absorción promedio del corredor) · plusvalía histórica ~12% anual · apartado $15,000 y financiamiento propio hasta 60 meses en simulador oficial.",
     ],
     destacados: [
-      "15 lotes/mes — mayor absorción del corredor sur",
-      "80+ ha · 150,000 m² de áreas verdes",
-      "Puente colgante, bike park y casa club",
-      "Financiamiento propio hasta 36 mensualidades",
+      "15 lotes/mes — líder del corredor sur (3× media)",
+      "80+ ha · 150,000 m² verdes · 5 km andadores",
+      "30+ amenidades: puente, bike park, casa club, pádel",
+      "Apartado $15K · enganche desde 15% · hasta 60 meses",
     ],
     masterPlanStats: [
-      { valor: "2,200", etiqueta: "Lotes" },
-      { valor: "80+ ha", etiqueta: "Superficie" },
+      { valor: "2,200", etiqueta: "Lotes totales" },
+      { valor: "160–547", etiqueta: "m² catálogo" },
       { valor: "15/mes", etiqueta: "Absorción" },
-      { valor: "km 8.5", etiqueta: "Metropolitano" },
+      { valor: "$875K", etiqueta: "Ticket desde" },
     ],
     bondades: [
       "Más de 1,500 árboles existentes con alturas superiores a 30 m",
-      "Río natural que atraviesa el desarrollo",
-      "Más de 30 amenidades integradas",
-      "Respaldo de Grupo Investti — solidez y seguridad jurídica",
-      "Variedad de metrajes y planes de financiamiento",
-      "Seguridad 24/7 y acceso controlado",
-      "Ubicación km 8.5 con plusvalía comprobada",
-      "Precio competitivo en etapa de venta activa",
+      "Río natural y espejos de agua en el desarrollo",
+      "5 km de andadores y ciclopistas · parque lineal y bike park",
+      "Puente colgante, tirolesa infantil, huerto urbano y parque para perros",
+      "Canchas multiusos, pádel, restaurante y terraza de eventos",
+      "Caseta 24/7 · acceso controlado · 3 carriles entrada/salida",
+      "Terrenos premium con vista a la cañada · vecino Preserve Country",
+      "Respaldo Grupo Investti + comercialización BBR con convenio directo",
     ],
     tecnicaDosMinutos: [
-      "Grupo Investti ha desarrollado más de 4 millones de m² — inversión respaldada por experiencia y solidez financiera.",
-      "Cañadas del Valle ofrece paisajes únicos: 1,500+ árboles y río natural para convivir con la naturaleza.",
-      "Más de 25 amenidades que hacen la vida más placentera sin salir de casa.",
-      "Zona con plusvalía ~12% anual y precios competitivos en preventa.",
-      "Financiamiento propio hasta 36 mensualidades — se adapta a distintos presupuestos.",
-      "Recorrido en camioneta + presentación audiovisual; cierra con simulador oficial.",
+      "Grupo Investti: +20 años de experiencia, 2.4 millones de m² desarrollados y 1.3 millones vendidos — seguridad jurídica y planeamiento urbano.",
+      "Ubicación estratégica: Blvd. Metropolitano km 8.5, El Patol, pie del Cimatario y servicios a 6 km (Costco, Fontanar, hospitales).",
+      "Escala única: 2,200 lotes en 80+ ha con 150,000 m² de áreas verdes, río natural y más de 1,500 árboles.",
+      "Más de 30 amenidades sin salir de casa: puente colgante, bike park, casa club, pádel, huerto, pet park y restaurante.",
+      "Producto en venta: Etapa 1 160–250 m² + premium vista cañada; nueva etapa 220–260 m² con sell-through probado en sembrado.",
+      "15 lotes/mes — mayor absorción del corredor sur; ticket desde $875,000 y plusvalía histórica ~12% anual.",
+      "Financiamiento propio Investti: apartado $15,000, enganche desde 15% y plazos hasta 60 meses (simulador oficial BBR).",
+      "Proceso de venta: recorrido en camioneta → presentación audiovisual en camper → simulador → apartado (tarjetas de proceso BBR).",
     ],
     guiaAsesor:
-      "Presenta CDV como líder del corredor: naturaleza + escala + ritmo de venta. Usa simulador Investti antes del apartado.",
+      "Presenta Cañadas del Valle como comunidad de terrenos con naturaleza única: usa el brochure para ubicar etapas y amenidades, valida metraje con sembrado (220–260 m² en mayor demanda; 200–250 m² casi agotado) y cierra con el simulador Investti antes del apartado.",
   },
   "canadas-del-arroyo": {
     zonaSubtitulo: "km 6.4 · Cañadas del Arroyo Reserva",

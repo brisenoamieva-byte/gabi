@@ -56,7 +56,7 @@ function buildInvesttiRecorrido(desarrolloId: InvesttiCatalogDesarrolloId): Reco
           ? metricas.slice(0, 4)
           : [...grupoInvesttiRecorrido.metricas],
       respaldo: [...grupoInvesttiRecorrido.respaldo],
-      fraseAsesor: corredor?.guiaAsesor ?? grupoInvesttiRecorrido.fraseAsesor,
+      fraseAsesor: grupoInvesttiRecorrido.fraseAsesor,
       logoPath: grupoInvesttiRecorrido.logoPath,
     },
     overview: {
@@ -66,6 +66,7 @@ function buildInvesttiRecorrido(desarrolloId: InvesttiCatalogDesarrolloId): Reco
       destacados: [...staticData.destacados],
       logoPath: INVESTTI_DESARROLLO_LOGOS[desarrolloId],
       guiaAsesor: staticData.guiaAsesor,
+      masterPlanImage: staticData.masterPlanImage,
       masterPlanStats: staticData.masterPlanStats
         ? [...staticData.masterPlanStats]
         : undefined,

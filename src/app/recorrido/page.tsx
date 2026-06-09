@@ -1907,27 +1907,32 @@ export default function RecorridoPage() {
                         ))}
                       </div>
                     </div>
-                    {masterPlanImage ? (
+                    {masterPlanImage || masterPlanStats.length > 0 ? (
                       <div className="mt-6 space-y-4">
                         <div>
                           <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
-                            Master plan
+                            {masterPlanImage ? "Master plan" : "Datos clave del desarrollo"}
                           </p>
                           <p className="mt-1 text-sm font-semibold text-slate-500">
-                            Ubica clusters, plazas, parques y accesos con el cliente antes de
-                            filtrar producto.
+                            {masterPlanImage
+                              ? "Ubica clusters, plazas, parques y accesos con el cliente antes de filtrar producto."
+                              : isInvesttiCatalogDesarrollo(activeDesarrollo?.id)
+                                ? "Revisa etapas, metrajes y amenidades con el brochure antes de abrir el simulador."
+                                : "Confirma escala, metraje y ritmo de venta con el cliente antes de filtrar producto."}
                           </p>
                         </div>
-                        <div className="overflow-hidden rounded-2xl border border-[#201044]/10 bg-white shadow-inner">
-                          <Image
-                            src={masterPlanImage}
-                            alt={`Master plan · ${activeContenido.overview.titulo}`}
-                            width={1600}
-                            height={1200}
-                            className="h-auto w-full object-contain"
-                            priority={false}
-                          />
-                        </div>
+                        {masterPlanImage ? (
+                          <div className="overflow-hidden rounded-2xl border border-[#201044]/10 bg-white shadow-inner">
+                            <Image
+                              src={masterPlanImage}
+                              alt={`Master plan · ${activeContenido.overview.titulo}`}
+                              width={1600}
+                              height={1200}
+                              className="h-auto w-full object-contain"
+                              priority={false}
+                            />
+                          </div>
+                        ) : null}
                         {masterPlanStats.length > 0 ? (
                           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             {masterPlanStats.map((stat) => (
