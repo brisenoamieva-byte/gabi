@@ -55,7 +55,7 @@ export function CdvPosicionamientoChart({
   const zonaRight = scaleX(METRAJE_RECOMENDADO_MAX, metrajeMin, metrajeMax);
 
   return (
-    <InvesttiFigure caption="Mismo promedio de metraje que en el gráfico de rangos. El tamaño del círculo indica lotes vendidos al mes.">
+    <InvesttiFigure caption="Mismo ø que el gráfico de rangos (sembrado en CDV, Arroyo y Simaté). El círculo indica lotes vendidos al mes.">
       <InvesttiChartHeader
         title="Precio y metraje en el corredor"
         subtitle="Promedio de metraje vs. precio por m²"

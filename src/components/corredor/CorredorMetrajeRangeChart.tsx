@@ -403,8 +403,8 @@ export function CorredorMetrajeRangeChart({
           </div>
           {chartBody}
           <InvesttiFootnote>
-            Extremos: m² mínimo y máximo del catálogo. El valor ø es el promedio de metraje — en
-            Cañadas del Valle, del sembrado v.4; en los demás, (mín+máx)/2 del catálogo.
+            Extremos: m² mínimo y máximo del catálogo. ø = promedio de metraje — sembrado Control
+            Gerencia en CDV, Arroyo y Simaté; (mín+máx)/2 del catálogo en el resto.
           </InvesttiFootnote>
         </div>
       </figure>
@@ -471,8 +471,8 @@ export function CorredorMetrajeRangeChart({
         <p>
           Extremos: <strong className="text-[#201044]">mín</strong> y{" "}
           <strong className="text-[#201044]">máx</strong> del catálogo.{" "}
-          <strong className="text-[#201044]">ø</strong> = promedio de metraje (sembrado en CDV;
-          (mín+máx)/2 en el resto).
+          <strong className="text-[#201044]">ø</strong> = promedio de metraje (sembrado en CDV, Arroyo
+          y Simaté; (mín+máx)/2 en el resto).
         </p>
       </div>
     </section>

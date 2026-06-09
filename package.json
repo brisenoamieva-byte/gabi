@@ -16,6 +16,7 @@
     "sembrado:import": "node scripts/import-pasaje-sembrado.mjs",
     "sembrado:import:la-vista": "node scripts/import-la-vista-sembrado.mjs",
     "analyze:cdv-sembrado": "node scripts/analyze-cdv-sembrado-temporal.mjs",
+    "generate:investti-sembrado-promedios": "node scripts/generate-investti-sembrado-promedios.mjs",
     "analyze:investti-simulador": "node scripts/extract-investti-simulador.cjs",
     "propuesta:import:nubo": "node scripts/import-nubo-propuesta.mjs",
     "propuesta:assets:nubo": "node scripts/extract-nubo-pptx-assets.mjs",

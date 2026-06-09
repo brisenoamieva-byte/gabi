@@ -1,17 +1,29 @@
 import { CDV_SEMBRADO_RESUMEN } from "./cdv-sembrado-analisis";
+import { INVESTTI_SEMBRADO_METRAJE_PROMEDIO } from "./investti-sembrado-promedios.generated";
 import type { CorredorDesarrollo } from "./types";
 
 const CANADAS_DEL_VALLE_ID = "canadas-del-valle";
 
+const SEMBRADO_METRAJE_PROMEDIO: Record<string, number> = {
+  [CANADAS_DEL_VALLE_ID]: CDV_SEMBRADO_RESUMEN.promedioSembradoM2,
+  ...INVESTTI_SEMBRADO_METRAJE_PROMEDIO,
+};
+
+/** Desarrollos cuyo ø proviene de sembrado Control Gerencia (no estimación de catálogo). */
+export const DESARROLLOS_CON_SEMBRADO_METRAJE = Object.keys(SEMBRADO_METRAJE_PROMEDIO);
+
 /**
  * Promedio de metraje para gráficas comparativas.
- * CDV: promedio real del sembrado v.4. Resto: punto medio del rango de catálogo (mín+máx)/2.
+ * Investti con sembrado: promedio real de todos los lotes. Resto: (mín+máx)/2 del catálogo.
  */
 export function getMetrajePromedio(d: CorredorDesarrollo): number {
-  if (d.id === CANADAS_DEL_VALLE_ID) {
-    return CDV_SEMBRADO_RESUMEN.promedioSembradoM2;
-  }
+  const sembrado = SEMBRADO_METRAJE_PROMEDIO[d.id];
+  if (sembrado != null) return sembrado;
   return Math.round((d.loteMinM2 + d.loteMaxM2) / 2);
+}
+
+export function tieneSembradoMetraje(desarrolloId: string): boolean {
+  return desarrolloId in SEMBRADO_METRAJE_PROMEDIO;
 }
 
 export type MetrajeChartSort = "km" | "min" | "amplitud";
