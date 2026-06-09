@@ -7,10 +7,7 @@ import { PropuestaSharePanel } from "@/components/propuestas/PropuestaSharePanel
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
 import { getPropuestaBySlug } from "@/lib/propuestas/registry";
 import { requireOperatorMessage } from "@/lib/gabi/operator";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
+import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
 import Link from "next/link";
 
 export default function PropuestaDetailPage() {
@@ -24,8 +21,7 @@ export default function PropuestaDetailPage() {
 
   useEffect(() => {
     if (!localStorage.getItem("gabi_user")) {
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+      router.replace(OPERATOR_LOGIN_PATH);
       return;
     }
     setAuthReady(true);

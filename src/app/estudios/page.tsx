@@ -7,10 +7,7 @@ import { ArrowLeft, ArrowRight, BarChart3, Lock } from "lucide-react";
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
 import { ESTUDIOS_REGISTRY } from "@/lib/estudios/registry";
 import { requireOperatorMessage } from "@/lib/gabi/operator";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
+import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
 
 export default function EstudiosPage() {
   const router = useRouter();
@@ -19,8 +16,7 @@ export default function EstudiosPage() {
 
   useEffect(() => {
     if (!localStorage.getItem("gabi_user")) {
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+      router.replace(OPERATOR_LOGIN_PATH);
       return;
     }
     setAuthReady(true);

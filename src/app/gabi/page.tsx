@@ -12,11 +12,7 @@ import {
   modulosPorLinea,
   type GabiLineaNegocio,
 } from "@/lib/gabi/ecosystem";
-import { requireOperatorMessage } from "@/lib/gabi/operator";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
+import { OPERATOR_LOGIN_PATH, requireOperatorMessage } from "@/lib/gabi/operator";
 
 const LINEAS: GabiLineaNegocio[] = [
   "plataforma",
@@ -33,8 +29,7 @@ export default function GabiCentroPage() {
   useEffect(() => {
     const storedUser = localStorage.getItem("gabi_user");
     if (!storedUser) {
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+      router.replace(OPERATOR_LOGIN_PATH);
       return;
     }
     setAuthReady(true);
@@ -53,8 +48,8 @@ export default function GabiCentroPage() {
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8FAFC] px-6 text-[#201044]">
         <GabiSistemaMark size="md" />
         <p className="max-w-md text-center text-sm text-slate-600">{requireOperatorMessage()}</p>
-        <Link href="/dashboard" className="text-sm font-semibold text-[#201044] underline">
-          Volver al dashboard
+        <Link href={OPERATOR_LOGIN_PATH} className="text-sm font-semibold text-[#201044] underline">
+          Entrar como operador
         </Link>
       </main>
     );
@@ -66,7 +61,7 @@ export default function GabiCentroPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
-              href="/dashboard"
+              href="/"
               className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200"
               aria-label="Volver"
             >

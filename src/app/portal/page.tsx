@@ -139,6 +139,13 @@ export default function PortalLoginPage() {
               {loading ? "Validando..." : "Entrar al portal"}
             </button>
           </form>
+
+          <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
+            ¿Eres el operador de gabi?{" "}
+            <Link href="/operador" className="font-semibold text-[#13315C] underline">
+              Centro operador
+            </Link>
+          </p>
         </motion.div>
       </section>
     </main>

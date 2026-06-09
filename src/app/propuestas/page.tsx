@@ -7,10 +7,7 @@ import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
 import { PROPUESTAS_REGISTRY } from "@/lib/propuestas/registry";
 import { requireOperatorMessage } from "@/lib/gabi/operator";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
+import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
 
 export default function PropuestasPage() {
   const router = useRouter();
@@ -19,8 +16,7 @@ export default function PropuestasPage() {
 
   useEffect(() => {
     if (!localStorage.getItem("gabi_user")) {
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+      router.replace(OPERATOR_LOGIN_PATH);
       return;
     }
     setAuthReady(true);

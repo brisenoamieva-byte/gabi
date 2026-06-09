@@ -1,5 +1,7 @@
 import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
 
+export const OPERATOR_LOGIN_PATH = "/operador";
+
 /** Correos con acceso de operador gabi (cerebro integral). */
 const OPERATOR_EMAILS = new Set(
   [
@@ -33,5 +35,5 @@ export function isGabiOperator(session: OperatorSessionLike | null | undefined):
 }
 
 export function requireOperatorMessage(): string {
-  return "Esta sección es del operador gabi. Inicia sesión con tu cuenta de director.";
+  return "Esta sección es del operador gabi. Entra en /operador con tu correo autorizado.";
 }

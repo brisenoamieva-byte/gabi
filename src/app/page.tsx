@@ -130,6 +130,12 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Link
+              href="/operador"
+              className="hidden shrink-0 text-sm font-medium text-gabi-navy/55 transition hover:text-gabi-navy sm:inline-flex"
+            >
+              Centro operador
+            </Link>
+            <Link
               href="/portal"
               className="inline-flex shrink-0 items-center gap-1.5 border border-gabi-navy/15 bg-white px-3.5 py-2 text-sm font-medium text-gabi-navy transition hover:border-gabi-navy/30"
             >
@@ -161,6 +167,15 @@ export default function LandingPage() {
                   </a>
                 </li>
               ))}
+              <li>
+                <Link
+                  href="/operador"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="block px-2 py-2.5 text-sm font-medium text-gabi-navy"
+                >
+                  Centro operador
+                </Link>
+              </li>
             </ul>
           </nav>
         ) : null}
