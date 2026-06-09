@@ -17,6 +17,8 @@
     "sembrado:import:la-vista": "node scripts/import-la-vista-sembrado.mjs",
     "analyze:cdv-sembrado": "node scripts/analyze-cdv-sembrado-temporal.mjs",
     "analyze:investti-simulador": "node scripts/extract-investti-simulador.cjs",
+    "propuesta:import:nubo": "node scripts/import-nubo-propuesta.mjs",
+    "propuesta:assets:nubo": "node scripts/extract-nubo-pptx-assets.mjs",
     "leads:import:xperience": "node scripts/import-xperience-leads.mjs",
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",

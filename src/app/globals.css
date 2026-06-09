@@ -68,3 +68,22 @@ body {
     text-wrap: balance;
   }
 }
+
+@media print {
+  .gabi-no-print {
+    display: none !important;
+  }
+
+  .gabi-report-print {
+    background: white !important;
+  }
+
+  .gabi-report-print .shadow-\[0_1px_0_rgba\(0\,0\,0\,0\.06\)\,0_8px_40px_rgba\(28\,24\,48\,0\.07\)\] {
+    box-shadow: none !important;
+  }
+
+  .propuesta-deck-root {
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+}

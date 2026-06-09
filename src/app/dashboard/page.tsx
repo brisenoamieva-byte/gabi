@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  Brain,
   Building2,
   Calculator,
   ChevronRight,
@@ -13,6 +14,7 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import { useGabiOperator } from "@/components/gabi/useGabiOperator";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -64,6 +66,7 @@ const quickActions: QuickAction[] = [
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { isOperator } = useGabiOperator();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
   const [portal, setPortal] = useState<PortalSession | null>(null);
@@ -259,6 +262,37 @@ export default function DashboardPage() {
             </div>
           </Link>
         </motion.div>
+
+        {isOperator ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.055 }}
+          >
+            <Link
+              href="/gabi"
+              className="group flex min-h-[7rem] flex-col justify-between rounded-2xl border border-[#201044]/20 bg-[#201044] p-5 text-white shadow-sm transition hover:shadow-md active:scale-[0.99] md:p-6"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="grid h-12 w-12 place-items-center rounded-xl bg-white/12">
+                  <Brain className="h-6 w-6" />
+                </span>
+                <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/20 text-white/80 transition group-hover:border-white/40">
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+                  Operador · Ricardo Briseño
+                </p>
+                <h2 className="mt-1 text-xl font-black">Centro gabi</h2>
+                <p className="mt-1 text-sm text-white/75">
+                  Propuestas, estudios, corredor sur y operación integral.
+                </p>
+              </div>
+            </Link>
+          </motion.div>
+        ) : null}
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}

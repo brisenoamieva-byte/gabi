@@ -38,12 +38,20 @@ export default function CorredorInvesttiPage() {
       <div className="px-4 py-6 md:px-6 md:py-10">
         <div className={`${investtiReport.sheet} ${investtiReport.sans}`}>
           <div className={`flex items-center justify-between gap-4 border-b ${investtiReport.rule} px-6 py-3 md:px-10`}>
-            <Link
-              href="/corredor"
-              className="text-[12px] text-neutral-500 underline-offset-2 hover:text-[#1C1830] hover:underline"
-            >
-              ← Volver al corredor
-            </Link>
+            <div className="flex flex-wrap items-center gap-4 text-[12px]">
+              <Link
+                href="/estudios"
+                className="text-neutral-500 underline-offset-2 hover:text-[#1C1830] hover:underline"
+              >
+                ← Estudios de mercado
+              </Link>
+              <Link
+                href="/corredor"
+                className="text-neutral-400 underline-offset-2 hover:text-[#1C1830] hover:underline"
+              >
+                Corredor
+              </Link>
+            </div>
             <GabiSistemaMark size="sm" align="end" tone="report" />
           </div>
           <InvesttiMetrajeDashboard />
