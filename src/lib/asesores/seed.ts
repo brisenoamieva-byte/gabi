@@ -7,15 +7,15 @@ export type AsesoresSeedResult = {
   skipped: number;
 };
 
-const BBR_DESARROLLO_IDS = new Set(
+const BBR_DESARROLLO_IDS = new Set<string>(
   desarrollos.filter((item) => item.comercializador === "BBR Habitarea").map((item) => item.id),
 );
 
-const INVESTTI_IDS = new Set(INVESTTI_CATALOG_DESARROLLO_IDS);
+const INVESTTI_IDS = new Set<string>(INVESTTI_CATALOG_DESARROLLO_IDS);
 
 const mergeUniqueIds = (current: string[], additions: string[]) => {
   const merged = new Set([...current, ...additions]);
-  return [...merged];
+  return Array.from(merged);
 };
 
 const isBbrAsesor = (desarrollosIds: string[]) =>
