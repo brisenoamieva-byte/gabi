@@ -12,6 +12,7 @@ import {
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
+import { isInvesttiCatalogDesarrollo } from "@/lib/catalog/investti-desarrollos";
 import { getDatosBancarios, type Asesor, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
 import {
   readPortalSession,
@@ -282,7 +283,9 @@ export default function CotizadorPage() {
     );
   }
 
-  if (!clusterId) {
+  const isInvesttiTerreno = isInvesttiCatalogDesarrollo(desarrollo.id);
+
+  if (!clusterId && !isInvesttiTerreno) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F2F0E9] px-6 text-center text-[#1e293b]">
         <p className="text-base font-semibold sm:text-lg">

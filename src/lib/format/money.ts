@@ -9,6 +9,13 @@ const mxnFormatter = new Intl.NumberFormat("es-MX", {
   maximumFractionDigits: 2,
 });
 
+const mxnTicketFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
 const amountFormatter = new Intl.NumberFormat("es-MX", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -17,6 +24,10 @@ const amountFormatter = new Intl.NumberFormat("es-MX", {
 /** Precio con símbolo $ y 2 decimales (es-MX). */
 export const formatPrice = (price: number): string =>
   mxnFormatter.format(roundMoney(price));
+
+/** Ticket de lote sin decimales (es-MX). */
+export const formatTicket = (value: number): string =>
+  mxnTicketFormatter.format(Math.round(Number.isFinite(value) ? value : 0));
 
 /** Monto sin símbolo, con separador de miles y 2 decimales. */
 export const formatAmountInput = (value: number): string => {

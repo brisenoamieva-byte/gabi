@@ -1,132 +1,110 @@
 "use client";
 
-import {
-  ArrowRight,
-  BarChart3,
-  Building2,
-  Calculator,
-  Kanban,
-  Menu,
-  Route,
-  Sprout,
-  WifiOff,
-  X,
-} from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
-import { DemoBookingEmbed } from "@/components/DemoBookingEmbed";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
-import { ScheduleDemoButton } from "@/components/ScheduleDemoButton";
 
-const COMMERCIAL_FLOW = [
-  "Prospecto",
-  "Recorrido",
-  "Cotización",
-  "CRM",
-  "Sembrado",
-  "Venta",
+const FLUJO = [
+  { paso: "1", titulo: "Prospecto", texto: "Llega por campaña, formulario o visita." },
+  { paso: "2", titulo: "Recorrido", texto: "El asesor presenta el desarrollo con guion y materiales." },
+  { paso: "3", titulo: "Cotización", texto: "Precio y esquema de pago con inventario real." },
+  { paso: "4", titulo: "Seguimiento", texto: "El lead queda en CRM con etapa e historial." },
+  { paso: "5", titulo: "Apartado", texto: "Sembrado actualizado: unidad, cliente, pagos." },
+  { paso: "6", titulo: "Cierre", texto: "Expediente, comisiones y documentación." },
+] as const;
+
+const MODULOS = [
+  {
+    grupo: "En la visita",
+    items: [
+      {
+        nombre: "Recorrido guiado",
+        detalle:
+          "Guion por etapas, documentos del desarrollo y registro del prospecto. Funciona sin internet si se precargó antes.",
+      },
+      {
+        nombre: "Cotizador y simulador",
+        detalle:
+          "Cotiza con precios e inventario vigentes. Esquemas de pago alineados a las reglas comerciales de cada desarrollo.",
+      },
+    ],
+  },
+  {
+    grupo: "Seguimiento comercial",
+    items: [
+      {
+        nombre: "CRM de leads",
+        detalle:
+          "Pipeline por etapa, asignación a asesor, campaña de origen y detalle de cada prospecto.",
+      },
+      {
+        nombre: "Campañas",
+        detalle: "Origen de cada lead (WhatsApp, landing, portales) para saber qué canal trae resultados.",
+      },
+    ],
+  },
+  {
+    grupo: "Operación diaria",
+    items: [
+      {
+        nombre: "Sembrado e inventario",
+        detalle:
+          "Estatus de cada lote: disponible, apartado, vendido. Una sola fuente por unidad, no varios Excel.",
+      },
+      {
+        nombre: "Expedientes",
+        detalle:
+          "Checklist de venta, comisiones y documentos del cliente hasta escrituración.",
+      },
+    ],
+  },
+  {
+    grupo: "Análisis y mercado",
+    items: [
+      {
+        nombre: "Inteligencia de mercado",
+        detalle:
+          "Mapa y comparativo de desarrollos: metrajes, precios y absorción en la zona donde opera la comercializadora.",
+      },
+      {
+        nombre: "Estudios de mercado",
+        detalle:
+          "Memos para dirección con recomendación, evidencia y simulador — publicados cuando hay una decisión de producto o precio que documentar.",
+      },
+    ],
+  },
 ] as const;
 
 const navLinks = [
-  { href: "#producto", label: "Plataforma" },
-  { href: "#agendar-demo", label: "Demo" },
-];
-
-const features = [
-  {
-    icon: Route,
-    title: "Recorrido guiado",
-    description:
-      "Guion, materiales y captura del prospecto en showroom o campo. El asesor avanza sin improvisar.",
-  },
-  {
-    icon: Calculator,
-    title: "Cotizador integrado",
-    description:
-      "Cotiza con inventario real del desarrollo. Cada propuesta queda ligada al lead y al asesor.",
-  },
-  {
-    icon: Kanban,
-    title: "CRM de leads",
-    description:
-      "Pipeline comercial, seguimiento por asesor, spam, duplicados e interés — visible para gerencia.",
-  },
-  {
-    icon: Sprout,
-    title: "Sembrado e inventario",
-    description:
-      "Disponibilidad, apartados y operaciones comerciales en una sola fuente de verdad por unidad.",
-  },
-  {
-    icon: BarChart3,
-    title: "Métricas y campañas",
-    description:
-      "Reportes por desarrollo, canales de captación y KPIs del embudo comercial.",
-  },
-  {
-    icon: Building2,
-    title: "Multi-desarrollo",
-    description:
-      "Clusters, prototipos, precios y equipos por proyecto. Cada comercializadora opera su cartera.",
-  },
-];
-
-const platformHighlights = [
-  { label: "Recorrido", detail: "Etapa 2 · Necesidades" },
-  { label: "Mis leads", detail: "12 activos · 3 cotizaron" },
-  { label: "Sembrado", detail: "84 disponibles · 6 apartados" },
+  { href: "#que-es", label: "Qué es" },
+  { href: "#modulos", label: "Módulos" },
+  { href: "#equipos", label: "Quién lo usa" },
 ] as const;
 
-function ProductPreview() {
+function FlujoVisual() {
   return (
-    <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-8 -top-8 h-48 w-48 rounded-full bg-gabi-teal/10 blur-3xl"
-      />
-      <div className="relative overflow-hidden rounded-2xl border border-gabi-navy/10 bg-white shadow-[0_24px_48px_-12px_rgba(19,49,92,0.12)]">
-        <div className="flex items-center justify-between border-b border-gabi-line px-4 py-3">
-          <span className="text-xs font-medium text-gabi-muted">gabi · La Vista</span>
-          <span className="rounded-md bg-gabi-teal/10 px-2 py-0.5 text-[10px] font-semibold text-gabi-teal">
-            Plataforma integral
-          </span>
-        </div>
-
-        <div className="p-4 sm:p-5">
-          <p className="text-base font-semibold text-gabi-navy">Ciclo comercial conectado</p>
-          <p className="mt-1 text-xs text-gabi-navy/55">
-            Del primer contacto al apartado, sin saltar entre herramientas.
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-1">
-            {COMMERCIAL_FLOW.map((stage, index) => (
-              <span
-                key={stage}
-                className={`rounded-md px-2 py-1 text-[10px] font-semibold ${
-                  index <= 3
-                    ? "bg-gabi-navy text-white"
-                    : "bg-gabi-surface text-gabi-muted"
-                }`}
-              >
-                {stage}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {platformHighlights.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between rounded-xl bg-gabi-surface px-3.5 py-2.5 text-sm"
-              >
-                <span className="font-medium text-gabi-navy">{item.label}</span>
-                <span className="text-xs text-gabi-navy/60">{item.detail}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="border border-gabi-line bg-white">
+      <div className="border-b border-gabi-line px-4 py-3">
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gabi-muted">
+          Ciclo comercial
+        </p>
+        <p className="mt-1 font-[Georgia,'Times_New_Roman',serif] text-lg text-gabi-navy">
+          De prospecto a venta cerrada
+        </p>
       </div>
+      <ol className="divide-y divide-gabi-line">
+        {FLUJO.map((f) => (
+          <li key={f.paso} className="flex gap-4 px-4 py-3.5">
+            <span className="mt-0.5 w-6 shrink-0 text-sm tabular-nums text-gabi-muted">{f.paso}</span>
+            <div>
+              <p className="text-sm font-semibold text-gabi-navy">{f.titulo}</p>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-gabi-navy/60">{f.texto}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
@@ -135,34 +113,27 @@ export default function LandingPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <main className="min-h-dvh bg-white text-gabi-navy">
-      <header className="sticky top-0 z-30 border-b border-gabi-line/80 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+    <main className="min-h-dvh bg-[#FDFCFA] text-gabi-navy">
+      <header className="sticky top-0 z-30 border-b border-gabi-line bg-[#FDFCFA]/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-4 md:px-8">
           <GabiLogo variant="header" href="/" priority />
-          <nav className="hidden items-center gap-7 md:flex">
+          <nav className="hidden items-center gap-6 md:flex">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-gabi-navy/60 transition hover:text-gabi-navy"
+                className="text-sm text-gabi-navy/55 transition hover:text-gabi-navy"
               >
                 {link.label}
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <ScheduleDemoButton
-              variant="nav"
-              label="Agendar demo"
-              scrollToEmbed
-              showIcon={false}
-            />
+          <div className="flex items-center gap-2">
             <Link
               href="/portal"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-gabi-navy px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-gabi-navy-light"
+              className="inline-flex shrink-0 items-center gap-1.5 border border-gabi-navy/15 bg-white px-3.5 py-2 text-sm font-medium text-gabi-navy transition hover:border-gabi-navy/30"
             >
-              <span className="hidden sm:inline">Portal</span>
-              <span className="sm:hidden">Entrar</span>
+              Entrar
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <button
@@ -170,7 +141,7 @@ export default function LandingPage() {
               aria-expanded={mobileNavOpen}
               aria-label={mobileNavOpen ? "Cerrar menú" : "Abrir menú"}
               onClick={() => setMobileNavOpen((open) => !open)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gabi-line text-gabi-navy md:hidden"
+              className="inline-flex h-9 w-9 items-center justify-center border border-gabi-line md:hidden"
             >
               {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -184,7 +155,7 @@ export default function LandingPage() {
                   <a
                     href={link.href}
                     onClick={() => setMobileNavOpen(false)}
-                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gabi-navy/80"
+                    className="block px-2 py-2.5 text-sm text-gabi-navy/80"
                   >
                     {link.label}
                   </a>
@@ -195,96 +166,161 @@ export default function LandingPage() {
         ) : null}
       </header>
 
-      <section className="px-5 pb-16 pt-14 md:px-8 md:pb-24 md:pt-20">
-        <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-          <div>
-            <p className="text-sm font-medium text-gabi-teal">
-              Plataforma comercial inmobiliaria integral
+      {/* Hero */}
+      <section className="px-5 pb-14 pt-12 md:px-8 md:pb-20 md:pt-16">
+        <div className="mx-auto grid max-w-3xl gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-start lg:gap-14">
+          <div id="que-es">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gabi-muted">
+              Sistema comercial inmobiliario
             </p>
-            <h1 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight sm:text-[2.75rem]">
-              Del prospecto a la venta, en un solo lugar.
+            <h1 className="mt-4 font-[Georgia,'Times_New_Roman',serif] text-[2rem] font-normal leading-[1.15] tracking-tight md:text-[2.35rem]">
+              Una sola herramienta para todo el ciclo comercial inmobiliario.
             </h1>
-            <p className="mt-5 max-w-lg text-base leading-relaxed text-gabi-navy/65">
-              gabi unifica recorrido, cotización, CRM, sembrado y métricas para que asesores y
-              gerencia operen el ciclo comercial completo — en showroom, campo y oficina.
+            <p className="mt-5 text-[15px] leading-relaxed text-gabi-navy/70">
+              <strong className="font-medium text-gabi-navy">gabi</strong> concentra en un solo
+              sistema lo que una comercializadora necesita para vender desarrollos: visitas con el
+              cliente, cotizaciones, seguimiento de leads, inventario, expedientes y análisis de
+              mercado.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <ScheduleDemoButton variant="hero" label="Agendar demo" scrollToEmbed />
-              <Link
-                href="/portal"
-                className="text-sm font-medium text-gabi-navy/55 transition hover:text-gabi-navy"
-              >
-                Ya tengo acceso →
-              </Link>
-            </div>
+            <p className="mt-4 text-[15px] leading-relaxed text-gabi-navy/70">
+              Lo usan los asesores en showroom, la gerencia en oficina y la dirección cuando hay
+              decisiones de producto o precio que respaldar con datos.
+            </p>
           </div>
-          <ProductPreview />
+          <FlujoVisual />
         </div>
       </section>
 
-      <section id="producto" className="border-t border-gabi-line bg-gabi-surface px-5 py-16 md:px-8 md:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Más que una guía: tu operación comercial completa.
-            </h2>
-            <p className="mt-3 text-base leading-relaxed text-gabi-navy/60">
-              Antes acompañaba la visita. Hoy conecta cada etapa del embudo — captación, presentación,
-              cotización, seguimiento, apartado y reportes — en una plataforma pensada para
-              comercializadoras inmobiliarias en México.
+      {/* Por qué existe */}
+      <section className="border-t border-gabi-line bg-white px-5 py-14 md:px-8 md:py-16">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="font-[Georgia,'Times_New_Roman',serif] text-xl md:text-2xl">
+            Por qué existe gabi
+          </h2>
+          <div className="mt-5 space-y-4 text-[15px] leading-relaxed text-gabi-navy/70">
+            <p>
+              Antes, cada etapa vivía en un lugar distinto: guiones en PDF, precios en Excel,
+              leads en otro CRM, sembrado en hojas sueltas. Eso genera duplicados, versiones viejas
+              y poca visibilidad para gerencia.
+            </p>
+            <p>
+              gabi nació para unir ese flujo en una sola aplicación — en tablet en el showroom, en
+              computadora en oficina y con respaldo en la nube cuando hay conexión.
             </p>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <article
-                key={feature.title}
-                className="rounded-xl border border-gabi-navy/8 bg-white p-5"
-              >
-                <feature.icon className="h-5 w-5 text-gabi-navy/70" strokeWidth={1.75} />
-                <h3 className="mt-3 text-base font-semibold">{feature.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-gabi-navy/60">
-                  {feature.description}
-                </p>
-              </article>
+      {/* Módulos */}
+      <section id="modulos" className="border-t border-gabi-line px-5 py-14 md:px-8 md:py-16">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="font-[Georgia,'Times_New_Roman',serif] text-xl md:text-2xl">
+            Qué incluye
+          </h2>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-gabi-navy/65">
+            No es un solo módulo: son las piezas que el equipo usa según el momento del proceso.
+          </p>
+
+          <div className="mt-10 space-y-10">
+            {MODULOS.map((bloque) => (
+              <div key={bloque.grupo}>
+                <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] text-gabi-muted">
+                  {bloque.grupo}
+                </h3>
+                <ul className="mt-4 divide-y divide-gabi-line border border-gabi-line bg-white">
+                  {bloque.items.map((item) => (
+                    <li key={item.nombre} className="px-4 py-4 md:px-5">
+                      <p className="text-sm font-semibold text-gabi-navy">{item.nombre}</p>
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-gabi-navy/60">
+                        {item.detalle}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-gabi-navy/8 bg-white p-5">
-              <WifiOff className="h-5 w-5 text-gabi-navy/70" strokeWidth={1.75} />
-              <h3 className="mt-3 text-base font-semibold">Lista para la visita</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-gabi-navy/60">
-                Precarga inventario y documentos antes de salir al showroom. El recorrido sigue
-                aunque falle el wifi.
+        </div>
+      </section>
+
+      {/* Equipos */}
+      <section
+        id="equipos"
+        className="border-t border-gabi-line bg-gabi-surface px-5 py-14 md:px-8 md:py-16"
+      >
+        <div className="mx-auto max-w-3xl">
+          <h2 className="font-[Georgia,'Times_New_Roman',serif] text-xl md:text-2xl">
+            Quién lo usa
+          </h2>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <article className="border border-gabi-line bg-white p-5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gabi-muted">
+                Asesor
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-gabi-navy/70">
+                Recorrido con el cliente, cotización en sitio, consulta de disponibilidad y sus
+                propios leads. Entra con PIN desde tablet o celular.
               </p>
             </article>
-            <article className="rounded-xl border border-gabi-navy/8 bg-white p-5">
-              <Building2 className="h-5 w-5 text-gabi-navy/70" strokeWidth={1.75} />
-              <h3 className="mt-3 text-base font-semibold">Roles claros</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-gabi-navy/60">
-                El asesor opera en campo con PIN. Gerencia administra leads, sembrado, campañas y
-                reportes desde el panel central.
+            <article className="border border-gabi-line bg-white p-5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gabi-muted">
+                Gerencia
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-gabi-navy/70">
+                Panel administrativo: todos los leads, sembrado, apartados, expedientes, campañas y
+                métricas por desarrollo.
+              </p>
+            </article>
+            <article className="border border-gabi-line bg-white p-5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gabi-muted">
+                Dirección / producto
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-gabi-navy/70">
+                Estudios de mercado, comparativos del corredor y simuladores para definir precio,
+                metraje y esquemas de pago con datos reales.
               </p>
             </article>
           </div>
 
-          <p className="mt-10 max-w-2xl text-sm leading-relaxed text-gabi-navy/50">
-            La comercializadora entra con su cuenta, elige desarrollo y arranca: recorrido con
-            cliente, registro de leads, cotización o revisión de disponibilidad. Sin integraciones
-            frágiles ni datos repartidos en hojas de cálculo.
-          </p>
+          <div className="mt-8 border border-gabi-line bg-white p-5">
+            <p className="text-sm leading-relaxed text-gabi-navy/70">
+              <strong className="font-medium text-gabi-navy">Sin conexión en showroom:</strong> el
+              asesor puede precargar documentos e inventario antes de la visita. Los leads se guardan
+              en el dispositivo y se sincronizan al volver el internet.
+            </p>
+          </div>
         </div>
       </section>
 
-      <DemoBookingEmbed />
+      <section className="border-t border-gabi-line px-5 py-14 md:px-8 md:py-16">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="font-[Georgia,'Times_New_Roman',serif] text-xl md:text-2xl">
+            Acceso
+          </h2>
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-gabi-navy/70">
+            gabi es de uso interno para equipos comerciales con credenciales. Si ya tienes acceso,
+            entra por el portal.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/portal"
+              className="inline-flex items-center gap-2 border border-gabi-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-gabi-navy transition hover:border-gabi-navy/30"
+            >
+              Ir al portal
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      <section className="border-t border-gabi-line px-5 py-12 md:px-8">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <section className="border-t border-gabi-line bg-gabi-surface px-5 py-10 md:px-8">
+        <div className="mx-auto flex max-w-3xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-gabi-navy">¿Ya usas gabi?</p>
-            <p className="mt-1 text-sm text-gabi-navy/55">
-              Instálala en tu tablet para operar recorridos, leads y cotizaciones en showroom.
+            <p className="text-sm font-medium text-gabi-navy">App en tablet</p>
+            <p className="mt-1 text-[13px] text-gabi-navy/55">
+              Quien ya tiene acceso puede instalar gabi en el dispositivo de showroom.
             </p>
           </div>
           <InstallGabiApp variant="compact" />
@@ -292,25 +328,19 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-gabi-line px-5 py-10 md:px-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-start">
-            <div>
-              <GabiLogo variant="platform" />
-              <p className="mt-3 max-w-xs text-sm leading-relaxed text-gabi-navy/45">
-                Plataforma comercial integral para comercializadoras inmobiliarias en México.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
-              <Link href="/portal" className="text-gabi-navy/55 hover:text-gabi-navy">
-                Portal
-              </Link>
-              <a href="#agendar-demo" className="text-gabi-navy/55 hover:text-gabi-navy">
-                Agendar demo
-              </a>
-              <a href="mailto:hola@gabi.mx" className="text-gabi-navy/55 hover:text-gabi-navy">
-                hola@gabi.mx
-              </a>
-            </div>
+        <div className="mx-auto max-w-3xl">
+          <GabiLogo variant="platform" />
+          <p className="mt-4 max-w-md text-[13px] leading-relaxed text-gabi-navy/50">
+            Plataforma comercial para comercializadoras inmobiliarias. Recorrido, cotización, CRM,
+            sembrado y análisis de mercado en un solo lugar.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            <Link href="/portal" className="text-gabi-navy/55 hover:text-gabi-navy">
+              Portal
+            </Link>
+            <a href="mailto:hola@gabi.mx" className="text-gabi-navy/55 hover:text-gabi-navy">
+              hola@gabi.mx
+            </a>
           </div>
           <p className="mt-8 border-t border-gabi-line pt-6 text-xs text-gabi-navy/40">
             © {new Date().getFullYear()} gabi

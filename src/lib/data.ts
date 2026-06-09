@@ -3,9 +3,15 @@
 // La Vista Residencial - BBR Habitarea
 
 import {
+  investtiCatalogClusters,
+  investtiCatalogDesarrollos,
+} from "@/lib/catalog/investti-desarrollos";
+import {
   pasajeAlamosDisponibilidades,
   pasajeAlamosPrototipos,
 } from "@/lib/catalog/pasaje-alamos.generated";
+
+const INVESTTI_DESARROLLO_IDS = investtiCatalogDesarrollos.map((d) => d.id);
 
 export interface Cluster {
   id: string
@@ -325,7 +331,8 @@ export const clusters: Cluster[] = [
     fotoPortada: '/desarrollos/pasaje-alamos/oficinas-portada.jpg',
     logo: '/logos/pasaje-alamos.png',
     activo: true
-  }
+  },
+  ...investtiCatalogClusters,
 ]
 
 export const prototipos: Prototipo[] = [
@@ -843,7 +850,7 @@ export const asesores: Asesor[] = [
     pin: '1234',
     rol: 'director',
     activo: true,
-    desarrollosIds: ['la-vista-residencial']
+    desarrollosIds: ['la-vista-residencial', 'pasaje-alamos', ...INVESTTI_DESARROLLO_IDS]
   },
   {
     id: 'rodrigo',
@@ -852,7 +859,7 @@ export const asesores: Asesor[] = [
     pin: '5678',
     rol: 'asesor',
     activo: true,
-    desarrollosIds: ['la-vista-residencial']
+    desarrollosIds: ['la-vista-residencial', ...INVESTTI_DESARROLLO_IDS]
   }
 ]
 
@@ -899,7 +906,8 @@ export const desarrollos: Desarrollo[] = [
       provider: 'none',
       enabled: false
     }
-  }
+  },
+  ...investtiCatalogDesarrollos,
 ]
 
 export const getDesarrollosByIds = (desarrollosIds: string[]): Desarrollo[] => {
@@ -1395,6 +1403,9 @@ export const getDatosBancarios = (desarrolloId?: string | null): DatosBancarios 
   if (desarrolloId === 'pasaje-alamos') {
     return datosBancariosPasajeAlamos
   }
+  if (desarrolloId && INVESTTI_DESARROLLO_IDS.includes(desarrolloId)) {
+    return datosBancariosPasajeAlamos
+  }
   return datosBancariosLaVista
 }
 
@@ -1423,7 +1434,7 @@ export const getContactosClave = (desarrolloId?: string | null): ContactoClave[]
 export const contactosClave = contactosClaveLaVista
 
 // Funciones helper
-export { formatPrice, roundMoney } from '@/lib/format/money'
+export { formatPrice, formatTicket, roundMoney } from '@/lib/format/money'
 
 export const getClusterById = (id: string): Cluster | undefined => {
   return clusters.find(c => c.id === id)

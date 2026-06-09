@@ -1,3 +1,5 @@
+import { isInvesttiCatalogDesarrollo } from "@/lib/catalog/investti-desarrollos";
+import { getInvesttiRecorridoContenido } from "@/lib/catalog/investti-recorrido-content";
 import {
   bondades,
   bondadesPasajeAlamos,
@@ -148,6 +150,10 @@ export const getDefaultRecorridoContenido = (desarrolloId: string): RecorridoCon
 
   if (desarrolloId === "pasaje-alamos") {
     return pasajeAlamosDefaults();
+  }
+
+  if (isInvesttiCatalogDesarrollo(desarrolloId)) {
+    return getInvesttiRecorridoContenido(desarrolloId);
   }
 
   return emptyContenido();

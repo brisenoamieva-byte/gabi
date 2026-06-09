@@ -16,9 +16,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "gabi - Plataforma comercial inmobiliaria integral",
+  title: "gabi — Sistema comercial inmobiliario",
   description:
-    "Plataforma comercial inmobiliaria: recorrido guiado, cotizador, CRM de leads, sembrado, campañas y métricas para comercializadoras en México.",
+    "gabi concentra recorrido, cotización, CRM, sembrado, expedientes y estudios de mercado en un solo sistema para comercializadoras inmobiliarias.",
   manifest: "/manifest.json",
   icons: {
     icon: [

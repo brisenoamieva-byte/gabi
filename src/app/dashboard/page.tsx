@@ -9,6 +9,7 @@ import {
   ChevronRight,
   LogOut,
   MapPinned,
+  Route,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -254,6 +255,35 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#201044]/75 md:text-base">
                 Guía paso a paso con el cliente en showroom o campo.
+              </p>
+            </div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 }}
+        >
+          <Link
+            href="/corredor"
+            className="group flex min-h-[7rem] flex-col justify-between rounded-2xl border border-[#201044]/10 bg-white p-5 shadow-sm transition hover:border-[#6cc24a]/40 hover:shadow-md active:scale-[0.99] md:p-6"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
+                <Route className="h-6 w-6" />
+              </span>
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition group-hover:border-[#201044]/20 group-hover:text-[#201044]">
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Zona sur · Corregidora / Batán
+              </p>
+              <h2 className="mt-1 text-xl font-black text-[#201044]">Corredor Metropolitano</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Mapa, comparativo y filtros para vender terrenos en el corredor 411 / 413.
               </p>
             </div>
           </Link>

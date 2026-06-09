@@ -33,6 +33,11 @@ import { PostVisitaModal } from "@/components/recorrido/PostVisitaModal";
 import { trackVisita } from "@/lib/visitas/client";
 import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
+import { InvesttiSimuladorPanel } from "@/components/corredor/investti/InvesttiSimuladorPanel";
+import {
+  investtiCatalogHasSimulador,
+  isInvesttiCatalogDesarrollo,
+} from "@/lib/catalog/investti-desarrollos";
 import {
   isPasajeDepartamentosCluster,
 } from "@/lib/catalog/pasaje-alamos-acabados";
@@ -2271,6 +2276,33 @@ export default function RecorridoPage() {
                             );
                           })}
                         </div>
+                      ) : isInvesttiCatalogDesarrollo(activeDesarrollo?.id) ? (
+                        <div className="space-y-5 rounded-[2rem] bg-white p-6 shadow-lg">
+                          <div>
+                            <p className="text-xl font-black text-[#201044]">Terrenos · simulador</p>
+                            <p className="mt-2 text-sm text-slate-500">
+                              Elige manzana y lote con la lista oficial Investti. Misma lógica que
+                              Control Gerencia.
+                            </p>
+                          </div>
+                          {investtiCatalogHasSimulador(activeDesarrollo.id) ? (
+                            <InvesttiSimuladorPanel
+                              desarrolloId={activeDesarrollo.id}
+                              presentation="corredor"
+                            />
+                          ) : (
+                            <p className="text-sm text-slate-500">
+                              Lista de precios pendiente para este desarrollo.
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openCotizador()}
+                            className="w-full rounded-2xl bg-[#6CC24A] px-5 py-4 text-lg font-black text-white shadow-lg active:scale-95"
+                          >
+                            Abrir cotizador
+                          </button>
+                        </div>
                       ) : (
                         <div className="rounded-[2rem] bg-white p-6 shadow-lg">
                           <p className="text-xl font-black text-[#201044]">
@@ -2706,7 +2738,9 @@ export default function RecorridoPage() {
         </Modal>
       )}
 
-      {showQuote && selectedPrototipo && activeDesarrollo && (
+      {showQuote &&
+        activeDesarrollo &&
+        (selectedPrototipo || isInvesttiCatalogDesarrollo(activeDesarrollo.id)) && (
         <Modal onClose={() => setShowQuote(false)} title="Cotizador">
           <CotizadorPanel
             desarrolloId={activeDesarrollo.id}

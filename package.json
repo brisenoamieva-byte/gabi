@@ -15,6 +15,8 @@
     "catalog:sync": "npm run catalog:pasaje-alamos && node --import tsx scripts/run-catalog-seed.mjs",
     "sembrado:import": "node scripts/import-pasaje-sembrado.mjs",
     "sembrado:import:la-vista": "node scripts/import-la-vista-sembrado.mjs",
+    "analyze:cdv-sembrado": "node scripts/analyze-cdv-sembrado-temporal.mjs",
+    "analyze:investti-simulador": "node scripts/extract-investti-simulador.cjs",
     "leads:import:xperience": "node scripts/import-xperience-leads.mjs",
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",
@@ -23,6 +25,7 @@
     "prebuild": "node scripts/generate-gabi-pwa-icons.mjs"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",

@@ -22,6 +22,11 @@ import {
   PasajeSimuladorPanel,
   type PasajeSimuladorPanelProps,
 } from "@/components/PasajeSimuladorPanel";
+import { InvesttiSimuladorPanel } from "@/components/corredor/investti/InvesttiSimuladorPanel";
+import {
+  investtiCatalogHasSimulador,
+  isInvesttiCatalogDesarrollo,
+} from "@/lib/catalog/investti-desarrollos";
 import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
 
 export type CotizadorPanelProps = {
@@ -151,6 +156,23 @@ function ToggleGroup({
 }
 
 export function CotizadorPanel(props: CotizadorPanelProps) {
+  if (isInvesttiCatalogDesarrollo(props.desarrolloId)) {
+    if (investtiCatalogHasSimulador(props.desarrolloId)) {
+      return (
+        <InvesttiSimuladorPanel
+          desarrolloId={props.desarrolloId}
+          presentation="corredor"
+        />
+      );
+    }
+    return (
+      <p className="text-sm leading-relaxed text-slate-600">
+        El simulador oficial para {props.desarrolloNombre} se publicará cuando esté la lista de
+        precios en Control Gerencia.
+      </p>
+    );
+  }
+
   if (props.desarrolloId === "pasaje-alamos") {
     return (
       <PasajeSimuladorPanel
