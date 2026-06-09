@@ -11,8 +11,11 @@ const STATE_FILE = resolve(STATE_DIR, "sync-fingerprint.json");
 const WATCH_FILES = [
   "src/lib/data.ts",
   "src/lib/catalog/recorrido-content.ts",
+  "src/lib/catalog/investti-desarrollos.ts",
+  "src/lib/catalog/investti-recorrido-content.ts",
   "src/lib/catalog/pasaje-alamos.generated.ts",
   "scripts/pasaje-alamos-catalog.json",
+  "src/lib/asesores/seed.ts",
 ];
 
 const hashFile = (relativePath) => {

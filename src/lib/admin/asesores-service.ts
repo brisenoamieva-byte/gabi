@@ -455,11 +455,40 @@ export const seedDemoAsesores = async (profile: AdminProfile): Promise<DemoSeedR
 
     const { data: existing } = await supabase
       .from("asesores")
-      .select("id, nombre")
+      .select("id, nombre, desarrollos_ids")
       .eq("id", demo.id)
       .maybeSingle();
 
     if (existing) {
+      const currentIds = (existing.desarrollos_ids ?? []) as string[];
+      const sameDesarrollos =
+        demo.desarrollosIds.length === currentIds.length &&
+        demo.desarrollosIds.every((id) => currentIds.includes(id));
+
+      if (!sameDesarrollos) {
+        const { data: updated, error: updateError } = await supabase
+          .from("asesores")
+          .update({
+            desarrollos_ids: demo.desarrollosIds,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", demo.id)
+          .select()
+          .single();
+
+        if (updateError || !updated) {
+          skipped.push({
+            id: demo.id,
+            nombre: demo.nombre,
+            reason: updateError?.message ?? "No se pudo actualizar desarrollos",
+          });
+          continue;
+        }
+
+        created.push(toRecord(updated as AsesorRow));
+        continue;
+      }
+
       skipped.push({
         id: demo.id,
         nombre: demo.nombre,
