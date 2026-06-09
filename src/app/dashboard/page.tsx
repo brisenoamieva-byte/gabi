@@ -4,17 +4,21 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  BarChart3,
   Brain,
   Building2,
   Calculator,
   ChevronRight,
+  FileText,
   LogOut,
   MapPinned,
   Route,
+  Settings,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
+import { GABI_ECOSYSTEM } from "@/lib/gabi/ecosystem";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,6 +46,16 @@ type QuickAction = {
   href?: string;
   renderExtra?: (desarrollo: Desarrollo) => React.ReactNode;
 };
+
+const OPERATOR_MODULE_ICONS: Record<string, LucideIcon> = {
+  propuestas: FileText,
+  estudios: BarChart3,
+  admin: Settings,
+};
+
+const operatorDirectLinks = GABI_ECOSYSTEM.filter(
+  (modulo) => modulo.visibilidad === "operador" && modulo.id !== "centro",
+);
 
 const quickActions: QuickAction[] = [
   {
@@ -291,6 +305,43 @@ export default function DashboardPage() {
                 </p>
               </div>
             </Link>
+          </motion.div>
+        ) : null}
+
+        {isOperator ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.06 }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              Accesos directos · operador
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              {operatorDirectLinks.map((modulo) => {
+                const Icon = OPERATOR_MODULE_ICONS[modulo.id] ?? FileText;
+                return (
+                  <Link
+                    key={modulo.id}
+                    href={modulo.href}
+                    className="group flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-[#201044]/12 bg-white p-4 shadow-sm transition hover:border-[#201044]/25 hover:shadow-md active:scale-[0.99]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#201044]/6 text-[#201044]">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-slate-300 transition group-hover:text-[#201044]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-[#201044]">{modulo.titulo}</h3>
+                      <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">
+                        {modulo.descripcion}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </motion.div>
         ) : null}
 
