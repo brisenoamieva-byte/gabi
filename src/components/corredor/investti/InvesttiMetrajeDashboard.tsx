@@ -50,7 +50,7 @@ export function InvesttiMetrajeDashboard() {
   const sinAbsorcion = CORREDOR_DESARROLLOS_ANALISIS.filter((d) => d.absorcionMes == null).length;
 
   const gapBounds = useMemo(() => {
-    const metrajes = gapData.map((p) => p.metrajeMedio);
+    const metrajes = gapData.map((p) => p.metrajePromedio);
     const precios = gapData.map((p) => p.precioPromM2);
     return {
       metrajeMin: Math.min(...metrajes) - 20,

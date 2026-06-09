@@ -1,4 +1,18 @@
+import { CDV_SEMBRADO_RESUMEN } from "./cdv-sembrado-analisis";
 import type { CorredorDesarrollo } from "./types";
+
+const CANADAS_DEL_VALLE_ID = "canadas-del-valle";
+
+/**
+ * Promedio de metraje para gráficas comparativas.
+ * CDV: promedio real del sembrado v.4. Resto: punto medio del rango de catálogo (mín+máx)/2.
+ */
+export function getMetrajePromedio(d: CorredorDesarrollo): number {
+  if (d.id === CANADAS_DEL_VALLE_ID) {
+    return CDV_SEMBRADO_RESUMEN.promedioSembradoM2;
+  }
+  return Math.round((d.loteMinM2 + d.loteMaxM2) / 2);
+}
 
 export type MetrajeChartSort = "km" | "min" | "amplitud";
 

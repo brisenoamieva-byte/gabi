@@ -174,6 +174,19 @@ function sumarBucketsPorRango(...rangos: string[]) {
   );
 }
 
+/** Promedio ponderado por inventario (vendido + apartado + disponible) usando el punto medio de cada bucket. */
+function promedioSembradoPorBuckets(): number {
+  let sum = 0;
+  let total = 0;
+  for (const r of CDV_SEMBRADO_RANGOS) {
+    const mid = (r.minM2 + r.maxM2) / 2;
+    const n = r.vendidosYApartados + r.disponibles;
+    sum += mid * n;
+    total += n;
+  }
+  return total > 0 ? Math.round(sum / total) : 0;
+}
+
 function buildResumen() {
   const a200_250 = sumarBucketsContenidos(200, 250);
   const a160_200 = sumarBucketsContenidos(160, 200);
@@ -188,6 +201,8 @@ function buildResumen() {
 
   return {
     ...CDV_SEMBRADO_CABECERA,
+    /** Promedio de m² de todos los lotes del sembrado (495 con dato). */
+    promedioSembradoM2: promedioSembradoPorBuckets(),
     pctDemandaBajo250: pctBajo250,
     pctDemanda250oMas: Math.round((100 - pctBajo250) * 10) / 10,
     disponiblesBajo250: aBajo250.disponibles,

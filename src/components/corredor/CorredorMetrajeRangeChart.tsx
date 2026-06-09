@@ -14,6 +14,7 @@ import {
 import {
   buildMetrajeScale,
   getMetrajeChartStats,
+  getMetrajePromedio,
   metrajeToPercent,
   sortDesarrollosForMetrajeChart,
   type MetrajeChartSort,
@@ -252,7 +253,8 @@ export function CorredorMetrajeRangeChart({
                 const selected = selectedId === d.id;
                 const logo = getDesarrolloLogoUrl(d);
                 const iniciales = getDesarrolloIniciales(d.nombre);
-                const amplitud = d.loteMaxM2 - d.loteMinM2;
+                const promedio = getMetrajePromedio(d);
+                const promLeft = metrajeToPercent(promedio, scale);
 
                 const rowClass = `group grid items-center gap-x-2 px-1 py-0.5 transition ${
                   isReport ? "rounded-none" : "rounded-xl"
@@ -328,14 +330,17 @@ export function CorredorMetrajeRangeChart({
                       >
                         {d.loteMaxM2}
                       </span>
-                      {amplitud >= 200 ? (
-                        <span
-                          className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1.5 py-0.5 text-[8px] text-neutral-600 opacity-0 transition group-hover:opacity-100"
-                          style={{ left: `${left + width / 2}%` }}
-                        >
-                          Δ {amplitud} m²
-                        </span>
-                      ) : null}
+                      <span
+                        className={`pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 border px-1 py-0.5 text-[8px] tabular-nums ${
+                          isReport
+                            ? "border-[#201044]/20 bg-white font-medium text-[#1C1830]"
+                            : "rounded bg-white/95 font-bold text-[#201044] shadow-sm ring-1 ring-black/5"
+                        }`}
+                        style={{ left: `${promLeft}%` }}
+                        title="Promedio de metraje"
+                      >
+                        ø {promedio}
+                      </span>
                     </div>
                   </>
                 );
@@ -398,8 +403,8 @@ export function CorredorMetrajeRangeChart({
           </div>
           {chartBody}
           <InvesttiFootnote>
-            Los extremos de cada barra corresponden al m² mínimo y máximo del catálogo. Un rango
-            amplio suele reflejar varias tipologías o etapas dentro del mismo desarrollo.
+            Extremos: m² mínimo y máximo del catálogo. El valor ø es el promedio de metraje — en
+            Cañadas del Valle, del sembrado v.4; en los demás, (mín+máx)/2 del catálogo.
           </InvesttiFootnote>
         </div>
       </figure>
@@ -464,9 +469,10 @@ export function CorredorMetrajeRangeChart({
       <div className="flex items-start gap-2 border-t border-slate-100 bg-[#F2F0E9]/30 px-5 py-3 text-xs text-slate-600 md:px-6">
         <Ruler className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6cc24a]" />
         <p>
-          Los extremos de cada barra son el <strong className="text-[#201044]">m² mínimo</strong> y{" "}
-          <strong className="text-[#201044]">máximo</strong> del catálogo. Un rango amplio indica
-          varias tipologías o etapas en el mismo desarrollo.
+          Extremos: <strong className="text-[#201044]">mín</strong> y{" "}
+          <strong className="text-[#201044]">máx</strong> del catálogo.{" "}
+          <strong className="text-[#201044]">ø</strong> = promedio de metraje (sembrado en CDV;
+          (mín+máx)/2 en el resto).
         </p>
       </div>
     </section>

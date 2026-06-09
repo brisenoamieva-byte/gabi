@@ -55,10 +55,10 @@ export function CdvPosicionamientoChart({
   const zonaRight = scaleX(METRAJE_RECOMENDADO_MAX, metrajeMin, metrajeMax);
 
   return (
-    <InvesttiFigure caption="El tamaño del círculo indica cuántos lotes vende al mes cada desarrollo.">
+    <InvesttiFigure caption="Mismo promedio de metraje que en el gráfico de rangos. El tamaño del círculo indica lotes vendidos al mes.">
       <InvesttiChartHeader
         title="Precio y metraje en el corredor"
-        subtitle="Metraje medio del catálogo vs. precio por m²"
+        subtitle="Promedio de metraje vs. precio por m²"
         legend={
           <>
             <InvesttiLegendItem color="#201044" label="CDV" />
@@ -156,7 +156,7 @@ export function CdvPosicionamientoChart({
             textAnchor="middle"
             className={`${investtiReport.sans} fill-neutral-600 text-[10px]`}
           >
-            Metraje medio (m²)
+            Promedio (m²)
           </text>
           <text
             x={14}
@@ -169,7 +169,7 @@ export function CdvPosicionamientoChart({
           </text>
 
           {puntos.map((p) => {
-            const cx = scaleX(p.metrajeMedio, metrajeMin, metrajeMax);
+            const cx = scaleX(p.metrajePromedio, metrajeMin, metrajeMax);
             const cy = scaleY(p.precioPromM2, precioMin, precioMax);
             const r = Math.max(10, Math.min(22, p.tamanoBurbuja / 2.2));
             const fill = p.esCanadasDelValle
@@ -201,7 +201,7 @@ export function CdvPosicionamientoChart({
                   {label}
                 </text>
                 <title>
-                  {`${p.nombre}\n${Math.round(p.metrajeMedio)} m² · $${p.precioPromM2.toLocaleString("es-MX")}/m²${p.absorcionMes ? ` · ${p.absorcionMes}/mes` : ""}`}
+                  {`${p.nombre}\nProm. ${Math.round(p.metrajePromedio)} m² · $${p.precioPromM2.toLocaleString("es-MX")}/m²${p.absorcionMes ? ` · ${p.absorcionMes}/mes` : ""}`}
                 </title>
               </g>
             );

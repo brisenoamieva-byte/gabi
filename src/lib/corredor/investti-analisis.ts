@@ -10,6 +10,7 @@ import {
   countCorredorDesarrollosAnalisis,
 } from "./corredor-analisis";
 import { CORREDOR_DESARROLLOS } from "./zona-sur-seed";
+import { getMetrajePromedio } from "./metraje-chart";
 import type { CorredorDesarrollo } from "./types";
 
 /** Nicho de referencia para comparativo corredor (segmento de mayor volumen). */
@@ -60,7 +61,7 @@ export type FilaMatrizMetraje = {
 export type PuntoGap = {
   id: string;
   nombre: string;
-  metrajeMedio: number;
+  metrajePromedio: number;
   precioPromM2: number;
   absorcionMes: number | null;
   esInvestti: boolean;
@@ -82,10 +83,6 @@ export type RecomendacionMetraje = {
 
 function precioPromedio(d: CorredorDesarrollo): number {
   return (d.precioMinM2 + d.precioMaxM2) / 2;
-}
-
-function metrajeMedio(d: CorredorDesarrollo): number {
-  return (d.loteMinM2 + d.loteMaxM2) / 2;
 }
 
 /** Solapamiento del rango del desarrollo con [min, max] m². */
@@ -152,7 +149,7 @@ export function getGapChartData(desarrollos = CORREDOR_DESARROLLOS_ANALISIS): Pu
   return desarrollos.map((d) => ({
     id: d.id,
     nombre: d.nombre,
-    metrajeMedio: metrajeMedio(d),
+    metrajePromedio: getMetrajePromedio(d),
     precioPromM2: Math.round(precioPromedio(d)),
     absorcionMes: d.absorcionMes,
     esInvestti: d.desarrolladorId === INVESTTI_DESARROLLADOR_ID,
