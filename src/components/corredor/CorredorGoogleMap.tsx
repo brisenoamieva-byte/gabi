@@ -80,8 +80,10 @@ export function CorredorGoogleMap({
         />
         <p className="mt-2 text-center text-xs text-slate-500">
           {loadError
-            ? "No se pudo cargar Google Maps. Revisa la API key."
-            : "Agrega NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en .env.local para mapa interactivo."}
+            ? "No se pudo cargar Google Maps. Revisa restricciones de dominio y que Maps JavaScript API esté activa."
+            : process.env.NODE_ENV === "development"
+              ? "Agrega NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en .env.local y reinicia npm run dev."
+              : "Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en Vercel (Environment Variables). Redespliega tras agregarla."}
         </p>
       </div>
     );
