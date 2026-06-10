@@ -6,6 +6,7 @@ import { ArrowRight, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import { InvesttiDesarrolloLogo } from "@/components/corredor/investti/InvesttiDesarrolloLogo";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import {
   isInvesttiCatalogDesarrollo,
@@ -203,6 +204,9 @@ export default function DesarrollosPage() {
                   onClick={() => handleSelect(desarrollo.id)}
                   className="group flex items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-px hover:shadow-md active:scale-[0.995] sm:gap-3.5 sm:p-3.5"
                 >
+                  {isInvesttiCatalogDesarrollo(desarrollo.id) ? (
+                    <InvesttiDesarrolloLogo desarrolloId={desarrollo.id} size="thumb" />
+                  ) : (
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#F2F0E9] p-1.5 sm:h-14 sm:w-14">
                     {logo ? (
                       <Image
@@ -221,6 +225,7 @@ export default function DesarrollosPage() {
                       </span>
                     )}
                   </div>
+                  )}
 
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate text-sm font-bold leading-tight sm:text-base">

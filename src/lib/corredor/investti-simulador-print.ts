@@ -33,7 +33,10 @@ export type InvesttiSimuladorPrintSnapshot = {
     precioLista: number;
   };
   precioContado: number;
+  /** Tipo de lote (AZUL, etc.). */
   tipoEntrega: string;
+  /** Fecha de entrega formateada; null si no aplica en inventario. */
+  entregaLabel: string | null;
   tipoCompra: InvesttiTipoCompra;
   tipoCompraLabel: string;
   calendario: {

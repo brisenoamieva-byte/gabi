@@ -6,20 +6,13 @@ import { ArrowRight, Calculator, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import { InvesttiDesarrolloLogo } from "@/components/corredor/investti/InvesttiDesarrolloLogo";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import {
   INVESTTI_CATALOG_DESARROLLO_IDS,
   INVESTTI_GRUPO_LOGO,
-  isInvesttiCatalogDesarrollo,
-  type InvesttiCatalogDesarrolloId,
 } from "@/lib/catalog/investti-desarrollos";
-import { INVESTTI_DESARROLLO_LOGOS } from "@/lib/catalog/investti-recorrido-data";
-import { investtiDesarrolloLogoShellClass } from "@/lib/catalog/investti-desarrollo-logo-shell";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
-import {
-  getDesarrolloIniciales,
-  getDesarrolloLogoUrl,
-} from "@/lib/corredor/desarrollo-logos";
 import {
   getInvesttiSimuladorPortalSession,
   INVESTTI_SIMULADOR_PORTAL_SLUG,
@@ -33,13 +26,6 @@ import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
 import { formatPrice, type Asesor } from "@/lib/data";
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
-
-function resolveLogo(desarrollo: DesarrolloRecord): string | undefined {
-  if (isInvesttiCatalogDesarrollo(desarrollo.id)) {
-    return INVESTTI_DESARROLLO_LOGOS[desarrollo.id as InvesttiCatalogDesarrolloId];
-  }
-  return desarrollo.logo ?? getDesarrolloLogoUrl({ id: desarrollo.id });
-}
 
 function orderInvesttiDesarrollos(items: DesarrolloRecord[]): DesarrolloRecord[] {
   const order = new Map(INVESTTI_CATALOG_DESARROLLO_IDS.map((id, index) => [id, index]));
@@ -211,10 +197,7 @@ export default function InvesttiDesarrollosPage() {
               </p>
             </div>
           ) : (
-            desarrollosDisponibles.map((desarrollo, index) => {
-              const logo = resolveLogo(desarrollo);
-
-              return (
+            desarrollosDisponibles.map((desarrollo, index) => (
                 <motion.button
                   key={desarrollo.id}
                   type="button"
@@ -224,29 +207,7 @@ export default function InvesttiDesarrollosPage() {
                   onClick={() => handleSelect(desarrollo.id)}
                   className="group flex items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-px hover:shadow-md active:scale-[0.995] sm:gap-3.5 sm:p-3.5"
                 >
-                  <div
-                    className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1.5 ${
-                      desarrollo.id === "canadas-la-porta"
-                        ? "h-12 w-[calc(3rem*872/566)] sm:h-14 sm:w-[calc(3.5rem*872/566)]"
-                        : "h-12 w-12 sm:h-14 sm:w-14"
-                    } ${investtiDesarrolloLogoShellClass(desarrollo.id)}`}
-                  >
-                    {logo ? (
-                      <Image
-                        src={logo}
-                        alt=""
-                        width={112}
-                        height={112}
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <span
-                        className="text-xs font-black tracking-tight text-white"
-                      >
-                        {getDesarrolloIniciales(desarrollo.nombre)}
-                      </span>
-                    )}
-                  </div>
+                  <InvesttiDesarrolloLogo desarrolloId={desarrollo.id} size="thumb" />
 
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate text-sm font-bold leading-tight sm:text-base">
@@ -275,8 +236,7 @@ export default function InvesttiDesarrollosPage() {
                     </span>
                   </div>
                 </motion.button>
-              );
-            })
+            ))
           )}
         </div>
       </section>

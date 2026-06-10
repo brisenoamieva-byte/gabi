@@ -93,8 +93,10 @@ async function processLaPortaFile(filePath) {
     const g = data[i + 1];
     const b = data[i + 2];
     if (isLaPortaBackgroundPixel(r, g, b)) {
-      // Fondo transparente: el recuadro tan lo pinta la UI (sin doble caja).
-      data[i + 3] = 0;
+      data[i] = LA_PORTA_BG.r;
+      data[i + 1] = LA_PORTA_BG.g;
+      data[i + 2] = LA_PORTA_BG.b;
+      data[i + 3] = 255;
     } else {
       data[i] = 255;
       data[i + 1] = 255;

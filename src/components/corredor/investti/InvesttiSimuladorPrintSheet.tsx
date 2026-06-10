@@ -131,8 +131,13 @@ export function InvesttiSimuladorPrintSheet({
               </h1>
               <p className="mt-0.5 text-[12px] text-neutral-600">
                 Mza. {manzanaLabel} · Lote {snapshot.lote.lote} · {snapshot.lote.superficie} m² ·{" "}
-                {snapshot.tipoEntrega}
+                {snapshot.lote.tipo}
               </p>
+              {snapshot.entregaLabel ? (
+                <p className="mt-0.5 text-[12px] text-neutral-600">
+                  Entrega estimada: {snapshot.entregaLabel}
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2.5">
@@ -166,7 +171,7 @@ export function InvesttiSimuladorPrintSheet({
 
       <section className="investti-sim-print-section mt-4 border-t border-neutral-200 pt-4">
         <PrintSectionHead
-          label={snapshot.tab === "propuesta" ? "Propuesta" : "Esquema seleccionado"}
+          label={snapshot.tab === "propuesta" ? "Plan personalizado" : "Esquema seleccionado"}
           title={
             snapshot.tab === "propuesta"
               ? "Plan personalizado de pagos"
@@ -197,7 +202,7 @@ export function InvesttiSimuladorPrintSheet({
 
       {snapshot.tab === "propuesta" && snapshot.propuesta ? (
         <section className="investti-sim-print-section mt-4">
-          <PrintSectionHead label="Parámetros" title="Detalle de la propuesta" />
+          <PrintSectionHead label="Parámetros" title="Detalle del plan personalizado" />
           <PrintStatGrid cols={4} className="mt-2">
             <PrintStat label="Enganche" value={`${snapshot.propuesta.enganchePct}%`} />
             <PrintStat

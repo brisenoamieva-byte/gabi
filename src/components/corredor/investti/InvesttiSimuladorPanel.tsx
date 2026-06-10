@@ -259,6 +259,7 @@ export function InvesttiSimuladorPanel({
   const isReport = presentation === "report";
   const desarrolloNombre =
     investtiCatalogDesarrollos.find((d) => d.id === desarrolloId)?.nombre ?? desarrolloId;
+  const entregaLabel = loteSel ? formatInvesttiEntrega(loteSel.entrega) : null;
 
   const handleExportPdf = useCallback(() => {
     if (!simulacion || !loteSel || !calendarioPago) return;
@@ -273,13 +274,12 @@ export function InvesttiSimuladorPanel({
 
     if (filasProspecto.length === 0) {
       window.alert(
-        "No hay pagos para exportar. Elige un esquema con calendario o completa la propuesta del prospecto.",
+        "No hay pagos para exportar. Elige un esquema con calendario o completa el plan personalizado.",
       );
       return;
     }
 
-    const entrega = formatInvesttiEntrega(loteSel.entrega);
-    const tipoEntrega = `${loteSel.tipo}${entrega ? ` · ${entrega}` : ""}`;
+    const entregaLabel = formatInvesttiEntrega(loteSel.entrega);
     const reglasLine = `Enganche mín. ${Math.round((reglas?.engancheMinPct ?? 0.15) * 100)}% · plazo hasta ${reglas?.plazoMaxMeses ?? 60} meses${mensMinima > 0 ? ` · mens. mín. ${formatPrice(mensMinima)}` : ""}.`;
 
     const saved = saveInvesttiSimuladorPrintSnapshot({
@@ -296,7 +296,8 @@ export function InvesttiSimuladorPanel({
         precioLista: loteSel.precioLista,
       },
       precioContado: simulacion.precioContado,
-      tipoEntrega,
+      tipoEntrega: loteSel.tipo,
+      entregaLabel,
       tipoCompra,
       tipoCompraLabel: labelInvesttiTipoCompra(tipoCompra),
       calendario: {
@@ -339,7 +340,7 @@ export function InvesttiSimuladorPanel({
       filasProspecto: filasProspectoToPrint(filasProspecto),
       calendarioTitulo:
         tab === "propuesta"
-          ? "Calendario de pagos — propuesta"
+          ? "Calendario de pagos — plan personalizado"
           : `Calendario de pagos — ${esquemaAmort?.label ?? "esquema"}`,
       calendarioDescripcion: `${filasProspecto.length} pagos · total ${formatPrice(filasProspecto.reduce((s, f) => s + f.pagoTotal, 0))} · vista prospecto.`,
     });
@@ -460,7 +461,7 @@ export function InvesttiSimuladorPanel({
         {(
           [
             ["esquemas", "Esquemas estándar"],
-            ["propuesta", "Propuesta del prospecto"],
+            ["propuesta", "Plan personalizado"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -571,6 +572,22 @@ export function InvesttiSimuladorPanel({
             {labelDiaPagosSubsecuentes(diaPagosSubsecuentes)}.
           </p>
         </Field>
+        {entregaLabel ? (
+          <Field label="Entrega estimada del lote" isReport={isReport}>
+            <p
+              className={
+                isReport
+                  ? "border border-neutral-300 bg-white px-3 py-2 text-[13px] font-semibold text-[#201044]"
+                  : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#201044]"
+              }
+            >
+              {entregaLabel}
+            </p>
+            <p className={`mt-1.5 text-[11px] ${isReport ? "text-neutral-500" : "text-slate-500"}`}>
+              Fecha de entrega según inventario; independiente del calendario de pagos del prospecto.
+            </p>
+          </Field>
+        ) : null}
       </div>
 
       {simulacion ? (
@@ -585,11 +602,8 @@ export function InvesttiSimuladorPanel({
               highlight
             />
             <Stat
-              label="Tipo / entrega"
-              value={(() => {
-                const entrega = formatInvesttiEntrega(loteSel!.entrega);
-                return `${loteSel!.tipo}${entrega ? ` · ${entrega}` : ""}`;
-              })()}
+              label="Tipo de lote"
+              value={loteSel!.tipo}
               isReport={isReport}
             />
           </div>
@@ -875,7 +889,7 @@ function EsquemaRow({
   const desc =
     esquema.descuentoVsListaPct >= 0
       ? `${esquema.descuentoVsListaPct.toFixed(2)}%`
-      : `${esquema.descuentoVsListaPct.toFixed(2)}%`;
+      : "";
   return (
     <tr
       className={`border-b cursor-pointer transition-colors ${isReport ? "border-neutral-100" : "border-slate-100"} ${selected ? (isReport ? "bg-neutral-50" : "bg-[#6cc24a]/10") : "hover:bg-neutral-50/80"}`}
@@ -1344,7 +1358,7 @@ function TablaAmortizacionEditable({
       filas={filasProspecto}
       apartado={apartado}
       isReport={isReport}
-      titulo="Calendario de pagos — propuesta"
+      titulo="Calendario de pagos — plan personalizado"
       descripcion={`${filasProspecto.length} pagos · vista prospecto (como «Para Imprimir») · edita el pago total por mes.`}
       editable
       onPagoEditado={onPagoEditado}
