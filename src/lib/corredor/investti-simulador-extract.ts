@@ -198,7 +198,34 @@ export function extractInvesttiSimuladorFromBuffer(
     slugDesarrollo: Object.fromEntries(
       Object.entries(INVESTTI_EXCEL_TO_SLUG).map(([k, v]) => [v, k]),
     ),
-    stats: { lotes: lotes.length, byDev },
+    stats: {
+      lotes: lotes.length,
+      byDev,
+      precioDesdeLista: Object.fromEntries(
+        Object.entries(INVESTTI_EXCEL_TO_SLUG)
+          .map(([excelName, slug]) => {
+            const precios = lotes
+              .filter((l) => l.desarrollo === excelName)
+              .map((l) => l.precioLista)
+              .filter((p) => typeof p === "number" && p > 0);
+            if (!precios.length) return null;
+            return [slug, Math.min(...precios)] as const;
+          })
+          .filter((entry): entry is [string, number] => entry !== null),
+      ),
+      precioContadoDesde: Object.fromEntries(
+        Object.entries(INVESTTI_EXCEL_TO_SLUG)
+          .map(([excelName, slug]) => {
+            const precios = lotes
+              .filter((l) => l.desarrollo === excelName)
+              .map((l) => l.contado)
+              .filter((p): p is number => typeof p === "number" && p > 0);
+            if (!precios.length) return null;
+            return [slug, Math.min(...precios)] as const;
+          })
+          .filter((entry): entry is [string, number] => entry !== null),
+      ),
+    },
     reglas,
     manzanas,
     lotes,

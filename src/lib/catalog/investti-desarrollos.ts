@@ -43,6 +43,21 @@ export function getInvesttiSimuladorPrecioDesde(
   return corredor?.ticketDesde ?? 0;
 }
 
+/** Sobrescribe catálogo remoto (Supabase) con lista y logo del simulador oficial. */
+export function applyInvesttiDesarrolloCatalogDefaults<
+  T extends { id: string; precioDesde?: number; logo?: string },
+>(desarrollo: T): T {
+  if (!isInvesttiCatalogDesarrollo(desarrollo.id)) {
+    return desarrollo;
+  }
+  const id = desarrollo.id as InvesttiCatalogDesarrolloId;
+  return {
+    ...desarrollo,
+    precioDesde: getInvesttiSimuladorPrecioDesde(id),
+    logo: INVESTTI_DESARROLLO_LOGOS[id],
+  };
+}
+
 /** Logo corporativo Grupo Investti (simulador, cotizador, recorrido). */
 export const INVESTTI_GRUPO_LOGO = "/corredor/desarrolladores/investti.jpg";
 

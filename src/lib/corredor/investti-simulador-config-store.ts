@@ -12,7 +12,18 @@ function fromGenerated(): InvesttiSimuladorConfigData {
     esquemas: c.esquemas.map((e) => ({ ...e })),
     desarrolloSlug: { ...c.desarrolloSlug },
     slugDesarrollo: { ...c.slugDesarrollo },
-    stats: c.stats ? { lotes: c.stats.lotes, byDev: { ...c.stats.byDev } } : undefined,
+    stats: c.stats
+      ? {
+          lotes: c.stats.lotes,
+          byDev: { ...c.stats.byDev },
+          precioDesdeLista: c.stats.precioDesdeLista
+            ? { ...c.stats.precioDesdeLista }
+            : undefined,
+          precioContadoDesde: c.stats.precioContadoDesde
+            ? { ...c.stats.precioContadoDesde }
+            : undefined,
+        }
+      : undefined,
     reglas: Object.fromEntries(
       Object.entries(c.reglas).map(([k, v]) => [k, { ...v }]),
     ),

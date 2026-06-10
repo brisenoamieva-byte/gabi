@@ -1,3 +1,4 @@
+import { applyInvesttiDesarrolloCatalogDefaults } from "@/lib/catalog/investti-desarrollos";
 import { enrichDesarrolloFromStatic, type Desarrollo } from "@/lib/data";
 import {
   getDefaultRecorridoContenido,
@@ -35,4 +36,4 @@ export const applyRecorridoCodeDefaults = (
 };
 
 export const applyDesarrolloCodeDefaults = <T extends Desarrollo>(desarrollo: T): T =>
-  enrichDesarrolloFromStatic(desarrollo) as T;
+  applyInvesttiDesarrolloCatalogDefaults(enrichDesarrolloFromStatic(desarrollo) as T);
