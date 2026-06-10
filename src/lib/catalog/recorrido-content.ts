@@ -3,14 +3,19 @@ import { getInvesttiRecorridoContenido } from "@/lib/catalog/investti-recorrido-
 import {
   bondades,
   bondadesPasajeAlamos,
+  bondadesMisionLaGavia,
   grupoVinte,
   laVistaOverview,
+  misionLaGaviaDesarrollador,
+  misionLaGaviaOverview,
   pasajeAlamosDesarrollador,
   pasajeAlamosOverview,
   tecnicaDosMinutos,
+  tecnicaDosMinutosMisionLaGavia,
   tecnicaDosMinutosPasajeAlamos,
   tecnicasCierre,
   zonaLaVista,
+  zonaMisionLaGavia,
   zonaPasajeAlamos,
   type PuntoInteres,
   type TecnicaCierre,
@@ -112,6 +117,33 @@ const pasajeAlamosDefaults = (): RecorridoContenido => ({
   },
 });
 
+const misionLaGaviaDefaults = (): RecorridoContenido => ({
+  zona: {
+    ...zonaMisionLaGavia,
+    categoriasOrden: [...zonaMisionLaGavia.categoriasOrden],
+    puntosCercanos: [...zonaMisionLaGavia.puntosCercanos],
+  },
+  desarrollador: {
+    ...misionLaGaviaDesarrollador,
+    metricas: [...misionLaGaviaDesarrollador.metricas],
+    respaldo: [...misionLaGaviaDesarrollador.respaldo],
+    logoPath: "/logos/bbr-habitarea.png",
+  },
+  overview: {
+    ...misionLaGaviaOverview,
+    narrativa: [...misionLaGaviaOverview.narrativa],
+    destacados: [...misionLaGaviaOverview.destacados],
+    logoPath: "/logos/mision-la-gavia.png",
+    guiaAsesor: misionLaGaviaOverview.guiaAsesor,
+  },
+  bondades: [...bondadesMisionLaGavia],
+  tecnicasCierre: [...tecnicasCierre],
+  tecnicaDosMinutos: {
+    ...tecnicaDosMinutosMisionLaGavia,
+    puntos: [...tecnicaDosMinutosMisionLaGavia.puntos],
+  },
+});
+
 const emptyContenido = (): RecorridoContenido => ({
   zona: {
     titulo: "Ubicación",
@@ -150,6 +182,10 @@ export const getDefaultRecorridoContenido = (desarrolloId: string): RecorridoCon
 
   if (desarrolloId === "pasaje-alamos") {
     return pasajeAlamosDefaults();
+  }
+
+  if (desarrolloId === "mision-la-gavia") {
+    return misionLaGaviaDefaults();
   }
 
   if (isInvesttiCatalogDesarrollo(desarrolloId)) {

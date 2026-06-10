@@ -241,6 +241,7 @@ export function AsesoresAdminPanel({
         clusters?: number;
         prototipos?: number;
         inventarioPasaje?: number;
+        inventarioMisionLaGavia?: number;
         error?: string;
       };
 
@@ -252,7 +253,8 @@ export function AsesoresAdminPanel({
         `Catálogo importado: ${data.comercializadoras ?? 0} comercializadora(s), ` +
           `${data.desarrollos ?? 0} desarrollo(s), ${data.clusters ?? 0} cluster(s), ` +
           `${data.prototipos ?? 0} prototipo(s), ` +
-          `${data.inventarioPasaje ?? 0} unidad(es) Pasaje Álamos.`,
+          `${data.inventarioPasaje ?? 0} unidad(es) Pasaje Álamos, ` +
+          `${data.inventarioMisionLaGavia ?? 0} unidad(es) Misión La Gavia.`,
       );
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Error al importar catálogo");

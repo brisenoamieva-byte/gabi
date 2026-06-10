@@ -131,12 +131,14 @@ const fallbackComercializadora = (slug: string): ComercializadoraRecord | null =
 };
 
 const fallbackDesarrolloRecords = (): DesarrolloRecord[] =>
-  fallbackDesarrollos.map((item) => ({
-    ...item,
-    comercializadoraId: "bbr",
-    recorridoEtapas: [...DEFAULT_RECORRIDO_ETAPAS],
-    recorridoVersion: 2,
-  }));
+  fallbackDesarrollos.map((item) =>
+    applyDesarrolloCodeDefaults({
+      ...item,
+      comercializadoraId: "bbr",
+      recorridoEtapas: [...DEFAULT_RECORRIDO_ETAPAS],
+      recorridoVersion: 2,
+    }),
+  );
 
 export const getComercializadoraBySlug = async (
   slug: string,
@@ -229,9 +231,17 @@ export const getDesarrollosByIds = async (ids: string[]): Promise<DesarrolloReco
     return [];
   }
 
+  const fallbackById = new Map(
+    fallbackDesarrolloRecords()
+      .filter((item) => ids.includes(item.id))
+      .map((item) => [item.id, item] as const),
+  );
+
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
-    return fallbackDesarrolloRecords().filter((item) => ids.includes(item.id));
+    return ids
+      .map((id) => fallbackById.get(id))
+      .filter((item): item is DesarrolloRecord => Boolean(item));
   }
 
   const { data, error } = await supabase
@@ -241,11 +251,26 @@ export const getDesarrollosByIds = async (ids: string[]): Promise<DesarrolloReco
     .eq("activo", true)
     .eq("estado", "activo");
 
-  if (error || !data?.length) {
-    return fallbackDesarrolloRecords().filter((item) => ids.includes(item.id));
+  const byId = new Map<string, DesarrolloRecord>();
+
+  if (!error && data?.length) {
+    for (const row of data) {
+      byId.set(row.id, toDesarrollo(row));
+    }
   }
 
-  return data.map(toDesarrollo);
+  for (const id of ids) {
+    if (!byId.has(id)) {
+      const fallback = fallbackById.get(id);
+      if (fallback) {
+        byId.set(id, fallback);
+      }
+    }
+  }
+
+  return ids
+    .map((id) => byId.get(id))
+    .filter((item): item is DesarrolloRecord => Boolean(item));
 };
 
 export const getDesarrolloById = async (id: string): Promise<DesarrolloRecord | null> => {

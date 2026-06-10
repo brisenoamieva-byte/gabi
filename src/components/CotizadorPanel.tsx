@@ -24,10 +24,16 @@ import {
 } from "@/components/PasajeSimuladorPanel";
 import { InvesttiSimuladorPanel } from "@/components/corredor/investti/InvesttiSimuladorPanel";
 import {
+  MisionLaGaviaSimuladorPanel,
+  type MisionLaGaviaSimuladorPanelProps,
+} from "@/components/corredor/mision-la-gavia/MisionLaGaviaSimuladorPanel";
+import {
   investtiCatalogHasSimulador,
   isInvesttiCatalogDesarrollo,
 } from "@/lib/catalog/investti-desarrollos";
+import { isMisionLaGaviaDesarrollo, misionLaGaviaHasSimulador } from "@/lib/catalog/mision-la-gavia";
 import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
+import type { MisionLaGaviaEsquemaId } from "@/lib/corredor/mision-la-gavia-simulador";
 
 export type CotizadorPanelProps = {
   desarrolloId: string;
@@ -74,6 +80,9 @@ export type CotizadorPanelProps = {
   onPasajeLibreSinMensFechaPagoChange?: PasajeSimuladorPanelProps["onLibreSinMensFechaPagoChange"];
   onPasajeLibreSinMensFechaFiniquitoChange?: PasajeSimuladorPanelProps["onLibreSinMensFechaFiniquitoChange"];
   onClienteNombreChange?: PasajeSimuladorPanelProps["onClienteNombreChange"];
+  /** Estado del simulador Misión La Gavia. */
+  misionLaGaviaEsquema?: MisionLaGaviaEsquemaId;
+  onMisionLaGaviaEsquemaChange?: MisionLaGaviaSimuladorPanelProps["onEsquemaChange"];
 };
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -213,6 +222,36 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         onLibreSinMensPagoChange={props.onPasajeLibreSinMensPagoChange}
         onLibreSinMensFechaPagoChange={props.onPasajeLibreSinMensFechaPagoChange}
         onLibreSinMensFechaFiniquitoChange={props.onPasajeLibreSinMensFechaFiniquitoChange}
+        onClienteNombreChange={props.onClienteNombreChange}
+      />
+    );
+  }
+
+  if (isMisionLaGaviaDesarrollo(props.desarrolloId) && misionLaGaviaHasSimulador()) {
+    return (
+      <MisionLaGaviaSimuladorPanel
+        desarrolloId={props.desarrolloId}
+        desarrolloNombre={props.desarrolloNombre}
+        desarrolloLogo={props.desarrolloLogo}
+        prospectoRegistrado={props.prospectoRegistrado}
+        clusterId={props.clusterId}
+        prototipoId={props.prototipoId}
+        unidadId={props.unidadId}
+        inventarioUnidades={props.inventarioUnidades}
+        catalog={props.catalog}
+        clienteNombre={props.clienteNombre}
+        asesorNombre={props.asesorNombre}
+        asesorId={props.asesorId}
+        prospectoId={props.prospectoId}
+        clienteEmail={props.clienteEmail}
+        clienteTelefono={props.clienteTelefono}
+        esquema={props.misionLaGaviaEsquema ?? "contado"}
+        showSelectors={props.showSelectors ?? true}
+        showCopy={props.showCopy}
+        onClusterChange={props.onClusterChange}
+        onPrototipoChange={props.onPrototipoChange}
+        onUnidadChange={props.onUnidadChange}
+        onEsquemaChange={props.onMisionLaGaviaEsquemaChange}
         onClienteNombreChange={props.onClienteNombreChange}
       />
     );

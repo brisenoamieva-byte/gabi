@@ -10,6 +10,11 @@ import {
   pasajeAlamosDisponibilidades,
   pasajeAlamosPrototipos,
 } from "@/lib/catalog/pasaje-alamos.generated";
+import {
+  misionLaGaviaCatalogSummary,
+  misionLaGaviaDisponibilidades,
+  misionLaGaviaPrototipos,
+} from "@/lib/catalog/mision-la-gavia.generated";
 
 const INVESTTI_DESARROLLO_IDS = investtiCatalogDesarrollos.map((d) => d.id);
 
@@ -335,6 +340,27 @@ export const clusters: Cluster[] = [
     fotoPortada: '/desarrollos/pasaje-alamos/oficinas-portada.jpg',
     logo: '/logos/pasaje-alamos.png',
     activo: true
+  },
+  {
+    id: 'mision-la-gavia-departamentos',
+    desarrolloId: 'mision-la-gavia',
+    nombre: 'Departamentos',
+    slug: 'departamentos',
+    tipo: 'departamentos',
+    totalViviendas: misionLaGaviaCatalogSummary.total,
+    descripcion:
+      '105 departamentos en torres con modelos de 2 y 3 recámaras. Respiro Urbano: arquitectura contemporánea en Corregidora.',
+    precioDesde: misionLaGaviaCatalogSummary.precioDesdeContado,
+    entregaGeneral: 'Calendario por torre · consultar lista vigente',
+    amenidades: [
+      'Respiro Urbano · diseño contemporáneo',
+      'Torres con modelos 2R y 3R',
+      'Roof garden en niveles superiores',
+      'Áreas verdes y amenidades del master plan',
+    ],
+    fotoPortada: '/logos/mision-la-gavia-mark.png',
+    logo: '/logos/mision-la-gavia.png',
+    activo: true,
   },
   ...investtiCatalogClusters,
 ]
@@ -854,7 +880,7 @@ export const asesores: Asesor[] = [
     pin: '1234',
     rol: 'director',
     activo: true,
-    desarrollosIds: ['la-vista-residencial', 'pasaje-alamos', ...INVESTTI_DESARROLLO_IDS]
+    desarrollosIds: ['la-vista-residencial', 'pasaje-alamos', 'mision-la-gavia', ...INVESTTI_DESARROLLO_IDS]
   },
   {
     id: 'rodrigo',
@@ -919,6 +945,29 @@ export const desarrollos: Desarrollo[] = [
       provider: 'none',
       enabled: false
     }
+  },
+  {
+    id: 'mision-la-gavia',
+    nombre: 'Misión La Gavia',
+    slug: 'mision-la-gavia',
+    desarrollador: 'BBR Habitarea',
+    comercializador: 'BBR Habitarea',
+    ubicacion: 'Corregidora, Querétaro',
+    descripcion:
+      'Departamentos Respiro Urbano en Corregidora: 2 y 3 recámaras con esquemas de pago flexibles. Comercialización exclusiva BBR Habitarea.',
+    precioDesde: misionLaGaviaCatalogSummary.precioDesdeContado,
+    tiposProducto: ['departamentos'],
+    estado: 'activo',
+    logo: '/logos/mision-la-gavia.png',
+    desarrolladorLogo: '/logos/bbr-habitarea.png',
+    colorPrincipal: '#14453D',
+    colorAcento: '#5B8A7D',
+    brochurePdf: '/documentos/mision-la-gavia/brochure-jun26.pdf',
+    tarjetasProcesoPdf: '/documentos/mision-la-gavia/tarjetas-proceso.pdf',
+    crm: {
+      provider: 'none',
+      enabled: false,
+    },
   },
   ...investtiCatalogDesarrollos,
 ]
@@ -1216,6 +1265,185 @@ export const enrichDesarrolloFromStatic = (remote: Desarrollo): Desarrollo => {
   }
 }
 
+export const misionLaGaviaDesarrollador = {
+  titulo: 'BBR Habitarea',
+  subtitulo: 'Desarrollo y comercialización en exclusiva',
+  historia:
+    'BBR Habitarea es la empresa que respalda Misión La Gavia. Tiene más de 50 años de experiencia comercializando desarrollos; este es su tercer desarrollo propio, junto a referencias como DEPOINT y Pasaje Álamos.',
+  metricas: [
+    { valor: '+50', etiqueta: 'Años de experiencia' },
+    { valor: '3.er', etiqueta: 'Desarrollo propio BBR' },
+    { valor: '105', etiqueta: 'Departamentos en La Gavia' },
+  ],
+  respaldo: [
+    'Comercialización exclusiva BBR Habitarea',
+    'Referencia: DEPOINT y Pasaje Álamos',
+    'Lista mar26 y simulador alineados a Control Gerencia',
+  ],
+  fraseAsesor:
+    'Presenta primero Misión La Gavia en sala audiovisual: ubicación, bondades y amenidades; después baja a plano, torre y cotización con simulador.',
+}
+
+export const misionLaGaviaOverview = {
+  titulo: 'Misión La Gavia',
+  subtitulo: 'Respiro Urbano · departamentos en Corregidora',
+  narrativa: [
+    '105 departamentos exclusivos y 20 locales comerciales en dos niveles, en el polo habitacional con mayor proyección de crecimiento y plusvalía del estado.',
+    'Condominio con acceso controlado y seguridad privada las 24 hrs. Superficies desde 90.5 m².',
+    'Amenidades: juegos infantiles, alberca, pet park, terraza, parque lineal y baños.',
+  ],
+  destacados: [
+    'Respiro Urbano — concepto de diseño',
+    '105 deptos · 20 locales comerciales',
+    'Corregidora — zona estratégica',
+    'Desde $2.3 MDP (precio contado mar26)',
+  ],
+  guiaAsesor:
+    'Invita a sala audiovisual, presenta en TV ubicación y bondades, muestra plano de disponibilidad y cotiza con el simulador. Sigue las tarjetas de proceso al pie de la letra.',
+}
+
+export const bondadesMisionLaGavia = [
+  '105 exclusivos departamentos y 20 locales comerciales en dos niveles',
+  'Polo habitacional con mayor proyección de crecimiento y plusvalía en el estado',
+  'Condominio con acceso controlado y seguridad privada las 24 hrs',
+  'Zona estratégica: conectividad, comercio, escuelas y vialidades rápidas a minutos',
+  'Hospitales San José, H+ y Santiago · UAQ, Tec Milenio, Wexford, Viktor Frankl, Celta',
+  'Galerías Querétaro, Plaza Constituyentes, Citadina, Soriana, Walmart, Sam\'s, Esfera, La Comer',
+  'Restaurantes en Jardines del Hacienda: Sushi Roll, Tacos el Pata, Rebel Wings, Cielito Querido, Crepería',
+  'Amenidades: juegos infantiles, alberca, pet park, terraza, parque lineal y baños',
+  'Superficies desde 90.5 m² · esquemas Contado, MSI, 30-70 y 15-85 (lista mar26)',
+]
+
+export const tecnicaDosMinutosMisionLaGavia = {
+  titulo: 'Técnica de 2 minutos — Misión La Gavia',
+  tiempo: 120,
+  puntos: [
+    'Misión La Gavia: 105 departamentos y 20 locales comerciales con acceso controlado y seguridad 24 hrs',
+    '30 departamentos en preventa exclusiva · superficies desde 90.5 m²',
+    'Amenidades: juegos infantiles, alberca, pet park, terraza, parque lineal y baños',
+    'Corregidora, Querétaro — entidad con mayor potencial económico, turístico y social del estado',
+    'BBR Habitarea respalda el proyecto: +50 años de experiencia, tercer desarrollo propio',
+    'Referencias BBR: DEPOINT y Pasaje Álamos',
+  ],
+}
+
+export const zonaMisionLaGavia = {
+  titulo: 'Corregidora · Respiro Urbano',
+  subtitulo:
+    'Misión La Gavia — zona estratégica con conectividad, comercio, escuelas y servicios esenciales a minutos.',
+  centro: 'Misión La Gavia',
+  direccion: 'Corregidora, Querétaro',
+  mapaEmbedUrl:
+    'https://maps.google.com/maps?q=Misi%C3%B3n+La+Gavia+Corregidora+Quer%C3%A9taro&t=m&z=15&output=embed',
+  mapaUrl: 'https://maps.app.goo.gl/benxrdUB9EpSgHNU8',
+  mensajeAsesor:
+    'Antes de hablar de torre y precio, ancla ubicación y bondades del entorno: salud, educación, consumo y plusvalía en Corregidora.',
+  categoriasOrden: ['Salud', 'Educación', 'Supermercados', 'Centros comerciales', 'Restaurantes'],
+  puntosCercanos: [
+    {
+      id: 'hospital-san-jose-gavia',
+      nombre: 'Hospital San José',
+      categoria: 'Salud',
+      tiempo: 'Zona cercana',
+      detalle: 'Referencia hospitalaria para familias que valoran salud a minutos.',
+      destacado: true,
+    },
+    {
+      id: 'hospital-hplus-gavia',
+      nombre: 'Hospital H+',
+      categoria: 'Salud',
+      tiempo: 'Zona cercana',
+      detalle: 'Opción de atención médica privada en el corredor.',
+    },
+    {
+      id: 'hospital-santiago-gavia',
+      nombre: 'Hospital Santiago',
+      categoria: 'Salud',
+      tiempo: 'Zona cercana',
+      detalle: 'Infraestructura de salud complementaria en la zona.',
+    },
+    {
+      id: 'uaq-gavia',
+      nombre: 'UAQ',
+      categoria: 'Educación',
+      tiempo: 'Corredor Querétaro',
+      detalle: 'Universidad Autónoma de Querétaro — referencia educativa regional.',
+      destacado: true,
+    },
+    {
+      id: 'tec-milenio-gavia',
+      nombre: 'Universidad Tec Milenio',
+      categoria: 'Educación',
+      tiempo: 'Zona cercana',
+      detalle: 'Oferta universitaria privada en el entorno.',
+    },
+    {
+      id: 'wexford-gavia',
+      nombre: 'Colegio Wexford',
+      categoria: 'Educación',
+      tiempo: 'Zona cercana',
+      detalle: 'Educación privada de referencia para familias.',
+    },
+    {
+      id: 'galerias-gavia',
+      nombre: 'Galerías Querétaro',
+      categoria: 'Centros comerciales',
+      tiempo: 'Corredor',
+      detalle: 'Centro comercial ancla para consumo y entretenimiento.',
+      destacado: true,
+    },
+    {
+      id: 'plaza-constituyentes-gavia',
+      nombre: 'Plaza Constituyentes',
+      categoria: 'Centros comerciales',
+      tiempo: 'Corredor',
+      detalle: 'Plaza comercial y servicios en zona consolidada.',
+    },
+    {
+      id: 'soriana-gavia',
+      nombre: 'Soriana',
+      categoria: 'Supermercados',
+      tiempo: 'Zona cercana',
+      detalle: 'Supermercado para compra semanal y consumo diario.',
+    },
+    {
+      id: 'walmart-gavia',
+      nombre: 'Walmart',
+      categoria: 'Supermercados',
+      tiempo: 'Zona cercana',
+      detalle: 'Gran formato con abarrotes y hogar.',
+    },
+    {
+      id: 'sams-gavia',
+      nombre: "Sam's Club",
+      categoria: 'Supermercados',
+      tiempo: 'Zona cercana',
+      detalle: 'Club de precios para compras por volumen.',
+    },
+    {
+      id: 'la-comer-gavia',
+      nombre: 'La Comer',
+      categoria: 'Supermercados',
+      tiempo: 'Zona cercana',
+      detalle: 'Supermercado premium en el corredor.',
+    },
+    {
+      id: 'sushi-roll-gavia',
+      nombre: 'Sushi Roll · Jardines del Hacienda',
+      categoria: 'Restaurantes',
+      tiempo: 'Entorno',
+      detalle: 'Oferta gastronómica en la zona de Jardines del Hacienda.',
+    },
+    {
+      id: 'tacos-pata-gavia',
+      nombre: 'Tacos el Pata',
+      categoria: 'Restaurantes',
+      tiempo: 'Entorno',
+      detalle: 'Referencia local de comida casual.',
+    },
+  ],
+}
+
 export const zonaPasajeAlamos = {
   titulo: 'Primer cuadro de Álamos',
   subtitulo:
@@ -1467,13 +1695,13 @@ export const getClusterById = (id: string): Cluster | undefined => {
 }
 
 export const getPrototiposByCluster = (clusterId: string): Prototipo[] => {
-  return [...prototipos, ...pasajeAlamosPrototipos].filter(
+  return [...prototipos, ...pasajeAlamosPrototipos, ...misionLaGaviaPrototipos].filter(
     (p) => p.clusterId === clusterId && p.activo,
   )
 }
 
 export const getPrototipoById = (id: string): Prototipo | undefined => {
-  return [...prototipos, ...pasajeAlamosPrototipos].find((p) => p.id === id)
+  return [...prototipos, ...pasajeAlamosPrototipos, ...misionLaGaviaPrototipos].find((p) => p.id === id)
 }
 
 export const getDisponibilidadPlanoByCluster = (clusterId: string): DisponibilidadPlano | undefined => {
@@ -1481,7 +1709,7 @@ export const getDisponibilidadPlanoByCluster = (clusterId: string): Disponibilid
 }
 
 export const getDisponibilidadesByCluster = (clusterId: string): DisponibilidadUnidad[] => {
-  return [...disponibilidades, ...pasajeAlamosDisponibilidades].filter(
+  return [...disponibilidades, ...pasajeAlamosDisponibilidades, ...misionLaGaviaDisponibilidades].filter(
     (unidad) => unidad.clusterId === clusterId,
   )
 }

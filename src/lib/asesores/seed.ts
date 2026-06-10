@@ -1,5 +1,6 @@
 import { asesores as seedAsesores, desarrollos } from "@/lib/data";
 import { INVESTTI_CATALOG_DESARROLLO_IDS } from "@/lib/catalog/investti-desarrollos";
+import { findSeedAsesor, resolveSeedAsesorId } from "@/lib/asesores/seed-match";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type AsesoresSeedResult = {
@@ -36,7 +37,7 @@ export const syncAsesoresDesarrollosFromData = async (): Promise<AsesoresSeedRes
 
   const { data, error } = await supabase
     .from("asesores")
-    .select("id, desarrollos_ids")
+    .select("id, email, desarrollos_ids")
     .eq("activo", true);
 
   if (error) {
@@ -48,7 +49,10 @@ export const syncAsesoresDesarrollosFromData = async (): Promise<AsesoresSeedRes
 
   for (const row of data ?? []) {
     const current = (row.desarrollos_ids ?? []) as string[];
-    const seedIds = seedById.get(row.id);
+    const seedIds =
+      seedById.get(row.id) ??
+      seedById.get(resolveSeedAsesorId(row.id)) ??
+      findSeedAsesor(row.id, row.email as string)?.desarrollosIds;
 
     let nextIds: string[] | null = null;
 

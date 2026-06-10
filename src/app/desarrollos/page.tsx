@@ -6,18 +6,9 @@ import { ArrowRight, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
-import { InvesttiDesarrolloLogo } from "@/components/corredor/investti/InvesttiDesarrolloLogo";
+import { DesarrolloSelectorLogo } from "@/components/desarrollos/DesarrolloSelectorLogo";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
-import {
-  isInvesttiCatalogDesarrollo,
-  type InvesttiCatalogDesarrolloId,
-} from "@/lib/catalog/investti-desarrollos";
-import { INVESTTI_DESARROLLO_LOGOS } from "@/lib/catalog/investti-recorrido-data";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
-import {
-  getDesarrolloIniciales,
-  getDesarrolloLogoUrl,
-} from "@/lib/corredor/desarrollo-logos";
 import {
   readPortalSession,
   resolveAdvisorEntryPath,
@@ -35,11 +26,23 @@ const PRODUCTO_LABEL: Record<string, string> = {
   oficinas: "Oficinas",
 };
 
-function resolveLogo(desarrollo: DesarrolloRecord): string | undefined {
-  if (isInvesttiCatalogDesarrollo(desarrollo.id)) {
-    return INVESTTI_DESARROLLO_LOGOS[desarrollo.id as InvesttiCatalogDesarrolloId];
-  }
-  return desarrollo.logo ?? getDesarrolloLogoUrl({ id: desarrollo.id });
+/** Orden fijo del hub BBR + Investti asignados al asesor. */
+const DESARROLLO_SELECTOR_ORDER: Record<string, number> = {
+  "la-vista-residencial": 10,
+  "pasaje-alamos": 20,
+  "mision-la-gavia": 30,
+  "canadas-del-valle": 100,
+  "canadas-del-arroyo": 110,
+  simate: 120,
+  "canadas-la-porta": 130,
+};
+
+function sortDesarrollosForHub(items: DesarrolloRecord[]): DesarrolloRecord[] {
+  return [...items].sort(
+    (a, b) =>
+      (DESARROLLO_SELECTOR_ORDER[a.id] ?? 500) - (DESARROLLO_SELECTOR_ORDER[b.id] ?? 500) ||
+      a.nombre.localeCompare(b.nombre, "es"),
+  );
 }
 
 export default function DesarrollosPage() {
@@ -75,7 +78,9 @@ export default function DesarrollosPage() {
           const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
           const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
           setDesarrollosDisponibles(
-            (data.desarrollos ?? []).map((item) => applyDesarrolloCodeDefaults(item)),
+            sortDesarrollosForHub(
+              (data.desarrollos ?? []).map((item) => applyDesarrolloCodeDefaults(item)),
+            ),
           );
         } catch {
           setDesarrollosDisponibles([]);
@@ -191,81 +196,61 @@ export default function DesarrollosPage() {
               </p>
             </div>
           ) : (
-            desarrollosDisponibles.map((desarrollo, index) => {
-              const logo = resolveLogo(desarrollo);
+            desarrollosDisponibles.map((desarrollo, index) => (
+              <motion.button
+                key={desarrollo.id}
+                type="button"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04, duration: 0.25 }}
+                onClick={() => handleSelect(desarrollo.id)}
+                className="group flex items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-px hover:shadow-md active:scale-[0.995] sm:gap-3.5 sm:p-3.5"
+              >
+                <DesarrolloSelectorLogo
+                  desarrolloId={desarrollo.id}
+                  nombre={desarrollo.nombre}
+                  logo={desarrollo.logo}
+                  fallbackColor={primary}
+                />
 
-              return (
-                <motion.button
-                  key={desarrollo.id}
-                  type="button"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.04, duration: 0.25 }}
-                  onClick={() => handleSelect(desarrollo.id)}
-                  className="group flex items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-px hover:shadow-md active:scale-[0.995] sm:gap-3.5 sm:p-3.5"
-                >
-                  {isInvesttiCatalogDesarrollo(desarrollo.id) ? (
-                    <InvesttiDesarrolloLogo desarrolloId={desarrollo.id} size="thumb" />
-                  ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#F2F0E9] p-1.5 sm:h-14 sm:w-14">
-                    {logo ? (
-                      <Image
-                        src={logo}
-                        alt=""
-                        width={112}
-                        height={112}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-sm font-bold leading-tight sm:text-base">
+                    {desarrollo.nombre}
+                  </h3>
+                  <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500 sm:text-xs">
+                    <MapPin className="h-3 w-3 shrink-0 opacity-60" />
+                    {desarrollo.ubicacion}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                    {desarrollo.tiposProducto.map((tipo) => (
                       <span
-                        className="text-xs font-black tracking-tight"
-                        style={{ color: primary }}
+                        key={tipo}
+                        className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500"
                       >
-                        {getDesarrolloIniciales(desarrollo.nombre)}
+                        {PRODUCTO_LABEL[tipo] ?? tipo}
                       </span>
-                    )}
+                    ))}
                   </div>
-                  )}
+                </div>
 
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-sm font-bold leading-tight sm:text-base">
-                      {desarrollo.nombre}
-                    </h3>
-                    <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500 sm:text-xs">
-                      <MapPin className="h-3 w-3 shrink-0 opacity-60" />
-                      {desarrollo.ubicacion}
+                <div className="flex shrink-0 flex-col items-end justify-center gap-2 pl-1">
+                  <div className="text-right">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                      Desde
                     </p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                      {desarrollo.tiposProducto.map((tipo) => (
-                        <span
-                          key={tipo}
-                          className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500"
-                        >
-                          {PRODUCTO_LABEL[tipo] ?? tipo}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-sm font-bold leading-none sm:text-base">
+                      {formatPrice(desarrollo.precioDesde)}
+                    </p>
                   </div>
-
-                  <div className="flex shrink-0 flex-col items-end justify-center gap-2 pl-1">
-                    <div className="text-right">
-                      <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                        Desde
-                      </p>
-                      <p className="text-sm font-bold leading-none sm:text-base">
-                        {formatPrice(desarrollo.precioDesde)}
-                      </p>
-                    </div>
-                    <span
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white transition group-hover:translate-x-0.5 sm:h-9 sm:w-9"
-                      style={{ backgroundColor: accent }}
-                    >
-                      <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </span>
-                  </div>
-                </motion.button>
-              );
-            })
+                  <span
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white transition group-hover:translate-x-0.5 sm:h-9 sm:w-9"
+                    style={{ backgroundColor: accent }}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </span>
+                </div>
+              </motion.button>
+            ))
           )}
         </div>
       </section>

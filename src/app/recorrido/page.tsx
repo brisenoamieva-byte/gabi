@@ -34,13 +34,20 @@ import { trackVisita } from "@/lib/visitas/client";
 import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
 import { InvesttiSimuladorPanel } from "@/components/corredor/investti/InvesttiSimuladorPanel";
+import { MisionLaGaviaSimuladorPanel } from "@/components/corredor/mision-la-gavia/MisionLaGaviaSimuladorPanel";
 import {
   investtiCatalogHasSimulador,
   isInvesttiCatalogDesarrollo,
 } from "@/lib/catalog/investti-desarrollos";
+import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 import {
   isPasajeDepartamentosCluster,
 } from "@/lib/catalog/pasaje-alamos-acabados";
+import {
+  resolveMisionLaGaviaUnidadFromInventario,
+  simularMisionLaGavia,
+  type MisionLaGaviaEsquemaId,
+} from "@/lib/corredor/mision-la-gavia-simulador";
 import {
   computePasajeSimulador,
   formatMonthYear,
@@ -133,6 +140,7 @@ type RecorridoState = {
   pasajeLibreSinMensPago?: number;
   pasajeLibreSinMensFechaPago?: string;
   pasajeLibreSinMensFechaFiniquito?: string;
+  misionLaGaviaEsquema?: MisionLaGaviaEsquemaId;
 };
 
 const STORAGE_KEY = "gabi_recorrido_actual";
@@ -919,6 +927,25 @@ export default function RecorridoPage() {
     state.pasajeLibreSinMensFechaFiniquito,
     state.pasajeLibreSinMensFechaPago,
     state.pasajeLibreSinMensPago,
+  ]);
+
+  const misionLaGaviaSimuladorResult = useMemo(() => {
+    if (!isMisionLaGaviaDesarrollo(activeDesarrollo?.id)) return null;
+    const unidadRecord = resolveMisionLaGaviaUnidadFromInventario(
+      cotizadorInventario,
+      state.unidadId || selectedAvailability?.id,
+    );
+    if (!unidadRecord) return null;
+    return simularMisionLaGavia({
+      unidad: unidadRecord,
+      esquema: state.misionLaGaviaEsquema ?? "contado",
+    });
+  }, [
+    activeDesarrollo?.id,
+    cotizadorInventario,
+    selectedAvailability?.id,
+    state.misionLaGaviaEsquema,
+    state.unidadId,
   ]);
 
   const tags = useMemo(() => {
@@ -2490,6 +2517,35 @@ export default function RecorridoPage() {
                             Cotizar ahora
                           </button>
                         </div>
+                        {isMisionLaGaviaDesarrollo(activeDesarrollo?.id) ? (
+                          <div className="mt-6 space-y-4 rounded-[1.5rem] border border-[#5B8A7D]/20 bg-slate-50/80 p-5">
+                            <p className="text-sm font-black text-[#14453D]">
+                              Simulador lista mar26
+                            </p>
+                            <MisionLaGaviaSimuladorPanel
+                              desarrolloId={activeDesarrollo.id}
+                              desarrolloNombre={activeDesarrollo.nombre}
+                              desarrolloLogo={activeDesarrollo.logo}
+                              prospectoRegistrado={prospectoCotizadorRegistrado}
+                              clusterId={state.clusterId}
+                              prototipoId={state.prototipoId}
+                              unidadId={state.unidadId || undefined}
+                              inventarioUnidades={cotizadorInventario}
+                              catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
+                              clienteNombre={state.cliente.nombre}
+                              asesorNombre={asesorNombre}
+                              asesorId={asesorId}
+                              esquema={state.misionLaGaviaEsquema ?? "contado"}
+                              showSelectors
+                              showCopy
+                              onUnidadChange={(id) => patchState({ unidadId: id ?? "" })}
+                              onEsquemaChange={(value) =>
+                                patchState({ misionLaGaviaEsquema: value })
+                              }
+                              onClienteNombreChange={(nombre) => patchCliente({ nombre })}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -2754,7 +2810,9 @@ export default function RecorridoPage() {
 
       {showQuote &&
         activeDesarrollo &&
-        (selectedPrototipo || isInvesttiCatalogDesarrollo(activeDesarrollo.id)) && (
+        (selectedPrototipo ||
+          isInvesttiCatalogDesarrollo(activeDesarrollo.id) ||
+          isMisionLaGaviaDesarrollo(activeDesarrollo.id)) && (
         <Modal onClose={() => setShowQuote(false)} title="Cotizador">
           <CotizadorPanel
             desarrolloId={activeDesarrollo.id}
@@ -2808,6 +2866,10 @@ export default function RecorridoPage() {
             onPasajeLibreSinMensFechaFiniquitoChange={(value) =>
               patchState({ pasajeLibreSinMensFechaFiniquito: value })
             }
+            misionLaGaviaEsquema={state.misionLaGaviaEsquema ?? "contado"}
+            onMisionLaGaviaEsquemaChange={(value) =>
+              patchState({ misionLaGaviaEsquema: value })
+            }
             onClienteNombreChange={(nombre) => patchCliente({ nombre })}
           />
         </Modal>
@@ -2825,15 +2887,46 @@ export default function RecorridoPage() {
               <p>{selectedCluster?.nombre || "Sin cluster"}</p>
               <p>{selectedPrototipo?.nombre || "Sin prototipo"}</p>
               <p className="font-black text-[#6CC24A]">
-                {money(pasajeSimuladorResult?.precioTotal ?? precioFinal)}
+                {money(
+                  pasajeSimuladorResult?.precioTotal ??
+                    misionLaGaviaSimuladorResult?.precioTotal ??
+                    precioFinal,
+                )}
               </p>
               {pasajeSimuladorResult ? (
                 <p className="text-xs text-slate-500">
                   Lista {money(pasajeSimuladorResult.precioLista)} · Contado{" "}
                   {money(pasajeSimuladorResult.precioContado)}
                 </p>
+              ) : misionLaGaviaSimuladorResult ? (
+                <p className="text-xs text-slate-500">
+                  {misionLaGaviaSimuladorResult.unidad} · Lista{" "}
+                  {money(misionLaGaviaSimuladorResult.precioLista)} ·{" "}
+                  {misionLaGaviaSimuladorResult.esquemaLabel}
+                </p>
               ) : null}
             </SummaryBox>
+            {misionLaGaviaSimuladorResult ? (
+              <SummaryBox title={`Esquema · ${misionLaGaviaSimuladorResult.esquemaLabel}`}>
+                <p>
+                  Enganche ({formatPctShort(misionLaGaviaSimuladorResult.enganchePct)}):{" "}
+                  <strong>{money(misionLaGaviaSimuladorResult.enganche)}</strong>
+                </p>
+                {misionLaGaviaSimuladorResult.numMensualidades &&
+                misionLaGaviaSimuladorResult.mensualidad ? (
+                  <p>
+                    {misionLaGaviaSimuladorResult.numMensualidades} pagos de{" "}
+                    <strong>{money(misionLaGaviaSimuladorResult.mensualidad)}</strong>
+                  </p>
+                ) : null}
+                {misionLaGaviaSimuladorResult.finiquito ? (
+                  <p>
+                    Finiquito ({formatPctShort(misionLaGaviaSimuladorResult.finiquitoPct ?? 0)}):{" "}
+                    <strong>{money(misionLaGaviaSimuladorResult.finiquito)}</strong>
+                  </p>
+                ) : null}
+              </SummaryBox>
+            ) : null}
             {pasajeSimuladorResult ? (
               <SummaryBox title={`Esquema · ${pasajeSimuladorResult.esquemaLabel}`}>
                 <p>

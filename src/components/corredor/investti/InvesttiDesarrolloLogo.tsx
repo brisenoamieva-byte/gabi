@@ -3,6 +3,7 @@ import {
   getInvesttiDesarrolloLogo,
   investtiCatalogDesarrollos,
 } from "@/lib/catalog/investti-desarrollos";
+import { desarrolloSelectorLogoPaddingClass } from "@/lib/catalog/desarrollo-selector-logo-shell";
 import { investtiDesarrolloLogoShellClass } from "@/lib/catalog/investti-desarrollo-logo-shell";
 
 type InvesttiDesarrolloLogoProps = {
@@ -33,14 +34,18 @@ export function InvesttiDesarrolloLogo({
   const nombre =
     investtiCatalogDesarrollos.find((d) => d.id === desarrolloId)?.nombre ?? "Desarrollo";
   const isLaPorta = desarrolloId === "canadas-la-porta";
+  const padding =
+    size === "thumb"
+      ? desarrolloSelectorLogoPaddingClass(desarrolloId)
+      : isLaPorta
+        ? "p-0"
+        : "px-2 py-2";
 
   return (
     <div
-      className={`investti-desarrollo-logo flex shrink-0 items-center justify-center overflow-hidden border shadow-sm ${
-        isLaPorta ? "p-0" : "px-2 py-2"
-      } ${investtiDesarrolloLogoShellClass(desarrolloId)} ${SIZE_CLASS[size]} ${className}`}
+      className={`investti-desarrollo-logo flex shrink-0 items-center justify-center overflow-hidden border shadow-sm ${padding} ${investtiDesarrolloLogoShellClass(desarrolloId)} ${SIZE_CLASS[size]} ${className}`}
       data-desarrollo-logo={desarrolloId}
-      style={isLaPorta ? LA_PORTA_BRAND : undefined}
+      style={isLaPorta && size !== "thumb" ? LA_PORTA_BRAND : undefined}
     >
       <Image
         src={logo}

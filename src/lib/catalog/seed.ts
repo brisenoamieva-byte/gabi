@@ -9,6 +9,10 @@ import {
   pasajeAlamosDisponibilidades,
   pasajeAlamosPrototipos,
 } from "@/lib/catalog/pasaje-alamos.generated";
+import {
+  misionLaGaviaDisponibilidades,
+  misionLaGaviaPrototipos,
+} from "@/lib/catalog/mision-la-gavia.generated";
 import { getDefaultRecorridoContenido } from "@/lib/catalog/recorrido-content";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
 import { syncSuperficieLegacyFields } from "@/lib/inventario/productos-recomendados";
@@ -20,9 +24,11 @@ export type CatalogSeedResult = {
   clusters: number;
   prototipos: number;
   inventarioPasaje: number;
+  inventarioMisionLaGavia: number;
 };
 
 const PASAJE_DESARROLLO_ID = "pasaje-alamos";
+const MISION_LA_GAVIA_DESARROLLO_ID = "mision-la-gavia";
 const INVENTARIO_BATCH_SIZE = 50;
 
 const clusterDesarrolloLookup = new Map(
@@ -88,6 +94,31 @@ export const seedPasajeAlamosInventario = async (): Promise<number> => {
         ? " Aplica supabase/migrations/017_pasaje_unidad_detalles.sql en Supabase (npm run db:migrate:hint)."
         : "";
       throw new Error(`No se pudo cargar inventario Pasaje Álamos: ${error.message}.${hint}`);
+    }
+
+    loaded += batch.length;
+  }
+
+  return loaded;
+};
+
+export const seedMisionLaGaviaInventario = async (): Promise<number> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado. Revisa las variables de entorno.");
+  }
+
+  const rows = misionLaGaviaDisponibilidades.map(disponibilidadToRow);
+  let loaded = 0;
+
+  for (let index = 0; index < rows.length; index += INVENTARIO_BATCH_SIZE) {
+    const batch = rows.slice(index, index + INVENTARIO_BATCH_SIZE);
+    const { error } = await supabase.from("disponibilidad_unidades").upsert(batch, {
+      onConflict: "desarrollo_id,cluster_id,unidad",
+    });
+
+    if (error) {
+      throw new Error(`No se pudo cargar inventario Misión La Gavia: ${error.message}.`);
     }
 
     loaded += batch.length;
@@ -187,7 +218,7 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
     clustersCount += 1;
   }
 
-  for (const prototipo of [...prototipos, ...pasajeAlamosPrototipos]) {
+  for (const prototipo of [...prototipos, ...pasajeAlamosPrototipos, ...misionLaGaviaPrototipos]) {
     const { id, clusterId, ...payload } = prototipo;
     const clusterDesarrolloId = clusters.find((c) => c.id === clusterId)?.desarrolloId ?? desarrolloId;
     const { error } = await supabase.from("prototipos_catalog").upsert(
@@ -224,6 +255,7 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
   }
 
   const inventarioPasaje = await seedPasajeAlamosInventario();
+  const inventarioMisionLaGavia = await seedMisionLaGaviaInventario();
 
   return {
     comercializadoras: comercializadorasCount,
@@ -231,5 +263,6 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
     clusters: clustersCount,
     prototipos: prototiposCount,
     inventarioPasaje,
+    inventarioMisionLaGavia,
   };
 };
