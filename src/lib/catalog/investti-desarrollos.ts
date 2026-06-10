@@ -85,8 +85,14 @@ export const investtiCatalogDesarrollos: Desarrollo[] = [
     descripcion:
       "80+ ha en El Patol · 2,200 lotes · 30+ amenidades. Etapa 1 160–250 m² + premium vista cañada. Líder del corredor sur: 15 lotes/mes.",
   }),
-  corredorToDesarrollo("canadas-del-arroyo"),
-  corredorToDesarrollo("simate"),
+  corredorToDesarrollo("canadas-del-arroyo", {
+    descripcion:
+      "538 lotes Reserva · km 6.4 Metropolitano · 160–342 m². Fibra óptica y 15+ amenidades. 2.ª absorción del corredor: 7.8 lotes/mes.",
+  }),
+  corredorToDesarrollo("simate", {
+    descripcion:
+      "312 lotes · pie del Cimatario · 180–400 m². Casa club operativa · 23,000 m² verdes. Naturaleza premium en acceso Noria.",
+  }),
   canadasLaPortaDesarrollo,
 ];
 
@@ -103,8 +109,12 @@ export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map
     descripcion:
       d.id === "canadas-del-valle"
         ? "Etapa 1 160–250 m² + premium vista cañada · nueva etapa 220–260 m² recomendada · simulador oficial Investti"
-        : (corredor?.notas?.split(".")[0] ??
-          "Lotes residenciales · simulador oficial Investti en cotización"),
+        : d.id === "canadas-del-arroyo"
+          ? "Reserva 538 lotes · 160–342 m² · fibra óptica · 15+ amenidades · simulador oficial Investti"
+          : d.id === "simate"
+            ? "180–400 m² · casa club operativa · Cimatario · simulador oficial Investti"
+            : (corredor?.notas?.split(".")[0] ??
+              "Lotes residenciales · simulador oficial Investti en cotización"),
     precioDesde: d.precioDesde,
     entregaGeneral: "Por confirmar",
     amenidades: corredor?.amenidades ?? [],
