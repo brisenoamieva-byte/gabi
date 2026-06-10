@@ -16,7 +16,6 @@ import {
   formatInvesttiEntrega,
   getInvesttiEsquemasVenta,
   getInvesttiReglas,
-  getInvesttiSlugToExcel,
   isInvesttiSimuladorDesarrollo,
   labelDiaPagosSubsecuentes,
   parseFechaPrimerPagoISO,
@@ -89,11 +88,10 @@ export function InvesttiSimuladorPanel({
     useState<InvesttiDiaPagoSubsecuente>("dia-15");
   const [tipoCompra, setTipoCompra] = useState<InvesttiTipoCompra>("recursos-propios");
 
-  const excelNombre = getInvesttiSlugToExcel()[desarrolloId];
   const reglas = configReady ? getInvesttiReglas(desarrolloId) : undefined;
   const esquemasVenta = useMemo(
     () => (configReady ? getInvesttiEsquemasVenta() : []),
-    [configReady, desarrolloId],
+    [configReady],
   );
 
   useEffect(() => {
@@ -370,7 +368,6 @@ export function InvesttiSimuladorPanel({
     fechaPrimerPagoISO,
     diaPagosSubsecuentes,
     mensMinima,
-    esquemaAmortId,
     enganchePct,
     engancheDiferido,
     plazoPropuesta,
