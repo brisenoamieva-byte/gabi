@@ -19,9 +19,9 @@ const SOURCES = [
     arroyo: true,
   },
   {
-    src: `${assetsDir}/c__Users_brise_AppData_Roaming_Cursor_User_workspaceStorage_67633a6a8bf6ea8b9005f3630d5bfc0a_images_gold-e7f3d231-0791-4c85-89cb-c79aeef5cedd.png`,
+    src: `${assetsDir}/c__Users_brise_AppData_Roaming_Cursor_User_workspaceStorage_67633a6a8bf6ea8b9005f3630d5bfc0a_images_gold__1_-77dfa188-ce21-40c8-a556-3aaa4d9c78df.png`,
     dest: "canadas-la-porta.png",
-    /** Blanco sobre tan/dorado — marca oficial La Porta. */
+    /** Dorado sobre negro → blanco sobre tan #A68B6B (marca La Porta). */
     laPorta: true,
   },
   {
@@ -80,11 +80,36 @@ async function processLogo({ src, dest, transparent = false, arroyo = false, laP
   await processFile(filePath, { transparent, arroyo, laPorta });
 }
 
+/** Arte La Porta: trazos dorados sobre negro → blanco sobre tan oficial. */
+function isLaPortaBackgroundPixel(r, g, b) {
+  return Math.max(r, g, b) <= 28;
+}
+
 async function processLaPortaFile(filePath) {
+  const { data, info } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (isLaPortaBackgroundPixel(r, g, b)) {
+      data[i] = LA_PORTA_BG.r;
+      data[i + 1] = LA_PORTA_BG.g;
+      data[i + 2] = LA_PORTA_BG.b;
+      data[i + 3] = 255;
+    } else {
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = 255;
+    }
+  }
+
   const tmpPath = `${filePath}.tmp.png`;
-  await sharp(filePath)
-    .flatten({ background: LA_PORTA_BG })
-    .trim({ threshold: 12 })
+  await sharp(data, {
+    raw: { width: info.width, height: info.height, channels: 4 },
+  })
+    .trim({ threshold: 8 })
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(tmpPath);
   fs.renameSync(tmpPath, filePath);
@@ -163,6 +188,7 @@ if (arroyoGlob) {
   if (arroyoEntry) arroyoEntry.src = path.join(assetsDir, arroyoGlob);
 }
 const laPortaGlob =
+  assetFiles.find((f) => f.includes("gold__1_-77dfa188")) ??
   assetFiles.find((f) => f.includes("347303588")) ??
   assetFiles.find((f) => f.includes("gold-e7f3d231")) ??
   assetFiles.find((f) => f.includes("gold_2-ee75a4b7")) ??
