@@ -21,7 +21,7 @@ const SOURCES = [
   {
     src: `${assetsDir}/c__Users_brise_AppData_Roaming_Cursor_User_workspaceStorage_67633a6a8bf6ea8b9005f3630d5bfc0a_images_gold-e7f3d231-0791-4c85-89cb-c79aeef5cedd.png`,
     dest: "canadas-la-porta.png",
-    /** Dorado sobre negro — legible en recuadro oscuro del simulador. */
+    /** Blanco sobre tan/dorado — marca oficial La Porta. */
     laPorta: true,
   },
   {
@@ -51,14 +51,8 @@ function alphaForPixel(r, g, b) {
 /** Fondo Cañadas del Arroyo en simulador — blanco para legibilidad del nombre. */
 const ARROYO_BG = { r: 255, g: 255, b: 255 };
 
-/** Fondo Cañadas La Porta — negro cálido para dorado (#0C0B0A). */
-const LA_PORTA_BG = { r: 12, g: 11, b: 10 };
-
-function isLaPortaGold(r, g, b) {
-  const max = Math.max(r, g, b);
-  const chromaVal = chroma(r, g, b);
-  return r >= 65 && g >= 45 && b <= 170 && chromaVal >= 10 && max >= 55;
-}
+/** Fondo Cañadas La Porta — tan/dorado marca (#A68B6B). */
+const LA_PORTA_BG = { r: 166, g: 139, b: 107 };
 
 function classifyArroyoPixel(r, g, b) {
   const max = Math.max(r, g, b);
@@ -86,7 +80,22 @@ async function processLogo({ src, dest, transparent = false, arroyo = false, laP
   await processFile(filePath, { transparent, arroyo, laPorta });
 }
 
+async function processLaPortaFile(filePath) {
+  const tmpPath = `${filePath}.tmp.png`;
+  await sharp(filePath)
+    .flatten({ background: LA_PORTA_BG })
+    .trim({ threshold: 12 })
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .toFile(tmpPath);
+  fs.renameSync(tmpPath, filePath);
+}
+
 async function processFile(filePath, { transparent = false, arroyo = false, laPorta = false } = {}) {
+  if (laPorta) {
+    await processLaPortaFile(filePath);
+    return;
+  }
+
   const image = sharp(filePath).ensureAlpha();
   const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
 
@@ -104,24 +113,6 @@ async function processFile(filePath, { transparent = false, arroyo = false, laPo
         data[i + 3] = 255;
       } else if (kind === "text") {
         // Conservar gris de marca (#202020) — legible sobre blanco.
-        data[i + 3] = 255;
-      } else {
-        data[i + 3] = 255;
-      }
-    } else if (laPorta) {
-      const max = Math.max(r, g, b);
-      const chromaVal = chroma(r, g, b);
-      if (max <= 35 && chromaVal < 22) {
-        data[i] = LA_PORTA_BG.r;
-        data[i + 1] = LA_PORTA_BG.g;
-        data[i + 2] = LA_PORTA_BG.b;
-        data[i + 3] = 255;
-      } else if (isLaPortaGold(r, g, b)) {
-        data[i + 3] = 255;
-      } else if (max <= 55 && chromaVal < 14) {
-        data[i] = LA_PORTA_BG.r;
-        data[i + 1] = LA_PORTA_BG.g;
-        data[i + 2] = LA_PORTA_BG.b;
         data[i + 3] = 255;
       } else {
         data[i + 3] = 255;
@@ -147,8 +138,6 @@ async function processFile(filePath, { transparent = false, arroyo = false, laPo
     pipeline = pipeline.trim({ threshold: 12 });
   } else if (arroyo) {
     pipeline = pipeline.flatten({ background: ARROYO_BG }).trim({ threshold: 10 });
-  } else if (laPorta) {
-    pipeline = pipeline.flatten({ background: LA_PORTA_BG }).trim({ threshold: 8 });
   } else {
     pipeline = pipeline.flatten({ background: { r: 255, g: 255, b: 255 } });
   }
@@ -174,6 +163,7 @@ if (arroyoGlob) {
   if (arroyoEntry) arroyoEntry.src = path.join(assetsDir, arroyoGlob);
 }
 const laPortaGlob =
+  assetFiles.find((f) => f.includes("347303588")) ??
   assetFiles.find((f) => f.includes("gold-e7f3d231")) ??
   assetFiles.find((f) => f.includes("gold_2-ee75a4b7")) ??
   assetFiles.find((f) => f.includes("_images_gold"));

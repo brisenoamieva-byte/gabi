@@ -285,6 +285,7 @@ export default function CotizadorPage() {
 
   const isInvesttiTerreno = isInvesttiCatalogDesarrollo(desarrollo.id);
   const isInvesttiPortal = isInvesttiSimuladorPortal(portal?.slug);
+  const showCotizadorAside = !isInvesttiTerreno;
 
   if (!clusterId && !isInvesttiTerreno) {
     return (
@@ -387,7 +388,13 @@ export default function CotizadorPage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 md:px-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
+      <section
+        className={`mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 md:px-10 lg:items-start ${
+          showCotizadorAside
+            ? "lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]"
+            : ""
+        }`}
+      >
         <div className="rounded-2xl border border-[#201044]/8 bg-white p-4 shadow-lg shadow-[#201044]/5 sm:rounded-[1.75rem] sm:p-6 md:p-7">
           <div className="mt-1 sm:mt-0">
             <CotizadorPanel
@@ -437,8 +444,8 @@ export default function CotizadorPage() {
           </div>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-6">
-          {!isInvesttiCatalogDesarrollo(desarrollo.id) ? (
+        {showCotizadorAside ? (
+          <aside className="space-y-4 lg:sticky lg:top-6">
             <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-md sm:rounded-[1.75rem] sm:p-6">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
                 Datos bancarios
@@ -493,18 +500,18 @@ export default function CotizadorPage() {
                 {copiedBank ? "Datos copiados" : "Copiar datos bancarios"}
               </button>
             </div>
-          ) : null}
 
-          <div className="rounded-2xl bg-[#201044] p-5 sm:rounded-[1.75rem] sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
-              Guía gabi
-            </p>
-            <p className="mt-2.5 text-sm leading-relaxed text-white/85">
-              Propuesta comercial del momento. Seguimiento del prospecto y simulaciones
-              bancarias en el CRM del desarrollador.
-            </p>
-          </div>
-        </aside>
+            <div className="rounded-2xl bg-[#201044] p-5 sm:rounded-[1.75rem] sm:p-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
+                Guía gabi
+              </p>
+              <p className="mt-2.5 text-sm leading-relaxed text-white/85">
+                Propuesta comercial del momento. Seguimiento del prospecto y simulaciones
+                bancarias en el CRM del desarrollador.
+              </p>
+            </div>
+          </aside>
+        ) : null}
       </section>
     </main>
   );

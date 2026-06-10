@@ -10,7 +10,10 @@ import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import {
   INVESTTI_CATALOG_DESARROLLO_IDS,
   INVESTTI_GRUPO_LOGO,
+  isInvesttiCatalogDesarrollo,
+  type InvesttiCatalogDesarrolloId,
 } from "@/lib/catalog/investti-desarrollos";
+import { INVESTTI_DESARROLLO_LOGOS } from "@/lib/catalog/investti-recorrido-data";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   getDesarrolloIniciales,
@@ -31,6 +34,9 @@ import { formatPrice, type Asesor } from "@/lib/data";
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
 
 function resolveLogo(desarrollo: DesarrolloRecord): string | undefined {
+  if (isInvesttiCatalogDesarrollo(desarrollo.id)) {
+    return INVESTTI_DESARROLLO_LOGOS[desarrollo.id as InvesttiCatalogDesarrolloId];
+  }
   return desarrollo.logo ?? getDesarrolloLogoUrl({ id: desarrollo.id });
 }
 
@@ -225,7 +231,7 @@ export default function InvesttiDesarrollosPage() {
                   <div
                     className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg p-1.5 sm:h-14 sm:w-14 ${
                       desarrollo.id === "canadas-la-porta"
-                        ? "bg-[#0C0B0A]"
+                        ? "bg-[#A68B6B]"
                         : "border border-slate-200/80 bg-white"
                     }`}
                   >

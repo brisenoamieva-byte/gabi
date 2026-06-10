@@ -16,7 +16,7 @@ type InvesttiDesarrolloLogoProps = {
  */
 const LOGO_SHELL_STYLE: Partial<Record<string, string>> = {
   "canadas-la-porta":
-    "border-[#2a2620]/60 bg-[#0C0B0A] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+    "border-[#8a7358]/35 bg-[#A68B6B] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]",
 };
 
 export function InvesttiDesarrolloLogo({

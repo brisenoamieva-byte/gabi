@@ -7,6 +7,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
+import {
+  isInvesttiCatalogDesarrollo,
+  type InvesttiCatalogDesarrolloId,
+} from "@/lib/catalog/investti-desarrollos";
+import { INVESTTI_DESARROLLO_LOGOS } from "@/lib/catalog/investti-recorrido-data";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   getDesarrolloIniciales,
@@ -30,6 +35,9 @@ const PRODUCTO_LABEL: Record<string, string> = {
 };
 
 function resolveLogo(desarrollo: DesarrolloRecord): string | undefined {
+  if (isInvesttiCatalogDesarrollo(desarrollo.id)) {
+    return INVESTTI_DESARROLLO_LOGOS[desarrollo.id as InvesttiCatalogDesarrolloId];
+  }
   return desarrollo.logo ?? getDesarrolloLogoUrl({ id: desarrollo.id });
 }
 
