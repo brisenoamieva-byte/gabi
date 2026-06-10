@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
+import { InvesttiDesarrolloLogo } from "@/components/corredor/investti/InvesttiDesarrolloLogo";
 import {
   getPrototiposCotizables,
   type CotizadorCatalog,
@@ -308,7 +309,9 @@ export default function CotizadorPage() {
       <header className="border-b border-[#201044]/10 bg-white px-4 py-4 shadow-sm sm:px-6 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-1 items-center gap-4">
-            {desarrollo.logo ? (
+            {isInvesttiTerreno ? (
+              <InvesttiDesarrolloLogo desarrolloId={desarrollo.id} size="header" />
+            ) : desarrollo.logo ? (
               <div className="flex h-[4.25rem] w-[10.5rem] shrink-0 items-center justify-center rounded-2xl border border-[#201044]/8 bg-[#F2F0E9] px-3 py-2 shadow-sm">
                 <Image
                   src={desarrollo.logo}
@@ -321,10 +324,14 @@ export default function CotizadorPage() {
               </div>
             ) : null}
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6cc24a] sm:text-[11px]">
-                Cotización express
-              </p>
-              <h1 className="mt-1 text-balance text-xl font-black leading-tight text-[#201044] sm:text-2xl md:text-[1.75rem]">
+              {!isInvesttiTerreno ? (
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6cc24a] sm:text-[11px]">
+                  Cotización express
+                </p>
+              ) : null}
+              <h1
+                className={`text-balance text-xl font-black leading-tight text-[#201044] sm:text-2xl md:text-[1.75rem] ${isInvesttiTerreno ? "" : "mt-1"}`}
+              >
                 {desarrollo.nombre}
               </h1>
               <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-[0.9375rem]">

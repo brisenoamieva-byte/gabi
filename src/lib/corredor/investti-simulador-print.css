@@ -52,6 +52,11 @@
     border-color: #8a7358 !important;
   }
 
+  .investti-desarrollo-logo[data-desarrollo-logo="simate"] {
+    background: #0c0b0a !important;
+    border-color: #2a2620 !important;
+  }
+
   .investti-desarrollo-logo img {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;

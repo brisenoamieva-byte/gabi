@@ -93,6 +93,9 @@ export const INVESTTI_DESCUENTO_MAX_SIN_AUTORIZACION_PCT = 0.015;
 /** Plazo máx. Infonavit / hipotecario — hoja Manzanas (columna Infonavit meses). */
 export const INVESTTI_PLAZO_MAX_CREDITO_MESES = 6;
 
+/** Liquidar todo el saldo en el último mes del plazo (mensualidad 0). */
+export const INVESTTI_APORTACION_AL_FINAL = 0;
+
 export type InvesttiTipoCompra = "recursos-propios" | "infonavit" | "hipotecario";
 
 export const INVESTTI_TIPOS_COMPRA: readonly {
@@ -646,9 +649,13 @@ export function buildMesesPagoPlan(
   plazoMeses: number,
   aportacionCada: number,
 ): number[] {
+  const fin = engancheDiferido + plazoMeses;
+  if (aportacionCada === INVESTTI_APORTACION_AL_FINAL) {
+    return fin > engancheDiferido ? [fin] : [];
+  }
+
   const meses: number[] = [];
   const inicio = engancheDiferido + aportacionCada;
-  const fin = engancheDiferido + plazoMeses;
   for (let g = inicio; g <= fin; g += aportacionCada) {
     meses.push(g);
   }

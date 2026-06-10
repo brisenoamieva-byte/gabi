@@ -2,6 +2,7 @@ import {
   buildMesesPagoPlan,
   calcAportacionDeseadaInvestti,
   calcResumenDescuentoInvestti,
+  INVESTTI_APORTACION_AL_FINAL,
   pagoConDescuentoInvestti,
   simularPlanPersonalizadoInvestti,
   toFilasProspecto,
@@ -164,6 +165,37 @@ for (const [label, calc, expected] of descChecks) {
       : label.includes("total")
         ? Math.abs(Number(calc) - Number(expected)) < 1
         : Math.abs(Number(calc) - Number(expected)) < 0.02;
+  console.log(label, pass ? "OK" : "FAIL", { calc, expected });
+  if (!pass) ok = false;
+}
+
+const mesesFinal = buildMesesPagoPlan(1, 12, INVESTTI_APORTACION_AL_FINAL);
+const planFinal = simularPlanPersonalizadoInvestti("canadas-del-valle", {
+  precioContado: 1100196.61,
+  enganchePct: 0.3,
+  engancheDiferidoMeses: 1,
+  plazoMeses: 12,
+  aportacionCadaMeses: INVESTTI_APORTACION_AL_FINAL,
+  mensualidadDeseada: 0,
+});
+const mes13 = planFinal.tablaAmortizacion.find((f) => f.numero === 13);
+const mesesSinPago = planFinal.tablaAmortizacion.filter(
+  (f) => f.numero > 1 && f.numero < 13 && f.aportacion < 0.01,
+);
+const finalChecks = [
+  ["meses aportación final", mesesFinal.length, 1],
+  ["único pago en mes 13", mesesFinal[0], 13],
+  ["mes 13 liquida saldo", mes13?.saldoFinal, 0],
+  ["mes 13 pago > 0", (mes13?.aportacion ?? 0) > 0, true],
+  ["meses 2-12 sin pago", mesesSinPago.length, 11],
+  ["saldo final plan final", planFinal.tablaAmortizacion.at(-1)?.saldoFinal, 0],
+] as const;
+
+for (const [label, calc, expected] of finalChecks) {
+  const pass =
+    typeof expected === "boolean"
+      ? calc === expected
+      : Math.abs(Number(calc) - Number(expected)) < 2;
   console.log(label, pass ? "OK" : "FAIL", { calc, expected });
   if (!pass) ok = false;
 }

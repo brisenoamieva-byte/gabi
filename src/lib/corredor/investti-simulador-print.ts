@@ -97,6 +97,9 @@ export function getInvesttiTerminosCondiciones(apartado: number): {
 }
 
 export function labelAportacionCadaMeses(meses: number): string {
+  if (meses === 0) {
+    return "Al final del plazo";
+  }
   const labels: Record<number, string> = {
     1: "Mensual",
     3: "Trimestral",

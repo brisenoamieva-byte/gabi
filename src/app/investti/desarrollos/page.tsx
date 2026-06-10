@@ -14,6 +14,7 @@ import {
   type InvesttiCatalogDesarrolloId,
 } from "@/lib/catalog/investti-desarrollos";
 import { INVESTTI_DESARROLLO_LOGOS } from "@/lib/catalog/investti-recorrido-data";
+import { investtiDesarrolloLogoShellClass } from "@/lib/catalog/investti-desarrollo-logo-shell";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   getDesarrolloIniciales,
@@ -224,11 +225,7 @@ export default function InvesttiDesarrollosPage() {
                   className="group flex items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-px hover:shadow-md active:scale-[0.995] sm:gap-3.5 sm:p-3.5"
                 >
                   <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg p-1.5 sm:h-14 sm:w-14 ${
-                      desarrollo.id === "canadas-la-porta"
-                        ? "bg-[#A68B6B]"
-                        : "border border-slate-200/80 bg-white"
-                    }`}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1.5 sm:h-14 sm:w-14 ${investtiDesarrolloLogoShellClass(desarrollo.id)}`}
                   >
                     {logo ? (
                       <Image

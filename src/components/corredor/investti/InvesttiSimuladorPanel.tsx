@@ -25,6 +25,7 @@ import {
   pagoMotorDesdeProspecto,
   toFechaPrimerPagoISO,
   INVESTTI_TIPOS_COMPRA,
+  INVESTTI_APORTACION_AL_FINAL,
   INVESTTI_PLAZO_MAX_CREDITO_MESES,
   getEngancheDiferidoMaxInvestti,
   getPlazoMaxPlanInvestti,
@@ -1028,7 +1029,11 @@ function PlanPersonalizadoSection({
     { meses: 3, label: "3 — trimestral" },
     { meses: 6, label: "6 — semestral" },
     { meses: 12, label: "12 — anual" },
-  ].filter((o) => o.meses <= aportacionCadaMax);
+    { meses: INVESTTI_APORTACION_AL_FINAL, label: "final — al término del plazo" },
+  ].filter(
+    (o) =>
+      o.meses === INVESTTI_APORTACION_AL_FINAL || o.meses <= aportacionCadaMax,
+  );
   const filaMesAport = plan.tablaAmortizacion.find(
     (f) => (f.aportacionProgramada ?? 0) > 0.01 || f.tipo === "aportacion",
   );
@@ -1111,12 +1116,14 @@ function PlanPersonalizadoSection({
             isReport={isReport}
           />
           <p className={`mt-1.5 text-[11px] ${isReport ? "text-neutral-500" : "text-slate-500"}`}>
-            {aportacionCada > 1
-              ? "La mensualidad se aplica cada mes; las aportaciones extra se calculan en la periodicidad elegida para cerrar en $0."
-              : "Captura la mensualidad del prospecto. Si queda vacío, se usa la aportación calculada para cerrar en $0."}
+            {aportacionCada === INVESTTI_APORTACION_AL_FINAL
+              ? "Con mensualidad en 0, todo el saldo se liquida en el último mes del plazo."
+              : aportacionCada > 1
+                ? "La mensualidad se aplica cada mes; las aportaciones extra se calculan en la periodicidad elegida para cerrar en $0."
+                : "Captura la mensualidad del prospecto. Si queda vacío, se usa la aportación calculada para cerrar en $0."}
           </p>
         </Field>
-        {aportacionCada > 1 || mensualidadDeseada <= 0 ? (
+        {aportacionCada !== 1 || mensualidadDeseada <= 0 ? (
           <div>
             <Stat
               label={
