@@ -225,7 +225,11 @@ export default function InvesttiDesarrollosPage() {
                   className="group flex items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-px hover:shadow-md active:scale-[0.995] sm:gap-3.5 sm:p-3.5"
                 >
                   <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1.5 sm:h-14 sm:w-14 ${investtiDesarrolloLogoShellClass(desarrollo.id)}`}
+                    className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1.5 ${
+                      desarrollo.id === "canadas-la-porta"
+                        ? "h-12 w-[calc(3rem*872/566)] sm:h-14 sm:w-[calc(3.5rem*872/566)]"
+                        : "h-12 w-12 sm:h-14 sm:w-14"
+                    } ${investtiDesarrolloLogoShellClass(desarrollo.id)}`}
                   >
                     {logo ? (
                       <Image
@@ -233,7 +237,7 @@ export default function InvesttiDesarrollosPage() {
                         alt=""
                         width={112}
                         height={112}
-                        className="max-h-full max-w-full object-contain"
+                        className="h-full w-full object-contain"
                       />
                     ) : (
                       <span
