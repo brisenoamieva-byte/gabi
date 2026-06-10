@@ -8,6 +8,7 @@ import {
   type Prototipo,
 } from "@/lib/data";
 import { pasajeAlamosPrototipos } from "@/lib/catalog/pasaje-alamos.generated";
+import { getInvesttiSimuladorDesarrolloIds } from "@/lib/portal/investti-simulador";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
   applyDesarrolloCodeDefaults,
@@ -192,6 +193,10 @@ export const getComercializadoraByUsuario = async (
 export const getDesarrolloIdsForComercializadora = async (
   comercializadoraId: string,
 ): Promise<string[]> => {
+  if (comercializadoraId === "investti") {
+    return getInvesttiSimuladorDesarrolloIds();
+  }
+
   const supabase = createSupabaseServiceClient();
 
   if (!supabase) {

@@ -10,10 +10,10 @@ export const INVESTTI_TARJETAS_PROCESO: Record<InvesttiCatalogDesarrolloId, stri
 };
 
 export const INVESTTI_DESARROLLO_LOGOS: Record<InvesttiCatalogDesarrolloId, string> = {
-  "canadas-del-valle": "/corredor/logos/CANADAS-DEL-VALLE.jpg",
-  "canadas-del-arroyo": "/corredor/logos/CANADAS-DEL-ARROYO.jpg",
-  simate: "/corredor/logos/SIMATE.jpg",
-  "canadas-la-porta": "/corredor/desarrolladores/investti.jpg",
+  "canadas-del-valle": "/corredor/logos/investti/canadas-del-valle.png",
+  "canadas-del-arroyo": "/corredor/logos/investti/canadas-del-arroyo.png",
+  simate: "/corredor/logos/investti/simate.png",
+  "canadas-la-porta": "/corredor/logos/investti/canadas-la-porta.png",
 };
 
 export const grupoInvesttiRecorrido = {

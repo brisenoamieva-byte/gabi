@@ -1,6 +1,12 @@
 import { verifyPin } from "@/lib/asesores/pin-server";
 import type { AsesorSession } from "@/lib/asesores/types";
 import { asesores as fallbackAsesores } from "@/lib/data";
+import {
+  getInvesttiSimuladorDemoSession,
+  getInvesttiSimuladorDesarrolloIds,
+  INVESTTI_SIMULADOR_DEMO_ASESOR_ID,
+  matchesInvesttiSimuladorPin,
+} from "@/lib/portal/investti-simulador";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 type AsesorAuthRow = {
@@ -20,6 +26,31 @@ const toSession = (row: Omit<AsesorAuthRow, "pin_hash" | "activo">): AsesorSessi
   rol: row.rol,
   desarrollosIds: row.desarrollos_ids ?? [],
 });
+
+export const authenticateInvesttiSimuladorByPin = async (
+  pin: string,
+): Promise<{ asesor: AsesorSession; source: "investti-demo" | "supabase" | "fallback" } | null> => {
+  if (matchesInvesttiSimuladorPin(pin)) {
+    return {
+      asesor: getInvesttiSimuladorDemoSession(),
+      source: "investti-demo",
+    };
+  }
+
+  const investtiIds = getInvesttiSimuladorDesarrolloIds();
+  const result = await authenticateAsesorByPin(pin, { desarrolloIds: investtiIds });
+  if (!result) {
+    return null;
+  }
+
+  return {
+    asesor: {
+      ...result.asesor,
+      desarrollosIds: result.asesor.desarrollosIds.filter((id) => investtiIds.includes(id)),
+    },
+    source: result.source,
+  };
+};
 
 export const authenticateAsesorByPin = async (
   pin: string,
@@ -83,6 +114,10 @@ export const authenticateAsesorByPin = async (
 };
 
 export const getAsesorSessionById = async (id: string): Promise<AsesorSession | null> => {
+  if (id === INVESTTI_SIMULADOR_DEMO_ASESOR_ID) {
+    return getInvesttiSimuladorDemoSession();
+  }
+
   const supabase = createSupabaseServiceClient();
 
   if (supabase) {

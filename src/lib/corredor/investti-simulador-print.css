@@ -1,0 +1,188 @@
+/* Simulador Investti — exportación PDF carta (compacto, estilo memo) */
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.38in 0.45in;
+  }
+
+  .investti-simulador-print-page {
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+
+  .investti-simulador-print-page > .px-4,
+  .investti-simulador-print-page > div {
+    padding: 0 !important;
+  }
+
+  .investti-sim-print-sheet {
+    box-shadow: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .investti-sim-print-header {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    padding-bottom: 0.1in !important;
+  }
+
+  .investti-sim-print-cover h1 {
+    font-size: 14pt !important;
+    line-height: 1.15 !important;
+  }
+
+  .investti-sim-print-cover .text-xl {
+    font-size: 14pt !important;
+  }
+
+  .investti-desarrollo-logo {
+    background: #fff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: none !important;
+    height: 0.72in !important;
+    width: 1.05in !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .investti-desarrollo-logo[data-desarrollo-logo="canadas-la-porta"] {
+    background: #0c0b0a !important;
+    border-color: #2a2620 !important;
+  }
+
+  .investti-desarrollo-logo img {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .investti-grupo-logo-print {
+    height: 0.34in !important;
+    max-width: 1.15in !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .investti-sim-print-stat-grid {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .investti-sim-print-stat {
+    padding: 0.06in 0.08in !important;
+  }
+
+  .investti-sim-print-stat .text-\[15px\] {
+    font-size: 9.5pt !important;
+  }
+
+  .investti-sim-print-section {
+    break-inside: auto;
+    margin-top: 0.1in !important;
+    padding-top: 0.08in !important;
+  }
+
+  .investti-sim-print-section-head h2,
+  .investti-sim-print-section .text-lg {
+    font-size: 11.5pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .investti-sim-print-section-head p,
+  .investti-sim-print-section .text-\[12px\] {
+    font-size: 8pt !important;
+    line-height: 1.32 !important;
+  }
+
+  .investti-sim-print-calendar {
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  .investti-sim-print-table-wrap {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .investti-sim-print-table {
+    font-size: 7.75pt !important;
+    width: 100% !important;
+  }
+
+  .investti-sim-print-table th,
+  .investti-sim-print-table td {
+    font-size: inherit !important;
+    font-weight: 400 !important;
+    line-height: 1.28 !important;
+    padding: 0.05in 0.06in !important;
+  }
+
+  .investti-sim-print-calendar .investti-sim-print-table thead th {
+    font-size: 7pt !important;
+    font-weight: 500 !important;
+  }
+
+  .investti-sim-print-calendar .investti-sim-print-table tbody td {
+    color: #292524 !important;
+    font-size: 7.75pt !important;
+    font-weight: 400 !important;
+  }
+
+  .investti-sim-print-calendar .investti-sim-print-table tfoot .font-medium {
+    font-weight: 500 !important;
+  }
+
+  .investti-sim-print-table thead {
+    display: table-header-group;
+  }
+
+  .investti-sim-print-table tfoot {
+    display: table-footer-group;
+  }
+
+  .investti-sim-print-table tr {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  /* Más filas por hoja; salto solo en bloques largos */
+  .investti-sim-print-calendar .investti-sim-print-table tbody tr:nth-child(26n) {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .investti-sim-print-terminos {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    margin-top: 0.12in !important;
+    padding-top: 0.08in !important;
+  }
+
+  .investti-sim-print-terminos h2 {
+    font-size: 10pt !important;
+  }
+
+  .investti-sim-print-terminos li {
+    font-size: 7.25pt !important;
+    line-height: 1.35 !important;
+  }
+
+  .investti-autorizaciones-especiales {
+    break-inside: avoid-page;
+    margin-top: 0.08in !important;
+    page-break-inside: avoid;
+  }
+
+  .investti-sim-print-footer {
+    break-inside: avoid-page;
+    margin-top: 0.1in !important;
+    page-break-inside: avoid;
+    padding-top: 0.06in !important;
+  }
+
+  .investti-sim-print-footer p {
+    font-size: 7pt !important;
+    line-height: 1.35 !important;
+  }
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -22,6 +22,7 @@ const navIcons = {
   "/admin/leads": UserRound,
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
+  "/admin/investti-simulador": Calculator,
 } as const;
 
 const navModules: Record<string, AdminModule> = {
@@ -37,6 +38,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/leads": "leads",
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
+  "/admin/investti-simulador": "catalogo",
 };
 
 type AdminShellProps = {
@@ -61,6 +63,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/metricas", label: "Reportes", ready: true },
     { href: "/admin/guion", label: "Guion", ready: true },
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
+    { href: "/admin/investti-simulador", label: "Simulador Investti", ready: true },
     { href: "/admin/usuarios", label: "Usuarios", ready: true },
   ].filter((item) => canAccessModule(profile, navModules[item.href]));
 

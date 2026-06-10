@@ -1,7 +1,7 @@
 /* eslint-disable */
 export const INVESTTI_SIMULADOR_CONFIG = {
-  "generatedAt": "2026-06-09T01:12:26.900Z",
-  "source": "Simulador Master Investti 4feb25 (25).xlsm",
+  "generatedAt": "2026-06-10T18:51:48.135Z",
+  "source": "Simulador Master Investti 4feb25 (26).xlsm",
   "interestAnual": 0.12,
   "apartadoDefault": 50000,
   "descuentosEsquemaPct": {
@@ -91,17 +91,20 @@ export const INVESTTI_SIMULADOR_CONFIG = {
   "desarrolloSlug": {
     "Cañadas_del_Valle": "canadas-del-valle",
     "Cañadas_del_Arroyo": "canadas-del-arroyo",
-    "Simaté": "simate"
+    "Simaté": "simate",
+    "Cañadas_La_Porta": "canadas-la-porta"
   },
   "slugDesarrollo": {
     "canadas-del-valle": "Cañadas_del_Valle",
     "canadas-del-arroyo": "Cañadas_del_Arroyo",
-    "simate": "Simaté"
+    "simate": "Simaté",
+    "canadas-la-porta": "Cañadas_La_Porta"
   },
   "stats": {
-    "lotes": 1335,
+    "lotes": 1429,
     "byDev": {
       "Cañadas_del_Valle": 491,
+      "Cañadas_La_Porta": 94,
       "Simaté": 312,
       "Cañadas_del_Arroyo": 532
     }
@@ -110,17 +113,26 @@ export const INVESTTI_SIMULADOR_CONFIG = {
     "canadas-del-valle": {
       "engancheMinPct": 0.15,
       "plazoMaxMeses": 60,
+      "mensualidadMinima": 7000,
       "apartado": 15000
     },
     "canadas-del-arroyo": {
       "engancheMinPct": 0.15,
-      "plazoMaxMeses": 60,
+      "plazoMaxMeses": 48,
+      "mensualidadMinima": 7000,
       "apartado": 15000
     },
     "simate": {
       "engancheMinPct": 0.2,
-      "plazoMaxMeses": 60,
+      "plazoMaxMeses": 36,
+      "mensualidadMinima": 15000,
       "apartado": 30000
+    },
+    "canadas-la-porta": {
+      "engancheMinPct": 0.3,
+      "plazoMaxMeses": 36,
+      "mensualidadMinima": 15000,
+      "apartado": 50000
     }
   }
 } as const;

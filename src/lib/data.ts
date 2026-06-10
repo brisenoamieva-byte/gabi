@@ -864,7 +864,16 @@ export const asesores: Asesor[] = [
     rol: 'asesor',
     activo: true,
     desarrollosIds: ['la-vista-residencial', ...INVESTTI_DESARROLLO_IDS]
-  }
+  },
+  {
+    id: 'investti-demo',
+    nombre: 'Gerente Investti (pruebas)',
+    email: 'simulador@grupoinvestti.com',
+    pin: '8826',
+    rol: 'gerente',
+    activo: true,
+    desarrollosIds: [...INVESTTI_DESARROLLO_IDS],
+  },
 ]
 
 export const desarrollos: Desarrollo[] = [
@@ -1200,6 +1209,7 @@ export const enrichDesarrolloFromStatic = (remote: Desarrollo): Desarrollo => {
   return {
     ...remote,
     logo: remote.logo ?? local.logo,
+    desarrolladorLogo: remote.desarrolladorLogo ?? local.desarrolladorLogo,
     brochurePdf: remote.brochurePdf ?? local.brochurePdf,
     tarjetasProcesoPdf: remote.tarjetasProcesoPdf ?? local.tarjetasProcesoPdf,
     masterPlanImage: remote.masterPlanImage ?? local.masterPlanImage,

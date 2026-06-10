@@ -12,11 +12,16 @@ import {
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
-import { isInvesttiCatalogDesarrollo } from "@/lib/catalog/investti-desarrollos";
+import {
+  INVESTTI_GRUPO_LOGO,
+  isInvesttiCatalogDesarrollo,
+} from "@/lib/catalog/investti-desarrollos";
 import { getDatosBancarios, type Asesor, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
+import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
 import {
   readPortalSession,
   resolveAdvisorEntryPath,
+  type PortalSession,
 } from "@/lib/portal/session";
 import {
   readCotizadorProspectoId,
@@ -27,11 +32,6 @@ import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 const RECORRIDO_KEY = RECORRIDO_SNAPSHOT_KEY;
 
 type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
-
-type PortalSession = {
-  nombre: string;
-  logo: string;
-};
 
 type RecorridoSnapshot = {
   clusterId?: string;
@@ -163,9 +163,9 @@ export default function CotizadorPage() {
           return;
         }
 
-        const storedPortal = localStorage.getItem("gabi_portal");
-        if (storedPortal) {
-          setPortal(JSON.parse(storedPortal) as PortalSession);
+        const portalSession = readPortalSession();
+        if (portalSession) {
+          setPortal(portalSession);
         }
 
         const recorridoRaw = localStorage.getItem(RECORRIDO_KEY);
@@ -284,6 +284,7 @@ export default function CotizadorPage() {
   }
 
   const isInvesttiTerreno = isInvesttiCatalogDesarrollo(desarrollo.id);
+  const isInvesttiPortal = isInvesttiSimuladorPortal(portal?.slug);
 
   if (!clusterId && !isInvesttiTerreno) {
     return (
@@ -329,7 +330,15 @@ export default function CotizadorPage() {
                 Simulador con inventario real · PDF listo para enviar
               </p>
             </div>
-            {portal?.logo ? (
+            {isInvesttiCatalogDesarrollo(desarrollo.id) ? (
+              <Image
+                src={desarrollo.desarrolladorLogo ?? INVESTTI_GRUPO_LOGO}
+                alt="Grupo Investti"
+                width={120}
+                height={48}
+                className="hidden h-10 w-auto max-w-[7.5rem] shrink-0 object-contain sm:block"
+              />
+            ) : portal?.logo ? (
               <Image
                 src={portal.logo}
                 alt={portal.nombre}
@@ -341,7 +350,7 @@ export default function CotizadorPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 lg:shrink-0 lg:justify-end">
-            {prospectoId ? (
+            {!isInvesttiPortal && prospectoId ? (
               <Link
                 href="/mis-leads"
                 className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#6cc24a]/30 bg-[#6cc24a]/10 px-4 text-sm font-semibold text-[#201044] shadow-sm transition hover:bg-[#6cc24a]/15 sm:min-h-12 sm:flex-none sm:rounded-2xl sm:px-5"
@@ -351,19 +360,21 @@ export default function CotizadorPage() {
               </Link>
             ) : null}
             <Link
-              href="/dashboard"
+              href={isInvesttiPortal ? "/investti/desarrollos" : "/dashboard"}
               className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#201044]/12 bg-white px-4 text-sm font-semibold text-[#201044] shadow-sm transition hover:bg-slate-50 sm:min-h-12 sm:flex-none sm:rounded-2xl sm:px-5"
             >
               <ArrowLeft className="h-4 w-4" />
-              Dashboard
+              {isInvesttiPortal ? "Cambiar desarrollo" : "Dashboard"}
             </Link>
-            <Link
-              href="/recorrido"
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#6cc24a] px-4 text-sm font-bold text-[#201044] shadow-sm transition hover:bg-[#5bad3e] sm:min-h-12 sm:flex-none sm:rounded-2xl sm:px-5"
-            >
-              <MapPinned className="h-4 w-4" />
-              Recorrido
-            </Link>
+            {!isInvesttiPortal ? (
+              <Link
+                href="/recorrido"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#6cc24a] px-4 text-sm font-bold text-[#201044] shadow-sm transition hover:bg-[#5bad3e] sm:min-h-12 sm:flex-none sm:rounded-2xl sm:px-5"
+              >
+                <MapPinned className="h-4 w-4" />
+                Recorrido
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={handleLogout}
@@ -427,60 +438,62 @@ export default function CotizadorPage() {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-6">
-          <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-md sm:rounded-[1.75rem] sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
-              Datos bancarios
-            </p>
-            <h3 className="mt-1.5 text-lg font-black text-[#201044]">Para apartado</h3>
-            <dl className="mt-4 space-y-2.5 text-sm">
-              <div>
-                <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                  Razón social
-                </dt>
-                <dd className="mt-0.5 break-words text-[0.9375rem] font-semibold leading-snug text-slate-700">
-                  {activeDatosBancarios.razonSocial}
-                </dd>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+          {!isInvesttiCatalogDesarrollo(desarrollo.id) ? (
+            <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-md sm:rounded-[1.75rem] sm:p-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
+                Datos bancarios
+              </p>
+              <h3 className="mt-1.5 text-lg font-black text-[#201044]">Para apartado</h3>
+              <dl className="mt-4 space-y-2.5 text-sm">
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    RFC
+                    Razón social
                   </dt>
-                  <dd className="mt-0.5 font-semibold text-slate-700">{activeDatosBancarios.rfc}</dd>
+                  <dd className="mt-0.5 break-words text-[0.9375rem] font-semibold leading-snug text-slate-700">
+                    {activeDatosBancarios.razonSocial}
+                  </dd>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      RFC
+                    </dt>
+                    <dd className="mt-0.5 font-semibold text-slate-700">{activeDatosBancarios.rfc}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Banco
+                    </dt>
+                    <dd className="mt-0.5 font-semibold text-slate-700">{activeDatosBancarios.banco}</dd>
+                  </div>
                 </div>
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    Banco
+                    CLABE
                   </dt>
-                  <dd className="mt-0.5 font-semibold text-slate-700">{activeDatosBancarios.banco}</dd>
+                  <dd className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-slate-700">
+                    {activeDatosBancarios.clabe}
+                  </dd>
                 </div>
-              </div>
-              <div>
-                <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                  CLABE
-                </dt>
-                <dd className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-slate-700">
-                  {activeDatosBancarios.clabe}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                  Concepto
-                </dt>
-                <dd className="mt-0.5 text-sm leading-relaxed text-slate-500">
-                  {activeDatosBancarios.concepto}
-                </dd>
-              </div>
-            </dl>
-            <button
-              type="button"
-              onClick={() => void copyBankData()}
-              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-bbr-purple/12 bg-bbr-cream px-4 text-sm font-bold text-bbr-purple transition hover:bg-slate-100 sm:min-h-12"
-            >
-              <Copy className="h-4 w-4" />
-              {copiedBank ? "Datos copiados" : "Copiar datos bancarios"}
-            </button>
-          </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Concepto
+                  </dt>
+                  <dd className="mt-0.5 text-sm leading-relaxed text-slate-500">
+                    {activeDatosBancarios.concepto}
+                  </dd>
+                </div>
+              </dl>
+              <button
+                type="button"
+                onClick={() => void copyBankData()}
+                className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-bbr-purple/12 bg-bbr-cream px-4 text-sm font-bold text-bbr-purple transition hover:bg-slate-100 sm:min-h-12"
+              >
+                <Copy className="h-4 w-4" />
+                {copiedBank ? "Datos copiados" : "Copiar datos bancarios"}
+              </button>
+            </div>
+          ) : null}
 
           <div className="rounded-2xl bg-[#201044] p-5 sm:rounded-[1.75rem] sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">

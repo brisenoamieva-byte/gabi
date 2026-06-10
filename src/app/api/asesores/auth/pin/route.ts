@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDesarrolloIdsForComercializadora } from "@/lib/catalog/service";
-import { authenticateAsesorByPin } from "@/lib/asesores/auth";
+import { authenticateAsesorByPin, authenticateInvesttiSimuladorByPin } from "@/lib/asesores/auth";
 import { isValidPin } from "@/lib/asesores/pin-server";
+import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
 import { checkRateLimit, getRequestClientKey } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -23,6 +24,18 @@ export async function POST(request: Request) {
     }
 
     const portal = body.portal?.trim().toLowerCase() ?? "bbr";
+
+    if (isInvesttiSimuladorPortal(portal)) {
+      const investtiResult = await authenticateInvesttiSimuladorByPin(pin);
+      if (!investtiResult) {
+        return NextResponse.json({ error: "PIN incorrecto." }, { status: 401 });
+      }
+      return NextResponse.json({
+        asesor: investtiResult.asesor,
+        source: investtiResult.source,
+      });
+    }
+
     const desarrolloIds = await getDesarrolloIdsForComercializadora(portal);
 
     const result = await authenticateAsesorByPin(pin, { desarrolloIds });

@@ -2877,23 +2877,27 @@ export default function RecorridoPage() {
                 </p>
               </SummaryBox>
             ) : null}
-            <SummaryBox title="Datos bancarios">
-              <p>{activeDatosBancarios.razonSocial}</p>
-              <p>RFC: {activeDatosBancarios.rfc}</p>
-              <p>Banco: {activeDatosBancarios.banco}</p>
-              <p>Cuenta: {activeDatosBancarios.cuenta}</p>
-              <p>CLABE: {activeDatosBancarios.clabe}</p>
-              <p>Concepto: {activeDatosBancarios.concepto}</p>
-            </SummaryBox>
+            {!isInvesttiCatalogDesarrollo(activeDesarrollo?.id) ? (
+              <SummaryBox title="Datos bancarios">
+                <p>{activeDatosBancarios.razonSocial}</p>
+                <p>RFC: {activeDatosBancarios.rfc}</p>
+                <p>Banco: {activeDatosBancarios.banco}</p>
+                <p>Cuenta: {activeDatosBancarios.cuenta}</p>
+                <p>CLABE: {activeDatosBancarios.clabe}</p>
+                <p>Concepto: {activeDatosBancarios.concepto}</p>
+              </SummaryBox>
+            ) : null}
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={copyBankData}
-                className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#201044] px-6 text-lg font-black text-white"
-              >
-                <Copy className="h-6 w-6" />
-                {copied ? "Datos copiados" : "Copiar datos bancarios"}
-              </button>
+              {!isInvesttiCatalogDesarrollo(activeDesarrollo?.id) ? (
+                <button
+                  type="button"
+                  onClick={copyBankData}
+                  className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#201044] px-6 text-lg font-black text-white"
+                >
+                  <Copy className="h-6 w-6" />
+                  {copied ? "Datos copiados" : "Copiar datos bancarios"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={finishRecorrido}

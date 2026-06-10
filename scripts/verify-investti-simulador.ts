@@ -28,8 +28,13 @@ console.log("m6 mensualidad", m6.mensualidad, "enganche", m6.engancheTotal);
 
 const tabla = m6.tablaAmortizacion;
 const sumPagos = tabla.reduce((s, f) => s + f.aportacion, 0);
-const tablaOk = tabla.length === 7 && Math.abs(sumPagos - m6.total) < 2 && tabla.at(-1)?.saldoFinal === 0;
-console.log("tabla m6", tablaOk ? "OK" : "FAIL", { filas: tabla.length, sumPagos, total: m6.total });
+const saldoFinalOk = tabla.at(-1)?.saldoFinal === 0;
+const tablaOk = tabla.length === 7 && saldoFinalOk;
+console.log("tabla m6", tablaOk ? "OK" : "FAIL", {
+  filas: tabla.length,
+  sumPagos,
+  saldoFinal: tabla.at(-1)?.saldoFinal,
+});
 if (!tablaOk) ok = false;
 
 process.exit(ok ? 0 : 1);

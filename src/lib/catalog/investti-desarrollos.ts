@@ -30,10 +30,21 @@ export function investtiCatalogHasSimulador(desarrolloId: string): boolean {
   return isInvesttiSimuladorDesarrollo(desarrolloId);
 }
 
+/** Logo corporativo Grupo Investti (simulador, cotizador, recorrido). */
+export const INVESTTI_GRUPO_LOGO = "/corredor/desarrolladores/investti.jpg";
+
+/** Logo oficial del desarrollo Investti (simulador y PDF). */
+export function getInvesttiDesarrolloLogo(desarrolloId: string): string {
+  if (isInvesttiCatalogDesarrollo(desarrolloId)) {
+    return INVESTTI_DESARROLLO_LOGOS[desarrolloId];
+  }
+  return INVESTTI_GRUPO_LOGO;
+}
+
 const INVESTTI_BRAND = {
   desarrollador: "Grupo Investti",
   comercializador: "BBR Habitarea",
-  desarrolladorLogo: "/corredor/desarrolladores/investti.jpg",
+  desarrolladorLogo: INVESTTI_GRUPO_LOGO,
   colorPrincipal: "#13315C",
   colorAcento: "#6cc24a",
   crm: { provider: "none" as const, enabled: false },
@@ -113,8 +124,10 @@ export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map
           ? "Reserva 538 lotes · 160–342 m² · fibra óptica · 15+ amenidades · simulador oficial Investti"
           : d.id === "simate"
             ? "180–400 m² · casa club operativa · Cimatario · simulador oficial Investti"
-            : (corredor?.notas?.split(".")[0] ??
-              "Lotes residenciales · simulador oficial Investti en cotización"),
+            : d.id === "canadas-la-porta"
+              ? "Terrenos Grupo Investti · simulador oficial Investti en cotización"
+              : (corredor?.notas?.split(".")[0] ??
+                "Lotes residenciales · simulador oficial Investti en cotización"),
     precioDesde: d.precioDesde,
     entregaGeneral: "Por confirmar",
     amenidades: corredor?.amenidades ?? [],
