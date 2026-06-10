@@ -219,7 +219,28 @@ const config = {
   desarrolloSlug: { ...EXCEL_TO_SLUG },
   slugDesarrollo,
   reglas,
-  stats: { lotes: lotes.length, byDev },
+  stats: {
+    lotes: lotes.length,
+    byDev,
+    precioDesdeLista: Object.fromEntries(
+      Object.entries(EXCEL_TO_SLUG).map(([excelName, slug]) => {
+        const precios = lotes
+          .filter((l) => l.desarrollo === excelName)
+          .map((l) => l.precioLista)
+          .filter((p) => typeof p === "number" && p > 0);
+        return [slug, precios.length ? Math.min(...precios) : null];
+      }),
+    ),
+    precioContadoDesde: Object.fromEntries(
+      Object.entries(EXCEL_TO_SLUG).map(([excelName, slug]) => {
+        const precios = lotes
+          .filter((l) => l.desarrollo === excelName)
+          .map((l) => l.contado)
+          .filter((p) => typeof p === "number" && p > 0);
+        return [slug, precios.length ? Math.min(...precios) : null];
+      }),
+    ),
+  },
   manzanas: manzanaConfig,
   lotes,
 };

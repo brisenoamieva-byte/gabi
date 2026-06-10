@@ -107,6 +107,18 @@ export const INVESTTI_SIMULADOR_CONFIG = {
       "Cañadas_La_Porta": 94,
       "Simaté": 312,
       "Cañadas_del_Arroyo": 532
+    },
+    "precioDesdeLista": {
+      "canadas-del-valle": 929258.3,
+      "canadas-del-arroyo": 1021887.93,
+      "simate": 1204912.83,
+      "canadas-la-porta": 2039552.56
+    },
+    "precioContadoDesde": {
+      "canadas-del-valle": 845746.98,
+      "canadas-del-arroyo": 930052.1,
+      "simate": 1096628.77,
+      "canadas-la-porta": 1856260.44
     }
   },
   "reglas": {

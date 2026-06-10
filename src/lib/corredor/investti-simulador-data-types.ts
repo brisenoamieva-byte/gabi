@@ -25,6 +25,8 @@ export type InvesttiSimuladorConfigData = {
   stats?: {
     lotes: number;
     byDev: Record<string, number>;
+    precioDesdeLista?: Partial<Record<string, number>>;
+    precioContadoDesde?: Partial<Record<string, number>>;
   };
   reglas: Record<string, InvesttiDesarrolloReglas>;
 };
@@ -62,5 +64,7 @@ export type InvesttiSimuladorPublishMeta = {
   stats: {
     lotes: number;
     byDev: Record<string, number>;
+    precioDesdeLista?: Partial<Record<string, number>>;
+    precioContadoDesde?: Partial<Record<string, number>>;
   };
 };

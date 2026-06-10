@@ -1,6 +1,7 @@
 import type { Cluster, Desarrollo } from "@/lib/data";
 import { getCorredorDesarrolloById } from "@/lib/corredor/zona-sur-seed";
 import { getDesarrolloLogoUrl } from "@/lib/corredor/desarrollo-logos";
+import { INVESTTI_SIMULADOR_CONFIG } from "@/lib/corredor/investti-simulador-config.generated";
 import { isInvesttiSimuladorDesarrollo } from "@/lib/corredor/investti-simulador";
 import {
   INVESTTI_DESARROLLO_LOGOS,
@@ -28,6 +29,18 @@ export function isInvesttiCatalogDesarrollo(
 
 export function investtiCatalogHasSimulador(desarrolloId: string): boolean {
   return isInvesttiSimuladorDesarrollo(desarrolloId);
+}
+
+/** Precio lista mínimo del Excel maestro Investti (feb 2026). */
+export function getInvesttiSimuladorPrecioDesde(
+  desarrolloId: InvesttiCatalogDesarrolloId,
+): number {
+  const lista = INVESTTI_SIMULADOR_CONFIG.stats.precioDesdeLista?.[desarrolloId];
+  if (typeof lista === "number" && lista > 0) {
+    return Math.floor(lista);
+  }
+  const corredor = getCorredorDesarrolloById(desarrolloId);
+  return corredor?.ticketDesde ?? 0;
 }
 
 /** Logo corporativo Grupo Investti (simulador, cotizador, recorrido). */
@@ -65,7 +78,7 @@ function corredorToDesarrollo(
     slug: id,
     ubicacion: corredor.mapQuery ?? "Corregidora, Querétaro",
     descripcion: corredor.notas ?? `Terrenos ${corredor.nombre} · Grupo Investti.`,
-    precioDesde: corredor.ticketDesde,
+    precioDesde: getInvesttiSimuladorPrecioDesde(id),
     tiposProducto: ["terrenos"],
     estado: "activo",
     logo,
@@ -83,7 +96,7 @@ const canadasLaPortaDesarrollo: Desarrollo = {
   ubicacion: "Corregidora, Querétaro",
   descripcion:
     "Desarrollo de terrenos Grupo Investti. Comercialización BBR Habitarea — validar metrajes y lista vigente con Control Gerencia.",
-  precioDesde: 900_000,
+  precioDesde: getInvesttiSimuladorPrecioDesde("canadas-la-porta"),
   tiposProducto: ["terrenos"],
   estado: "activo",
   logo: INVESTTI_DESARROLLO_LOGOS["canadas-la-porta"],

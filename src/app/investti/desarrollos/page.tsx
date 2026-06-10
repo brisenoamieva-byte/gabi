@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Calculator, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
@@ -115,13 +115,6 @@ export default function InvesttiDesarrollosPage() {
     }
   }, [router]);
 
-  const subtitle = useMemo(() => {
-    if (!user) {
-      return "";
-    }
-    return `Hola, ${user.nombre}. Elige el desarrollo que quieres cotizar.`;
-  }, [user]);
-
   const handleSelect = (desarrolloId: string) => {
     localStorage.setItem("gabi_desarrollo", desarrolloId);
     router.push("/cotizador");
@@ -166,7 +159,9 @@ export default function InvesttiDesarrollosPage() {
                 Simulador Investti
               </p>
               <h1 className="truncate text-xl font-bold md:text-2xl">Elige un desarrollo</h1>
-              <p className="truncate text-xs text-slate-500 md:text-sm">{subtitle}</p>
+              <p className="truncate text-xs text-slate-500 md:text-sm">
+                Hola, elige el desarrollo que quieres cotizar.
+              </p>
             </div>
           </div>
 
@@ -259,9 +254,6 @@ export default function InvesttiDesarrollosPage() {
                     <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500 sm:text-xs">
                       <MapPin className="h-3 w-3 shrink-0 opacity-60" />
                       {desarrollo.ubicacion}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                      Simulador oficial · PDF
                     </p>
                   </div>
 
