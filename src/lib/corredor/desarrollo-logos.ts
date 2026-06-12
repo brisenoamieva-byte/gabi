@@ -7,15 +7,15 @@
  */
 export const CORREDOR_DESARROLLO_LOGOS: Partial<Record<string, string>> = {
   "arroyo-del-pedregal": "/corredor/logos/PEDREGAL-DEL-ARROYO.jpg",
-  "canadas-del-arroyo": "/corredor/logos/CANADAS-DEL-ARROYO.jpg",
-  "canadas-del-valle": "/corredor/logos/CANADAS-DEL-VALLE.jpg",
+  "canadas-del-arroyo": "/corredor/logos/investti/canadas-del-arroyo.png",
+  "canadas-del-valle": "/corredor/logos/investti/canadas-del-valle.png",
   "ciudad-maderas-corregidora": "/corredor/logos/CIUDAD-MADERAS.jpg",
   "el-condado": "/corredor/logos/EL-CONDADO.jpg",
   "faro-de-los-cisnes": "/corredor/logos/EL-FARO.jpg",
   "preserve-country": "/corredor/logos/PRESERVE-COUNTRY.jpeg",
   "preserve-sur": "/corredor/logos/PRESERVE-SUR.jpg",
   "real-del-bosque": "/corredor/logos/REAL-DEL-BOSQUE.jpg",
-  simate: "/corredor/logos/SIMATE.jpg",
+  simate: "/corredor/logos/investti/simate.png",
   "valle-cardinal": "/corredor/logos/VALLE-CARDINAL.jpg",
   "canadas-la-porta": "/corredor/logos/investti/canadas-la-porta.png",
   velasur: "/corredor/logos/VELASUR.jpg",

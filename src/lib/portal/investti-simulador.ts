@@ -5,6 +5,8 @@ import {
 import type { AsesorSession } from "@/lib/asesores/types";
 import type { PortalSession } from "@/lib/portal/session";
 
+const INVESTTI_ID_SET = new Set<string>(INVESTTI_CATALOG_DESARROLLO_IDS);
+
 export const INVESTTI_SIMULADOR_PORTAL_SLUG = "investti";
 export const INVESTTI_SIMULADOR_DEMO_ASESOR_ID = "investti-simulador-demo";
 
@@ -51,4 +53,16 @@ export const getInvesttiSimuladorDemoSession = (): AsesorSession => ({
 export const matchesInvesttiSimuladorPin = (pin: string) => {
   const expected = resolveInvesttiSimuladorPin();
   return Boolean(expected && pin === expected);
+};
+
+/** Desarrollos Investti visibles en el simulador para la sesión actual. */
+export const getInvesttiDesarrolloIdsForAsesor = (
+  asesor: Pick<AsesorSession, "id" | "desarrollosIds">,
+): string[] => {
+  if (asesor.id === INVESTTI_SIMULADOR_DEMO_ASESOR_ID) {
+    return getInvesttiSimuladorDesarrolloIds();
+  }
+
+  const fromSession = (asesor.desarrollosIds ?? []).filter((id) => INVESTTI_ID_SET.has(id));
+  return fromSession;
 };

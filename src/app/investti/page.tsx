@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsesorPinPad } from "@/components/portal/AsesorPinPad";
 import {
+  getInvesttiDesarrolloIdsForAsesor,
   getInvesttiSimuladorPortalSession,
   INVESTTI_SIMULADOR_PORTAL_SLUG,
 } from "@/lib/portal/investti-simulador";
+import { readStoredAsesorSession } from "@/lib/asesores/session-client";
 import { PORTAL_STORAGE_KEY, type PortalSession } from "@/lib/portal/session";
 
 export default function InvesttiSimuladorEntryPage() {
@@ -17,6 +19,12 @@ export default function InvesttiSimuladorEntryPage() {
     const session = getInvesttiSimuladorPortalSession();
     localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(session));
     setPortal(session);
+
+    const stored = readStoredAsesorSession();
+    if (stored && !getInvesttiDesarrolloIdsForAsesor(stored).length) {
+      localStorage.removeItem("gabi_user");
+      localStorage.removeItem("gabi_desarrollo");
+    }
   }, []);
 
   const handleLogout = () => {

@@ -1,3 +1,4 @@
+import { resolvePublicAssetUrl } from "@/lib/public-asset-url";
 import { getDesarrolloIniciales, getDesarrolloLogoUrl } from "./desarrollo-logos";
 import type { CorredorDesarrollo } from "./types";
 
@@ -44,7 +45,7 @@ export function buildCorredorMarkerIcon(
   const logoUrl = getDesarrolloLogoUrl(desarrollo);
 
   if (logoUrl) {
-    return logoMarkerIcon(logoUrl, size);
+    return logoMarkerIcon(resolvePublicAssetUrl(logoUrl), size);
   }
 
   const iniciales = getDesarrolloIniciales(desarrollo.nombre);

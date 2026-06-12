@@ -14,6 +14,7 @@ import {
 } from "@/lib/catalog/investti-desarrollos";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
+  getInvesttiDesarrolloIdsForAsesor,
   getInvesttiSimuladorPortalSession,
   INVESTTI_SIMULADOR_PORTAL_SLUG,
 } from "@/lib/portal/investti-simulador";
@@ -68,16 +69,16 @@ export default function InvesttiDesarrollosPage() {
         setLoadingCatalog(true);
         try {
           const freshUser = (await refreshStoredAsesorSession(parsedUser)) ?? parsedUser;
-          setUser(freshUser);
-
-          const investtiIds = freshUser.desarrollosIds.filter((id) =>
-            (INVESTTI_CATALOG_DESARROLLO_IDS as readonly string[]).includes(id),
-          );
+          const investtiIds = getInvesttiDesarrolloIdsForAsesor(freshUser);
 
           if (!investtiIds.length) {
-            setDesarrollosDisponibles([]);
+            localStorage.removeItem("gabi_user");
+            localStorage.removeItem("gabi_desarrollo");
+            router.replace("/investti");
             return;
           }
+
+          setUser(freshUser);
 
           const response = await fetch(
             `/api/catalog/desarrollos?ids=${encodeURIComponent(investtiIds.join(","))}`,

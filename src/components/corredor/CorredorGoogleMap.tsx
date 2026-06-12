@@ -13,6 +13,7 @@ import {
   getGoogleMapsSetupHint,
 } from "@/lib/corredor/google-maps-config";
 import { buildCorredorMarkerIcon } from "@/lib/corredor/marker-icons";
+import { resolvePublicAssetUrl } from "@/lib/public-asset-url";
 import type { CorredorDesarrollo } from "@/lib/corredor/types";
 import { CorredorMapEmbed } from "@/components/corredor/CorredorMapEmbed";
 import { CorredorMapSchematic } from "@/components/corredor/CorredorMapSchematic";
@@ -114,11 +115,17 @@ export function CorredorGoogleMap({
   if (!apiKey || loadError || mapFailed) {
     return (
       <div className={className}>
-        <CorredorMapEmbed lat={mapCenter.lat} lng={mapCenter.lng} zoom={defaultZoom} />
         <CorredorMapSchematic
           desarrollos={desarrollos}
           selectedId={selectedId}
           onSelect={onSelect}
+          showLogos
+        />
+        <CorredorMapEmbed
+          lat={mapCenter.lat}
+          lng={mapCenter.lng}
+          zoom={defaultZoom}
+          className="mt-3"
         />
         {fallbackNotice}
       </div>
@@ -174,7 +181,9 @@ export function CorredorGoogleMap({
                 {getDesarrolloLogoUrl(selectedMarker.desarrollo) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={getDesarrolloLogoUrl(selectedMarker.desarrollo)}
+                    src={resolvePublicAssetUrl(
+                      getDesarrolloLogoUrl(selectedMarker.desarrollo)!,
+                    )}
                     alt=""
                     className="mb-2 h-8 w-auto max-w-full object-contain"
                   />

@@ -6,8 +6,19 @@ export const ASESOR_SEED_ID_ALIASES: Record<string, string> = {
   rbriseno: "ricardo",
 };
 
+/** IDs legacy en localStorage → fila real en Supabase. */
+export const ASESOR_SUPABASE_ID_ALIASES: Record<string, string> = {
+  ricardo: "rbriseno",
+};
+
 export const resolveSeedAsesorId = (asesorId: string): string =>
   ASESOR_SEED_ID_ALIASES[asesorId] ?? asesorId;
+
+export const resolveSupabaseAsesorId = (asesorId: string): string =>
+  ASESOR_SUPABASE_ID_ALIASES[asesorId] ?? asesorId;
+
+export const asesorSessionLookupIds = (asesorId: string): string[] =>
+  Array.from(new Set([asesorId, resolveSupabaseAsesorId(asesorId), resolveSeedAsesorId(asesorId)]));
 
 export const findSeedAsesor = (
   asesorId: string,

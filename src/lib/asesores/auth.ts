@@ -1,5 +1,9 @@
 import { verifyPin } from "@/lib/asesores/pin-server";
-import { findSeedAsesor, mergeAsesorDesarrollosWithSeed } from "@/lib/asesores/seed-match";
+import {
+  asesorSessionLookupIds,
+  findSeedAsesor,
+  mergeAsesorDesarrollosWithSeed,
+} from "@/lib/asesores/seed-match";
 import type { AsesorSession } from "@/lib/asesores/types";
 import { asesores as fallbackAsesores } from "@/lib/data";
 import {
@@ -122,22 +126,24 @@ export const getAsesorSessionById = async (id: string): Promise<AsesorSession | 
   const supabase = createSupabaseServiceClient();
 
   if (supabase) {
-    const { data, error } = await supabase
-      .from("asesores")
-      .select("id, nombre, email, rol, activo, desarrollos_ids")
-      .eq("id", id)
-      .eq("activo", true)
-      .maybeSingle();
+    for (const lookupId of asesorSessionLookupIds(id)) {
+      const { data, error } = await supabase
+        .from("asesores")
+        .select("id, nombre, email, rol, activo, desarrollos_ids")
+        .eq("id", lookupId)
+        .eq("activo", true)
+        .maybeSingle();
 
-    if (!error && data) {
-      const session = toSession(data as AsesorAuthRow);
-      const seedAsesor = findSeedAsesor(session.id, session.email);
-      if (seedAsesor) {
-        session.desarrollosIds = Array.from(
-          new Set([...session.desarrollosIds, ...seedAsesor.desarrollosIds]),
-        );
+      if (!error && data) {
+        const session = toSession(data as AsesorAuthRow);
+        const seedAsesor = findSeedAsesor(session.id, session.email);
+        if (seedAsesor) {
+          session.desarrollosIds = Array.from(
+            new Set([...session.desarrollosIds, ...seedAsesor.desarrollosIds]),
+          );
+        }
+        return session;
       }
-      return session;
     }
   }
 
