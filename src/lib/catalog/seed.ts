@@ -28,7 +28,6 @@ export type CatalogSeedResult = {
 };
 
 const PASAJE_DESARROLLO_ID = "pasaje-alamos";
-const MISION_LA_GAVIA_DESARROLLO_ID = "mision-la-gavia";
 const INVENTARIO_BATCH_SIZE = 50;
 
 const clusterDesarrolloLookup = new Map(
