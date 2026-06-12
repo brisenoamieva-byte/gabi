@@ -5,6 +5,8 @@ type CorredorMapEmbedProps = {
   lng: number;
   zoom?: number;
   className?: string;
+  /** Evita pan/zoom en el iframe para mantener alineados los pines con logo. */
+  lockView?: boolean;
 };
 
 /** Mapa embebido sin Maps JavaScript API — respaldo cuando falla la key o restricciones. */
@@ -13,6 +15,7 @@ export function CorredorMapEmbed({
   lng,
   zoom = 11,
   className = "",
+  lockView = false,
 }: CorredorMapEmbedProps) {
   const src = `https://maps.google.com/maps?q=${lat},${lng}&z=${zoom}&output=embed`;
 
@@ -23,10 +26,10 @@ export function CorredorMapEmbed({
       <iframe
         title="Mapa corredor sur"
         src={src}
-        className="absolute inset-0 h-full w-full border-0"
+        className={`absolute inset-0 h-full w-full border-0 ${lockView ? "pointer-events-none" : ""}`}
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
-        allowFullScreen
+        allowFullScreen={!lockView}
       />
     </div>
   );
