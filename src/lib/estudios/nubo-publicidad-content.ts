@@ -55,7 +55,13 @@ export type NuboPublicidadColumnaMes = {
   indice: number;
   etiqueta: string;
   etiquetaCorta: string;
+  /** Encabezado compacto para tablas densas (ej. Ago'26). */
+  etiquetaCompacta: string;
 };
+
+export const NUBO_PUBLICIDAD_MES_COL_PX = 54;
+export const NUBO_PUBLICIDAD_TOTAL_COL_PX = 58;
+export const NUBO_PUBLICIDAD_CONCEPTO_COL_PX = 168;
 
 export function getNuboPublicidadColumnasMes(
   inicio = NUBO_PUBLICIDAD_RESUMEN.mesInicio,
@@ -69,6 +75,7 @@ export function getNuboPublicidadColumnasMes(
       indice: index,
       etiqueta: `${mes} ${date.getFullYear()}`,
       etiquetaCorta: `${mes} ${year}`,
+      etiquetaCompacta: `${mes}'${year}`,
     };
   });
 }
@@ -131,12 +138,30 @@ export function getNuboPublicidadInversionAnual(
   return totalesMensuales.reduce((sum, m) => sum + m, 0);
 }
 
-/** Formato compacto para celdas de tabla ($ sin decimales; guión si es cero). */
+const pesoFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  maximumFractionDigits: 0,
+});
+
+/** Parsea texto con o sin signo de pesos y separadores de miles. */
+export function parseMontoPresupuesto(raw: string): number {
+  const n = Number(String(raw).replace(/[$,\s]/g, ""));
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
+}
+
+/** Deja solo dígitos para guardar en inputs de dinero. */
+export function normalizeMontoDigits(raw: string): string {
+  return String(raw).replace(/[^\d]/g, "");
+}
+
+/** Formato con $ para inputs de dinero (vacío si no hay monto). */
+export function formatMontoInput(raw: string): string {
+  if (!normalizeMontoDigits(raw)) return "";
+  return pesoFormatter.format(parseMontoPresupuesto(raw));
+}
+
+/** Formato compacto para celdas de tabla (siempre con signo de pesos). */
 export function formatCeldaPresupuesto(monto: number): string {
-  if (monto === 0) return "—";
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    maximumFractionDigits: 0,
-  }).format(Math.round(monto));
+  return pesoFormatter.format(Math.round(monto));
 }

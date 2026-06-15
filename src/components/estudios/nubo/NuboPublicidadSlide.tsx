@@ -13,8 +13,11 @@ import {
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
   NUBO_ESCENARIO_COMERCIAL,
+  NUBO_PUBLICIDAD_CONCEPTO_COL_PX,
   NUBO_PUBLICIDAD_META,
+  NUBO_PUBLICIDAD_MES_COL_PX,
   NUBO_PUBLICIDAD_PARTIDAS,
+  NUBO_PUBLICIDAD_TOTAL_COL_PX,
 } from "@/lib/estudios/nubo-publicidad-content";
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
 import { SlideCanvas } from "@/components/propuestas/PropuestaSlideDeck";
@@ -48,6 +51,10 @@ export function NuboPublicidadSlide() {
   }, []);
 
   const columnas = getNuboPublicidadColumnasMes();
+  const slideTableWidth =
+    NUBO_PUBLICIDAD_CONCEPTO_COL_PX +
+    NUBO_PUBLICIDAD_TOTAL_COL_PX +
+    NUBO_PUBLICIDAD_MES_COL_PX * columnas.length;
   const totalesMes = useMemo(
     () => getNuboPublicidadTotalesMensuales(partidas),
     [partidas],
@@ -91,21 +98,34 @@ export function NuboPublicidadSlide() {
             Cargando presupuesto…
           </div>
         ) : (
-          <table className="w-max min-w-full border-collapse text-[10px] md:text-[11px]">
+          <table
+            className="table-fixed border-collapse text-[10px]"
+            style={{ width: slideTableWidth }}
+          >
+            <colgroup>
+              <col style={{ width: NUBO_PUBLICIDAD_CONCEPTO_COL_PX }} />
+              <col style={{ width: NUBO_PUBLICIDAD_TOTAL_COL_PX }} />
+              {columnas.map((col) => (
+                <col key={col.indice} style={{ width: NUBO_PUBLICIDAD_MES_COL_PX }} />
+              ))}
+            </colgroup>
             <thead className="sticky top-0 z-20 bg-slate-50 shadow-[0_1px_0_#e2e8f0]">
               <tr className={`border-b border-slate-200 uppercase tracking-wide ${t.body}`}>
-                <th className="sticky left-0 z-30 min-w-[220px] max-w-[280px] bg-slate-50 px-2 py-2 text-left font-medium md:min-w-[260px]">
+                <th className="sticky left-0 z-30 bg-slate-50 px-1.5 py-1.5 text-left text-[9px] font-medium">
                   Concepto
+                </th>
+                <th className="border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right text-[9px] font-medium">
+                  Total
                 </th>
                 {columnas.map((col) => (
                   <th
                     key={col.indice}
-                    className="min-w-[62px] px-1.5 py-2 text-right font-medium whitespace-nowrap"
+                    className="px-0.5 py-1.5 text-right text-[9px] font-medium whitespace-nowrap"
+                    title={col.etiquetaCorta}
                   >
-                    {col.etiquetaCorta}
+                    {col.etiquetaCompacta}
                   </th>
                 ))}
-                <th className="min-w-[72px] bg-slate-100 px-2 py-2 text-right font-medium">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -121,59 +141,63 @@ export function NuboPublicidadSlide() {
                     }`}
                   >
                     <td
-                      className={`sticky left-0 z-10 bg-white px-2 py-1.5 align-top ${
-                        segmentoBreak ? "border-t border-slate-200 pt-2.5" : ""
+                      className={`sticky left-0 z-10 bg-white px-1.5 py-1 align-top ${
+                        segmentoBreak ? "border-t border-slate-200 pt-2" : ""
                       }`}
                     >
-                      <span className={`block text-[9px] uppercase tracking-wide text-slate-400 ${t.body}`}>
+                      <span className={`block text-[8px] uppercase tracking-wide text-slate-400 ${t.body}`}>
                         {partida.segmento}
                       </span>
-                      <span className={`mt-0.5 block text-[10px] text-slate-500`}>{partida.proveedor}</span>
-                      <span className={`block leading-snug ${t.bodyStrong}`}>{partida.concepto}</span>
+                      <span className={`mt-0.5 block text-[9px] text-slate-500`}>{partida.proveedor}</span>
+                      <span className={`block truncate text-[10px] leading-snug ${t.bodyStrong}`} title={partida.concepto}>
+                        {partida.concepto}
+                      </span>
+                    </td>
+                    <td
+                      className={`border-l border-slate-200 bg-slate-50/50 px-0.5 py-1 text-right tabular-nums text-[10px] align-top ${t.bodyStrong}`}
+                    >
+                      {formatCeldaPresupuesto(partida.anual)}
                     </td>
                     {partida.meses.map((monto, mesIndex) => (
                       <td
                         key={mesIndex}
-                        className={`px-1.5 py-1.5 text-right tabular-nums align-top ${
-                          monto === 0 ? "text-slate-300" : t.body
+                        className={`px-0.5 py-1 text-right tabular-nums text-[10px] align-top ${
+                          monto === 0 ? "text-slate-400" : t.body
                         }`}
                       >
                         {formatCeldaPresupuesto(monto)}
                       </td>
                     ))}
-                    <td className={`bg-slate-50/50 px-2 py-1.5 text-right tabular-nums align-top ${t.bodyStrong}`}>
-                      {formatCeldaPresupuesto(partida.anual)}
-                    </td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot className="sticky bottom-0 z-20 bg-slate-100 shadow-[0_-1px_0_#e2e8f0]">
               <tr className="border-t-2 border-slate-900">
-                <td className={`sticky left-0 z-30 bg-slate-100 px-2 py-2 ${t.bodyStrong}`}>
+                <td className={`sticky left-0 z-30 bg-slate-100 px-1.5 py-1.5 text-[10px] ${t.bodyStrong}`}>
                   Subtotal mensual
+                </td>
+                <td className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right tabular-nums text-[10px] ${t.bodyStrong}`}>
+                  {formatCeldaPresupuesto(totales.subtotal)}
                 </td>
                 {totalesMes.map((monto, index) => (
                   <td
                     key={index}
-                    className={`px-1.5 py-2 text-right tabular-nums ${t.bodyStrong}`}
+                    className={`px-0.5 py-1.5 text-right tabular-nums text-[10px] ${t.bodyStrong}`}
                   >
                     {formatCeldaPresupuesto(monto)}
                   </td>
                 ))}
-                <td className={`px-2 py-2 text-right tabular-nums ${t.bodyStrong}`}>
-                  {formatCeldaPresupuesto(totales.subtotal)}
-                </td>
               </tr>
               <tr className="border-t border-slate-200">
-                <td className={`sticky left-0 bg-slate-100 px-2 py-1.5 ${t.body}`}>IVA 16%</td>
-                <td colSpan={columnas.length + 1} className={`px-2 py-1.5 text-right tabular-nums ${t.body}`}>
+                <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.body}`}>IVA 16%</td>
+                <td colSpan={columnas.length + 1} className={`px-1.5 py-1 text-right tabular-nums text-[10px] ${t.body}`}>
                   {formatCeldaPresupuesto(totales.iva)}
                 </td>
               </tr>
               <tr>
-                <td className={`sticky left-0 bg-slate-100 px-2 py-1.5 ${t.bodyStrong}`}>Total con IVA</td>
-                <td colSpan={columnas.length + 1} className={`px-2 py-1.5 text-right tabular-nums ${t.bodyStrong}`}>
+                <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.bodyStrong}`}>Total con IVA</td>
+                <td colSpan={columnas.length + 1} className={`px-1.5 py-1 text-right tabular-nums text-[10px] ${t.bodyStrong}`}>
                   {formatCeldaPresupuesto(totales.total)}
                 </td>
               </tr>
