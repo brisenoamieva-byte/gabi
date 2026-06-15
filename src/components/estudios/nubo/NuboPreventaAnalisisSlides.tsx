@@ -16,6 +16,7 @@ import {
   getDefaultNuboEstudioMedia,
 } from "@/lib/estudios/nubo-estudio-defaults";
 import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
+import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 
 function SlideFigure({
@@ -23,16 +24,21 @@ function SlideFigure({
   alt,
   fit = "contain",
   aspect = "16/10",
+  compact = false,
 }: {
   src: string;
   alt: string;
   fit?: "contain" | "cover";
-  aspect?: "16/10" | "4/3";
+  aspect?: "16/10" | "4/3" | "5/3";
+  compact?: boolean;
 }) {
+  const aspectClass =
+    aspect === "4/3" ? "aspect-[4/3]" : aspect === "5/3" ? "aspect-[5/3]" : "aspect-[16/10]";
+
   return (
     <div
-      className={`relative overflow-hidden border border-slate-200 bg-slate-950 ${
-        aspect === "4/3" ? "aspect-[4/3]" : "aspect-[16/10]"
+      className={`relative overflow-hidden rounded-sm border border-slate-200 bg-slate-950 ${aspectClass} ${
+        compact ? "max-h-[min(28vh,200px)]" : ""
       }`}
     >
       <Image
@@ -41,9 +47,58 @@ function SlideFigure({
         fill
         className={fit === "cover" ? "object-cover" : "object-contain"}
         unoptimized
+        onLoad={() => requestAnimationFrame(refitAllPropuestaSlides)}
       />
     </div>
   );
+}
+
+function CondicionTextBlocks({
+  hoy,
+  recomendacion,
+  paraArrancar,
+  stacked = false,
+}: {
+  hoy: string;
+  recomendacion: string;
+  paraArrancar: readonly string[];
+  stacked?: boolean;
+}) {
+  const blocks = (
+    <>
+      <div className="rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-4">
+        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+          Hoy
+        </p>
+        <p className={`text-[14px] leading-relaxed ${t.body}`}>{hoy}</p>
+      </div>
+      <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm shadow-slate-900/5">
+        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+          Recomendación BBR
+        </p>
+        <p className={`text-[14px] leading-relaxed ${t.bodyStrong}`}>{recomendacion}</p>
+      </div>
+      <div className="rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-4">
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+          Para arrancar se necesita
+        </p>
+        <ul className={`space-y-1.5 text-[13px] leading-relaxed ${t.body}`}>
+          {paraArrancar.map((item) => (
+            <li key={item} className="flex gap-2.5">
+              <span className="mt-2 h-px w-2.5 shrink-0 bg-slate-300" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+
+  if (stacked) {
+    return <div className="space-y-4">{blocks}</div>;
+  }
+
+  return <div className="grid gap-4 lg:grid-cols-3">{blocks}</div>;
 }
 
 function CondicionSlide({
@@ -52,6 +107,7 @@ function CondicionSlide({
   hoy,
   recomendacion,
   paraArrancar,
+  ubicacion,
   visual,
   footer,
 }: {
@@ -60,56 +116,49 @@ function CondicionSlide({
   hoy: string;
   recomendacion: string;
   paraArrancar: readonly string[];
-  visual: ReactNode;
+  ubicacion?: string;
+  visual?: ReactNode;
   footer?: ReactNode;
 }) {
+  const hasMedia = Boolean(visual);
+
   return (
-    <SlideCanvas className="!py-6 md:!py-8">
-      <div className="mb-6 flex items-baseline gap-4 border-b border-slate-200 pb-5">
-        <span
-          className={`font-[Georgia,'Times_New_Roman',serif] text-3xl tabular-nums text-slate-300 md:text-4xl`}
-        >
+    <SlideCanvas align="start" className="!py-5 md:!py-6">
+      <div className="mb-4 flex items-baseline gap-4 border-b border-slate-200 pb-4">
+        <span className="font-[Georgia,'Times_New_Roman',serif] text-3xl tabular-nums text-slate-300 md:text-4xl">
           {num}
         </span>
         <div>
-          <h2 className={`text-2xl md:text-[1.75rem] ${t.title}`}>{titulo}</h2>
-          <p className={`mt-1 text-[13px] uppercase tracking-[0.12em] text-slate-400`}>
+          <h2 className={`text-2xl md:text-[1.65rem] ${t.title}`}>{titulo}</h2>
+          <p className="mt-1 text-[12px] uppercase tracking-[0.12em] text-slate-400">
             Condición mínima para preventa
           </p>
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-        <div>{visual}</div>
-        <div className="space-y-5">
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
-              Hoy
-            </p>
-            <p className={`text-[15px] leading-relaxed ${t.body}`}>{hoy}</p>
-          </div>
-          <div className="border-l-2 border-slate-900 pl-4">
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
-              Recomendación BBR
-            </p>
-            <p className={`text-[15px] leading-relaxed ${t.bodyStrong}`}>{recomendacion}</p>
-          </div>
-          <div>
-            <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
-              Para arrancar se necesita
-            </p>
-            <ul className={`space-y-2 text-[14px] leading-relaxed ${t.body}`}>
-              {paraArrancar.map((item) => (
-                <li key={item} className="flex gap-3">
-                  <span className="mt-2 h-px w-3 shrink-0 bg-slate-300" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {ubicacion ? (
+        <p
+          className={`mb-4 rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-2.5 text-[14px] leading-snug ${t.bodyStrong}`}
+        >
+          {ubicacion}
+        </p>
+      ) : null}
+
+      {hasMedia ? (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+          <div className="space-y-2">{visual}</div>
+          <CondicionTextBlocks
+            hoy={hoy}
+            recomendacion={recomendacion}
+            paraArrancar={paraArrancar}
+            stacked
+          />
         </div>
-      </div>
-      {footer ? <div className="mt-6 border-t border-slate-100 pt-5">{footer}</div> : null}
+      ) : (
+        <CondicionTextBlocks hoy={hoy} recomendacion={recomendacion} paraArrancar={paraArrancar} />
+      )}
+
+      {footer ? <div className="mt-5 border-t border-slate-100 pt-4">{footer}</div> : null}
     </SlideCanvas>
   );
 }
@@ -146,7 +195,7 @@ function buildNuboPreventaSlides(
       id: "diagnostico",
       label: "Diagnóstico",
       content: (
-        <SlideCanvas className="!py-6 md:!py-8">
+        <SlideCanvas align="start" className="!py-5 md:!py-6">
           <h2 className={`text-2xl md:text-[1.75rem] ${t.title}`}>{diagnostico.titulo}</h2>
           <p className={`mt-4 max-w-3xl text-[16px] leading-relaxed ${t.body}`}>
             {diagnostico.contexto}
@@ -188,19 +237,17 @@ function buildNuboPreventaSlides(
           hoy={accesos.hoy}
           recomendacion={accesos.recomendacion}
           paraArrancar={accesos.paraArrancar}
-          visual={
-            <p className={`text-[15px] leading-relaxed ${t.body}`}>{accesos.ubicacionEnPlano}</p>
-          }
+          ubicacion={accesos.ubicacionEnPlano}
           footer={
             <div>
-              <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+              <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
                 Referencias · nivel buscado
               </p>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {media.accesosRef.map((ref) => (
                   <figure key={ref.src}>
-                    <SlideFigure src={ref.src} alt={ref.nombre} fit="cover" />
-                    <figcaption className={`mt-2 text-[13px] ${t.body}`}>
+                    <SlideFigure src={ref.src} alt={ref.nombre} fit="cover" aspect="5/3" compact />
+                    <figcaption className={`mt-1.5 text-[12px] leading-snug ${t.body}`}>
                       <span className={t.bodyStrong}>{ref.nombre}.</span> {ref.detalle}
                     </figcaption>
                   </figure>
@@ -221,16 +268,16 @@ function buildNuboPreventaSlides(
           hoy={hotel.hoy}
           recomendacion={hotel.recomendacion}
           paraArrancar={hotel.paraArrancar}
+          ubicacion={hotel.ubicacionEnPlano}
           visual={
-            <div className="space-y-3">
+            <div className="space-y-2">
               <SlideFigure
                 src={media.hotelTaboadaActual}
                 alt="Hotel Hacienda Taboada — situación actual"
                 fit="cover"
                 aspect="4/3"
               />
-              <p className={`text-[13px] ${t.body}`}>{hotel.fotoActualCaption}</p>
-              <p className={`text-[13px] ${t.body}`}>{hotel.ubicacionEnPlano}</p>
+              <p className={`text-[12px] leading-snug ${t.body}`}>{hotel.fotoActualCaption}</p>
             </div>
           }
         />
@@ -246,26 +293,24 @@ function buildNuboPreventaSlides(
           hoy={restaurante.hoy}
           recomendacion={restaurante.recomendacion}
           paraArrancar={restaurante.paraArrancar}
-          visual={
-            <p className={`text-[15px] leading-relaxed ${t.body}`}>
-              {restaurante.ubicacionEnPlano}
-            </p>
-          }
+          ubicacion={restaurante.ubicacionEnPlano}
           footer={
             <div>
-              <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
+              <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">
                 Look & feel · {restaurante.referenciasConcepto[0]?.nombre}
               </p>
-              <p className={`mb-4 text-[13px] ${t.body}`}>{restaurante.lookAndFeel}</p>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <p className={`mb-3 text-[12px] leading-snug ${t.body}`}>{restaurante.lookAndFeel}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
                 {media.restauranteLookAndFeel.map((ref) => (
                   <figure key={ref.src}>
-                    <SlideFigure src={ref.src} alt={`Referencia ${ref.nombre}`} fit="cover" />
-                    <figcaption className={`mt-2 text-[13px] ${t.body}`}>{ref.detalle}</figcaption>
+                    <SlideFigure src={ref.src} alt={`Referencia ${ref.nombre}`} fit="cover" aspect="5/3" compact />
+                    <figcaption className={`mt-1.5 text-[12px] leading-snug ${t.body}`}>
+                      {ref.detalle}
+                    </figcaption>
                   </figure>
                 ))}
               </div>
-              <p className={`mt-4 text-[13px] ${t.body}`}>
+              <p className={`mt-3 text-[12px] leading-snug ${t.body}`}>
                 <span className={t.bodyStrong}>{restaurante.referenciasConcepto[1]?.nombre}</span> —{" "}
                 {restaurante.referenciasConcepto[1]?.detalle}
               </p>

@@ -338,15 +338,21 @@ export function PropuestaSlideDeck({
 export function SlideCanvas({
   children,
   className = "",
+  align = "center",
 }: {
   children: ReactNode;
   className?: string;
+  align?: "center" | "start";
 }) {
   return (
     <div
       className={`propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white px-5 py-6 md:px-10 md:py-8 lg:px-12 ${className}`}
     >
-      <div className="propuesta-slide-inner mx-auto flex w-full max-w-6xl flex-col justify-center">
+      <div
+        className={`propuesta-slide-inner mx-auto flex w-full max-w-6xl flex-col ${
+          align === "start" ? "justify-start" : "justify-center"
+        }`}
+      >
         {children}
       </div>
     </div>
