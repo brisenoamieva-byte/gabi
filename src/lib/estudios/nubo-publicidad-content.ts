@@ -105,7 +105,7 @@ export function getNuboPublicidadSegmentos(
       partidas: prev.partidas + 1,
     });
   }
-  return [...map.entries()]
+  return Array.from(map.entries())
     .map(([segmento, data]) => ({ segmento, ...data }))
     .sort((a, b) => b.anual - a.anual);
 }
