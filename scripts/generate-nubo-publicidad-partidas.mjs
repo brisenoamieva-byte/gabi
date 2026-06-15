@@ -48,6 +48,13 @@ for (const partida of partidas) {
       i === EVENTO_FF_MES ? partida.anual : 0,
     );
   }
+
+  if (partida.proveedor === "Edimoviles" && partida.concepto === "Renta de local") {
+    partida.proveedor = "NUBO";
+    partida.concepto = "Construcción de showroom 80 m²";
+    partida.anual = 1_700_000;
+    partida.meses = Array.from({ length: 12 }, (_, i) => (i === 0 ? partida.anual : 0));
+  }
 }
 
 const outPath = path.join(

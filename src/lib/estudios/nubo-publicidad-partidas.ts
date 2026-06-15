@@ -409,23 +409,23 @@ export const NUBO_PUBLICIDAD_PARTIDAS_MENSUAL = [
     ]
   },
   {
-    "proveedor": "Edimoviles",
-    "concepto": "Renta de local",
+    "proveedor": "NUBO",
+    "concepto": "Construcción de showroom 80 m²",
     "segmento": "Showroom",
-    "anual": 232198,
+    "anual": 1700000,
     "meses": [
-      58398,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800,
-      15800
+      1700000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
     ]
   },
   {
