@@ -13,6 +13,20 @@ import {
   type NuboPublicidadPartidaMensual,
 } from "@/lib/estudios/nubo-publicidad-partidas";
 
+function parseJsonField<T extends object>(raw: unknown): T | null {
+  if (raw == null) return null;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return typeof parsed === "object" && parsed !== null ? (parsed as T) : null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === "object") return raw as T;
+  return null;
+}
+
 const ROW_ID = "activo";
 const MESES_COUNT = 12;
 const ESTUDIOS_BUCKET = "gabi-estudios";
@@ -206,25 +220,73 @@ async function upsertRow(
 
   const current = await readRow();
   const now = new Date().toISOString();
+  const selectFields = "contenido, media, updated_at, partidas";
 
-  const { error } = await supabase.from("nubo_estudio_publicidad").upsert({
-    id: ROW_ID,
-    partidas: patch.partidas ?? current?.partidas ?? staticPartidas(),
-    contenido: patch.contenido ?? current?.contenido ?? null,
-    media: patch.media ?? current?.media ?? null,
-    updated_at: now,
-    updated_by: adminProfileId,
-  });
-
-  if (error) {
-    if (/contenido|42703|column/i.test(error.message)) {
+  const migrationError = (message: string) => {
+    if (/contenido|media|42703|column/i.test(message)) {
       throw new Error(
         "Falta la migración 030_nubo_estudio_contenido.sql en Supabase (columnas contenido/media).",
       );
     }
-    throw new Error(error.message);
+    throw new Error(message);
+  };
+
+  if (!current) {
+    const { data, error } = await supabase
+      .from("nubo_estudio_publicidad")
+      .insert({
+        id: ROW_ID,
+        partidas: patch.partidas ?? staticPartidas(),
+        contenido: patch.contenido ?? null,
+        media: patch.media ?? null,
+        updated_at: now,
+        updated_by: adminProfileId,
+      })
+      .select(selectFields)
+      .single();
+
+    if (error) migrationError(error.message);
+    return verifyUpsertPatch(patch, data, now);
   }
-  return now;
+
+  const updatePayload: Record<string, unknown> = {
+    updated_at: now,
+    updated_by: adminProfileId,
+  };
+  if (patch.partidas !== undefined) updatePayload.partidas = patch.partidas;
+  if (patch.contenido !== undefined) updatePayload.contenido = patch.contenido;
+  if (patch.media !== undefined) updatePayload.media = patch.media;
+
+  const { data, error } = await supabase
+    .from("nubo_estudio_publicidad")
+    .update(updatePayload)
+    .eq("id", ROW_ID)
+    .select(selectFields)
+    .single();
+
+  if (error) migrationError(error.message);
+
+  return verifyUpsertPatch(patch, data, now);
+}
+
+function verifyUpsertPatch(
+  patch: Partial<Pick<NuboEstudioRow, "partidas" | "contenido" | "media">>,
+  data: Record<string, unknown> | null,
+  now: string,
+): string {
+  if (patch.contenido !== undefined && !parseJsonField<NuboEstudioContenido>(data?.contenido)) {
+    throw new Error(
+      "Supabase no guardó la columna contenido. Verifica migración 030 y permisos del service role.",
+    );
+  }
+
+  if (patch.media !== undefined && !parseJsonField<NuboEstudioMedia>(data?.media)) {
+    throw new Error(
+      "Supabase no guardó la columna media. Verifica migración 030 y permisos del service role.",
+    );
+  }
+
+  return (data?.updated_at as string) ?? now;
 }
 
 export async function getPublishedNuboPublicidad(): Promise<NuboPublicidadPublished> {
@@ -258,23 +320,32 @@ export async function getPublishedNuboContenido(): Promise<NuboContenidoPublishe
   const defaultContenido = getDefaultNuboEstudioContenido();
   const defaultMedia = getDefaultNuboEstudioMedia();
 
-  if (row && (row.contenido || row.media)) {
+  if (!row) {
     return {
-      contenido: normalizeContenido((row.contenido ?? defaultContenido) as NuboEstudioContenido),
-      media: normalizeMedia((row.media ?? defaultMedia) as NuboEstudioMedia),
+      contenido: defaultContenido,
+      media: defaultMedia,
       meta: {
-        updatedAt: row.updated_at,
-        origin: "supabase",
+        updatedAt: new Date(0).toISOString(),
+        origin: "static",
+        contenidoPublicado: false,
+        mediaPublicado: false,
       },
     };
   }
 
+  const parsedContenido = parseJsonField<NuboEstudioContenido>(row.contenido);
+  const parsedMedia = parseJsonField<NuboEstudioMedia>(row.media);
+  const contenidoPublicado = parsedContenido !== null;
+  const mediaPublicado = parsedMedia !== null;
+
   return {
-    contenido: defaultContenido,
-    media: defaultMedia,
+    contenido: contenidoPublicado ? normalizeContenido(parsedContenido) : defaultContenido,
+    media: mediaPublicado ? normalizeMedia(parsedMedia) : defaultMedia,
     meta: {
-      updatedAt: new Date(0).toISOString(),
-      origin: "static",
+      updatedAt: row.updated_at,
+      origin: contenidoPublicado || mediaPublicado ? "supabase" : "static",
+      contenidoPublicado,
+      mediaPublicado,
     },
   };
 }
@@ -317,6 +388,8 @@ export async function publishNuboEstudioContenido(
     meta: {
       updatedAt,
       origin: "supabase",
+      contenidoPublicado: true,
+      mediaPublicado: parseJsonField<NuboEstudioMedia>(row?.media) !== null,
     },
   };
 }
@@ -336,6 +409,8 @@ export async function publishNuboEstudioMedia(
     meta: {
       updatedAt,
       origin: "supabase",
+      contenidoPublicado: parseJsonField<NuboEstudioContenido>(row?.contenido) !== null,
+      mediaPublicado: true,
     },
   };
 }

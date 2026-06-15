@@ -15,7 +15,7 @@ import {
   getDefaultNuboEstudioContenido,
   getDefaultNuboEstudioMedia,
 } from "@/lib/estudios/nubo-estudio-defaults";
-import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
+import type { NuboEstudioContenido, NuboEstudioMedia, NuboEstudioPublishMeta } from "@/lib/estudios/nubo-estudio-types";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 
@@ -380,23 +380,32 @@ export function NuboPreventaAnalisisSlides() {
     getDefaultNuboEstudioContenido(),
   );
   const [media, setMedia] = useState<NuboEstudioMedia>(() => getDefaultNuboEstudioMedia());
+  const [publishMeta, setPublishMeta] = useState<NuboEstudioPublishMeta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/estudios/nubo/contenido");
+        const res = await fetch("/api/estudios/nubo/contenido", { cache: "no-store" });
         const data = (await res.json()) as {
           contenido?: NuboEstudioContenido;
           media?: NuboEstudioMedia;
+          meta?: NuboEstudioPublishMeta;
+          error?: string;
         };
-        if (!cancelled && res.ok) {
+        if (!cancelled) {
+          if (!res.ok) {
+            setLoadError(data.error ?? "No se pudo cargar el estudio publicado.");
+            return;
+          }
           if (data.contenido) setContenido(data.contenido);
           if (data.media) setMedia(data.media);
+          setPublishMeta(data.meta ?? null);
         }
       } catch {
-        /* fallback estático */
+        if (!cancelled) setLoadError("No se pudo cargar el estudio publicado.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -422,7 +431,17 @@ export function NuboPreventaAnalisisSlides() {
 
   return (
     <>
+      {loadError ? (
+        <p className="gabi-no-print px-4 py-2 text-center text-xs text-amber-800">{loadError}</p>
+      ) : null}
+      {publishMeta && !publishMeta.contenidoPublicado ? (
+        <p className="gabi-no-print px-4 py-2 text-center text-xs text-amber-800">
+          Mostrando textos del archivo base. Publica desde el editor y verifica Supabase (migración
+          030 + SUPABASE_SERVICE_ROLE_KEY en Vercel).
+        </p>
+      ) : null}
       <PropuestaSlideDeck
+        key={publishMeta?.updatedAt ?? "static"}
         titulo={`${contenido.meta.titulo} · ${contenido.meta.subtitulo}`}
         slides={slides}
         backHref="/estudios"
@@ -437,6 +456,9 @@ export function NuboPreventaAnalisisSlides() {
         </Link>
         {" · "}
         {contenido.meta.clasificacion} · {contenido.meta.elaboradoPor}
+        {publishMeta?.contenidoPublicado ?
+          ` · Publicado ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
+        : " · Archivo base"}
       </p>
     </>
   );

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
 import { authorizeNuboEditor } from "@/lib/estudios/nubo-editor-auth";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import {
   getPublishedNuboContenido,
   publishNuboEstudioContenido,

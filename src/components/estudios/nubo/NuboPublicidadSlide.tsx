@@ -32,7 +32,7 @@ export function NuboPublicidadSlide() {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/estudios/nubo/publicidad");
+        const res = await fetch("/api/estudios/nubo/publicidad", { cache: "no-store" });
         const data = (await res.json()) as {
           partidas?: NuboPublicidadPartidaMensual[];
         };

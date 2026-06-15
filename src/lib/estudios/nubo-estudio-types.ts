@@ -78,4 +78,8 @@ export type NuboEstudioMedia = {
 export type NuboEstudioPublishMeta = {
   updatedAt: string;
   origin: "supabase" | "static";
+  /** true cuando hay JSON publicado en la columna contenido (no el archivo base). */
+  contenidoPublicado?: boolean;
+  /** true cuando hay JSON publicado en la columna media. */
+  mediaPublicado?: boolean;
 };

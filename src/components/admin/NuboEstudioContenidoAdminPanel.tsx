@@ -108,9 +108,9 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
         error?: string;
       };
       if (!res.ok) throw new Error(data.error ?? "No se pudo guardar");
-      if (data.meta?.origin !== "supabase") {
+      if (data.meta?.origin !== "supabase" || !data.meta.contenidoPublicado) {
         throw new Error(
-          "No se pudo confirmar la publicación en Supabase. Revisa SUPABASE_SERVICE_ROLE_KEY y las migraciones 029–030.",
+          "No se pudo confirmar la publicación del contenido en Supabase. Revisa SUPABASE_SERVICE_ROLE_KEY y la migración 030.",
         );
       }
       setContenido(data.contenido ?? contenido);
@@ -139,6 +139,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
       });
       const data = (await res.json()) as {
         contenido?: NuboEstudioContenido;
+        meta?: NuboEstudioPublishMeta;
         error?: string;
       };
       if (!res.ok) throw new Error(data.error ?? "No se pudo restaurar");
@@ -211,8 +212,10 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
       {publishMeta ? (
         <p className="text-xs text-slate-500">
           Origen:{" "}
-          {publishMeta.origin === "supabase" ?
+        {publishMeta?.origin === "supabase" ?
             `publicado en Supabase · ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
+          : publishMeta?.contenidoPublicado ?
+            `textos en Supabase · ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
           : "archivo base del código (aún no publicado en Supabase)"}
           {dirty ? " · hay cambios sin guardar" : null}
         </p>
