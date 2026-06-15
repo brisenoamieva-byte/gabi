@@ -144,8 +144,7 @@ export function AdminLoginForm() {
         ) : null}
         {isProductionHost ? (
           <p className="text-xs leading-relaxed text-slate-400">
-            Como operador gabi usa la misma contraseña que en <code>/operador</code>. En Vercel
-            define <code>GABI_MASTER_PASSWORD</code>.
+            Como operador gabi usa la misma contraseña que en <code>/operador</code>.
           </p>
         ) : null}
         <button

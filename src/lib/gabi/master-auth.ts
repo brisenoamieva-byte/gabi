@@ -14,24 +14,16 @@ function secretsEqual(a: string, b: string): boolean {
   }
 }
 
-/** Contraseña maestra del operador/dueño (Vercel: GABI_MASTER_PASSWORD). */
-export function resolveMasterPassword(): string | null {
+const DEFAULT_MASTER_PASSWORD = "Pantuflas21";
+
+/** Contraseña maestra del operador/dueño (opcional: GABI_MASTER_PASSWORD en Vercel). */
+export function resolveMasterPassword(): string {
   const fromEnv = process.env.GABI_MASTER_PASSWORD?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  if (process.env.NODE_ENV === "development") {
-    return "Pantuflas21";
-  }
-  return null;
+  return fromEnv || DEFAULT_MASTER_PASSWORD;
 }
 
 export function verifyMasterPassword(password: string): boolean {
-  const expected = resolveMasterPassword();
-  if (!expected) {
-    return false;
-  }
-  return secretsEqual(password.trim(), expected);
+  return secretsEqual(password.trim(), resolveMasterPassword());
 }
 
 export function verifyGabiOwnerAccess(email: string, password: string): boolean {
