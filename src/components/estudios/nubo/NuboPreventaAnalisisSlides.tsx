@@ -119,7 +119,7 @@ function buildNuboPreventaSlides(
   media: NuboEstudioMedia,
 ): PropuestaSlide[] {
   const { meta, diagnostico, condiciones, planos, accesos, hotel, restaurante } = contenido;
-  const { titulo, subtitulo, ubicacion, fecha, elaboradoPor, clasificacion } = meta;
+  const { titulo, subtitulo, ubicacion, fecha, elaboradoPor } = meta;
 
   return [
     {
