@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, Plus, RefreshCw, RotateCcw, Save, Trash2, Wand2 } from "lucide-react";
+import { ExternalLink, Loader2, Plus, Save, Trash2, Wand2 } from "lucide-react";
 import {
   formatCeldaPresupuesto,
   getNuboPublicidadColumnasMes,
@@ -262,41 +262,6 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
     }
   };
 
-  const handleReset = async () => {
-    if (
-      !window.confirm(
-        "¿Restaurar el presupuesto desde el archivo base del código? Se perderán cambios no guardados en Supabase.",
-      )
-    ) {
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-    try {
-      const res = await nuboEditorFetch("/api/admin/estudios/nubo/publicidad", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reset: true }),
-      });
-      const data = (await res.json()) as {
-        meta?: NuboPublicidadPublishMeta;
-        partidas?: NuboPublicidadPartidaMensual[];
-        error?: string;
-      };
-      if (!res.ok) throw new Error(data.error ?? "No se pudo restaurar");
-      setRows(toEditable(data.partidas ?? []));
-      setMeta(data.meta ?? null);
-      setDirty(false);
-      setSuccess("Restaurado desde el archivo base.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al restaurar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {!embedded ? (
@@ -328,30 +293,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
             </Link>
             <button
               type="button"
-              onClick={() => void load()}
-              disabled={loading || saving}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gabi-forest/15 bg-white px-4 text-sm font-semibold text-gabi-forest hover:bg-gabi-cream disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Recargar
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleReset()}
-              disabled={loading || saving}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Restaurar base
-            </button>
-            <button
-              type="button"
               onClick={() => void handleSave()}
               disabled={loading || saving || !dirty}
               className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gabi-forest px-4 text-sm font-semibold text-white hover:bg-gabi-forest-light disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Publicar cambios
+              Guardar
             </button>
           </div>
         </div>
@@ -359,30 +306,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => void load()}
-            disabled={loading || saving}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gabi-forest/15 bg-white px-4 text-sm font-semibold text-gabi-forest hover:bg-gabi-cream disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Recargar
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReset()}
-            disabled={loading || saving}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Restaurar base
-          </button>
-          <button
-            type="button"
             onClick={() => void handleSave()}
             disabled={loading || saving || !dirty}
             className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gabi-forest px-4 text-sm font-semibold text-white hover:bg-gabi-forest-light disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Publicar presupuesto
+            Guardar
           </button>
         </div>
       )}
