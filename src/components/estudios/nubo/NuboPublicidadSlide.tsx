@@ -187,7 +187,7 @@ export function NuboPublicidadSlide() {
           {NUBO_PUBLICIDAD_META.nota} · Desplaza horizontal y vertical para ver el detalle completo.
         </p>
         <Link
-          href="/admin/estudios-nubo"
+          href="/estudios/nubo/editar"
           className="gabi-no-print font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
         >
           Editar estudio

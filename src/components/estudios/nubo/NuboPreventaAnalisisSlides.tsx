@@ -337,7 +337,7 @@ export function NuboPreventaAnalisisSlides() {
       />
       <p className="gabi-no-print pb-2 text-center text-[11px] text-slate-400">
         <Link
-          href="/admin/estudios-nubo"
+          href="/estudios/nubo/editar"
           className="font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
         >
           Editar estudio

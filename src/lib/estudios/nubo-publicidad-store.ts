@@ -171,7 +171,7 @@ async function readRow(): Promise<NuboEstudioRow | null> {
 
 async function upsertRow(
   patch: Partial<Pick<NuboEstudioRow, "partidas" | "contenido" | "media">>,
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<string> {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -250,7 +250,7 @@ export async function getPublishedNuboContenido(): Promise<NuboContenidoPublishe
 
 export async function publishNuboPublicidadPartidas(
   partidasInput: NuboPublicidadPartidaMensual[],
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboPublicidadPublishMeta> {
   const validation = validateNuboPublicidadPartidas(partidasInput);
   if (validation) throw new Error(validation);
@@ -266,14 +266,14 @@ export async function publishNuboPublicidadPartidas(
 }
 
 export async function resetNuboPublicidadToStatic(
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboPublicidadPublishMeta> {
   return publishNuboPublicidadPartidas(staticPartidas(), adminProfileId);
 }
 
 export async function publishNuboEstudioContenido(
   contenidoInput: NuboEstudioContenido,
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboEstudioPublishMeta> {
   const contenido = normalizeContenido(contenidoInput);
   const updatedAt = await upsertRow({ contenido }, adminProfileId);
@@ -282,7 +282,7 @@ export async function publishNuboEstudioContenido(
 
 export async function publishNuboEstudioMedia(
   mediaInput: NuboEstudioMedia,
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboEstudioPublishMeta> {
   const media = normalizeMedia(mediaInput);
   const updatedAt = await upsertRow({ media }, adminProfileId);
@@ -290,21 +290,21 @@ export async function publishNuboEstudioMedia(
 }
 
 export async function resetNuboEstudioContenidoToStatic(
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboContenidoPublished> {
   await upsertRow({ contenido: getDefaultNuboEstudioContenido() }, adminProfileId);
   return getPublishedNuboContenido();
 }
 
 export async function resetNuboEstudioMediaToStatic(
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboContenidoPublished> {
   await upsertRow({ media: getDefaultNuboEstudioMedia() }, adminProfileId);
   return getPublishedNuboContenido();
 }
 
 export async function resetNuboEstudioAllToStatic(
-  adminProfileId: string,
+  adminProfileId: string | null,
 ): Promise<NuboContenidoPublished> {
   await upsertRow(
     {
@@ -319,7 +319,7 @@ export async function resetNuboEstudioAllToStatic(
 export async function uploadNuboEstudioImagen(input: {
   file: File;
   slot: string;
-  adminProfileId: string;
+  adminProfileId: string | null;
 }): Promise<string> {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {

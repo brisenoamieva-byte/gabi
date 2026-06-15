@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeNuboEditor } from "@/lib/estudios/nubo-editor-auth";
 import { uploadNuboEstudioImagen } from "@/lib/estudios/nubo-publicidad-store";
-import { getAdminSession } from "@/lib/admin/session";
-import { isSuperAdmin } from "@/lib/admin/permissions";
 
 const ALLOWED_SLOTS = new Set([
   "ubicacion-sitio",
@@ -13,13 +12,9 @@ const ALLOWED_SLOTS = new Set([
 ]);
 
 export async function POST(request: Request) {
-  const session = await getAdminSession();
-  if (!session) {
+  const editor = await authorizeNuboEditor(request);
+  if (!editor) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!isSuperAdmin(session.profile)) {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
   try {
@@ -42,7 +37,7 @@ export async function POST(request: Request) {
     const publicUrl = await uploadNuboEstudioImagen({
       file,
       slot,
-      adminProfileId: session.profile.id,
+      adminProfileId: editor.adminProfileId,
     });
 
     return NextResponse.json({ publicUrl, slot });

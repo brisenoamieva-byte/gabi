@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
+import { authorizeNuboEditor } from "@/lib/estudios/nubo-editor-auth";
 import {
   getPublishedNuboPublicidad,
   publishNuboPublicidadPartidas,
   resetNuboPublicidadToStatic,
 } from "@/lib/estudios/nubo-publicidad-store";
-import { getAdminSession } from "@/lib/admin/session";
-import { isSuperAdmin } from "@/lib/admin/permissions";
 
-export async function GET() {
-  const session = await getAdminSession();
-  if (!session) {
+export async function GET(request: Request) {
+  const editor = await authorizeNuboEditor(request);
+  if (!editor) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!isSuperAdmin(session.profile)) {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
   try {
@@ -30,13 +25,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const session = await getAdminSession();
-  if (!session) {
+  const editor = await authorizeNuboEditor(request);
+  if (!editor) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!isSuperAdmin(session.profile)) {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
   try {
@@ -46,9 +37,9 @@ export async function PATCH(request: Request) {
     };
 
     if (body.reset) {
-      await resetNuboPublicidadToStatic(session.profile.id);
+      await resetNuboPublicidadToStatic(editor.adminProfileId);
     } else {
-      await publishNuboPublicidadPartidas(body.partidas ?? [], session.profile.id);
+      await publishNuboPublicidadPartidas(body.partidas ?? [], editor.adminProfileId);
     }
 
     const published = await getPublishedNuboPublicidad();

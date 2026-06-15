@@ -1,24 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
+import { authorizeNuboEditor } from "@/lib/estudios/nubo-editor-auth";
 import {
   getPublishedNuboContenido,
   publishNuboEstudioContenido,
   publishNuboEstudioMedia,
+  resetNuboEstudioAllToStatic,
   resetNuboEstudioContenidoToStatic,
   resetNuboEstudioMediaToStatic,
-  resetNuboEstudioAllToStatic,
 } from "@/lib/estudios/nubo-publicidad-store";
-import { getAdminSession } from "@/lib/admin/session";
-import { isSuperAdmin } from "@/lib/admin/permissions";
 
-export async function GET() {
-  const session = await getAdminSession();
-  if (!session) {
+export async function GET(request: Request) {
+  const editor = await authorizeNuboEditor(request);
+  if (!editor) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!isSuperAdmin(session.profile)) {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
   try {
@@ -33,13 +28,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const session = await getAdminSession();
-  if (!session) {
+  const editor = await authorizeNuboEditor(request);
+  if (!editor) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!isSuperAdmin(session.profile)) {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
   try {
@@ -50,26 +41,26 @@ export async function PATCH(request: Request) {
     };
 
     if (body.reset === true || body.reset === "all") {
-      const published = await resetNuboEstudioAllToStatic(session.profile.id);
+      const published = await resetNuboEstudioAllToStatic(editor.adminProfileId);
       return NextResponse.json(published);
     }
 
     if (body.reset === "contenido") {
-      const published = await resetNuboEstudioContenidoToStatic(session.profile.id);
+      const published = await resetNuboEstudioContenidoToStatic(editor.adminProfileId);
       return NextResponse.json(published);
     }
 
     if (body.reset === "media") {
-      const published = await resetNuboEstudioMediaToStatic(session.profile.id);
+      const published = await resetNuboEstudioMediaToStatic(editor.adminProfileId);
       return NextResponse.json(published);
     }
 
     if (body.contenido) {
-      await publishNuboEstudioContenido(body.contenido, session.profile.id);
+      await publishNuboEstudioContenido(body.contenido, editor.adminProfileId);
     }
 
     if (body.media) {
-      await publishNuboEstudioMedia(body.media, session.profile.id);
+      await publishNuboEstudioMedia(body.media, editor.adminProfileId);
     }
 
     const published = await getPublishedNuboContenido();

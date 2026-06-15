@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, RotateCcw, Save, Upload } from "lucide-react";
+import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
 import type { NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
 
 const inputClass =
@@ -131,7 +132,7 @@ export function NuboEstudioMediaAdminPanel() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/contenido");
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido");
       const data = (await res.json()) as { media?: NuboEstudioMedia; error?: string };
       if (!res.ok) throw new Error(data.error ?? "No se pudo cargar");
       setMedia(data.media ?? null);
@@ -153,7 +154,7 @@ export function NuboEstudioMediaAdminPanel() {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/contenido", {
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ media }),
@@ -174,7 +175,7 @@ export function NuboEstudioMediaAdminPanel() {
     if (!window.confirm("¿Restaurar imágenes y captions al archivo base?")) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/estudios/nubo/contenido", {
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reset: "media" }),
@@ -199,7 +200,7 @@ export function NuboEstudioMediaAdminPanel() {
       const form = new FormData();
       form.append("file", file);
       form.append("slot", slot.uploadSlot);
-      const res = await fetch("/api/admin/estudios/nubo/imagen", { method: "POST", body: form });
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/imagen", { method: "POST", body: form });
       const data = (await res.json()) as { publicUrl?: string; error?: string };
       if (!res.ok || !data.publicUrl) throw new Error(data.error ?? "No se pudo subir");
       setMedia(slot.setSrc(media, data.publicUrl));

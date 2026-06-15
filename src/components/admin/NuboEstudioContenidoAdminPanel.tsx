@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RotateCcw, Save } from "lucide-react";
+import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
 import type { NuboEstudioContenido } from "@/lib/estudios/nubo-estudio-types";
 
 const inputClass =
@@ -61,7 +62,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/contenido");
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido");
       const data = (await res.json()) as {
         contenido?: NuboEstudioContenido;
         error?: string;
@@ -92,7 +93,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/contenido", {
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contenido }),
@@ -118,7 +119,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
     setSaving(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/contenido", {
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reset: "contenido" }),

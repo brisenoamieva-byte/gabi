@@ -12,6 +12,7 @@ import {
   NUBO_PUBLICIDAD_META,
 } from "@/lib/estudios/nubo-publicidad-content";
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
+import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
 import type { NuboPublicidadPublishMeta } from "@/lib/estudios/nubo-publicidad-store";
 
 type EditablePartida = {
@@ -78,7 +79,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/publicidad");
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/publicidad");
       const data = (await res.json()) as {
         partidas?: NuboPublicidadPartidaMensual[];
         meta?: NuboPublicidadPublishMeta;
@@ -136,7 +137,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/publicidad", {
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/publicidad", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ partidas: toPayload(rows) }),
@@ -171,7 +172,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/admin/estudios/nubo/publicidad", {
+      const res = await nuboEditorFetch("/api/admin/estudios/nubo/publicidad", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reset: true }),
