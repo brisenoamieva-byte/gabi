@@ -1,26 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { GABI_MASTER_COOKIE } from "@/lib/gabi/master-session-constants";
+import { peekMasterSessionEmail } from "@/lib/gabi/master-session-token";
 import { isGabiOperator } from "@/lib/gabi/operator";
-
-const GABI_MASTER_COOKIE = "gabi_master_session";
 
 const isDevPwaAsset = (pathname: string) =>
   pathname === "/sw.js" ||
   pathname.startsWith("/workbox-") ||
   pathname.startsWith("/fallback-");
-
-function peekMasterSessionEmail(value: string | undefined): string | null {
-  if (!value) return null;
-
-  const parts = value.split(".");
-  if (parts.length !== 3) return null;
-
-  const [email, expStr] = parts;
-  const exp = Number(expStr);
-  if (!email || !Number.isFinite(exp) || Date.now() > exp) return null;
-
-  return email;
-}
 
 function hasMasterAdminAccess(request: NextRequest): boolean {
   const email = peekMasterSessionEmail(request.cookies.get(GABI_MASTER_COOKIE)?.value);
