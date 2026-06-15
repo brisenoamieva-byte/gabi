@@ -243,7 +243,30 @@ export function PropuestaSlideDeck({
         </div>
       </header>
 
-      <div className={`propuesta-screen-only relative flex min-h-0 flex-1 flex-col ${t.slideBg}`}>
+      <div
+        className={`propuesta-screen-only relative flex min-h-0 flex-1 basis-0 flex-col overflow-hidden ${t.slideBg}`}
+      >
+        <div className="gabi-no-print pointer-events-none absolute inset-0 z-20 hidden md:block">
+          <button
+            type="button"
+            onClick={prev}
+            disabled={index === 0}
+            className={`pointer-events-auto absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full ${t.navBtn} disabled:opacity-0`}
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            disabled={index === total - 1}
+            className={`pointer-events-auto absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full ${t.navBtn} disabled:opacity-0`}
+            aria-label="Siguiente"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={slide.id}
@@ -251,32 +274,13 @@ export function PropuestaSlideDeck({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="flex min-h-0 flex-1 flex-col"
+            className="absolute inset-0 flex min-h-0 flex-col"
           >
             <PropuestaSlideFit key={slide.id} center={slideFitCenter(slide.id)}>
               {slide.content}
             </PropuestaSlideFit>
           </motion.div>
         </AnimatePresence>
-
-        <button
-          type="button"
-          onClick={prev}
-          disabled={index === 0}
-          className={`gabi-no-print absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full md:flex ${t.navBtn} disabled:opacity-0`}
-          aria-label="Anterior"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          onClick={next}
-          disabled={index === total - 1}
-          className={`gabi-no-print absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full md:flex ${t.navBtn} disabled:opacity-0`}
-          aria-label="Siguiente"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
       </div>
 
       <footer className={`gabi-no-print shrink-0 border-t px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 ${t.footer}`}>
