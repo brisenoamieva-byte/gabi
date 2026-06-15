@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Loader2, Plus, RefreshCw, RotateCcw, Save, Trash2, Wand2 } from "lucide-react";
 import {
@@ -111,6 +111,8 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [highlightedRowKey, setHighlightedRowKey] = useState<string | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -189,25 +191,48 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
   };
 
   const applyPatron = (key: string) => {
-    const row = rows.find((item) => item.key === key);
-    if (!row || row.patronTipo === "manual") return;
+    setRows((current) => {
+      const row = current.find((item) => item.key === key);
+      if (!row) return current;
 
-    const monto = parseMonto(row.patronMonto);
-    if (monto <= 0) {
-      setError("Indica un monto mayor a 0 para aplicar el patrón.");
-      return;
-    }
+      if (row.patronTipo === "manual") {
+        queueMicrotask(() =>
+          setError("Elige una repetición distinta a Manual (celdas) para aplicar el patrón."),
+        );
+        return current;
+      }
 
-    const meses = buildMesesFromPatron({
-      monto,
-      tipo: row.patronTipo,
-      intervaloMeses: parseMonto(row.patronIntervalo) || 2,
-      mesInicio: row.patronDesde,
-      totalMeses: MESES_COUNT,
+      const monto = parseMonto(row.patronMonto);
+      if (monto <= 0) {
+        queueMicrotask(() => setError("Indica un monto mayor a 0 para aplicar el patrón."));
+        return current;
+      }
+
+      const meses = buildMesesFromPatron({
+        monto,
+        tipo: row.patronTipo,
+        intervaloMeses: parseMonto(row.patronIntervalo) || 2,
+        mesInicio: row.patronDesde,
+        totalMeses: MESES_COUNT,
+      });
+
+      const filled = meses.filter((m) => m !== "").length;
+
+      queueMicrotask(() => {
+        setError("");
+        setSuccess(
+          `Patrón aplicado: ${filled} meses con ${formatCeldaPresupuesto(monto)}. Desplaza la tabla hacia la derecha para ver los meses.`,
+        );
+        setDirty(true);
+        setHighlightedRowKey(key);
+        window.setTimeout(() => setHighlightedRowKey(null), 2000);
+        tableScrollRef.current
+          ?.querySelector<HTMLElement>("[data-mes-anchor]")
+          ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+      });
+
+      return current.map((r) => (r.key === key ? { ...r, meses } : r));
     });
-
-    patchRow(key, { meses });
-    setError("");
   };
 
   const handleSave = async () => {
@@ -410,7 +435,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
               Agregar fila
             </button>
           </div>
-          <div className="overflow-auto rounded-2xl border border-gabi-forest/8 bg-white shadow-sm">
+          <div ref={tableScrollRef} className="overflow-auto rounded-2xl border border-gabi-forest/8 bg-white shadow-sm">
           <table className="w-max min-w-full border-collapse text-[11px]">
             <thead className="sticky top-0 z-20 bg-slate-50">
               <tr className="border-b border-slate-200 uppercase tracking-wide text-slate-500">
@@ -424,8 +449,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                 <th className="min-w-[44px] bg-[#6cc24a]/5 px-1 py-2 text-center">N</th>
                 <th className="min-w-[72px] bg-[#6cc24a]/5 px-2 py-2 text-left">Desde</th>
                 <th className="min-w-[40px] bg-[#6cc24a]/5 px-1 py-2 text-center"> </th>
-                {columnas.map((col) => (
-                  <th key={col.indice} className="min-w-[68px] px-1 py-2 text-right whitespace-nowrap">
+                {columnas.map((col, colIndex) => (
+                  <th
+                    key={col.indice}
+                    data-mes-anchor={colIndex === 0 ? "true" : undefined}
+                    className="min-w-[68px] px-1 py-2 text-right whitespace-nowrap"
+                  >
                     {col.etiquetaCorta}
                   </th>
                 ))}
@@ -435,7 +464,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.key} className="border-b border-slate-100 hover:bg-slate-50/60">
+                <tr
+                  key={row.key}
+                  className={`border-b border-slate-100 hover:bg-slate-50/60 ${
+                    highlightedRowKey === row.key ? "bg-emerald-50/80" : ""
+                  }`}
+                >
                   <td className="sticky left-0 z-10 bg-white px-2 py-1 align-top">
                     <input
                       className={cellInput}
@@ -464,6 +498,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                       placeholder="0"
                       value={row.patronMonto}
                       onChange={(e) => patchRow(row.key, { patronMonto: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          applyPatron(row.key);
+                        }
+                      }}
                     />
                   </td>
                   <td className="bg-[#6cc24a]/[0.03] px-2 py-1 align-top">
@@ -510,7 +550,11 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                   <td className="bg-[#6cc24a]/[0.03] px-1 py-1 align-top">
                     <button
                       type="button"
-                      title="Aplicar patrón a los meses"
+                      title={
+                        row.patronTipo === "manual"
+                          ? "Cambia la repetición a Cada mes, Cada N meses o Pago único"
+                          : "Aplicar patrón a los meses"
+                      }
                       disabled={row.patronTipo === "manual"}
                       onClick={() => applyPatron(row.key)}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-gabi-forest/15 text-gabi-forest hover:bg-gabi-cream disabled:opacity-30"
