@@ -22,6 +22,9 @@ export function AdminLoginForm() {
   const configured = isSupabaseConfigured();
   const resetOk = searchParams.get("reset") === "ok";
   const otpExpired = searchParams.get("error") === "otp_expired";
+  const nextPath = searchParams.get("next");
+  const safeNext =
+    nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/admin/documentos";
   const [isProductionHost, setIsProductionHost] = useState(false);
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export function AdminLoginForm() {
 
         if (response.ok && data.asesor) {
           writeStoredAsesorSession(data.asesor as Parameters<typeof writeStoredAsesorSession>[0]);
-          window.location.assign("/admin/documentos");
+          window.location.assign(safeNext);
           return;
         }
 
@@ -76,7 +79,7 @@ export function AdminLoginForm() {
         return;
       }
 
-      router.replace("/admin/documentos");
+      router.replace(safeNext);
       router.refresh();
     } catch {
       setError("No se pudo iniciar sesión.");

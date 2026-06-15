@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
 import type { NuboEstudioContenido } from "@/lib/estudios/nubo-estudio-types";
@@ -139,11 +140,34 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
     }
   };
 
-  if (loading || !contenido) {
+  if (loading) {
     return (
       <div className="flex items-center gap-2 rounded-2xl border border-gabi-forest/8 bg-white p-8 text-sm text-slate-600">
         <Loader2 className="h-4 w-4 animate-spin" />
         Cargando textos…
+      </div>
+    );
+  }
+
+  if (!contenido) {
+    return (
+      <div className="space-y-4 rounded-2xl border border-gabi-forest/8 bg-white p-8">
+        <p className="text-sm text-red-700">{error || "No se pudieron cargar los textos."}</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-xl border border-gabi-forest/15 px-4 py-2 text-sm font-semibold text-gabi-forest"
+          >
+            Reintentar
+          </button>
+          <Link
+            href={`/operador?next=${encodeURIComponent("/estudios/nubo/editar")}`}
+            className="rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white"
+          >
+            Volver a entrar
+          </Link>
+        </div>
       </div>
     );
   }

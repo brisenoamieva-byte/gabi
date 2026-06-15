@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Shield } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
@@ -14,6 +14,7 @@ const PORTAL_KEY = "gabi_portal";
 
 export default function OperadorLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState<string>(GABI_OPERADOR.email);
   const [codigo, setCodigo] = useState("");
   const [error, setError] = useState("");
@@ -27,6 +28,7 @@ export default function OperadorLoginPage() {
     try {
       const response = await fetch("/api/gabi/operator/auth", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password: codigo }),
       });
@@ -40,7 +42,10 @@ export default function OperadorLoginPage() {
       localStorage.removeItem("gabi_desarrollo");
       localStorage.removeItem(PORTAL_KEY);
       writeStoredAsesorSession(data.asesor);
-      router.push("/gabi");
+      const next = searchParams.get("next");
+      const safeNext =
+        next?.startsWith("/") && !next.startsWith("//") ? next : "/gabi";
+      router.push(safeNext);
     } catch {
       setError("No se pudo validar el acceso. Revisa tu conexión.");
     } finally {
