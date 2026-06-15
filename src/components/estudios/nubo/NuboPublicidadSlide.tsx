@@ -191,15 +191,27 @@ export function NuboPublicidadSlide() {
               </tr>
               <tr className="border-t border-slate-200">
                 <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.body}`}>IVA 16%</td>
-                <td colSpan={columnas.length + 1} className={`px-1.5 py-1 text-right tabular-nums text-[10px] ${t.body}`}>
+                <td
+                  className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] ${t.body}`}
+                >
                   {formatCeldaPresupuesto(totales.iva)}
                 </td>
+                {columnas.map((col) => (
+                  <td key={col.indice} className="bg-slate-100 px-0.5 py-1" />
+                ))}
               </tr>
               <tr>
-                <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.bodyStrong}`}>Total con IVA</td>
-                <td colSpan={columnas.length + 1} className={`px-1.5 py-1 text-right tabular-nums text-[10px] ${t.bodyStrong}`}>
+                <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.bodyStrong}`}>
+                  Total con IVA
+                </td>
+                <td
+                  className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] ${t.bodyStrong}`}
+                >
                   {formatCeldaPresupuesto(totales.total)}
                 </td>
+                {columnas.map((col) => (
+                  <td key={col.indice} className="bg-slate-100 px-0.5 py-1" />
+                ))}
               </tr>
             </tfoot>
           </table>
