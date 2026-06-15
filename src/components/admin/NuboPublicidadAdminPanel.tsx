@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, RefreshCw, RotateCcw, Save } from "lucide-react";
+import { ExternalLink, Loader2, Plus, RefreshCw, RotateCcw, Save, Trash2, Wand2 } from "lucide-react";
 import {
   formatCeldaPresupuesto,
   getNuboPublicidadColumnasMes,
@@ -13,7 +13,14 @@ import {
 } from "@/lib/estudios/nubo-publicidad-content";
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
+import {
+  buildMesesFromPatron,
+  NUBO_PATRON_TIPO_LABEL,
+  type NuboPatronTipo,
+} from "@/lib/estudios/nubo-publicidad-pattern";
 import type { NuboPublicidadPublishMeta } from "@/lib/estudios/nubo-publicidad-store";
+
+const MESES_COUNT = 12;
 
 type EditablePartida = {
   key: string;
@@ -21,6 +28,10 @@ type EditablePartida = {
   concepto: string;
   segmento: string;
   meses: string[];
+  patronMonto: string;
+  patronTipo: NuboPatronTipo;
+  patronIntervalo: string;
+  patronDesde: number;
 };
 
 const cellInput =
@@ -33,6 +44,28 @@ function partidaKey(p: Pick<NuboPublicidadPartidaMensual, "proveedor" | "concept
   return `${p.proveedor}-${p.concepto}-${index}`;
 }
 
+const selectClass =
+  "w-full min-w-0 rounded border border-slate-200 bg-white px-1 py-1 text-[10px] text-[#13315C] outline-none focus:border-[#2DD4BF]";
+
+function newRowKey() {
+  return `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function createEmptyRow(seed?: Partial<EditablePartida>): EditablePartida {
+  return {
+    key: newRowKey(),
+    segmento: seed?.segmento ?? "Campaña digital",
+    proveedor: "",
+    concepto: "",
+    meses: Array(MESES_COUNT).fill(""),
+    patronMonto: "",
+    patronTipo: "mensual",
+    patronIntervalo: "2",
+    patronDesde: 0,
+    ...seed,
+  };
+}
+
 function toEditable(partidas: readonly NuboPublicidadPartidaMensual[]): EditablePartida[] {
   return partidas.map((p, index) => ({
     key: partidaKey(p, index),
@@ -40,6 +73,10 @@ function toEditable(partidas: readonly NuboPublicidadPartidaMensual[]): Editable
     concepto: p.concepto,
     segmento: p.segmento,
     meses: p.meses.map((m) => (m === 0 ? "" : String(Math.round(m)))),
+    patronMonto: "",
+    patronTipo: "manual" as const,
+    patronIntervalo: "2",
+    patronDesde: 0,
   }));
 }
 
@@ -125,11 +162,52 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
         if (row.key !== key) return row;
         const meses = [...row.meses];
         meses[mesIndex] = value;
-        return { ...row, meses };
+        return { ...row, meses, patronTipo: "manual" };
       }),
     );
     setDirty(true);
     setSuccess("");
+  };
+
+  const addRow = () => {
+    const last = rows[rows.length - 1];
+    setRows((current) => [...current, createEmptyRow({ segmento: last?.segmento ?? "Campaña digital" })]);
+    setDirty(true);
+    setSuccess("");
+  };
+
+  const removeRow = (key: string) => {
+    if (rows.length <= 1) {
+      setError("Debe quedar al menos una partida.");
+      return;
+    }
+    if (!window.confirm("¿Eliminar esta fila del presupuesto?")) return;
+    setRows((current) => current.filter((row) => row.key !== key));
+    setDirty(true);
+    setSuccess("");
+    setError("");
+  };
+
+  const applyPatron = (key: string) => {
+    const row = rows.find((item) => item.key === key);
+    if (!row || row.patronTipo === "manual") return;
+
+    const monto = parseMonto(row.patronMonto);
+    if (monto <= 0) {
+      setError("Indica un monto mayor a 0 para aplicar el patrón.");
+      return;
+    }
+
+    const meses = buildMesesFromPatron({
+      monto,
+      tipo: row.patronTipo,
+      intervaloMeses: parseMonto(row.patronIntervalo) || 2,
+      mesInicio: row.patronDesde,
+      totalMeses: MESES_COUNT,
+    });
+
+    patchRow(key, { meses });
+    setError("");
   };
 
   const handleSave = async () => {
@@ -316,19 +394,43 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
           Cargando presupuesto…
         </div>
       ) : (
-        <div className="overflow-auto rounded-2xl border border-gabi-forest/8 bg-white shadow-sm">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-slate-500">
+              Usa <strong>Monto + repetición</strong> y pulsa aplicar para llenar los meses. También puedes editar
+              celdas a mano.
+            </p>
+            <button
+              type="button"
+              onClick={addRow}
+              disabled={saving}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-gabi-forest/15 bg-white px-3 text-xs font-semibold text-gabi-forest hover:bg-gabi-cream disabled:opacity-50"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Agregar fila
+            </button>
+          </div>
+          <div className="overflow-auto rounded-2xl border border-gabi-forest/8 bg-white shadow-sm">
           <table className="w-max min-w-full border-collapse text-[11px]">
             <thead className="sticky top-0 z-20 bg-slate-50">
               <tr className="border-b border-slate-200 uppercase tracking-wide text-slate-500">
                 <th className="sticky left-0 z-30 min-w-[88px] bg-slate-50 px-2 py-2 text-left">Segmento</th>
                 <th className="min-w-[100px] px-2 py-2 text-left">Proveedor</th>
                 <th className="min-w-[160px] px-2 py-2 text-left">Concepto</th>
+                <th className="min-w-[72px] border-l border-slate-200 bg-[#6cc24a]/5 px-2 py-2 text-left">
+                  Monto
+                </th>
+                <th className="min-w-[108px] bg-[#6cc24a]/5 px-2 py-2 text-left">Repetición</th>
+                <th className="min-w-[44px] bg-[#6cc24a]/5 px-1 py-2 text-center">N</th>
+                <th className="min-w-[72px] bg-[#6cc24a]/5 px-2 py-2 text-left">Desde</th>
+                <th className="min-w-[40px] bg-[#6cc24a]/5 px-1 py-2 text-center"> </th>
                 {columnas.map((col) => (
                   <th key={col.indice} className="min-w-[68px] px-1 py-2 text-right whitespace-nowrap">
                     {col.etiquetaCorta}
                   </th>
                 ))}
                 <th className="min-w-[72px] bg-slate-100 px-2 py-2 text-right">Total</th>
+                <th className="min-w-[40px] px-1 py-2 text-center"> </th>
               </tr>
             </thead>
             <tbody>
@@ -355,6 +457,67 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                       onChange={(e) => patchRow(row.key, { concepto: e.target.value })}
                     />
                   </td>
+                  <td className="border-l border-slate-100 bg-[#6cc24a]/[0.03] px-2 py-1 align-top">
+                    <input
+                      className={mesInput}
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={row.patronMonto}
+                      onChange={(e) => patchRow(row.key, { patronMonto: e.target.value })}
+                    />
+                  </td>
+                  <td className="bg-[#6cc24a]/[0.03] px-2 py-1 align-top">
+                    <select
+                      className={selectClass}
+                      value={row.patronTipo}
+                      onChange={(e) =>
+                        patchRow(row.key, { patronTipo: e.target.value as NuboPatronTipo })
+                      }
+                    >
+                      <option value="mensual">{NUBO_PATRON_TIPO_LABEL.mensual}</option>
+                      <option value="intervalo">{NUBO_PATRON_TIPO_LABEL.intervalo}</option>
+                      <option value="unico">{NUBO_PATRON_TIPO_LABEL.unico}</option>
+                      <option value="manual">Manual (celdas)</option>
+                    </select>
+                  </td>
+                  <td className="bg-[#6cc24a]/[0.03] px-1 py-1 align-top">
+                    <input
+                      className={`${mesInput} ${row.patronTipo !== "intervalo" ? "opacity-30" : ""}`}
+                      inputMode="numeric"
+                      min={1}
+                      disabled={row.patronTipo !== "intervalo"}
+                      value={row.patronIntervalo}
+                      onChange={(e) => patchRow(row.key, { patronIntervalo: e.target.value })}
+                      title="Cada cuántos meses"
+                    />
+                  </td>
+                  <td className="bg-[#6cc24a]/[0.03] px-2 py-1 align-top">
+                    <select
+                      className={selectClass}
+                      value={row.patronDesde}
+                      disabled={row.patronTipo === "manual"}
+                      onChange={(e) =>
+                        patchRow(row.key, { patronDesde: Number(e.target.value) })
+                      }
+                    >
+                      {columnas.map((col) => (
+                        <option key={col.indice} value={col.indice}>
+                          {col.etiquetaCorta}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="bg-[#6cc24a]/[0.03] px-1 py-1 align-top">
+                    <button
+                      type="button"
+                      title="Aplicar patrón a los meses"
+                      disabled={row.patronTipo === "manual"}
+                      onClick={() => applyPatron(row.key)}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded border border-gabi-forest/15 text-gabi-forest hover:bg-gabi-cream disabled:opacity-30"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
                   {row.meses.map((mes, mesIndex) => (
                     <td key={mesIndex} className="px-1 py-1 align-top">
                       <input
@@ -369,12 +532,22 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                   <td className="bg-slate-50/80 px-2 py-1 text-right tabular-nums font-semibold text-gabi-forest">
                     {formatCeldaPresupuesto(rowAnual(row))}
                   </td>
+                  <td className="px-1 py-1 align-top">
+                    <button
+                      type="button"
+                      title="Eliminar fila"
+                      onClick={() => removeRow(row.key)}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded border border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-slate-100">
               <tr className="border-t-2 border-gabi-forest">
-                <td colSpan={3} className="sticky left-0 bg-slate-100 px-2 py-2 font-semibold text-gabi-forest">
+                <td colSpan={8} className="sticky left-0 bg-slate-100 px-2 py-2 font-semibold text-gabi-forest">
                   Subtotal mensual
                 </td>
                 {totalesMes.map((monto, index) => (
@@ -385,15 +558,18 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                 <td className="px-2 py-2 text-right tabular-nums font-semibold">
                   {formatCeldaPresupuesto(totales.subtotal)}
                 </td>
+                <td />
               </tr>
             </tfoot>
           </table>
         </div>
+        </div>
       )}
 
       <p className="text-xs text-slate-500">
-        Deja una celda vacía para $0. El total anual de cada fila se recalcula al guardar. Si Supabase no está
-        configurado, la diapositiva sigue usando el archivo base del código.
+        Patrones: <strong>Cada mes</strong> repite el monto en todos los meses desde &quot;Desde&quot;;{" "}
+        <strong>Cada N meses</strong> salta N meses (ej. 2 = bimestral); <strong>Pago único</strong> solo en el mes
+        inicial. Deja celdas vacías para $0. Publica para ver cambios en la diapositiva.
       </p>
     </div>
   );
