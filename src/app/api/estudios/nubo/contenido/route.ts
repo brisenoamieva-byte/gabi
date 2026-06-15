@@ -6,7 +6,7 @@ export async function GET() {
     const published = await getPublishedNuboContenido();
     return NextResponse.json(published, {
       headers: {
-        "Cache-Control": "public, max-age=30, stale-while-revalidate=120",
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {

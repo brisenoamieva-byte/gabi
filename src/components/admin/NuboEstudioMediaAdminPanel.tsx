@@ -160,11 +160,20 @@ export function NuboEstudioMediaAdminPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ media }),
       });
-      const data = (await res.json()) as { media?: NuboEstudioMedia; error?: string };
+      const data = (await res.json()) as {
+        media?: NuboEstudioMedia;
+        meta?: { origin?: string; updatedAt?: string };
+        error?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? "No se pudo guardar");
+      if (data.meta?.origin !== "supabase") {
+        throw new Error(
+          "No se pudo confirmar la publicación en Supabase. Revisa SUPABASE_SERVICE_ROLE_KEY y las migraciones 029–030.",
+        );
+      }
       setMedia(data.media ?? media);
       setDirty(false);
-      setSuccess("Imágenes publicadas.");
+      setSuccess("Imágenes publicadas. Recarga /estudios/nubo para verlas.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al guardar");
     } finally {
@@ -261,7 +270,7 @@ export function NuboEstudioMediaAdminPanel() {
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={saving || !dirty}
+          disabled={saving}
           className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gabi-forest px-4 text-sm font-semibold text-white hover:bg-gabi-forest-light disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

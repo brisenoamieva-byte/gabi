@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
-import type { NuboEstudioContenido } from "@/lib/estudios/nubo-estudio-types";
+import type { NuboEstudioContenido, NuboEstudioPublishMeta } from "@/lib/estudios/nubo-estudio-types";
 
 const inputClass =
   "w-full rounded-xl border border-gabi-forest/10 px-3 py-2 text-sm text-gabi-ink outline-none focus:border-[#2DD4BF] focus:ring-1 focus:ring-[#2DD4BF]/30";
@@ -53,6 +53,7 @@ type Props = {
 
 export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
   const [contenido, setContenido] = useState<NuboEstudioContenido | null>(null);
+  const [publishMeta, setPublishMeta] = useState<NuboEstudioPublishMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -66,10 +67,12 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
       const res = await nuboEditorFetch("/api/admin/estudios/nubo/contenido");
       const data = (await res.json()) as {
         contenido?: NuboEstudioContenido;
+        meta?: NuboEstudioPublishMeta;
         error?: string;
       };
       if (!res.ok) throw new Error(data.error ?? "No se pudo cargar");
       setContenido(data.contenido ?? null);
+      setPublishMeta(data.meta ?? null);
       setDirty(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar");
@@ -101,12 +104,21 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
       });
       const data = (await res.json()) as {
         contenido?: NuboEstudioContenido;
+        meta?: NuboEstudioPublishMeta;
         error?: string;
       };
       if (!res.ok) throw new Error(data.error ?? "No se pudo guardar");
+      if (data.meta?.origin !== "supabase") {
+        throw new Error(
+          "No se pudo confirmar la publicación en Supabase. Revisa SUPABASE_SERVICE_ROLE_KEY y las migraciones 029–030.",
+        );
+      }
       setContenido(data.contenido ?? contenido);
+      setPublishMeta(data.meta ?? null);
       setDirty(false);
-      setSuccess("Textos publicados.");
+      setSuccess(
+        `Textos publicados. Recarga /estudios/nubo para verlos (${new Date(data.meta.updatedAt).toLocaleString("es-MX")}).`,
+      );
       onSaved?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al guardar");
@@ -131,6 +143,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
       };
       if (!res.ok) throw new Error(data.error ?? "No se pudo restaurar");
       setContenido(data.contenido ?? null);
+      setPublishMeta(data.meta ?? null);
       setDirty(false);
       setSuccess("Textos restaurados.");
     } catch (e) {
@@ -187,13 +200,23 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={saving || !dirty}
+          disabled={saving}
           className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gabi-forest px-4 text-sm font-semibold text-white hover:bg-gabi-forest-light disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Publicar textos
         </button>
       </div>
+
+      {publishMeta ? (
+        <p className="text-xs text-slate-500">
+          Origen:{" "}
+          {publishMeta.origin === "supabase" ?
+            `publicado en Supabase · ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
+          : "archivo base del código (aún no publicado en Supabase)"}
+          {dirty ? " · hay cambios sin guardar" : null}
+        </p>
+      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>

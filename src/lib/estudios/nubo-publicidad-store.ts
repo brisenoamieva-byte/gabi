@@ -165,8 +165,32 @@ async function readRow(): Promise<NuboEstudioRow | null> {
     .eq("id", ROW_ID)
     .maybeSingle();
 
-  if (error || !data) return null;
-  return data as NuboEstudioRow;
+  if (!error && data) return data as NuboEstudioRow;
+
+  if (error && /contenido|media|42703|column/i.test(error.message)) {
+    const fallback = await supabase
+      .from("nubo_estudio_publicidad")
+      .select("partidas, updated_at")
+      .eq("id", ROW_ID)
+      .maybeSingle();
+    if (fallback.data) {
+      return {
+        partidas: fallback.data.partidas as NuboPublicidadPartidaMensual[],
+        contenido: null,
+        media: null,
+        updated_at: fallback.data.updated_at as string,
+      };
+    }
+  }
+
+  return null;
+}
+
+export function getNuboEstudioStorageError(): string | null {
+  if (!createSupabaseServiceClient()) {
+    return "Supabase no configurado en el servidor (SUPABASE_SERVICE_ROLE_KEY). Los textos no se pueden publicar.";
+  }
+  return null;
 }
 
 async function upsertRow(
@@ -192,7 +216,14 @@ async function upsertRow(
     updated_by: adminProfileId,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/contenido|42703|column/i.test(error.message)) {
+      throw new Error(
+        "Falta la migración 030_nubo_estudio_contenido.sql en Supabase (columnas contenido/media).",
+      );
+    }
+    throw new Error(error.message);
+  }
   return now;
 }
 
@@ -274,19 +305,39 @@ export async function resetNuboPublicidadToStatic(
 export async function publishNuboEstudioContenido(
   contenidoInput: NuboEstudioContenido,
   adminProfileId: string | null,
-): Promise<NuboEstudioPublishMeta> {
+): Promise<NuboContenidoPublished> {
   const contenido = normalizeContenido(contenidoInput);
   const updatedAt = await upsertRow({ contenido }, adminProfileId);
-  return { updatedAt, origin: "supabase" };
+  const row = await readRow();
+  const defaultMedia = getDefaultNuboEstudioMedia();
+
+  return {
+    contenido,
+    media: normalizeMedia((row?.media ?? defaultMedia) as NuboEstudioMedia),
+    meta: {
+      updatedAt,
+      origin: "supabase",
+    },
+  };
 }
 
 export async function publishNuboEstudioMedia(
   mediaInput: NuboEstudioMedia,
   adminProfileId: string | null,
-): Promise<NuboEstudioPublishMeta> {
+): Promise<NuboContenidoPublished> {
   const media = normalizeMedia(mediaInput);
   const updatedAt = await upsertRow({ media }, adminProfileId);
-  return { updatedAt, origin: "supabase" };
+  const row = await readRow();
+  const defaultContenido = getDefaultNuboEstudioContenido();
+
+  return {
+    contenido: normalizeContenido((row?.contenido ?? defaultContenido) as NuboEstudioContenido),
+    media,
+    meta: {
+      updatedAt,
+      origin: "supabase",
+    },
+  };
 }
 
 export async function resetNuboEstudioContenidoToStatic(

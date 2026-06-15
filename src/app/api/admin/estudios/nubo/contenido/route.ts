@@ -56,11 +56,13 @@ export async function PATCH(request: Request) {
     }
 
     if (body.contenido) {
-      await publishNuboEstudioContenido(body.contenido, editor.adminProfileId);
+      const published = await publishNuboEstudioContenido(body.contenido, editor.adminProfileId);
+      return NextResponse.json(published);
     }
 
     if (body.media) {
-      await publishNuboEstudioMedia(body.media, editor.adminProfileId);
+      const published = await publishNuboEstudioMedia(body.media, editor.adminProfileId);
+      return NextResponse.json(published);
     }
 
     const published = await getPublishedNuboContenido();
