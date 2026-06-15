@@ -40,6 +40,7 @@ export function AdminLoginForm() {
       if (isGabiOperator({ email })) {
         const response = await fetch("/api/gabi/master/login", {
           method: "POST",
+          credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
@@ -47,8 +48,7 @@ export function AdminLoginForm() {
 
         if (response.ok && data.asesor) {
           writeStoredAsesorSession(data.asesor as Parameters<typeof writeStoredAsesorSession>[0]);
-          router.replace("/admin/documentos");
-          router.refresh();
+          window.location.assign("/admin/documentos");
           return;
         }
 
