@@ -1,5 +1,13 @@
 const FIT_HOST = ".propuesta-fit-host";
 const FIT_STAGE = ".propuesta-fit-stage";
+const MOBILE_FIT_QUERY = "(max-width: 767px)";
+
+export function isPropuestaSlideMobileFit(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return window.matchMedia(MOBILE_FIT_QUERY).matches;
+}
 
 export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
   const center = host.dataset.fitCenter === "true";
@@ -7,6 +15,17 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
   stage.style.transform = "none";
   stage.style.width = "100%";
   host.style.alignItems = center ? "center" : "flex-start";
+
+  if (isPropuestaSlideMobileFit()) {
+    host.style.overflowY = "auto";
+    host.style.overflowX = "hidden";
+    host.dataset.fitMode = "scroll";
+    return;
+  }
+
+  host.style.overflowY = "hidden";
+  host.style.overflowX = "hidden";
+  host.dataset.fitMode = "scale";
 
   const ch = host.clientHeight;
   const cw = host.clientWidth;
@@ -35,5 +54,10 @@ export function resetAllPropuestaSlideFits() {
   document.querySelectorAll<HTMLElement>(FIT_STAGE).forEach((stage) => {
     stage.style.transform = "none";
     stage.style.width = "100%";
+  });
+  document.querySelectorAll<HTMLElement>(FIT_HOST).forEach((host) => {
+    host.style.overflowY = "";
+    host.style.overflowX = "";
+    host.dataset.fitMode = "";
   });
 }

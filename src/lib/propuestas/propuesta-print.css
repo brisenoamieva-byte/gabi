@@ -11,7 +11,7 @@
   display: none;
 }
 
-/* Contenedor que escala el contenido para caber sin scroll */
+/* Contenedor que escala el contenido para caber sin scroll (desktop) */
 .propuesta-fit-host {
   align-items: flex-start;
   display: flex;
@@ -22,9 +22,22 @@
   width: 100%;
 }
 
+.propuesta-fit-host[data-fit-mode="scroll"] {
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 .propuesta-fit-stage {
   max-width: 100%;
   width: 100%;
+}
+
+.propuesta-fit-host[data-fit-mode="scroll"] .propuesta-fit-stage {
+  transform: none !important;
 }
 
 @media print {

@@ -28,10 +28,10 @@ export default function EstudioNuboPreventaPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC]">
-      <div className="gabi-no-print border-b border-black/8 bg-white px-4 py-2 md:px-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-[12px]">
+    <main className="min-h-[100dvh] bg-[#F8FAFC]">
+      <div className="gabi-no-print border-b border-black/8 bg-white px-3 py-2 sm:px-4 md:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] sm:gap-3 sm:text-[12px]">
             <Link
               href="/estudios"
               className="font-medium text-slate-500 hover:text-[#201044] hover:underline"

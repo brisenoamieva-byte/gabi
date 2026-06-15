@@ -50,11 +50,16 @@ export function PropuestaSlideFit({
     window.addEventListener("afterprint", onAfterPrint);
     window.addEventListener("resize", fit);
 
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onMq = () => fit();
+    mq.addEventListener("change", onMq);
+
     return () => {
       ro.disconnect();
       window.removeEventListener("beforeprint", onBeforePrint);
       window.removeEventListener("afterprint", onAfterPrint);
       window.removeEventListener("resize", fit);
+      mq.removeEventListener("change", onMq);
     };
   }, [fit, children]);
 
