@@ -21,4 +21,14 @@ export const ESTUDIOS_REGISTRY: EstudioListItem[] = [
     href: "/corredor/investti",
     clasificacion: "Uso interno · Comercial",
   },
+  {
+    slug: "nubo-preventa",
+    titulo: "NUBO · Condiciones para preventa",
+    subtitulo: "Infraestructura + publicidad 2.5%",
+    ubicacion: "San Miguel de Allende, Guanajuato",
+    cliente: "Desarrollador NUBO / BBR Habitarea",
+    fecha: "2026",
+    href: "/estudios/nubo",
+    clasificacion: "Consultoría comercial · Confidencial",
+  },
 ];

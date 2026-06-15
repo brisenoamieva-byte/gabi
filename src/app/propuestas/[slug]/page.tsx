@@ -59,6 +59,13 @@ export default function PropuestaDetailPage() {
 
   return (
     <>
+      {slug === "nubo" ? (
+        <div className="gabi-no-print border-b border-[#6cc24a]/30 bg-[#6cc24a]/10 px-4 py-2 text-center text-[12px] md:px-6">
+          <Link href="/estudios/nubo" className="font-semibold text-[#201044] underline-offset-2 hover:underline">
+            Ver análisis de preventa (restaurante campestre + accesos)
+          </Link>
+        </div>
+      ) : null}
       <PropuestaSharePanel
         slug={slug}
         operatorEmail={user?.email}
