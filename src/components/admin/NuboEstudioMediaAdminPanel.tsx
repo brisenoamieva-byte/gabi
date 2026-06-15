@@ -383,6 +383,7 @@ export function NuboEstudioMediaAdminPanel() {
       <p className="text-xs text-slate-500">
         Puedes subir una imagen nueva o pegar una URL. Tras subir o editar, pulsa Publicar imágenes. Requiere
         migración 031 (bucket gabi-estudios) en Supabase.
+        {dirty ? " · hay cambios sin guardar" : null}
       </p>
     </div>
   );
