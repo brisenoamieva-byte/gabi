@@ -71,8 +71,10 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
   ].filter((item) => canAccessModule(profile, navModules[item.href]));
 
   const handleLogout = async () => {
+    await fetch("/api/gabi/master/logout", { method: "POST" });
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
+    localStorage.removeItem("gabi_user");
     router.replace("/admin/login");
     router.refresh();
   };

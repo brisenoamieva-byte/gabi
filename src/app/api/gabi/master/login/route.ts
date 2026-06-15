@@ -6,11 +6,10 @@ import {
   masterSessionCookieOptions,
   signMasterSession,
 } from "@/lib/gabi/master-session";
-import { isGabiOperator } from "@/lib/gabi/operator";
 import { checkRateLimit, getRequestClientKey } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit(getRequestClientKey(request, "gabi-operator"), 8, 60_000);
+  const rate = checkRateLimit(getRequestClientKey(request, "gabi-master-login"), 8, 60_000);
 
   if (!rate.allowed) {
     return NextResponse.json(
@@ -20,20 +19,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { email?: string; codigo?: string; password?: string };
+    const body = (await request.json()) as { email?: string; password?: string };
     const email = body.email?.trim() ?? "";
-    const password = body.password ?? body.codigo ?? "";
+    const password = body.password ?? "";
 
     if (!email || !password) {
       return NextResponse.json({ error: "Correo y contraseña requeridos." }, { status: 400 });
     }
 
-    if (!isGabiOperator({ email })) {
-      return NextResponse.json({ error: "Correo no autorizado." }, { status: 403 });
-    }
-
     if (!verifyGabiOwnerAccess(email, password)) {
-      return NextResponse.json({ error: "Contraseña incorrecta." }, { status: 401 });
+      return NextResponse.json({ error: "Correo o contraseña incorrectos." }, { status: 401 });
     }
 
     const asesor = buildOperatorSession(email);

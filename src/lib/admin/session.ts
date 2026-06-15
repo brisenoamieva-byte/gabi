@@ -1,5 +1,8 @@
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
+import { getMasterSessionEmail } from "@/lib/gabi/master-session";
+import { isGabiOperator } from "@/lib/gabi/operator";
 import type { AdminProfile } from "@/lib/admin/types";
 
 type AdminProfileRow = {
@@ -24,10 +27,29 @@ const normalizeAdminRol = (rol: string): AdminProfile["rol"] => {
   return "superadmin";
 };
 
+function buildOwnerAdminSession(email: string): { userId: string; profile: AdminProfile } {
+  return {
+    userId: "operador-gabi",
+    profile: {
+      id: "operador-gabi",
+      nombre: GABI_OPERADOR.nombre,
+      email: email.trim().toLowerCase(),
+      rol: "superadmin",
+      activo: true,
+      desarrollosIds: [],
+    },
+  };
+}
+
 export const getAdminSession = async (): Promise<{
   userId: string;
   profile: AdminProfile;
 } | null> => {
+  const masterEmail = await getMasterSessionEmail();
+  if (masterEmail && isGabiOperator({ email: masterEmail })) {
+    return buildOwnerAdminSession(masterEmail);
+  }
+
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -41,7 +63,6 @@ export const getAdminSession = async (): Promise<{
     return null;
   }
 
-  // Service role evita recursión RLS en admin_profiles (migración 006).
   const profileClient = createSupabaseServiceClient() ?? supabase;
 
   const { data: profile, error } = await profileClient

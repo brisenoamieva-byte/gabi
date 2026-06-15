@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { AsesorSession } from "@/lib/asesores/types";
+import { verifyMasterPassword } from "@/lib/gabi/master-auth";
 import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
 
 function codesEqual(a: string, b: string): boolean {
@@ -15,15 +16,22 @@ function codesEqual(a: string, b: string): boolean {
   }
 }
 
+/** Contraseña maestra del operador (misma en /operador, /admin y editor NUBO). */
 export function verifyOperatorAccessCode(code: string): boolean {
-  const secret = process.env.GABI_OPERATOR_ACCESS_CODE?.trim();
-  if (!secret) {
-    if (process.env.NODE_ENV === "development") {
-      return codesEqual(code.trim(), "gabi-operador");
-    }
-    return false;
+  if (verifyMasterPassword(code)) {
+    return true;
   }
-  return codesEqual(code.trim(), secret);
+
+  const legacy = process.env.GABI_OPERATOR_ACCESS_CODE?.trim();
+  if (legacy) {
+    return codesEqual(code.trim(), legacy);
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    return codesEqual(code.trim(), "gabi-operador");
+  }
+
+  return false;
 }
 
 export function buildOperatorSession(email: string): AsesorSession {

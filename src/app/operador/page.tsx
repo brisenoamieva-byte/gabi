@@ -28,7 +28,7 @@ export default function OperadorLoginPage() {
       const response = await fetch("/api/gabi/operator/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, codigo }),
+        body: JSON.stringify({ email, password: codigo }),
       });
       const data = (await response.json()) as { asesor?: AsesorSession; error?: string };
 
@@ -91,7 +91,7 @@ export default function OperadorLoginPage() {
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-bold">Código de acceso</span>
+              <span className="mb-2 block text-sm font-bold">Contraseña maestra</span>
               <input
                 type="password"
                 value={codigo}

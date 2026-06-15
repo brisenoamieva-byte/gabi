@@ -7,11 +7,14 @@ import { GabiLogo } from "@/components/brand/GabiLogo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { writeStoredAsesorSession } from "@/lib/asesores/session-client";
+import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
+import { isGabiOperator } from "@/lib/gabi/operator";
 
 export function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState<string>(GABI_OPERADOR.email);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,6 +37,30 @@ export function AdminLoginForm() {
     setLoading(true);
 
     try {
+      if (isGabiOperator({ email })) {
+        const response = await fetch("/api/gabi/master/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = (await response.json()) as { asesor?: unknown; error?: string };
+
+        if (response.ok && data.asesor) {
+          writeStoredAsesorSession(data.asesor as Parameters<typeof writeStoredAsesorSession>[0]);
+          router.replace("/admin/documentos");
+          router.refresh();
+          return;
+        }
+
+        setError(data.error ?? "Correo o contraseña incorrectos.");
+        return;
+      }
+
+      if (!configured) {
+        setError("Este correo no tiene acceso admin configurado.");
+        return;
+      }
+
       const supabase = createSupabaseBrowserClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -52,7 +79,7 @@ export function AdminLoginForm() {
       router.replace("/admin/documentos");
       router.refresh();
     } catch {
-      setError("No se pudo iniciar sesión. Revisa la configuración de Supabase.");
+      setError("No se pudo iniciar sesión.");
     } finally {
       setLoading(false);
     }
@@ -67,92 +94,69 @@ export function AdminLoginForm() {
         </p>
         <h1 className="mt-2 text-2xl font-black text-gabi-forest">Admin gabi</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Gestión de documentos, inventario y usuarios.
+          Gestión de documentos, inventario, estudios y usuarios.
         </p>
       </div>
 
-      {!configured ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
-          <p className="font-bold">Supabase no configurado</p>
-          {isProductionHost ? (
-            <p className="mt-2">
-              En producción (Vercel), agrega{" "}
-              <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
-              <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> y{" "}
-              <code className="rounded bg-white px-1">SUPABASE_SERVICE_ROLE_KEY</code> en el
-              proyecto de Vercel y vuelve a desplegar.
-            </p>
-          ) : (
-            <p className="mt-2">
-              Agrega las variables en <code className="rounded bg-white px-1">.env.local</code> y
-              ejecuta el SQL en{" "}
-              <code className="rounded bg-white px-1">supabase/migrations/001_admin_foundation.sql</code>
-            </p>
-          )}
-        </div>
-      ) : (
-        <>
-          {resetOk ? (
-            <p className="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
-              Contraseña actualizada. Ya puedes iniciar sesión.
-            </p>
-          ) : null}
-          {otpExpired ? (
-            <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-              El enlace del correo expiró. Vuelve a enviarlo desde Supabase o crea la contraseña
-              directamente al dar de alta el usuario.
-            </p>
-          ) : null}
-          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Email
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-                className="input-cotizador"
-                placeholder="admin@bbrhabitarea.com"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Contraseña
-              </span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                autoComplete="current-password"
-                className="input-cotizador"
-              />
-            </label>
-            {error ? (
-              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
-                {error}
-              </p>
-            ) : null}
-            {configured && isProductionHost ? (
-              <p className="text-xs leading-relaxed text-slate-400">
-                Si el login falla tras un deploy, confirma que las variables de Supabase en Vercel
-                coinciden con tu proyecto y que el usuario existe en Authentication.
-              </p>
-            ) : null}
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest text-sm font-bold text-white disabled:opacity-60"
-            >
-              <LockKeyhole className="h-4 w-4" />
-              {loading ? "Entrando..." : "Entrar al panel"}
-            </button>
-          </form>
-        </>
-      )}
+      {resetOk ? (
+        <p className="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+          Contraseña actualizada. Ya puedes iniciar sesión.
+        </p>
+      ) : null}
+      {otpExpired ? (
+        <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+          El enlace del correo expiró. Vuelve a enviarlo desde Supabase o usa tu contraseña maestra.
+        </p>
+      ) : null}
+
+      <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            Email
+          </span>
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+            autoComplete="email"
+            className="input-cotizador"
+            placeholder={GABI_OPERADOR.email}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            Contraseña maestra
+          </span>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            autoComplete="current-password"
+            className="input-cotizador"
+          />
+        </label>
+        {error ? (
+          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
+            {error}
+          </p>
+        ) : null}
+        {isProductionHost ? (
+          <p className="text-xs leading-relaxed text-slate-400">
+            Como operador gabi usa la misma contraseña que en <code>/operador</code>. En Vercel
+            define <code>GABI_MASTER_PASSWORD</code>.
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest text-sm font-bold text-white disabled:opacity-60"
+        >
+          <LockKeyhole className="h-4 w-4" />
+          {loading ? "Entrando..." : "Entrar al panel"}
+        </button>
+      </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
         <Link href="/" className="font-semibold text-gabi-forest hover:underline">
