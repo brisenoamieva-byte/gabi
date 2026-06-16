@@ -8,6 +8,33 @@
   overflow: hidden;
 }
 
+/* iPhone / iOS: safe areas y altura estable con barra de Safari visible */
+@media (max-width: 767px) {
+  .propuesta-deck-viewport {
+    height: 100svh;
+    max-height: 100svh;
+    overscroll-behavior: none;
+  }
+
+  .propuesta-deck-viewport--embedded {
+    height: 100%;
+    max-height: none;
+  }
+
+  .propuesta-deck-header {
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  }
+
+  .propuesta-deck-chrome-x {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .propuesta-deck-footer {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .propuesta-print-only {
   display: none;
 }

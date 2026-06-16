@@ -35,6 +35,8 @@ type PropuestaSlideDeckProps = {
   backLabel: string;
   documentView?: ReactNode;
   viewerMode?: "operator" | "developer";
+  /** Dentro de un layout con barra superior (p. ej. /estudios/nubo). */
+  embedded?: boolean;
 };
 
 function printPropuestaPdf() {
@@ -61,6 +63,7 @@ export function PropuestaSlideDeck({
   backLabel,
   documentView,
   viewerMode = "operator",
+  embedded = false,
 }: PropuestaSlideDeckProps) {
   const isDeveloper = viewerMode === "developer";
   const [index, setIndex] = useState(0);
@@ -176,19 +179,35 @@ export function PropuestaSlideDeck({
     );
   }
 
+  const slideDots = slides.map((s, i) => (
+    <button
+      key={s.id}
+      type="button"
+      onClick={() => go(i)}
+      title={s.label}
+      className={`h-2 rounded-full transition-all ${
+        i === index ? `w-6 ${t.dotActive}` : `w-2 ${t.dotIdle}`
+      }`}
+      aria-label={s.label}
+    />
+  ));
+
   return (
     <div
-      className={`propuesta-deck-root propuesta-print-from-slides relative flex min-h-[100dvh] flex-col ${t.deck} ${
-        fullscreen ? "h-[100dvh]" : ""
+      className={`propuesta-deck-root propuesta-print-from-slides relative flex flex-col ${t.deck} ${
+        embedded ?
+          "propuesta-deck-viewport--embedded min-h-0 flex-1"
+        : fullscreen ? "h-[100dvh] max-md:h-[100svh] max-md:max-h-[100svh]"
+        : "propuesta-deck-viewport min-h-[100dvh] max-md:h-[100svh] max-md:max-h-[100svh]"
       }`}
     >
       <header
-        className={`gabi-no-print relative z-30 flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2.5 md:px-6 ${t.header}`}
+        className={`propuesta-deck-header propuesta-deck-chrome-x gabi-no-print relative z-30 flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2 md:gap-3 md:px-6 md:py-2.5 ${t.header}`}
       >
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 md:gap-3">
           {isDeveloper ? (
             <div
-              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${t.border} bg-[#6cc24a]/10 text-[#4a9a32]`}
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border md:h-9 md:w-9 ${t.border} bg-[#6cc24a]/10 text-[#4a9a32]`}
               aria-hidden
             >
               <span className="text-[10px] font-bold">BBR</span>
@@ -196,7 +215,7 @@ export function PropuestaSlideDeck({
           ) : (
             <Link
               href={backHref}
-              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${t.border} text-slate-500 hover:bg-slate-50`}
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border md:h-9 md:w-9 ${t.border} text-slate-500 hover:bg-slate-50`}
               aria-label="Salir"
             >
               <X className="h-4 w-4" />
@@ -204,11 +223,11 @@ export function PropuestaSlideDeck({
           )}
           <div className="min-w-0">
             <p
-              className={`truncate text-[11px] font-semibold uppercase tracking-[0.14em] ${t.headerMuted}`}
+              className={`hidden truncate text-[11px] font-semibold uppercase tracking-[0.14em] sm:block ${t.headerMuted}`}
             >
               {isDeveloper ? "Presentación confidencial" : "Presentación comercial"}
             </p>
-            <p className="line-clamp-2 text-xs font-bold leading-snug text-slate-800 sm:text-sm">
+            <p className="truncate text-[11px] font-bold leading-snug text-slate-800 sm:text-sm">
               {titulo}
             </p>
           </div>
@@ -283,55 +302,58 @@ export function PropuestaSlideDeck({
         </AnimatePresence>
       </div>
 
-      <footer className={`gabi-no-print shrink-0 border-t px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 ${t.footer}`}>
-        <div className="mx-auto flex max-w-4xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-3">
+      <footer
+        className={`propuesta-deck-footer propuesta-deck-chrome-x gabi-no-print shrink-0 border-t px-3 pt-2 sm:px-4 md:px-6 md:py-3 ${t.footer}`}
+      >
+        <div className="mx-auto max-w-4xl md:hidden">
+          <div className="mb-2 flex items-center justify-center gap-1.5">{slideDots}</div>
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={prev}
               disabled={index === 0}
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border disabled:opacity-30 md:hidden ${t.border} bg-white`}
+              className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border disabled:opacity-30 ${t.border} bg-white shadow-sm`}
+              aria-label="Anterior"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-6 w-6" />
             </button>
+            <div className="min-w-0 flex-1 text-center">
+              <p className={`text-sm tabular-nums ${t.footerText}`}>
+                <span className="font-bold text-slate-900">{index + 1}</span> / {total}
+              </p>
+              <p className="truncate text-[10px] text-slate-500">{slide.label}</p>
+            </div>
+            <button
+              type="button"
+              onClick={next}
+              disabled={index === total - 1}
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#6cc24a] text-slate-900 shadow-md disabled:opacity-30"
+              aria-label="Siguiente"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mx-auto hidden max-w-4xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 md:flex">
+          <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-3">
             <p className={`min-w-0 flex-1 text-[11px] tabular-nums sm:flex-none sm:text-[12px] ${t.footerText}`}>
               <span className="font-bold text-slate-800">{index + 1}</span> / {total}
               <span className="mx-2 text-slate-300">·</span>
               <span className="line-clamp-1">{slide.label}</span>
             </p>
-            <button
-              type="button"
-              onClick={next}
-              disabled={index === total - 1}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#6cc24a] text-slate-900 disabled:opacity-30 md:hidden"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={printPropuestaPdf}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 sm:hidden"
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-semibold ${t.border} text-slate-700 hover:bg-slate-50`}
             >
               <Printer className="h-3.5 w-3.5" />
-              PDF
+              PDF carta
             </button>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {slides.map((s, i) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => go(i)}
-                  title={s.label}
-                  className={`h-2 rounded-full transition-all ${
-                    i === index ? `w-6 ${t.dotActive}` : `w-2 ${t.dotIdle}`
-                  }`}
-                  aria-label={s.label}
-                />
-              ))}
-            </div>
+            <div className="flex flex-wrap items-center gap-1.5">{slideDots}</div>
           </div>
         </div>
       </footer>

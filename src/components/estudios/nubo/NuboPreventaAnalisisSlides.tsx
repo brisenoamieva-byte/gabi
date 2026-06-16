@@ -232,18 +232,20 @@ function buildNuboPreventaSlides(
       id: "portada",
       label: "Portada",
       content: (
-        <div className="propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col justify-center bg-white px-4 py-8 sm:px-6 sm:py-10 md:px-14">
+        <div className="propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col justify-center bg-white px-4 py-5 sm:px-6 sm:py-8 md:px-14 md:py-10">
           <div className="propuesta-slide-inner mx-auto w-full max-w-5xl">
-            <BbrHabitareaLogo height={34} />
-            <p className={`mt-8 text-[11px] uppercase tracking-[0.18em] sm:mt-12 ${t.body}`}>
+            <BbrHabitareaLogo height={42} priority />
+            <p className={`mt-5 text-[11px] uppercase tracking-[0.18em] sm:mt-8 md:mt-10 ${t.body}`}>
               {elaboradoPor} · Asesoría comercial
             </p>
-            <h1 className={`mt-4 text-4xl font-normal leading-tight tracking-tight sm:mt-6 sm:text-5xl md:text-6xl ${t.title}`}>
+            <h1 className={`mt-3 text-4xl font-normal leading-tight tracking-tight sm:mt-5 sm:text-5xl md:mt-6 md:text-6xl ${t.title}`}>
               {titulo}
             </h1>
-            <p className={`mt-3 max-w-xl text-lg leading-snug sm:mt-4 sm:text-xl ${t.bodyStrong}`}>{subtitulo}</p>
-            <p className={`mt-2 text-[15px] ${t.body}`}>{ubicacion}</p>
-            <p className={`mt-10 text-sm ${t.body}`}>{fecha}</p>
+            <p className={`mt-2 max-w-xl text-base leading-snug sm:mt-3 sm:text-lg md:mt-4 md:text-xl ${t.bodyStrong}`}>
+              {subtitulo}
+            </p>
+            <p className={`mt-1.5 text-[14px] sm:mt-2 sm:text-[15px] ${t.body}`}>{ubicacion}</p>
+            <p className={`mt-6 text-sm sm:mt-8 md:mt-10 ${t.body}`}>{fecha}</p>
           </div>
         </div>
       ),
@@ -430,12 +432,12 @@ export function NuboPreventaAnalisisSlides() {
   }
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       {loadError ? (
-        <p className="gabi-no-print px-4 py-2 text-center text-xs text-amber-800">{loadError}</p>
+        <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">{loadError}</p>
       ) : null}
       {publishMeta && !publishMeta.contenidoPublicado ? (
-        <p className="gabi-no-print px-4 py-2 text-center text-xs text-amber-800">
+        <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">
           Mostrando textos del archivo base. Publica desde el editor y verifica Supabase (migración
           030 + SUPABASE_SERVICE_ROLE_KEY en Vercel).
         </p>
@@ -446,8 +448,9 @@ export function NuboPreventaAnalisisSlides() {
         slides={slides}
         backHref="/estudios"
         backLabel="Estudios"
+        embedded
       />
-      <p className="gabi-no-print pb-2 text-center text-[11px] text-slate-400">
+      <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">
         <Link
           href="/estudios/nubo/editar"
           className="font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
@@ -460,6 +463,6 @@ export function NuboPreventaAnalisisSlides() {
           ` · Publicado ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
         : " · Archivo base"}
       </p>
-    </>
+    </div>
   );
 }
