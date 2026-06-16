@@ -44,6 +44,24 @@ export function BbrHabitareaLogo({
   return <span className="inline-flex shrink-0 items-center">{img}</span>;
 }
 
+/** Marca discreta en esquina de slides (presentaciones BBR). */
+export function BbrHabitareaSlideMark({
+  className = "",
+  height = 24,
+}: {
+  className?: string;
+  height?: number;
+}) {
+  return (
+    <div
+      className={`pointer-events-none absolute right-4 top-4 z-10 sm:right-5 sm:top-5 md:right-10 md:top-6 ${className}`.trim()}
+      aria-hidden
+    >
+      <BbrHabitareaLogo height={height} className="opacity-[0.82]" />
+    </div>
+  );
+}
+
 /** Bloque de crédito: quién elaboró el análisis. */
 export function BbrAnalisisCredit({
   className = "",

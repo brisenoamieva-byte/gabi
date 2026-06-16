@@ -1,5 +1,9 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
+  DEFAULT_NUBO_UBICACION_MARCADORES,
+  normalizeNuboUbicacionMarcadores,
+} from "@/lib/estudios/nubo-ubicacion-markers";
+import {
   getDefaultNuboEstudioContenido,
   getDefaultNuboEstudioMedia,
 } from "@/lib/estudios/nubo-estudio-defaults";
@@ -136,6 +140,9 @@ function normalizeMedia(raw: Partial<NuboEstudioMedia>): NuboEstudioMedia {
   const base = getDefaultNuboEstudioMedia();
   return {
     ubicacionSitio: String(raw.ubicacionSitio ?? base.ubicacionSitio).trim(),
+    ubicacionMarcadores: normalizeNuboUbicacionMarcadores(
+      raw.ubicacionMarcadores ?? base.ubicacionMarcadores,
+    ),
     hotelTaboadaActual: String(raw.hotelTaboadaActual ?? base.hotelTaboadaActual).trim(),
     accesosRef: base.accesosRef.map((ref, i) =>
       normalizeMediaRef(raw.accesosRef?.[i], ref),

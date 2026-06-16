@@ -35,7 +35,17 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
   const sw = stage.scrollWidth;
   if (sh <= 0 || sw <= 0) return;
 
-  const scale = Math.min(1, ch / sh, cw / sw);
+  const rawScale = Math.min(1, ch / sh, cw / sw);
+  const MIN_READABLE_SCALE = 0.9;
+
+  if (rawScale < MIN_READABLE_SCALE) {
+    host.style.overflowY = "auto";
+    host.style.overflowX = "hidden";
+    host.dataset.fitMode = "scroll";
+    return;
+  }
+
+  const scale = rawScale;
   if (scale < 0.995) {
     stage.style.transform = `scale(${scale})`;
     stage.style.transformOrigin = center ? "center center" : "top center";

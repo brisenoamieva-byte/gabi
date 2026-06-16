@@ -33,9 +33,10 @@ export const NUBO_ANALISIS_MEDIA = {
       detalle: "Piedra, madera, iluminación y caseta integrada — acceso construido que transmite nivel desde la vía.",
     },
     {
-      src: `${ANALISIS}/acceso-ref-lago-juriquilla.png`,
-      nombre: "Lago de Juriquilla",
-      detalle: "Escala monumental, materiales nobles y espejo de agua — referencia de impacto visual en la llegada.",
+      src: `${ANALISIS}/acceso-ref-el-otomi.png`,
+      nombre: "El Otomí",
+      detalle:
+        "Acceso monumental en blanco con arcos y palmeras — referencia de llegada premium en San Miguel de Allende.",
     },
   ] as const,
 } as const;

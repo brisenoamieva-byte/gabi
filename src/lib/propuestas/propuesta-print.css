@@ -57,6 +57,17 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.propuesta-fit-host[data-fit-mode="scroll"]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.propuesta-fit-host[data-fit-mode="scroll"]::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 999px;
 }
 
 .propuesta-fit-stage {

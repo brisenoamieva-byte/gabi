@@ -1,3 +1,5 @@
+import type { NuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
+
 /** Contenido editable del estudio NUBO · preventa. */
 export type NuboEstudioMeta = {
   titulo: string;
@@ -70,6 +72,8 @@ export type NuboEstudioMediaRef = {
 
 export type NuboEstudioMedia = {
   ubicacionSitio: string;
+  /** Posición % de iconos sobre el mapa (editable en panel Imágenes). */
+  ubicacionMarcadores?: NuboUbicacionMarcadores;
   hotelTaboadaActual: string;
   accesosRef: NuboEstudioMediaRef[];
   restauranteLookAndFeel: NuboEstudioMediaRef[];

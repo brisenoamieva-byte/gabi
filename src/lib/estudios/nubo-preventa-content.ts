@@ -43,7 +43,7 @@ export const NUBO_PREVENTA_CONDICIONES = [
 ] as const;
 
 export const NUBO_PREVENTA_PLANOS = {
-  ubicacionSitio: "Polígono del proyecto con acceso, hotel y zona arbolada señalados.",
+  ubicacionSitio: "Vista satelital del polígono NUBO · acceso (este), hotel Taboada (oeste) y zona arbolada (sur).",
 } as const;
 
 export const NUBO_PREVENTA_ACCESOS = {

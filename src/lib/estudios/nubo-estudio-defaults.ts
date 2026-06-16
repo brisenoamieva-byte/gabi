@@ -9,6 +9,7 @@ import {
   NUBO_PREVENTA_RESTAURANTE,
 } from "@/lib/estudios/nubo-preventa-content";
 import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
+import { DEFAULT_NUBO_UBICACION_MARCADORES, normalizeNuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
 
 export function getDefaultNuboEstudioContenido(): NuboEstudioContenido {
   return {
@@ -35,6 +36,7 @@ export function getDefaultNuboEstudioContenido(): NuboEstudioContenido {
 export function getDefaultNuboEstudioMedia(): NuboEstudioMedia {
   return {
     ubicacionSitio: NUBO_ANALISIS_MEDIA.ubicacionSitio,
+    ubicacionMarcadores: { ...DEFAULT_NUBO_UBICACION_MARCADORES },
     hotelTaboadaActual: NUBO_ANALISIS_MEDIA.hotelTaboadaActual,
     accesosRef: NUBO_ANALISIS_MEDIA.accesosRef.map((r) => ({ ...r })),
     restauranteLookAndFeel: NUBO_ANALISIS_MEDIA.restauranteLookAndFeel.map((r) => ({

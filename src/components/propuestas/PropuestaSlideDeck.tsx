@@ -367,15 +367,18 @@ export function SlideCanvas({
   children,
   className = "",
   align = "center",
+  brandMark,
 }: {
   children: ReactNode;
   className?: string;
   align?: "center" | "start";
+  brandMark?: ReactNode;
 }) {
   return (
     <div
-      className={`propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white px-4 py-4 sm:px-5 sm:py-6 md:px-10 md:py-8 lg:px-12 ${className}`}
+      className={`propuesta-slide-root relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white px-4 py-4 sm:px-5 sm:py-6 md:px-10 md:py-8 lg:px-12 ${className}`}
     >
+      {brandMark}
       <div
         className={`propuesta-slide-inner mx-auto flex w-full max-w-6xl flex-col ${
           align === "start" ? "justify-start" : "justify-center"

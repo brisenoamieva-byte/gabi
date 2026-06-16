@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, RotateCcw, Save, Upload } from "lucide-react";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
+import { DEFAULT_NUBO_UBICACION_MARCADORES } from "@/lib/estudios/nubo-ubicacion-markers";
 import type { NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
+import { NuboUbicacionSitioFigure } from "@/components/estudios/nubo/NuboUbicacionSitioFigure";
 
 const inputClass =
   "w-full rounded-xl border border-gabi-forest/10 px-3 py-2 text-sm text-gabi-ink outline-none focus:border-[#2DD4BF] focus:ring-1 focus:ring-[#2DD4BF]/30";
@@ -63,7 +65,7 @@ const MEDIA_SLOTS: MediaSlot[] = [
   {
     key: "acceso-1",
     uploadSlot: "acceso-ref-1",
-    label: "Referencia acceso · Lago de Juriquilla",
+    label: "Referencia acceso · El Otomí",
     getSrc: (m) => m.accesosRef[1]?.src ?? "",
     setSrc: (m, src) => {
       const accesosRef = [...m.accesosRef];
@@ -286,6 +288,42 @@ export function NuboEstudioMediaAdminPanel() {
           {success}
         </div>
       ) : null}
+
+      <section className="space-y-3 rounded-2xl border border-gabi-forest/8 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-gabi-forest">Mapa · iconos de ubicación</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Arrastra Hotel, Zona arbolada y Acceso sobre el mapa. Pulsa Publicar imágenes para guardar.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setMedia((prev) =>
+                prev ?
+                  { ...prev, ubicacionMarcadores: { ...DEFAULT_NUBO_UBICACION_MARCADORES } }
+                : prev,
+              );
+              setDirty(true);
+              setSuccess("");
+            }}
+            className="rounded-lg border border-gabi-forest/15 px-3 py-1.5 text-xs font-semibold text-gabi-forest hover:bg-gabi-cream"
+          >
+            Restaurar posiciones
+          </button>
+        </div>
+        <NuboUbicacionSitioFigure
+          src={media.ubicacionSitio}
+          marcadores={media.ubicacionMarcadores}
+          editable
+          onMarcadoresChange={(next) => {
+            setMedia((prev) => (prev ? { ...prev, ubicacionMarcadores: next } : prev));
+            setDirty(true);
+            setSuccess("");
+          }}
+        />
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {MEDIA_SLOTS.map((slot) => {

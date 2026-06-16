@@ -20,6 +20,7 @@ import {
   NUBO_PUBLICIDAD_TOTAL_COL_PX,
 } from "@/lib/estudios/nubo-publicidad-content";
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
+import { BbrHabitareaSlideMark } from "@/components/brand/BbrHabitareaLogo";
 import { SlideCanvas } from "@/components/propuestas/PropuestaSlideDeck";
 
 export function NuboPublicidadSlide() {
@@ -64,15 +65,15 @@ export function NuboPublicidadSlide() {
   const totales = useMemo(() => getNuboPublicidadTotales(partidas), [partidas]);
 
   return (
-    <SlideCanvas className="!flex !flex-col !py-3 md:!py-4">
+    <SlideCanvas className="!flex !flex-col !py-3 md:!py-4" brandMark={<BbrHabitareaSlideMark />}>
       <div className="mb-3 flex shrink-0 flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
         <div className="flex items-baseline gap-3">
           <span className="font-[Georgia,'Times_New_Roman',serif] text-2xl tabular-nums text-slate-300 md:text-3xl">
             {NUBO_PUBLICIDAD_META.num}
           </span>
           <div>
-            <h2 className={`text-lg md:text-xl ${t.title}`}>{NUBO_PUBLICIDAD_META.titulo}</h2>
-            <p className={`text-[11px] uppercase tracking-[0.12em] text-slate-400`}>
+            <h2 className={`text-xl md:text-2xl ${t.title}`}>{NUBO_PUBLICIDAD_META.titulo}</h2>
+            <p className={`text-xs uppercase tracking-[0.12em] text-slate-400 md:text-[11px]`}>
               {NUBO_PUBLICIDAD_META.mesInicioLabel} – Jul 2027 · 2.5% · {NUBO_ESCENARIO_COMERCIAL.totalLotes} lotes
             </p>
           </div>
