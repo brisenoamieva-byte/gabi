@@ -86,7 +86,7 @@ export function NuboPublicidadSlide() {
             {formatTicket(presupuestoTotal)}
           </span>
           <span>
-            <strong className={t.bodyStrong}>Etapa 1:</strong> {formatTicket(inversionAnual)}
+            <strong className={t.bodyStrong}>Proyectado:</strong> {formatTicket(inversionAnual)}
           </span>
           <span>
             <strong className={t.bodyStrong}>Con IVA:</strong> {formatTicket(totales.total)}
