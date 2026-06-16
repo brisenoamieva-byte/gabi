@@ -17,26 +17,15 @@ import {
   getDefaultNuboEstudioMedia,
 } from "@/lib/estudios/nubo-estudio-defaults";
 import type { NuboEstudioContenido, NuboEstudioMedia, NuboEstudioPublishMeta } from "@/lib/estudios/nubo-estudio-types";
+import { nuboSurface, nuboType } from "@/lib/estudios/nubo-slide-theme";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
-import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
-
-/** Escala tipográfica compartida — legible en desktop sin depender del auto-scale. */
-const nuboType = {
-  h1: `text-4xl font-normal leading-tight tracking-tight sm:text-5xl md:text-6xl ${t.title}`,
-  h2: `text-2xl leading-tight sm:text-[1.875rem] md:text-[2.125rem] ${t.title}`,
-  lead: `text-base leading-relaxed md:text-lg ${t.body}`,
-  body: `text-[15px] leading-relaxed md:text-[17px] ${t.body}`,
-  bodyStrong: `text-[15px] leading-relaxed md:text-[17px] ${t.bodyStrong}`,
-  small: `text-sm leading-snug md:text-[15px] ${t.body}`,
-  label: "text-[11px] font-bold uppercase tracking-[0.14em] text-[#5a9a32] md:text-xs",
-  labelMuted: "text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 md:text-xs",
-  cardTitle: `text-base font-semibold md:text-lg ${t.bodyStrong}`,
-  cardBody: `text-sm leading-relaxed md:text-base ${t.body}`,
-};
 
 const nuboSlideBrand = <BbrHabitareaSlideMark />;
 
-function SectionLabel({ children }: { children: ReactNode }) {
+function SectionLabel({ children, onDark = false }: { children: ReactNode; onDark?: boolean }) {
+  if (onDark) {
+    return <p className="nubo-panel-dark__label">{children}</p>;
+  }
   return <p className={`mb-2 ${nuboType.label}`}>{children}</p>;
 }
 
@@ -91,7 +80,7 @@ function ReferenceGallery({
   items: readonly { src: string; nombre: string; detalle: string }[];
 }) {
   return (
-    <section className="mt-6 border-t border-slate-100 pt-5">
+    <section className={`mt-6 ${nuboSurface.sectionDivider}`}>
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <h3 className={nuboType.labelMuted}>{title}</h3>
         {subtitle ? <p className={`max-w-xl ${nuboType.small}`}>{subtitle}</p> : null}
@@ -133,11 +122,11 @@ function CondicionTextBlocks({
 }) {
   const narrative = (
     <div className={`grid gap-5 ${stacked ? "grid-cols-1" : "lg:grid-cols-2"}`}>
-      <article className="border-l-2 border-slate-200 pl-4">
+      <article className={nuboSurface.narrativeBlock}>
         <SectionLabel>Hoy</SectionLabel>
         <p className={nuboType.body}>{hoy}</p>
       </article>
-      <article className="rounded-r-xl border-l-[3px] border-[#6cc24a] bg-gradient-to-br from-[#6cc24a]/[0.07] to-transparent py-1 pl-4 pr-2">
+      <article className={nuboSurface.accentBlock}>
         <SectionLabel>Recomendación BBR</SectionLabel>
         <p className={nuboType.bodyStrong}>{recomendacion}</p>
       </article>
@@ -145,14 +134,12 @@ function CondicionTextBlocks({
   );
 
   const checklist = (
-    <article className="rounded-xl bg-slate-900 px-4 py-4 sm:px-5">
-      <p className={`mb-3 ${nuboType.label}`}>Para arrancar se necesita</p>
-      <ul
-        className={`grid gap-2.5 ${stacked ? "grid-cols-1" : "sm:grid-cols-2"}`}
-      >
+    <article className={nuboSurface.panelDark}>
+      <SectionLabel onDark>Para arrancar se necesita</SectionLabel>
+      <ul className={`grid gap-2.5 ${stacked ? "grid-cols-1" : "sm:grid-cols-2"}`}>
         {paraArrancar.map((item) => (
-          <li key={item} className={`flex gap-2.5 ${nuboType.small} text-slate-200`}>
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6cc24a]" />
+          <li key={item} className="nubo-panel-dark__item flex gap-2.5">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6cc24a]" aria-hidden />
             <span>{item}</span>
           </li>
         ))}
@@ -202,8 +189,8 @@ function CondicionSlide({
       </div>
 
       {ubicacion ? (
-        <p className={`mb-6 border-y border-slate-100 py-3 md:mb-7 ${nuboType.bodyStrong}`}>
-          <span className="mr-2 font-bold text-[#6cc24a]">Ubicación</span>
+        <p className={`mb-6 md:mb-7 ${nuboSurface.ubicacionBar} ${nuboType.bodyStrong}`}>
+          <span className={`mr-2 ${nuboType.accentInline}`}>Ubicación</span>
           {ubicacion}
         </p>
       ) : null}
@@ -237,7 +224,7 @@ function CondicionOverviewCard({
   detalle: string;
 }) {
   return (
-    <article className="rounded-xl border border-slate-200/90 bg-white px-5 py-5 shadow-sm shadow-slate-900/[0.03] md:px-6 md:py-6">
+    <article className={`${nuboSurface.card} px-5 py-5 md:px-6 md:py-6`}>
       <span className="font-[Georgia,'Times_New_Roman',serif] text-3xl tabular-nums text-slate-200 md:text-4xl">
         {num}
       </span>
@@ -259,17 +246,14 @@ function buildNuboPreventaSlides(
       id: "portada",
       label: "Portada",
       content: (
-        <div className="propuesta-slide-root relative flex h-full min-h-0 w-full flex-1 flex-col justify-center overflow-hidden bg-white px-4 py-5 sm:px-6 sm:py-8 md:px-14 md:py-10">
-          <BbrHabitareaSlideMark height={26} />
+        <div className="propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col justify-center overflow-hidden bg-white px-4 py-5 sm:px-6 sm:py-8 md:px-14 md:py-10">
           <div className="propuesta-slide-inner mx-auto w-full max-w-5xl">
             <BbrHabitareaLogo height={42} priority />
             <p className={`mt-5 sm:mt-8 md:mt-10 ${nuboType.labelMuted}`}>
               {elaboradoPor} · Asesoría comercial
             </p>
             <h1 className={`mt-3 sm:mt-5 md:mt-6 ${nuboType.h1}`}>{titulo}</h1>
-            <p className={`mt-2 max-w-xl sm:mt-3 md:mt-4 ${nuboType.lead} ${t.bodyStrong}`}>
-              {subtitulo}
-            </p>
+            <p className={`mt-2 max-w-xl sm:mt-3 md:mt-4 ${nuboType.lead}`}>{subtitulo}</p>
             <p className={`mt-1.5 sm:mt-2 ${nuboType.body}`}>{ubicacion}</p>
             <p className={`mt-6 sm:mt-8 md:mt-10 ${nuboType.small}`}>{fecha}</p>
           </div>
@@ -292,9 +276,7 @@ function buildNuboPreventaSlides(
             ))}
           </div>
 
-          <blockquote
-            className={`mt-8 max-w-4xl border-l-[3px] border-slate-900 pl-5 md:mt-10 ${nuboType.bodyStrong}`}
-          >
+          <blockquote className={`mt-8 max-w-4xl md:mt-10 ${nuboSurface.quoteBlock} ${nuboType.bodyStrong}`}>
             {diagnostico.cierre}
           </blockquote>
         </SlideCanvas>
@@ -391,8 +373,10 @@ function buildNuboPreventaSlides(
               />
               {restaurante.referenciasConcepto[1] ? (
                 <p className={`mt-3 ${nuboType.small}`}>
-                  <span className={t.bodyStrong}>{restaurante.referenciasConcepto[1].nombre}</span> —{" "}
-                  {restaurante.referenciasConcepto[1].detalle}
+                  <span className="font-semibold text-slate-900">
+                    {restaurante.referenciasConcepto[1].nombre}
+                  </span>{" "}
+                  — {restaurante.referenciasConcepto[1].detalle}
                 </p>
               ) : null}
             </>

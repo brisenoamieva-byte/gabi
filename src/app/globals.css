@@ -61,6 +61,19 @@ body {
   .bbr-surface {
     @apply bg-bbr-cream text-bbr-purple;
   }
+
+  /* NUBO · panel oscuro con contraste garantizado */
+  .nubo-panel-dark {
+    @apply rounded-xl bg-slate-900 px-4 py-4 text-white sm:px-5;
+  }
+
+  .nubo-panel-dark__label {
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-green-300 md:text-xs;
+  }
+
+  .nubo-panel-dark__item {
+    @apply text-sm leading-relaxed text-white/90 md:text-[15px];
+  }
 }
 
 @layer utilities {

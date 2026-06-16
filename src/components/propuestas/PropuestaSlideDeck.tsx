@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { SlideBrandHeader } from "@/components/brand/BbrHabitareaLogo";
 import { PropuestaSlideFit } from "@/components/propuestas/PropuestaSlideFit";
 import "@/lib/propuestas/propuesta-print.css";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
@@ -378,9 +379,9 @@ export function SlideCanvas({
     <div
       className={`propuesta-slide-root relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white px-4 py-4 sm:px-5 sm:py-6 md:px-10 md:py-8 lg:px-12 ${className}`}
     >
-      {brandMark}
+      {brandMark ? <SlideBrandHeader>{brandMark}</SlideBrandHeader> : null}
       <div
-        className={`propuesta-slide-inner mx-auto flex w-full max-w-6xl flex-col ${
+        className={`propuesta-slide-inner mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col ${
           align === "start" ? "justify-start" : "justify-center"
         }`}
       >

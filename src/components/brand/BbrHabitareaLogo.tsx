@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 export const BBR_HABITAREA_LOGO_SRC = "/brand/bbr-habitarea-logo.png";
 
@@ -44,7 +45,16 @@ export function BbrHabitareaLogo({
   return <span className="inline-flex shrink-0 items-center">{img}</span>;
 }
 
-/** Marca discreta en esquina de slides (presentaciones BBR). */
+/** Contenedor superior para la marca en slides — reserva espacio, sin solapar contenido. */
+export function SlideBrandHeader({ children }: { children: ReactNode }) {
+  return (
+    <div className="mb-2 flex shrink-0 justify-end sm:mb-3" aria-hidden>
+      {children}
+    </div>
+  );
+}
+
+/** Marca discreta en slides (presentaciones BBR). */
 export function BbrHabitareaSlideMark({
   className = "",
   height = 24,
@@ -53,10 +63,7 @@ export function BbrHabitareaSlideMark({
   height?: number;
 }) {
   return (
-    <div
-      className={`pointer-events-none absolute right-4 top-4 z-10 sm:right-5 sm:top-5 md:right-10 md:top-6 ${className}`.trim()}
-      aria-hidden
-    >
+    <div className={`pointer-events-none shrink-0 ${className}`.trim()} aria-hidden>
       <BbrHabitareaLogo height={height} className="opacity-[0.82]" />
     </div>
   );

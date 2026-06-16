@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { formatTicket } from "@/lib/data";
+import { nuboType } from "@/lib/estudios/nubo-slide-theme";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 import {
   formatCeldaPresupuesto,
@@ -72,8 +73,8 @@ export function NuboPublicidadSlide() {
             {NUBO_PUBLICIDAD_META.num}
           </span>
           <div>
-            <h2 className={`text-xl md:text-2xl ${t.title}`}>{NUBO_PUBLICIDAD_META.titulo}</h2>
-            <p className={`text-xs uppercase tracking-[0.12em] text-slate-400 md:text-[11px]`}>
+            <h2 className={nuboType.h2}>{NUBO_PUBLICIDAD_META.titulo}</h2>
+            <p className={nuboType.labelMuted}>
               {NUBO_PUBLICIDAD_META.mesInicioLabel} – Jul 2027 · 2.5% · {NUBO_ESCENARIO_COMERCIAL.totalLotes} lotes
             </p>
           </div>
