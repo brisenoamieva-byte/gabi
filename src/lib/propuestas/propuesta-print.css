@@ -113,10 +113,41 @@
   position: relative;
 }
 
+.propuesta-print-gallery__img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+}
+
 @media (min-width: 640px) {
   .propuesta-print-gallery__frame {
     aspect-ratio: 5 / 3;
   }
+}
+
+/* Ruta /estudios/nubo/print — misma vista que el PDF */
+.nubo-estudio-print-page .propuesta-print-gallery__overlay {
+  display: none;
+}
+
+.nubo-estudio-print-page .propuesta-print-gallery__caption {
+  display: block;
+}
+
+.nubo-estudio-print-page .propuesta-print-gallery__frame {
+  aspect-ratio: auto;
+  background: #fff;
+  height: auto;
+  overflow: visible;
+}
+
+.nubo-estudio-print-page .propuesta-print-gallery__img {
+  height: auto;
+  max-height: 2.55in;
+  object-fit: contain;
+  width: 100%;
 }
 
 /* Preparación PDF: layout de impresión visible y medible antes del diálogo */
@@ -591,6 +622,11 @@ body.propuesta-printing .propuesta-print-page {
     object-fit: contain;
   }
 
+  .propuesta-print-page__body .propuesta-print-gallery__img {
+    max-height: 2.55in !important;
+    object-fit: contain !important;
+  }
+
   .propuesta-print-page--portada .propuesta-print-page__body img {
     max-height: 0.6in !important;
     width: auto !important;
@@ -615,13 +651,13 @@ body.propuesta-printing .propuesta-print-page {
 
   .propuesta-print-gallery__caption {
     display: block !important;
-    padding: 0.05in 0.06in !important;
+    padding: 0.04in 0.06in !important;
   }
 
   .propuesta-print-gallery__caption p {
     color: #475569 !important;
-    font-size: 8pt !important;
-    line-height: 1.28 !important;
+    font-size: 7.5pt !important;
+    line-height: 1.25 !important;
   }
 
   .propuesta-print-gallery__caption .font-semibold,
@@ -643,24 +679,44 @@ body.propuesta-printing .propuesta-print-page {
     position: static !important;
   }
 
-  .propuesta-print-gallery__frame > span,
-  .propuesta-print-gallery__frame > img {
+  .propuesta-print-gallery__img {
     display: block !important;
     height: auto !important;
-    inset: auto !important;
-    position: static !important;
-    width: 100% !important;
-  }
-
-  .propuesta-print-gallery__frame img {
-    max-height: 2.35in !important;
+    max-height: 2.55in !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
     object-fit: contain !important;
     object-position: center !important;
+    width: 100% !important;
   }
 
   .propuesta-print-page--accesos .propuesta-print-page__body .grid,
   .propuesta-print-page--restaurante .propuesta-print-page__body .grid {
-    gap: 0.08in !important;
+    gap: 0.06in !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-page__body section:has(.propuesta-print-gallery),
+  .propuesta-print-page--restaurante .propuesta-print-page__body section:has(.propuesta-print-gallery) {
+    margin-top: 0.07in !important;
+    padding-top: 0.06in !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-page__body section:has(.propuesta-print-gallery) > div:first-child,
+  .propuesta-print-page--restaurante .propuesta-print-page__body section:has(.propuesta-print-gallery) > div:first-child {
+    margin-bottom: 0.05in !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-page__body .mb-6,
+  .propuesta-print-page--restaurante .propuesta-print-page__body .mb-6,
+  .propuesta-print-page--accesos .propuesta-print-page__body .md\:mb-7,
+  .propuesta-print-page--restaurante .propuesta-print-page__body .md\:mb-7 {
+    margin-bottom: 0.05in !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-page__body .nubo-panel-dark,
+  .propuesta-print-page--restaurante .propuesta-print-page__body .nubo-panel-dark {
+    padding: 0.06in 0.08in !important;
   }
 
   .propuesta-print-page--diagnostico .propuesta-print-page__body .lg\:grid-cols-4 {

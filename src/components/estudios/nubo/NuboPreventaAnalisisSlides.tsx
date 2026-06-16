@@ -179,16 +179,17 @@ function ReferenceGallery({
             className="propuesta-print-gallery__card overflow-hidden rounded-xl border border-slate-200/80 shadow-md shadow-slate-900/10 transition-shadow hover:shadow-lg"
           >
             <div className="propuesta-print-gallery__frame">
-              <Image
+              {/* img nativo: Chrome PDF respeta object-fit; Next/Image fill fuerza recorte */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={ref.src}
-                alt={ref.nombre}
-                fill
+                alt={ref.nombre || ref.detalle}
+                className="propuesta-print-gallery__img"
                 loading="eager"
-                className="object-cover"
-                unoptimized
+                decoding="async"
                 onLoad={() => requestAnimationFrame(refitAllPropuestaSlides)}
               />
-              <div className="propuesta-print-gallery__overlay absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent px-4 pb-3 pt-12 print:hidden">
+              <div className="propuesta-print-gallery__overlay absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent px-4 pb-3 pt-12">
                 {ref.nombre ? (
                   <p className="text-sm font-semibold text-white md:text-base">{ref.nombre}</p>
                 ) : null}
@@ -197,7 +198,7 @@ function ReferenceGallery({
                 </p>
               </div>
             </div>
-            <figcaption className="propuesta-print-gallery__caption hidden border-t border-slate-200/80 bg-white px-3 py-2 print:block">
+            <figcaption className="propuesta-print-gallery__caption hidden border-t border-slate-200/80 bg-white px-3 py-2">
               {ref.nombre ? (
                 <p className="text-sm font-semibold text-slate-800">{ref.nombre}</p>
               ) : null}
