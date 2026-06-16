@@ -619,9 +619,16 @@ body.propuesta-printing .propuesta-print-page {
     margin-top: 0.1in !important;
   }
 
+  .propuesta-print-page--accesos .propuesta-print-gallery figure,
+  .propuesta-print-page--restaurante .propuesta-print-gallery figure {
+    overflow: visible !important;
+  }
+
   .propuesta-print-page--accesos .propuesta-print-gallery [class*="aspect-"],
   .propuesta-print-page--restaurante .propuesta-print-gallery [class*="aspect-"] {
-    height: 1.45in !important;
+    aspect-ratio: 16 / 10 !important;
+    background: #f1f5f9 !important;
+    height: 1.9in !important;
     width: 100% !important;
   }
 
@@ -630,16 +637,27 @@ body.propuesta-printing .propuesta-print-page {
     gap: 0.08in !important;
   }
 
-  .propuesta-print-page--accesos .propuesta-print-page__body [class*="aspect-"],
-  .propuesta-print-page--restaurante .propuesta-print-page__body [class*="aspect-"] {
-    height: 2.2in !important;
-    width: 100% !important;
+  .propuesta-print-page--accesos .propuesta-print-gallery img,
+  .propuesta-print-page--restaurante .propuesta-print-gallery img {
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: center !important;
   }
 
-  .propuesta-print-page--accesos .propuesta-print-page__body img,
-  .propuesta-print-page--restaurante .propuesta-print-page__body img {
-    max-height: none !important;
-    object-fit: cover !important;
+  /* Accesos / restaurante: texto más compacto para dejar espacio a referencias */
+  .propuesta-print-page--accesos .propuesta-print-page__body .space-y-5 > * + *,
+  .propuesta-print-page--restaurante .propuesta-print-page__body .space-y-5 > * + * {
+    margin-top: 0.07in !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-page__body .nubo-panel-dark ul,
+  .propuesta-print-page--restaurante .propuesta-print-page__body .nubo-panel-dark ul {
+    column-count: 2 !important;
+    column-gap: 0.2in !important;
+  }
+
+  .propuesta-print-page--restaurante .propuesta-print-gallery + p {
+    margin-top: 0.05in !important;
   }
 
   .propuesta-print-page--hotel .propuesta-print-page__body [class*="aspect-"] {
