@@ -70,6 +70,32 @@
   z-index: -1;
 }
 
+/* Ruta /print — vista previa en pantalla antes de guardar PDF */
+.propuesta-print-deck--visible {
+  margin: 0 auto;
+  max-width: 8.5in;
+  position: static;
+  visibility: visible;
+  width: 100%;
+}
+
+.propuesta-print-deck--visible .propuesta-print-page {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 0.75rem;
+}
+
+.nubo-estudio-print-page .propuesta-print-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 10.2in;
+  margin: 0 auto;
+  max-width: 7.5in;
+  overflow: hidden;
+  width: 100%;
+}
+
 /* Preparación PDF: layout de impresión visible y medible antes del diálogo */
 body.propuesta-printing {
   overflow: visible !important;
@@ -108,16 +134,6 @@ body.propuesta-printing .propuesta-print-page {
   max-width: 7.5in;
   overflow: hidden;
   width: 100%;
-}
-
-body.propuesta-printing .propuesta-print-page--publicidad {
-  height: 7.5in;
-  max-width: 10in;
-}
-
-body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
-  height: 7.5in;
-  max-width: 10in;
 }
 
 /* Contenedor que escala el contenido para caber sin scroll (desktop) */
@@ -166,20 +182,10 @@ body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
     size: letter portrait;
   }
 
-  @page letter-landscape {
-    margin: 0.35in 0.4in;
-    size: letter landscape;
-  }
-
   @supports (-webkit-touch-callout: none) {
     @page {
       margin: 0.35in;
       size: letter portrait;
-    }
-
-    @page letter-landscape {
-      margin: 0.3in;
-      size: letter landscape;
     }
   }
 
@@ -256,15 +262,7 @@ body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
     break-after: auto;
   }
 
-  /* Deck horizontal: una sola orientación (mezclar portrait+landscape corrompe el PDF en Chrome) */
-  .propuesta-print-deck--landscape .propuesta-print-page {
-    height: 7.35in;
-    max-height: 7.35in;
-    max-width: 10.2in;
-    page: letter-landscape;
-  }
-
-  /* Presupuesto publicidad — tabla a ancho completo en hoja horizontal */
+  /* Presupuesto publicidad — tabla compacta en carta vertical */
   .propuesta-print-page--publicidad {
     break-inside: avoid;
   }
@@ -410,6 +408,8 @@ body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
     flex-shrink: 0;
     height: 2px;
     margin-bottom: 0.14in;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .propuesta-print-page__head {
@@ -512,6 +512,11 @@ body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
     object-fit: cover;
   }
 
+  .propuesta-print-deck--visible .propuesta-print-page {
+    border: none;
+    margin-bottom: 0;
+  }
+
   .propuesta-print-page__body img {
     display: block !important;
     max-height: 4.2in !important;
@@ -524,10 +529,47 @@ body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
     width: auto !important;
   }
 
-  /* Panel oscuro NUBO — contraste en PDF */
+  /* Panel oscuro NUBO — solo el contenedor (no cada hijo: evita cientos de JPEG) */
   .propuesta-print-page__body .nubo-panel-dark {
     -webkit-print-color-adjust: exact;
+    background-color: #0f172a !important;
     print-color-adjust: exact;
+  }
+
+  .propuesta-print-page__body [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Galerías NUBO: caption debajo, sin overlay rasterizado */
+  .propuesta-print-gallery figure .absolute {
+    background: none !important;
+    padding: 0.04in 0 0 !important;
+    position: static !important;
+  }
+
+  .propuesta-print-gallery figure .absolute p {
+    color: #475569 !important;
+  }
+
+  .propuesta-print-gallery figure .absolute .text-white,
+  .propuesta-print-gallery figure .absolute .text-white\/80 {
+    color: #475569 !important;
+  }
+
+  .propuesta-print-page--diagnostico .propuesta-print-page__body .lg\:grid-cols-4 {
+    gap: 0.08in !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .propuesta-print-page--diagnostico .propuesta-print-page__body blockquote {
+    margin-top: 0.1in !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-gallery [class*="aspect-"],
+  .propuesta-print-page--restaurante .propuesta-print-gallery [class*="aspect-"] {
+    height: 1.45in !important;
+    width: 100% !important;
   }
 
   .propuesta-print-page--accesos .propuesta-print-page__body .grid,
@@ -572,16 +614,6 @@ body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
     overflow-x: visible;
     text-shadow: none !important;
     transition: none !important;
-  }
-
-  /* Evita miles de tiles JPEG (Chrome rasteriza cada nodo con exact) */
-  .propuesta-print-page__body .nubo-panel-dark,
-  .propuesta-print-page__body .nubo-panel-dark *,
-  .propuesta-print-page__body [class*="bg-[#6cc24a]"],
-  .propuesta-print-page__body [class*="border-[#6cc24a]"],
-  .propuesta-print-page__bar {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
   /* Fondos decorativos → planos en PDF (menos capas raster) */

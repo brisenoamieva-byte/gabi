@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
@@ -13,11 +13,8 @@ import {
   SlideCanvas,
   type PropuestaSlide,
 } from "@/components/propuestas/PropuestaSlideDeck";
-import {
-  getDefaultNuboEstudioContenido,
-  getDefaultNuboEstudioMedia,
-} from "@/lib/estudios/nubo-estudio-defaults";
-import type { NuboEstudioContenido, NuboEstudioMedia, NuboEstudioPublishMeta } from "@/lib/estudios/nubo-estudio-types";
+import { useNuboEstudioPresentation } from "@/lib/estudios/use-nubo-estudio-presentation";
+import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
 import { NUBO_PREVENTA_KPIS } from "@/lib/estudios/nubo-preventa-content";
 import { nuboSurface, nuboType } from "@/lib/estudios/nubo-slide-theme";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
@@ -175,7 +172,7 @@ function ReferenceGallery({
         <h3 className={nuboType.labelMuted}>{title}</h3>
         {subtitle ? <p className={`max-w-xl ${nuboType.small}`}>{subtitle}</p> : null}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="propuesta-print-gallery grid gap-4 sm:grid-cols-2">
         {items.map((ref) => (
           <figure
             key={ref.src}
@@ -338,7 +335,7 @@ function CondicionOverviewCard({
   );
 }
 
-function buildNuboPreventaSlides(
+export function buildNuboPreventaSlides(
   contenido: NuboEstudioContenido,
   media: NuboEstudioMedia,
   options?: { showOperatorLinks?: boolean },
@@ -502,44 +499,7 @@ export function NuboPreventaAnalisisSlides({
   viewerMode?: "operator" | "developer";
 }) {
   const isDeveloper = viewerMode === "developer";
-  const [contenido, setContenido] = useState<NuboEstudioContenido>(() =>
-    getDefaultNuboEstudioContenido(),
-  );
-  const [media, setMedia] = useState<NuboEstudioMedia>(() => getDefaultNuboEstudioMedia());
-  const [publishMeta, setPublishMeta] = useState<NuboEstudioPublishMeta | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/estudios/nubo/contenido", { cache: "no-store" });
-        const data = (await res.json()) as {
-          contenido?: NuboEstudioContenido;
-          media?: NuboEstudioMedia;
-          meta?: NuboEstudioPublishMeta;
-          error?: string;
-        };
-        if (!cancelled) {
-          if (!res.ok) {
-            setLoadError(data.error ?? "No se pudo cargar el estudio publicado.");
-            return;
-          }
-          if (data.contenido) setContenido(data.contenido);
-          if (data.media) setMedia(data.media);
-          setPublishMeta(data.meta ?? null);
-        }
-      } catch {
-        if (!cancelled) setLoadError("No se pudo cargar el estudio publicado.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { contenido, media, publishMeta, loading, loadError } = useNuboEstudioPresentation();
 
   const slides = useMemo(
     () =>
@@ -581,7 +541,7 @@ export function NuboPreventaAnalisisSlides({
         backLabel="Estudios"
         viewerMode={viewerMode}
         embedded
-        printOrientation="landscape"
+        printHref="/estudios/nubo/print"
       />
       {!isDeveloper ? (
         <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">

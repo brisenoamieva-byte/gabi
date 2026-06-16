@@ -89,7 +89,7 @@ export function PropuestaMobilePrintSheet({
             ))}
           </ol>
           <p className="text-[11px] text-slate-400">
-            Recomendado en horizontal para mejor vista previa. El PDF puede tardar unos segundos en cargar las imágenes.
+            Carta vertical. Activa gráficos de fondo. El PDF puede tardar unos segundos en cargar las imágenes.
           </p>
         </div>
 

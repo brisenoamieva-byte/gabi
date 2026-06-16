@@ -23,6 +23,19 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
     host.dataset.fitMode = "print";
     stage.style.transform = "none";
     stage.style.width = "100%";
+
+    const ch = host.clientHeight;
+    const cw = host.clientWidth;
+    const sh = stage.scrollHeight;
+    const sw = stage.scrollWidth;
+    if (ch > 0 && cw > 0 && sh > 0 && sw > 0) {
+      const scale = Math.min(1, ch / sh, cw / sw);
+      if (scale < 0.985) {
+        stage.style.fontSize = `${(scale * 100).toFixed(1)}%`;
+      } else {
+        stage.style.fontSize = "";
+      }
+    }
     return;
   }
 
@@ -74,6 +87,7 @@ export function resetAllPropuestaSlideFits() {
   document.querySelectorAll<HTMLElement>(FIT_STAGE).forEach((stage) => {
     stage.style.transform = "none";
     stage.style.width = "100%";
+    stage.style.fontSize = "";
   });
   document.querySelectorAll<HTMLElement>(FIT_HOST).forEach((host) => {
     host.style.overflowY = "";

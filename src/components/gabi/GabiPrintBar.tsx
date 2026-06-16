@@ -10,9 +10,11 @@ import {
 export function GabiPrintBar({
   titulo,
   accion = "PDF carta",
+  hint = "«Guardar como PDF» · desactiva «Encabezados y pies de página» · activa «Gráficos de fondo»",
 }: {
   titulo: string;
   accion?: string;
+  hint?: string;
 }) {
   useEffect(() => {
     const prep = () => {
@@ -43,9 +45,7 @@ export function GabiPrintBar({
       <div className="mx-auto flex max-w-[880px] items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="truncate text-[12px] font-medium text-neutral-700">{titulo}</p>
-          <p className="hidden text-[11px] text-neutral-400 sm:block">
-            «Guardar como PDF» · desactiva «Encabezados y pies de página» · activa «Gráficos de fondo»
-          </p>
+          <p className="hidden text-[11px] text-neutral-400 sm:block">{hint}</p>
         </div>
         <button
           type="button"
