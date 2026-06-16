@@ -12,13 +12,17 @@ export function GabiPrintBar({
   accion = "PDF carta",
   hint = "«Guardar como PDF» · desactiva «Encabezados y pies de página» · activa «Gráficos de fondo»",
   onPrint,
+  skipInvesttiPrep = false,
 }: {
   titulo: string;
   accion?: string;
   hint?: string;
   onPrint?: () => void;
+  skipInvesttiPrep?: boolean;
 }) {
   useEffect(() => {
+    if (skipInvesttiPrep) return;
+
     const prep = () => {
       requestAnimationFrame(() => {
         prepareInvesttiChartsForPrint(titulo);
@@ -32,17 +36,17 @@ export function GabiPrintBar({
       window.removeEventListener("beforeprint", prep);
       window.removeEventListener("afterprint", resetInvesttiChartsAfterPrint);
     };
-  }, [titulo]);
+  }, [skipInvesttiPrep, titulo]);
 
   const handlePrint = () => {
+    if (onPrint) {
+      onPrint();
+      return;
+    }
     prepareInvesttiChartsForPrint(titulo);
     requestAnimationFrame(() => {
       prepareInvesttiChartsForPrint(titulo);
-      if (onPrint) {
-        onPrint();
-      } else {
-        window.print();
-      }
+      window.print();
     });
   };
 

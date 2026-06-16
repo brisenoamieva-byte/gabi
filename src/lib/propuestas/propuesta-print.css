@@ -100,17 +100,17 @@
   width: 100%;
 }
 
-/* Sin vista previa en pantalla: el deck queda medible pero oculto hasta después del PDF */
-.nubo-estudio-print-page:not(.nubo-estudio-print-page--show-preview) .propuesta-print-deck {
-  height: 1px;
-  left: 0;
-  overflow: hidden;
-  pointer-events: none;
-  position: fixed;
+/* Deck fuera de pantalla pero imprimible (no usar visibility:hidden) */
+.nubo-estudio-print-page__deck {
+  left: -12000px;
+  position: absolute;
   top: 0;
-  visibility: hidden;
   width: 10in;
-  z-index: -1;
+}
+
+.nubo-estudio-print-page .propuesta-print-deck--visible .propuesta-print-page {
+  border: none;
+  margin-bottom: 0;
 }
 
 /* Preparación PDF: layout de impresión visible y medible antes del diálogo */

@@ -107,7 +107,7 @@ export function PropuestaSlideDeck({
   const handlePrintRequest = useCallback(() => {
     if (printPreparing) return;
     if (printHref) {
-      window.open(printHref, "_blank", "noopener,noreferrer");
+      window.location.assign(printHref);
       return;
     }
     if (isPropuestaMobilePrint()) {
