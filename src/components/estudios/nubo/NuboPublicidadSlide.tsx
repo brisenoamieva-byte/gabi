@@ -9,8 +9,8 @@ import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 import {
   formatCeldaPresupuesto,
   getNuboPublicidadColumnasMes,
-  getNuboPublicidadInversionAnual,
   getNuboPublicidadPresupuestoTotal,
+  getNuboPublicidadProyectadoConIva,
   getNuboPublicidadRangoLabel,
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
@@ -62,15 +62,15 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
     () => getNuboPublicidadTotalesMensuales(partidas),
     [partidas],
   );
-  const inversionAnual = getNuboPublicidadInversionAnual(totalesMes);
   const presupuestoTotal = getNuboPublicidadPresupuestoTotal();
+  const proyectadoConIva = getNuboPublicidadProyectadoConIva();
   const totales = useMemo(() => getNuboPublicidadTotales(partidas), [partidas]);
 
   return (
-    <SlideCanvas className="!flex !flex-col !py-3 md:!py-4" brandMark={<BbrHabitareaSlideMark />}>
-      <div className="mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 md:mb-4">
+    <SlideCanvas className="nubo-publicidad-slide !flex !flex-col !py-3 md:!py-4" brandMark={<BbrHabitareaSlideMark />}>
+      <div className="nubo-publicidad-slide-header mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 md:mb-4">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">
+          <div className="nubo-publicidad-num-badge flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">
             {NUBO_PUBLICIDAD_META.num}
           </div>
           <div className="min-w-0 pt-0.5">
@@ -80,10 +80,10 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 text-[11px]">
+        <div className="nubo-publicidad-kpis flex flex-wrap gap-2 text-[11px]">
           {[
             { label: "Porcentaje etapa 1", value: formatTicket(presupuestoTotal) },
-            { label: "Proyectado", value: formatTicket(inversionAnual) },
+            { label: "Proyectado", value: formatTicket(proyectadoConIva) },
             { label: "Con IVA", value: formatTicket(totales.total), accent: true },
           ].map((item) => (
             <span
@@ -113,7 +113,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
           </div>
         ) : (
           <table
-            className="table-fixed border-collapse text-[10px]"
+            className="nubo-publicidad-table table-fixed border-collapse text-[10px]"
             style={{ width: slideTableWidth }}
           >
             <colgroup>
@@ -159,10 +159,12 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
                         segmentoBreak ? "border-t border-slate-200 pt-2" : ""
                       }`}
                     >
-                      <span className={`block text-[8px] uppercase tracking-wide text-slate-400 ${t.body}`}>
+                      <span className={`nubo-publicidad-cell-meta block text-[8px] uppercase tracking-wide text-slate-400 ${t.body}`}>
                         {partida.segmento}
                       </span>
-                      <span className={`mt-0.5 block text-[9px] text-slate-500`}>{partida.proveedor}</span>
+                      <span className="nubo-publicidad-cell-meta mt-0.5 block text-[9px] text-slate-500">
+                        {partida.proveedor}
+                      </span>
                       <span className={`block truncate text-[10px] leading-snug ${t.bodyStrong}`} title={partida.concepto}>
                         {partida.concepto}
                       </span>
@@ -232,7 +234,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
         )}
       </div>
 
-      <div className={`mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 text-[10px] ${t.body}`}>
+      <div className={`nubo-publicidad-footnote gabi-no-print mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 text-[10px] ${t.body}`}>
         <p className="italic text-slate-500">
           {NUBO_PUBLICIDAD_META.nota}
           {showOperatorLinks

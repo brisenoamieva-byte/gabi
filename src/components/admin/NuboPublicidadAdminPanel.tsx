@@ -7,12 +7,12 @@ import {
   formatCeldaPresupuesto,
   formatMontoInput,
   getNuboPublicidadColumnasMes,
-  getNuboPublicidadInversionAnual,
+  getNuboPublicidadProyectadoConIva,
+  getNuboPublicidadRangoLabel,
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
   normalizeMontoDigits,
   NUBO_PUBLICIDAD_MESES_PROYECCION,
-  NUBO_PUBLICIDAD_META,
   NUBO_PUBLICIDAD_MES_COL_PX,
   NUBO_PUBLICIDAD_TOTAL_COL_PX,
   parseMontoPresupuesto,
@@ -219,10 +219,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
     [payloadPreview],
   );
   const totales = useMemo(() => getNuboPublicidadTotales(payloadPreview), [payloadPreview]);
-  const inversionAnual = useMemo(
-    () => getNuboPublicidadInversionAnual(totalesMes),
-    [totalesMes],
-  );
+  const proyectadoConIva = useMemo(() => getNuboPublicidadProyectadoConIva(), []);
 
   const patchRow = (key: string, patch: Partial<EditablePartida>) => {
     setRows((current) =>
@@ -420,10 +417,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
 
       <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-xl border border-gabi-forest/8 bg-white px-4 py-3 text-xs text-slate-600">
         <span>
-          <strong className="text-gabi-forest">Calendario:</strong> {NUBO_PUBLICIDAD_META.mesInicioLabel} – Jul 2027
+          <strong className="text-gabi-forest">Calendario:</strong> {getNuboPublicidadRangoLabel()}
         </span>
         <span>
-          <strong className="text-gabi-forest">Proyectado:</strong> {formatCeldaPresupuesto(inversionAnual)}
+          <strong className="text-gabi-forest">Proyectado:</strong>{" "}
+          {formatCeldaPresupuesto(proyectadoConIva)}
+          <span className="text-slate-400"> (2.5% ventas + IVA)</span>
         </span>
         <span>
           <strong className="text-gabi-forest">Subtotal:</strong> {formatCeldaPresupuesto(totales.subtotal)}

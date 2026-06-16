@@ -264,10 +264,16 @@ function CondicionTextBlocks({
   const checklist = (
     <article className={nuboSurface.panelDark}>
       <SectionLabel onDark>Para arrancar se necesita</SectionLabel>
-      <ul className={`grid gap-2.5 ${stacked ? "grid-cols-1" : "sm:grid-cols-2"}`}>
+      <ul
+        className={
+          stacked
+            ? "flex flex-col gap-1.5"
+            : "columns-1 sm:columns-2 sm:[column-gap:2rem]"
+        }
+      >
         {paraArrancar.map((item) => (
-          <li key={item} className="nubo-panel-dark__item flex gap-2.5">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6cc24a]" aria-hidden />
+          <li key={item} className="nubo-panel-dark__item mb-1.5 flex gap-2 break-inside-avoid">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6cc24a]" aria-hidden />
             <span>{item}</span>
           </li>
         ))}
@@ -404,15 +410,7 @@ function buildNuboPreventaSlides(
             ))}
           </div>
 
-          <blockquote
-            className={`relative mt-8 max-w-4xl md:mt-10 ${nuboSurface.quoteBlock} ${nuboType.bodyStrong} pl-8`}
-          >
-            <span
-              className="pointer-events-none absolute left-0 top-0 font-[Georgia,'Times_New_Roman',serif] text-4xl leading-none text-[#6cc24a]/40"
-              aria-hidden
-            >
-              “
-            </span>
+          <blockquote className={`mt-8 max-w-4xl md:mt-10 ${nuboSurface.quoteBlock} ${nuboType.bodyStrong}`}>
             {diagnostico.cierre}
           </blockquote>
         </SlideCanvas>

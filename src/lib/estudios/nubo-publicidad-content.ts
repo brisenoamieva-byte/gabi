@@ -66,6 +66,19 @@ export const NUBO_PUBLICIDAD_MES_COL_PX = 54;
 export const NUBO_PUBLICIDAD_TOTAL_COL_PX = 58;
 export const NUBO_PUBLICIDAD_CONCEPTO_COL_PX = 168;
 
+/** Escala para caber ~1846px de ancho en carta horizontal (~10.2in útiles). */
+export const NUBO_PUBLICIDAD_PRINT_ZOOM = 0.53;
+
+export function getNuboPublicidadTableWidthPx(
+  meses = NUBO_PUBLICIDAD_RESUMEN.mesesProyeccion,
+): number {
+  return (
+    NUBO_PUBLICIDAD_CONCEPTO_COL_PX +
+    NUBO_PUBLICIDAD_TOTAL_COL_PX +
+    NUBO_PUBLICIDAD_MES_COL_PX * meses
+  );
+}
+
 export function getNuboPublicidadColumnasMes(
   inicio = NUBO_PUBLICIDAD_RESUMEN.mesInicio,
   cantidad = NUBO_PUBLICIDAD_RESUMEN.mesesProyeccion,
@@ -173,6 +186,21 @@ export function getNuboPublicidadPresupuestoTotal(
   valorProyecto = NUBO_PUBLICIDAD_RESUMEN.valorProyecto,
 ) {
   return valorProyecto * NUBO_PUBLICIDAD_RESUMEN.pctPublicidad;
+}
+
+/** 2.5% del valor de ventas del proyecto (sin IVA). */
+export function getNuboPublicidadProyectado(
+  valorProyecto = NUBO_PUBLICIDAD_RESUMEN.valorProyecto,
+) {
+  return getNuboPublicidadPresupuestoTotal(valorProyecto);
+}
+
+/** 2.5% del valor de ventas + IVA (referencia comercial). */
+export function getNuboPublicidadProyectadoConIva(
+  valorProyecto = NUBO_PUBLICIDAD_RESUMEN.valorProyecto,
+  ivaPct = NUBO_PUBLICIDAD_RESUMEN.ivaPct,
+) {
+  return getNuboPublicidadProyectado(valorProyecto) * (1 + ivaPct);
 }
 
 export function getNuboPublicidadInversionAnual(

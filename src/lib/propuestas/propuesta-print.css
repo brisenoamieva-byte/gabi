@@ -253,10 +253,104 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     break-after: auto;
   }
 
+  /* Presupuesto publicidad — 1 hoja carta horizontal (tabla ~1846px → zoom ~0.53) */
   .propuesta-print-page--publicidad {
+    break-inside: avoid;
     height: 7.35in;
     max-height: 7.35in;
     page: publicidad-landscape;
+  }
+
+  .propuesta-print-page--publicidad .propuesta-print-page__bar,
+  .propuesta-print-page--publicidad .propuesta-print-page__foot {
+    display: none !important;
+  }
+
+  .propuesta-print-page--publicidad .propuesta-print-page__head {
+    display: none;
+  }
+
+  .propuesta-print-page--publicidad .propuesta-slide-root > [aria-hidden] {
+    display: none !important;
+  }
+
+  .propuesta-print-page--publicidad .propuesta-print-page__body .propuesta-slide-root {
+    padding: 0 !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-slide-header {
+    border-bottom-width: 1px !important;
+    gap: 0.05in !important;
+    margin-bottom: 0.05in !important;
+    padding-bottom: 0.05in !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-num-badge {
+    border-radius: 0.06in !important;
+    font-size: 7pt !important;
+    height: 0.26in !important;
+    width: 0.26in !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-slide-header h2 {
+    font-size: 10pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-slide-header p {
+    font-size: 5pt !important;
+    margin-top: 0 !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-kpis {
+    gap: 0.04in !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-kpis span {
+    font-size: 4.5pt !important;
+    padding: 0.02in 0.04in !important;
+  }
+
+  .propuesta-print-page--publicidad .propuesta-print-page__body .nubo-publicidad-table-host {
+    border: 1px solid #e2e8f0 !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    zoom: 0.53;
+  }
+
+  @supports not (zoom: 1) {
+    .propuesta-print-page--publicidad .propuesta-print-page__body .nubo-publicidad-table-host {
+      transform: scale(0.53);
+      transform-origin: top left;
+      width: 188.68%;
+    }
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-table-host .nubo-publicidad-table {
+    font-size: 5.5pt !important;
+    table-layout: fixed;
+    transform: none !important;
+    width: 100% !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-table-host th,
+  .propuesta-print-page--publicidad .nubo-publicidad-table-host td {
+    font-size: 4.5pt !important;
+    line-height: 1.15 !important;
+    padding: 0.008in 0.012in !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-cell-meta {
+    display: none !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-table-host .sticky {
+    position: static !important;
+  }
+
+  .propuesta-print-page--publicidad .nubo-publicidad-footnote {
+    display: none !important;
   }
 
   .propuesta-print-page__bar {
@@ -384,36 +478,6 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     print-color-adjust: exact;
   }
 
-  /* Presupuesto: tabla ancha en horizontal */
-  .propuesta-print-page--publicidad .propuesta-print-page__body .propuesta-slide-root {
-    padding: 0 !important;
-  }
-
-  .propuesta-print-page--publicidad .propuesta-print-page__body [class*="overflow-auto"],
-  .propuesta-print-page--publicidad .propuesta-print-page__body .nubo-publicidad-table-host {
-    border: 1px solid #e2e8f0 !important;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden !important;
-  }
-
-  .propuesta-print-page--publicidad .nubo-publicidad-table-host table {
-    font-size: 5.5pt !important;
-    table-layout: fixed;
-    transform: none !important;
-    width: 100% !important;
-  }
-
-  .propuesta-print-page--publicidad .propuesta-print-page__head {
-    display: none;
-  }
-
-  .propuesta-print-page--publicidad .nubo-publicidad-table-host th,
-  .propuesta-print-page--publicidad .nubo-publicidad-table-host td {
-    font-size: 5.5pt !important;
-    line-height: 1.2 !important;
-    padding: 0.02in 0.03in !important;
-  }
   .propuesta-print-page--accesos .propuesta-print-page__body .grid,
   .propuesta-print-page--restaurante .propuesta-print-page__body .grid {
     gap: 0.08in !important;

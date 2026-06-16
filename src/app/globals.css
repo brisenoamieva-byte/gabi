@@ -86,7 +86,7 @@ body {
   }
 
   .nubo-panel-dark__item {
-    @apply text-sm leading-relaxed text-white/90 md:text-[15px];
+    @apply text-sm leading-snug text-white/90 md:text-[15px];
   }
 }
 
