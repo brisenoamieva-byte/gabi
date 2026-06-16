@@ -1,7 +1,6 @@
 const FIT_HOST = ".propuesta-fit-host";
 const FIT_STAGE = ".propuesta-fit-stage";
 const MOBILE_FIT_QUERY = "(max-width: 767px)";
-const DESKTOP_FIT_QUERY = "(min-width: 768px)";
 
 export function isPropuestaSlideMobileFit(): boolean {
   if (typeof window === "undefined") {
@@ -10,36 +9,8 @@ export function isPropuestaSlideMobileFit(): boolean {
   return window.matchMedia(MOBILE_FIT_QUERY).matches;
 }
 
-function isPropuestaSlideDesktopFit(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return window.matchMedia(DESKTOP_FIT_QUERY).matches;
-}
-
 function isNuboPrintHost(host: HTMLElement): boolean {
   return Boolean(host.closest(".nubo-estudio-print-page .propuesta-print-page"));
-}
-
-function applyStageScale(
-  host: HTMLElement,
-  stage: HTMLElement,
-  scale: number,
-  center: boolean,
-) {
-  stage.style.width = "100%";
-
-  if (scale >= 0.995) {
-    stage.style.transform = "none";
-    stage.style.marginBottom = "";
-    host.style.alignItems = center ? "center" : "flex-start";
-    return;
-  }
-
-  stage.style.transform = `scale(${scale})`;
-  stage.style.transformOrigin = center ? "center center" : "top center";
-  stage.style.marginBottom = center ? "" : `-${stage.scrollHeight * (1 - scale)}px`;
-  host.style.alignItems = center ? "center" : "flex-start";
 }
 
 export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
@@ -48,7 +19,6 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
 
   stage.style.transform = "none";
   stage.style.width = "100%";
-  stage.style.marginBottom = "";
   host.style.alignItems = center ? "center" : "flex-start";
 
   /* NUBO /print: sin escalar ni recortar — el CSS estático + @page define el layout. */
@@ -66,6 +36,8 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
     host.style.overflowY = "hidden";
     host.style.overflowX = "hidden";
     host.dataset.fitMode = "print";
+    stage.style.transform = "none";
+    stage.style.width = "100%";
 
     const ch = host.clientHeight;
     const cw = host.clientWidth;
@@ -91,6 +63,7 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
 
   host.style.overflowY = "hidden";
   host.style.overflowX = "hidden";
+  host.dataset.fitMode = "scale";
 
   const ch = host.clientHeight;
   const cw = host.clientWidth;
@@ -101,27 +74,21 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
   if (sh <= 0 || sw <= 0) return;
 
   const rawScale = Math.min(1, ch / sh, cw / sw);
-
-  if (isPropuestaSlideDesktopFit()) {
-    host.dataset.fitMode = "scale";
-    applyStageScale(host, stage, rawScale, center);
-    return;
-  }
-
-  host.dataset.fitMode = "scale";
   const MIN_READABLE_SCALE = 0.9;
 
   if (rawScale < MIN_READABLE_SCALE) {
     host.style.overflowY = "auto";
     host.style.overflowX = "hidden";
     host.dataset.fitMode = "scroll";
-    stage.style.transform = "none";
-    stage.style.width = "100%";
-    stage.style.marginBottom = "";
     return;
   }
 
-  applyStageScale(host, stage, rawScale, center);
+  const scale = rawScale;
+  if (scale < 0.995) {
+    stage.style.transform = `scale(${scale})`;
+    stage.style.transformOrigin = center ? "center center" : "top center";
+    host.style.alignItems = center ? "center" : "flex-start";
+  }
 }
 
 export function refitAllPropuestaSlides() {
@@ -135,7 +102,6 @@ export function resetAllPropuestaSlideFits() {
   document.querySelectorAll<HTMLElement>(FIT_STAGE).forEach((stage) => {
     stage.style.transform = "none";
     stage.style.width = "100%";
-    stage.style.marginBottom = "";
     stage.style.fontSize = "";
   });
   document.querySelectorAll<HTMLElement>(FIT_HOST).forEach((host) => {

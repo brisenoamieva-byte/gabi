@@ -28,7 +28,7 @@ const fadeUp = {
 
 function NuboKpiStrip() {
   return (
-    <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 md:mt-6">
+    <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {NUBO_PREVENTA_KPIS.map((kpi, index) => (
         <article key={kpi.label} className={nuboSurface.kpiStrip}>
           <p className={nuboType.labelMuted}>{kpi.label}</p>
@@ -167,8 +167,8 @@ function ReferenceGallery({
   items: readonly { src: string; nombre: string; detalle: string }[];
 }) {
   return (
-    <section className={`mt-4 ${nuboSurface.sectionDivider}`}>
-      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <section className={`mt-6 ${nuboSurface.sectionDivider}`}>
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <h3 className={nuboType.labelMuted}>{title}</h3>
         {subtitle ? <p className={`max-w-xl ${nuboType.small}`}>{subtitle}</p> : null}
       </div>
@@ -258,7 +258,7 @@ function CondicionTextBlocks({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {narrative}
       {checklist}
     </div>
@@ -274,7 +274,6 @@ function CondicionSlide({
   ubicacion,
   visual,
   footer,
-  footerAside = false,
 }: {
   num: string;
   titulo: string;
@@ -284,40 +283,30 @@ function CondicionSlide({
   ubicacion?: string;
   visual?: ReactNode;
   footer?: ReactNode;
-  /** Galería al lado del texto (pantalla ancha) en lugar de debajo. */
-  footerAside?: boolean;
 }) {
   const hasMedia = Boolean(visual);
-  const textBlocks = (
-    <CondicionTextBlocks
-      hoy={hoy}
-      recomendacion={recomendacion}
-      paraArrancar={paraArrancar}
-      stacked={hasMedia}
-    />
-  );
 
   return (
-    <SlideCanvas align="start" className="nubo-condicion-slide !py-3 md:!py-4" brandMark={nuboSlideBrand}>
-      <div className="mb-4 flex items-start gap-3 md:mb-5 md:gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-lg tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-12 md:w-12 md:text-xl">
+    <SlideCanvas align="start" className="!py-5 md:!py-7" brandMark={nuboSlideBrand}>
+      <div className="mb-6 flex items-start gap-4 md:mb-7">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">
           {num}
         </div>
         <div className="min-w-0 pt-0.5">
           <h2 className={nuboType.h2}>{titulo}</h2>
-          <p className={`mt-1 ${nuboType.label}`}>Condición mínima para preventa</p>
+          <p className={`mt-1.5 ${nuboType.label}`}>Condición mínima para preventa</p>
         </div>
       </div>
 
       {ubicacion ? (
-        <p className={`mb-4 md:mb-5 ${nuboSurface.ubicacionBar} ${nuboType.bodyStrong}`}>
+        <p className={`mb-6 md:mb-7 ${nuboSurface.ubicacionBar} ${nuboType.bodyStrong}`}>
           <span className={`mr-2 ${nuboType.accentInline}`}>Ubicación</span>
           {ubicacion}
         </p>
       ) : null}
 
       {hasMedia ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:items-start lg:gap-5">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:items-start">
           <div className="space-y-2">{visual}</div>
           <CondicionTextBlocks
             hoy={hoy}
@@ -326,17 +315,11 @@ function CondicionSlide({
             stacked
           />
         </div>
-      ) : footer && footerAside ? (
-        <div className="nubo-condicion-aside grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start lg:gap-5">
-          {textBlocks}
-          <div className="min-w-0">{footer}</div>
-        </div>
       ) : (
-        textBlocks
+        <CondicionTextBlocks hoy={hoy} recomendacion={recomendacion} paraArrancar={paraArrancar} />
       )}
 
-      {footer && !(hasMedia || footerAside) ? footer : null}
-      {footer && hasMedia ? footer : null}
+      {footer}
     </SlideCanvas>
   );
 }
@@ -351,8 +334,8 @@ function CondicionOverviewCard({
   detalle: string;
 }) {
   return (
-    <article className={`${nuboSurface.cardAccent} px-4 py-4 md:px-5 md:py-5`}>
-      <span className="font-[Georgia,'Times_New_Roman',serif] text-2xl tabular-nums text-[#6cc24a]/35 md:text-3xl">
+    <article className={`${nuboSurface.cardAccent} px-5 py-5 md:px-6 md:py-6`}>
+      <span className="font-[Georgia,'Times_New_Roman',serif] text-3xl tabular-nums text-[#6cc24a]/35 md:text-4xl">
         {num}
       </span>
       <p className={`mt-3 ${nuboType.cardTitle}`}>{titulo}</p>
@@ -389,21 +372,21 @@ export function buildNuboPreventaSlides(
       id: "diagnostico",
       label: "Diagnóstico",
       content: (
-        <SlideCanvas align="start" className="nubo-estudio-slide !py-3 md:!py-4" brandMark={nuboSlideBrand}>
+        <SlideCanvas align="start" className="!py-5 md:!py-7" brandMark={nuboSlideBrand}>
           <p className={nuboType.labelMuted}>Contexto comercial</p>
-          <h2 className={`mt-1.5 ${nuboType.h2}`}>{diagnostico.titulo}</h2>
-          <p className={`mt-3 max-w-4xl ${nuboType.lead}`}>{diagnostico.contexto}</p>
-          <p className={`mt-2 max-w-4xl ${nuboType.bodyStrong}`}>{diagnostico.escenario}</p>
+          <h2 className={`mt-2 ${nuboType.h2}`}>{diagnostico.titulo}</h2>
+          <p className={`mt-4 max-w-4xl ${nuboType.lead}`}>{diagnostico.contexto}</p>
+          <p className={`mt-3 max-w-4xl ${nuboType.bodyStrong}`}>{diagnostico.escenario}</p>
 
           <NuboKpiStrip />
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 md:mt-6">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 md:mt-10">
             {condiciones.map((c) => (
               <CondicionOverviewCard key={c.num} num={c.num} titulo={c.titulo} detalle={c.detalle} />
             ))}
           </div>
 
-          <blockquote className={`mt-5 max-w-4xl md:mt-6 ${nuboSurface.quoteBlock} ${nuboType.bodyStrong}`}>
+          <blockquote className={`mt-8 max-w-4xl md:mt-10 ${nuboSurface.quoteBlock} ${nuboType.bodyStrong}`}>
             {diagnostico.cierre}
           </blockquote>
         </SlideCanvas>
@@ -413,11 +396,11 @@ export function buildNuboPreventaSlides(
       id: "ubicacion",
       label: "Ubicación",
       content: (
-        <SlideCanvas align="start" className="nubo-estudio-slide !py-3 md:!py-4" brandMark={nuboSlideBrand}>
+        <SlideCanvas align="start" className="!py-5 md:!py-7" brandMark={nuboSlideBrand}>
           <p className={nuboType.labelMuted}>Master plan</p>
-          <h2 className={`mt-1.5 ${nuboType.h2}`}>Ubicación del sitio</h2>
-          <p className={`mt-2 max-w-3xl ${nuboType.body}`}>{planos.ubicacionSitio}</p>
-          <div className="mt-4 md:mt-5">
+          <h2 className={`mt-2 ${nuboType.h2}`}>Ubicación del sitio</h2>
+          <p className={`mt-3 max-w-3xl ${nuboType.body}`}>{planos.ubicacionSitio}</p>
+          <div className="mt-6 md:mt-8">
             <NuboUbicacionSitioFigure
               src={media.ubicacionSitio}
               marcadores={media.ubicacionMarcadores}
@@ -437,7 +420,6 @@ export function buildNuboPreventaSlides(
           recomendacion={accesos.recomendacion}
           paraArrancar={accesos.paraArrancar}
           ubicacion={accesos.ubicacionEnPlano}
-          footerAside
           footer={
             <ReferenceGallery
               title="Referencias · nivel buscado"
@@ -550,7 +532,7 @@ export function NuboPreventaAnalisisSlides({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {loadError && !isDeveloper ? (
         <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">{loadError}</p>
       ) : null}
@@ -568,14 +550,13 @@ export function NuboPreventaAnalisisSlides({
         backLabel="Estudios"
         viewerMode={viewerMode}
         embedded
-        deckClassName="nubo-estudio-deck"
         printHref="/estudios/nubo/print"
       />
       {!isDeveloper ? (
-        <p className="gabi-no-print pointer-events-none absolute bottom-1 left-0 right-0 z-20 hidden text-center text-[11px] text-slate-400 md:block">
+        <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">
           <Link
             href="/estudios/nubo/editar"
-            className="pointer-events-auto font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
+            className="font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
           >
             Editar estudio
           </Link>
