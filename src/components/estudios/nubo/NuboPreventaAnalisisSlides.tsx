@@ -18,7 +18,7 @@ import {
   getDefaultNuboEstudioMedia,
 } from "@/lib/estudios/nubo-estudio-defaults";
 import type { NuboEstudioContenido, NuboEstudioMedia, NuboEstudioPublishMeta } from "@/lib/estudios/nubo-estudio-types";
-import { NUBO_PREVENTA_CIERRE, NUBO_PREVENTA_KPIS } from "@/lib/estudios/nubo-preventa-content";
+import { NUBO_PREVENTA_KPIS } from "@/lib/estudios/nubo-preventa-content";
 import { nuboSurface, nuboType } from "@/lib/estudios/nubo-slide-theme";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 
@@ -106,36 +106,6 @@ function NuboPortadaSlide({
         >
           {fecha}
         </motion.p>
-      </div>
-    </div>
-  );
-}
-
-function NuboCierreSlide({
-  titulo,
-  mensaje,
-  nota,
-  fecha,
-  cliente,
-}: {
-  titulo: string;
-  mensaje: string;
-  nota: string;
-  fecha: string;
-  cliente: string;
-}) {
-  return (
-    <div className="nubo-cierre-shell propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col justify-center overflow-hidden border-t-4 border-[#6cc24a] px-6 py-8 md:px-12 md:py-10">
-      <div className="propuesta-slide-inner mx-auto w-full max-w-3xl text-center">
-        <BbrHabitareaLogo height={40} className="mx-auto" />
-        <p className={`mt-8 ${nuboType.labelMuted}`}>Síntesis del estudio</p>
-        <h2 className={`mt-3 ${nuboType.h2}`}>{titulo}</h2>
-        <p className={`mx-auto mt-5 max-w-2xl ${nuboType.lead}`}>{mensaje}</p>
-        <p className={`mt-8 ${nuboType.body}`}>{cliente}</p>
-        <p className={`mt-2 ${nuboType.small}`}>{fecha}</p>
-        <p className={`mt-10 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400`}>
-          {nota}
-        </p>
       </div>
     </div>
   );
@@ -522,19 +492,6 @@ function buildNuboPreventaSlides(
       id: "publicidad",
       label: "Presupuesto publicidad",
       content: <NuboPublicidadSlide showOperatorLinks={showOperatorLinks} />,
-    },
-    {
-      id: "cierre",
-      label: "Cierre",
-      content: (
-        <NuboCierreSlide
-          titulo={NUBO_PREVENTA_CIERRE.titulo}
-          mensaje={NUBO_PREVENTA_CIERRE.mensaje}
-          nota={NUBO_PREVENTA_CIERRE.nota}
-          fecha={fecha}
-          cliente={meta.cliente}
-        />
-      ),
     },
   ];
 }

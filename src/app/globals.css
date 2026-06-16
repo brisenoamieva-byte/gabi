@@ -75,12 +75,6 @@ body {
       #fff;
   }
 
-  .nubo-cierre-shell {
-    background:
-      linear-gradient(180deg, rgb(248 250 252) 0%, #fff 40%),
-      #fff;
-  }
-
   .nubo-panel-dark__label {
     @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-green-300 md:text-xs;
   }

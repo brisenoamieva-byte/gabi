@@ -26,13 +26,6 @@ export const NUBO_PREVENTA_KPIS = [
   { label: "Ingreso proj.", value: "~$324 M" },
 ] as const;
 
-export const NUBO_PREVENTA_CIERRE = {
-  titulo: "Cuatro condiciones, un solo mensaje",
-  mensaje:
-    "Acceso construido, hotel renovado, restaurante campestre y presupuesto de publicidad al 2.5%: la base mínima para que NUBO abra preventa con credibilidad.",
-  nota: "Documento preparado por BBR Habitarea · Uso exclusivo del desarrollador",
-} as const;
-
 export const NUBO_PREVENTA_CONDICIONES = [
   {
     num: "01",
