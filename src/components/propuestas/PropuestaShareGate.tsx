@@ -7,10 +7,15 @@ import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
 
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
+export type ShareGateAuthResult = {
+  estudioSlug?: string;
+  propuestaSlug?: string;
+};
+
 type PropuestaShareGateProps = {
   token: string;
   tituloCliente?: string | null;
-  onAuthenticated: () => void;
+  onAuthenticated: (result: ShareGateAuthResult) => void;
   authPath?: string;
   subjectLabel?: string;
   headline?: string;
@@ -54,33 +59,47 @@ export function PropuestaShareGate({
       try {
         const response = await fetch(authPath, {
           method: "POST",
+          credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, codigo }),
         });
-        const data = (await response.json()) as { error?: string };
+        const data = (await response.json()) as {
+          error?: string;
+          estudioSlug?: string;
+          propuestaSlug?: string;
+        };
 
-        if (!cancelled && response.status === 429) {
+        if (cancelled) return;
+
+        if (response.status === 429) {
           setError(data.error ?? "Demasiados intentos. Espera un momento.");
           controls.start({ x: [0, -12, 12, -8, 8, 0], transition: { duration: 0.35 } });
           setCodigo("");
-          setLoading(false);
           return;
         }
 
-        if (!cancelled && response.ok) {
-          onAuthenticated();
+        if (response.ok) {
+          onAuthenticated({
+            estudioSlug: data.estudioSlug,
+            propuestaSlug: data.propuestaSlug,
+          });
           return;
         }
+
+        setError(
+          response.status === 401
+            ? "Código incorrecto"
+            : (data.error ?? "No se pudo verificar el código"),
+        );
+        controls.start({ x: [0, -12, 12, -8, 8, 0], transition: { duration: 0.35 } });
+        setCodigo("");
       } catch {
-        // fallthrough
+        if (cancelled) return;
+        setError("Error de conexión. Intenta de nuevo.");
+        setCodigo("");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      if (cancelled) return;
-
-      setError("Código incorrecto");
-      controls.start({ x: [0, -12, 12, -8, 8, 0], transition: { duration: 0.35 } });
-      setCodigo("");
-      setLoading(false);
     };
 
     void authenticate();

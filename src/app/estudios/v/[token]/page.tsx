@@ -86,7 +86,13 @@ export default function EstudioShareViewPage() {
       <PropuestaShareGate
         token={token}
         tituloCliente={session.tituloCliente}
-        onAuthenticated={() => void checkSession()}
+        onAuthenticated={(result) => {
+          if (result.estudioSlug) {
+            setSession({ status: "ready", estudioSlug: result.estudioSlug });
+            return;
+          }
+          void checkSession();
+        }}
         authPath="/api/estudios/share/auth"
         subjectLabel="Estudio de mercado · Confidencial"
         headline="NUBO · Condiciones para preventa"

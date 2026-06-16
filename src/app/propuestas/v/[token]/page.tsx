@@ -83,7 +83,13 @@ export default function PropuestaShareViewPage() {
       <PropuestaShareGate
         token={token}
         tituloCliente={session.tituloCliente}
-        onAuthenticated={() => void checkSession()}
+        onAuthenticated={(result) => {
+          if (result.propuestaSlug) {
+            setSession({ status: "ready", propuestaSlug: result.propuestaSlug });
+            return;
+          }
+          void checkSession();
+        }}
       />
     );
   }
