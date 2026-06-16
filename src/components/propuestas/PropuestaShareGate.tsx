@@ -11,12 +11,18 @@ type PropuestaShareGateProps = {
   token: string;
   tituloCliente?: string | null;
   onAuthenticated: () => void;
+  authPath?: string;
+  subjectLabel?: string;
+  headline?: string;
 };
 
 export function PropuestaShareGate({
   token,
   tituloCliente,
   onAuthenticated,
+  authPath = "/api/propuestas/share/auth",
+  subjectLabel = "Propuesta comercial · Confidencial",
+  headline = "Acceso privado",
 }: PropuestaShareGateProps) {
   const controls = useAnimationControls();
   const [codigo, setCodigo] = useState("");
@@ -46,7 +52,7 @@ export function PropuestaShareGate({
     const authenticate = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/api/propuestas/share/auth", {
+        const response = await fetch(authPath, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, codigo }),
@@ -82,7 +88,7 @@ export function PropuestaShareGate({
     return () => {
       cancelled = true;
     };
-  }, [codigo, controls, loading, onAuthenticated, token]);
+  }, [authPath, codigo, controls, loading, onAuthenticated, token]);
 
   const handleDigit = (digit: string) => {
     if (codigo.length >= 6 || loading) return;
@@ -97,7 +103,7 @@ export function PropuestaShareGate({
   };
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#F8FAFC] px-4 py-10">
+    <main className="grid min-h-screen place-items-center bg-gradient-to-b from-[#F8FAFC] to-white px-4 py-10">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -106,9 +112,9 @@ export function PropuestaShareGate({
         <div className="text-center">
           <BbrHabitareaLogo height={32} className="mx-auto" />
           <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-            Propuesta comercial · Confidencial
+            {subjectLabel}
           </p>
-          <h1 className="mt-2 text-xl font-bold text-slate-800">Acceso privado</h1>
+          <h1 className="mt-2 text-xl font-bold text-slate-800">{headline}</h1>
           {tituloCliente ? (
             <p className="mt-2 text-sm text-slate-500">Preparado para {tituloCliente}</p>
           ) : null}

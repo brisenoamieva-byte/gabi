@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NuboPreventaAnalisisSlides } from "@/components/estudios/nubo/NuboPreventaAnalisisSlides";
+import { EstudioSharePanel } from "@/components/estudios/EstudioSharePanel";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
+import { useGabiOperator } from "@/components/gabi/useGabiOperator";
+import { NUBO_ESTUDIO_SHARE_SLUG } from "@/lib/estudios/share-registry";
 import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
 
 export default function EstudioNuboPreventaPage() {
   const router = useRouter();
+  const { ready, isOperator, user } = useGabiOperator();
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
@@ -19,7 +23,7 @@ export default function EstudioNuboPreventaPage() {
     setAuthReady(true);
   }, [router]);
 
-  if (!authReady) {
+  if (!authReady || !ready) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-[#201044]">
         <p className="text-sm font-semibold">Cargando análisis…</p>
@@ -48,6 +52,13 @@ export default function EstudioNuboPreventaPage() {
           <GabiSistemaMark size="sm" align="end" />
         </div>
       </div>
+      {isOperator ? (
+        <EstudioSharePanel
+          slug={NUBO_ESTUDIO_SHARE_SLUG}
+          operatorEmail={user?.email}
+          titulo="NUBO · Condiciones para preventa"
+        />
+      ) : null}
       <NuboPreventaAnalisisSlides />
     </main>
   );

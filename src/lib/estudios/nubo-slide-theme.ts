@@ -27,6 +27,12 @@ export const nuboType = {
 
 export const nuboSurface = {
   card: "rounded-xl border border-slate-200/90 bg-white shadow-sm shadow-slate-900/[0.03]",
+  cardAccent:
+    "rounded-xl border border-slate-200/90 border-t-2 border-t-[#6cc24a]/50 bg-white shadow-sm shadow-slate-900/[0.04]",
+  kpiStrip:
+    "rounded-xl border border-slate-200/90 bg-gradient-to-br from-slate-50 to-white px-4 py-4 shadow-sm shadow-slate-900/[0.03] md:px-5 md:py-5",
+  portadaBadge:
+    "inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 backdrop-blur-sm",
   panelDark: "nubo-panel-dark",
   accentBlock:
     "rounded-r-xl border-l-[3px] border-[#6cc24a] bg-gradient-to-br from-[#6cc24a]/10 to-transparent py-1 pl-4 pr-2",

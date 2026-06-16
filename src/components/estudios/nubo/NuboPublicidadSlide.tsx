@@ -25,7 +25,7 @@ import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicida
 import { BbrHabitareaSlideMark } from "@/components/brand/BbrHabitareaLogo";
 import { SlideCanvas } from "@/components/propuestas/PropuestaSlideDeck";
 
-export function NuboPublicidadSlide() {
+export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperatorLinks?: boolean }) {
   const [partidas, setPartidas] = useState<readonly NuboPublicidadPartidaMensual[]>(
     NUBO_PUBLICIDAD_PARTIDAS,
   );
@@ -70,7 +70,7 @@ export function NuboPublicidadSlide() {
     <SlideCanvas className="!flex !flex-col !py-3 md:!py-4" brandMark={<BbrHabitareaSlideMark />}>
       <div className="mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 md:mb-4">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white md:h-14 md:w-14 md:text-2xl">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">
             {NUBO_PUBLICIDAD_META.num}
           </div>
           <div className="min-w-0 pt-0.5">
@@ -80,17 +80,28 @@ export function NuboPublicidadSlide() {
             </p>
           </div>
         </div>
-        <div className={`flex flex-wrap gap-x-5 gap-y-1 text-[11px] ${t.body}`}>
-          <span>
-            <strong className={t.bodyStrong}>Porcentaje etapa 1:</strong>{" "}
-            {formatTicket(presupuestoTotal)}
-          </span>
-          <span>
-            <strong className={t.bodyStrong}>Proyectado:</strong> {formatTicket(inversionAnual)}
-          </span>
-          <span>
-            <strong className={t.bodyStrong}>Con IVA:</strong> {formatTicket(totales.total)}
-          </span>
+        <div className="flex flex-wrap gap-2 text-[11px]">
+          {[
+            { label: "Porcentaje etapa 1", value: formatTicket(presupuestoTotal) },
+            { label: "Proyectado", value: formatTicket(inversionAnual) },
+            { label: "Con IVA", value: formatTicket(totales.total), accent: true },
+          ].map((item) => (
+            <span
+              key={item.label}
+              className={`inline-flex flex-col rounded-lg border px-3 py-1.5 ${
+                item.accent
+                  ? "border-[#6cc24a]/35 bg-[#6cc24a]/8"
+                  : "border-slate-200 bg-slate-50"
+              }`}
+            >
+              <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                {item.label}
+              </span>
+              <span className={`mt-0.5 tabular-nums ${item.accent ? t.bodyStrong : t.body}`}>
+                {item.value}
+              </span>
+            </span>
+          ))}
         </div>
       </div>
 
@@ -222,15 +233,20 @@ export function NuboPublicidadSlide() {
       </div>
 
       <div className={`mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 text-[10px] ${t.body}`}>
-        <p className="italic">
-          {NUBO_PUBLICIDAD_META.nota} · Desplaza horizontal y vertical para ver el detalle completo.
+        <p className="italic text-slate-500">
+          {NUBO_PUBLICIDAD_META.nota}
+          {showOperatorLinks
+            ? " · Desplaza horizontal y vertical para ver el detalle completo."
+            : " · Valores en MXN."}
         </p>
-        <Link
-          href="/estudios/nubo/editar"
-          className="gabi-no-print font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
-        >
-          Editar estudio
-        </Link>
+        {showOperatorLinks ? (
+          <Link
+            href="/estudios/nubo/editar"
+            className="gabi-no-print font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
+          >
+            Editar estudio
+          </Link>
+        ) : null}
       </div>
     </SlideCanvas>
   );

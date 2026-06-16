@@ -1,10 +1,15 @@
 import {
+  isPropuestaMobilePrint,
+  mobilePrintImageWaitMs,
+  prepareMobilePrintViewport,
+} from "@/lib/propuestas/propuesta-print-mobile";
+import {
   refitAllPropuestaSlides,
   resetAllPropuestaSlideFits,
 } from "@/lib/propuestas/propuesta-slide-fit";
 
 const PRINTING_CLASS = "propuesta-printing";
-const PRINT_IMAGE_WAIT_MS = 10_000;
+const PRINTING_MOBILE_CLASS = "propuesta-printing-mobile";
 
 function collectImageUrls(root: ParentNode): string[] {
   const urls = new Set<string>();
@@ -35,7 +40,7 @@ function preloadUrl(url: string): Promise<void> {
 
 /** Espera a que las imágenes del layout de impresión estén decodificadas. */
 export async function waitForPropuestaPrintImages(
-  timeoutMs = PRINT_IMAGE_WAIT_MS,
+  timeoutMs = mobilePrintImageWaitMs(),
 ): Promise<void> {
   const root = document.querySelector(".propuesta-print-deck");
   if (!root) return;
@@ -71,10 +76,15 @@ export async function waitForPropuestaPrintImages(
 /** Expone el layout de impresión (oculto en pantalla) para medir y escalar antes del diálogo PDF. */
 export function beginPropuestaPrintPrep(): () => void {
   document.body.classList.add(PRINTING_CLASS);
+  if (isPropuestaMobilePrint()) {
+    document.body.classList.add(PRINTING_MOBILE_CLASS);
+    prepareMobilePrintViewport();
+  }
   refitAllPropuestaSlides();
 
   return () => {
     document.body.classList.remove(PRINTING_CLASS);
+    document.body.classList.remove(PRINTING_MOBILE_CLASS);
     resetAllPropuestaSlideFits();
   };
 }
@@ -83,6 +93,7 @@ export function runPropuestaPrintWithPrep(printFn: () => void): void {
   const endPrep = beginPropuestaPrintPrep();
 
   const onBeforePrint = () => {
+    prepareMobilePrintViewport();
     refitAllPropuestaSlides();
     requestAnimationFrame(refitAllPropuestaSlides);
   };
@@ -107,7 +118,7 @@ export function runPropuestaPrintWithPrep(printFn: () => void): void {
         });
       });
     });
-    await waitForPropuestaPrintImages(4000);
+    await waitForPropuestaPrintImages(isPropuestaMobilePrint() ? 6000 : 4000);
     printFn();
   })();
 }

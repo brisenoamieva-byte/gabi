@@ -19,7 +19,9 @@ import {
 import Link from "next/link";
 import { SlideBrandHeader } from "@/components/brand/BbrHabitareaLogo";
 import { PropuestaSlideFit } from "@/components/propuestas/PropuestaSlideFit";
+import { PropuestaMobilePrintSheet } from "@/components/propuestas/PropuestaMobilePrintSheet";
 import "@/lib/propuestas/propuesta-print.css";
+import { isPropuestaMobilePrint } from "@/lib/propuestas/propuesta-print-mobile";
 import { runPropuestaPrintWithPrep, waitForPropuestaPrintImages } from "@/lib/propuestas/propuesta-print-prep";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
@@ -41,17 +43,33 @@ type PropuestaSlideDeckProps = {
   embedded?: boolean;
 };
 
-function printPropuestaPdf() {
-  if (document.fullscreenElement) {
-    void document.exitFullscreen();
-  }
-  runPropuestaPrintWithPrep(() => {
-    window.print();
-  });
-}
-
 function slideFitCenter(id: string) {
   return id === "portada" || id === "cierre";
+}
+
+function PrintPdfButton({
+  onClick,
+  preparing = false,
+  className = "",
+  compact = false,
+}: {
+  onClick: () => void;
+  preparing?: boolean;
+  className?: string;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={preparing}
+      aria-label="Exportar PDF carta"
+      className={className}
+    >
+      <Printer className={compact ? "h-4 w-4" : "h-3.5 w-3.5"} />
+      {compact ? null : <span>{preparing ? "Preparando…" : "PDF carta"}</span>}
+    </button>
+  );
 }
 
 export function PropuestaSlideDeck({
@@ -67,6 +85,29 @@ export function PropuestaSlideDeck({
   const [index, setIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [modo, setModo] = useState<"slides" | "documento">("slides");
+  const [mobilePrintOpen, setMobilePrintOpen] = useState(false);
+  const [printPreparing, setPrintPreparing] = useState(false);
+
+  const executePrint = useCallback(() => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    }
+    setPrintPreparing(true);
+    runPropuestaPrintWithPrep(() => {
+      setPrintPreparing(false);
+      setMobilePrintOpen(false);
+      window.print();
+    });
+  }, []);
+
+  const handlePrintRequest = useCallback(() => {
+    if (printPreparing) return;
+    if (isPropuestaMobilePrint()) {
+      setMobilePrintOpen(true);
+      return;
+    }
+    executePrint();
+  }, [executePrint, printPreparing]);
 
   const total = slides.length;
   const slide = slides[index];
@@ -171,15 +212,24 @@ export function PropuestaSlideDeck({
             </button>
             <button
               type="button"
-              onClick={printPropuestaPdf}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-800 px-3 py-1.5 text-[12px] font-semibold text-white"
+              onClick={handlePrintRequest}
+              disabled={printPreparing}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-800 px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
             >
               <Printer className="h-3.5 w-3.5" />
-              PDF carta
+              {printPreparing ? "Preparando…" : "PDF carta"}
             </button>
           </div>
         </div>
         <div className="propuesta-document-print">{documentView}</div>
+        <PropuestaMobilePrintSheet
+          open={mobilePrintOpen}
+          preparing={printPreparing}
+          onClose={() => {
+            if (!printPreparing) setMobilePrintOpen(false);
+          }}
+          onConfirm={executePrint}
+        />
       </div>
     );
   }
@@ -230,7 +280,7 @@ export function PropuestaSlideDeck({
             <p
               className={`hidden truncate text-[11px] font-semibold uppercase tracking-[0.14em] sm:block ${t.headerMuted}`}
             >
-              {isDeveloper ? "Presentación confidencial" : "Presentación comercial"}
+              {isDeveloper ? "Estudio confidencial · Solo lectura" : "Presentación comercial"}
             </p>
             <p className="truncate text-[11px] font-bold leading-snug text-slate-800 sm:text-sm">
               {titulo}
@@ -238,13 +288,20 @@ export function PropuestaSlideDeck({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <PrintPdfButton
+            compact
+            onClick={handlePrintRequest}
+            preparing={printPreparing}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border sm:hidden ${t.border} text-slate-600 disabled:opacity-50`}
+          />
           <button
             type="button"
-            onClick={printPropuestaPdf}
-            className={`hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-semibold sm:inline-flex ${t.border} text-slate-700 hover:bg-slate-50`}
+            onClick={handlePrintRequest}
+            disabled={printPreparing}
+            className={`hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-semibold sm:inline-flex ${t.border} text-slate-700 hover:bg-slate-50 disabled:opacity-60`}
           >
             <Printer className="h-3.5 w-3.5" />
-            PDF carta
+            {printPreparing ? "Preparando…" : "PDF carta"}
           </button>
           {!isDeveloper && documentView ? (
             <button
@@ -338,6 +395,15 @@ export function PropuestaSlideDeck({
               <ChevronRight className="h-6 w-6" />
             </button>
           </div>
+          <button
+            type="button"
+            onClick={handlePrintRequest}
+            disabled={printPreparing}
+            className={`mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold disabled:opacity-60 ${t.border} bg-white text-slate-800 shadow-sm active:scale-[0.99]`}
+          >
+            <Printer className="h-4 w-4" />
+            {printPreparing ? "Preparando PDF…" : "PDF carta"}
+          </button>
         </div>
 
         <div className="mx-auto hidden max-w-4xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 md:flex">
@@ -352,11 +418,12 @@ export function PropuestaSlideDeck({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={printPropuestaPdf}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-semibold ${t.border} text-slate-700 hover:bg-slate-50`}
+              onClick={handlePrintRequest}
+              disabled={printPreparing}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60 ${t.border} text-slate-700 hover:bg-slate-50`}
             >
               <Printer className="h-3.5 w-3.5" />
-              PDF carta
+              {printPreparing ? "Preparando…" : "PDF carta"}
             </button>
             <div className="flex flex-wrap items-center gap-1.5">{slideDots}</div>
           </div>
@@ -364,6 +431,15 @@ export function PropuestaSlideDeck({
       </footer>
 
       {printLayout}
+
+      <PropuestaMobilePrintSheet
+        open={mobilePrintOpen}
+        preparing={printPreparing}
+        onClose={() => {
+          if (!printPreparing) setMobilePrintOpen(false);
+        }}
+        onConfirm={executePrint}
+      />
     </div>
   );
 }

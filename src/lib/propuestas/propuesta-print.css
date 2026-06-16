@@ -33,6 +33,29 @@
   .propuesta-deck-footer {
     padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
+
+  /* Vista previa de impresión en móvil: permitir scroll antes del diálogo */
+  body.propuesta-printing-mobile {
+    height: auto !important;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.propuesta-printing-mobile .propuesta-deck-root,
+  body.propuesta-printing-mobile main {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100svh;
+    overflow: visible !important;
+  }
+
+  body.propuesta-printing-mobile .propuesta-print-deck {
+    overflow: visible !important;
+  }
+
+  body.propuesta-printing-mobile .propuesta-print-page {
+    margin-bottom: 0.5rem;
+  }
 }
 
 /* Fuera de pantalla (no display:none) para que el navegador cargue imágenes antes del PDF */
@@ -134,13 +157,25 @@ body.propuesta-printing .propuesta-print-page--publicidad {
 
 @media print {
   @page {
-    size: letter portrait;
     margin: 0.4in 0.45in;
+    size: letter portrait;
   }
 
   @page publicidad-landscape {
-    size: letter landscape;
     margin: 0.35in 0.4in;
+    size: letter landscape;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    @page {
+      margin: 0.35in;
+      size: letter portrait;
+    }
+
+    @page publicidad-landscape {
+      margin: 0.3in;
+      size: letter landscape;
+    }
   }
 
   html,
@@ -464,8 +499,13 @@ body.propuesta-printing .propuesta-print-page--publicidad {
   }
 
   .propuesta-print-page--portada h1,
-  .propuesta-print-page--cierre h1 {
+  .propuesta-print-page--cierre h1,
+  .propuesta-print-page--cierre h2 {
     font-size: 30pt !important;
+  }
+
+  .propuesta-print-page--cierre .propuesta-print-page__body {
+    justify-content: center;
   }
 
   /* Objetivo: KPIs 3×2 */

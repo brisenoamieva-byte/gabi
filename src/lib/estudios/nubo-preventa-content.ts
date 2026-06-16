@@ -19,6 +19,20 @@ export const NUBO_PREVENTA_DIAGNOSTICO = {
     "Comercializar sin infraestructura visible obliga a vender promesas. Con acceso, hotel, restaurante y campaña al 2.5%, vendemos experiencia.",
 } as const;
 
+export const NUBO_PREVENTA_KPIS = [
+  { label: "Lotes objetivo", value: "100" },
+  { label: "Horizonte", value: "25 meses" },
+  { label: "Ticket prom.", value: "~$3.2 M" },
+  { label: "Ingreso proj.", value: "~$324 M" },
+] as const;
+
+export const NUBO_PREVENTA_CIERRE = {
+  titulo: "Cuatro condiciones, un solo mensaje",
+  mensaje:
+    "Acceso construido, hotel renovado, restaurante campestre y presupuesto de publicidad al 2.5%: la base mínima para que NUBO abra preventa con credibilidad.",
+  nota: "Documento preparado por BBR Habitarea · Uso exclusivo del desarrollador",
+} as const;
+
 export const NUBO_PREVENTA_CONDICIONES = [
   {
     num: "01",
