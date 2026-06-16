@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
 import { NuboOrganigramaSlide } from "@/components/propuestas/NuboOrganigramaSlide";
+import { PropuestaDesarrollosLogos } from "@/components/propuestas/PropuestaDesarrollosLogos";
 import {
   PropuestaSlideDeck,
   SlideCanvas,
@@ -13,9 +14,10 @@ import {
 } from "@/components/propuestas/PropuestaSlideDeck";
 import { NuboPropuestaView } from "@/components/propuestas/NuboPropuestaView";
 import { NUBO_MEDIA } from "@/lib/propuestas/nubo-media";
+import type { PropuestaComercialMedia } from "@/lib/propuestas/vita-alta-media";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 import type { PropuestaComercialData } from "@/lib/propuestas/types";
-import { formatPrice } from "@/lib/data";
+import { formatTicket } from "@/lib/data";
 
 function pct(value: number) {
   return `${(value * 100).toFixed(1)}%`;
@@ -186,10 +188,10 @@ function TiposLoteResumenTable({ data }: { data: PropuestaComercialData }) {
                 {data.tipoCounts[item.tipo] ?? "—"}
               </td>
               <td className={`px-3 py-2 text-right tabular-nums ${t.body}`}>
-                {formatPrice(item.precioM2Lista)}
+                {formatTicket(item.precioM2Lista)}
               </td>
               <td className={`px-3 py-2 text-right tabular-nums ${t.body}`}>
-                {formatPrice(item.precioM2Contado)}
+                {formatTicket(item.precioM2Contado)}
               </td>
             </tr>
           ))}
@@ -227,8 +229,8 @@ function TiposLotePanel({ data }: { data: PropuestaComercialData }) {
         </div>
         {resumen ? (
           <p className={`text-[14px] ${t.bodyStrong}`}>
-            Tipo {tipo}: lista {formatPrice(resumen.precioM2Lista)}/m² · contado{" "}
-            {formatPrice(resumen.precioM2Contado)}/m²
+            Tipo {tipo}: lista {formatTicket(resumen.precioM2Lista)}/m² · contado{" "}
+            {formatTicket(resumen.precioM2Contado)}/m²
           </p>
         ) : null}
         <TiposLoteResumenTable data={data} />
@@ -243,7 +245,58 @@ function TiposLotePanel({ data }: { data: PropuestaComercialData }) {
   );
 }
 
-function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
+function MasterPlanSlide({
+  media,
+  projectName,
+  clasificacionLotes,
+}: {
+  media: PropuestaComercialMedia;
+  projectName: string;
+  clasificacionLotes: string;
+}) {
+  const isPdf = media.masterPlan.toLowerCase().endsWith(".pdf");
+
+  return (
+    <div className="propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white">
+      <div className="shrink-0 border-b border-slate-100 px-4 py-3 md:px-6">
+        <h2 className={`text-2xl md:text-3xl ${t.title}`}>Master plan</h2>
+        <p className={`mt-1 text-[13px] ${t.body}`}>{clasificacionLotes}</p>
+      </div>
+      <div className="propuesta-slide-inner relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white p-2 md:p-4">
+        {isPdf ? (
+          <>
+            <iframe
+              src={`${media.masterPlan}#view=FitH`}
+              title={`Lotificación ${projectName}`}
+              className="propuesta-print-master-img h-full min-h-[320px] w-full border-0"
+            />
+            <a
+              href={media.masterPlan}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`absolute bottom-3 right-3 rounded-lg border bg-white/95 px-3 py-1.5 text-[11px] font-semibold shadow-sm ${t.border} ${t.bodyStrong}`}
+            >
+              Abrir PDF
+            </a>
+          </>
+        ) : (
+          <Image
+            src={media.masterPlan}
+            alt={`Master plan ${projectName}`}
+            width={1200}
+            height={800}
+            className="propuesta-print-master-img h-auto max-h-full w-full object-contain"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function buildPropuestaSlides(
+  data: PropuestaComercialData,
+  media: PropuestaComercialMedia,
+): PropuestaSlide[] {
   const { meta, escenario, publicidad, propuestaBbr, narrativa } = data;
 
   return [
@@ -266,14 +319,15 @@ function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
       id: "quienes-somos",
       label: "Quiénes somos",
       content: (
-        <SlideCanvas>
+        <SlideCanvas align="start">
           <h2 className={`text-3xl md:text-4xl ${t.title}`}>¿Quiénes somos?</h2>
-          <p className={`mt-6 max-w-3xl text-[15px] leading-relaxed ${t.body}`}>
+          <p className={`mt-4 max-w-3xl text-[14px] leading-relaxed md:text-[15px] ${t.body}`}>
             {narrativa.quienesSomos}
           </p>
-          <ul className="propuesta-print-servicios-list mt-8 grid gap-2 sm:grid-cols-2">
+          <PropuestaDesarrollosLogos compact className="mt-5" />
+          <ul className="propuesta-print-servicios-list mt-5 grid gap-1.5 sm:grid-cols-2">
             {SERVICIOS_BBR.map((s) => (
-              <li key={s} className={`text-[14px] leading-snug ${t.body}`}>
+              <li key={s} className={`text-[13px] leading-snug ${t.body}`}>
                 · {s}
               </li>
             ))}
@@ -291,20 +345,20 @@ function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
       label: "Objetivo",
       content: (
         <SlideCanvas>
-          <h2 className={`text-3xl md:text-4xl ${t.title}`}>Residencial Etapa 1</h2>
+          <h2 className={`text-3xl md:text-4xl ${t.title}`}>{meta.titulo}</h2>
           <p className={`mt-4 text-[15px] ${t.body}`}>
             Objetivo: venta de <strong className={t.bodyStrong}>{escenario.totalLotes} lotes habitacionales</strong> (
-            {escenario.mesesVenta} meses).
+            {escenario.mesesVenta} meses · absorción {escenario.absorcionMensual}/mes).
           </p>
           <div className="propuesta-kpi-grid mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <SlideKpi
               label="Área vendible"
               value={`${Math.round(escenario.areaTotalM2).toLocaleString("es-MX")} m²`}
             />
-            <SlideKpi label="Ingreso inventario" value={formatPrice(escenario.ingresoTotal)} accent />
+            <SlideKpi label="Ingreso inventario" value={formatTicket(escenario.ingresoTotal)} accent />
             <SlideKpi label="Absorción mensual" value={`${escenario.absorcionMensual} lotes`} />
-            <SlideKpi label="Ticket promedio" value={formatPrice(escenario.ticketPromedio)} />
-            <SlideKpi label="$/m² promedio" value={formatPrice(escenario.precioM2Promedio)} />
+            <SlideKpi label="Ticket promedio" value={formatTicket(escenario.ticketPromedio)} />
+            <SlideKpi label="$/m² promedio" value={formatTicket(escenario.precioM2Promedio)} />
             <SlideKpi label="Lote promedio" value={`${Math.round(escenario.lotePromedioM2)} m²`} />
           </div>
           <p className={`mt-8 text-[14px] leading-relaxed ${t.body}`}>
@@ -346,21 +400,11 @@ function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
       id: "master-plan",
       label: "Master plan",
       content: (
-        <div className="propuesta-slide-root flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white">
-          <div className="shrink-0 border-b border-slate-100 px-4 py-3 md:px-6">
-            <h2 className={`text-2xl md:text-3xl ${t.title}`}>Master plan</h2>
-            <p className={`mt-1 text-[13px] ${t.body}`}>{narrativa.clasificacionLotes}</p>
-          </div>
-          <div className="propuesta-slide-inner relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white p-2 md:p-4">
-            <Image
-              src={NUBO_MEDIA.masterPlan}
-              alt="Master plan NUBO"
-              width={1200}
-              height={800}
-              className="propuesta-print-master-img h-auto max-h-full w-full object-contain"
-            />
-          </div>
-        </div>
+        <MasterPlanSlide
+          media={media}
+          projectName={meta.titulo}
+          clasificacionLotes={narrativa.clasificacionLotes}
+        />
       ),
     },
     {
@@ -401,8 +445,8 @@ function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
             Porcentaje considerado: {pct(publicidad.porcentaje)} del total de venta.
           </p>
           <div className="propuesta-kpi-grid mt-8 grid gap-4 sm:grid-cols-2">
-            <SlideKpi label="Total" value={formatPrice(publicidad.total)} accent />
-            <SlideKpi label="Disponible al mes" value={formatPrice(publicidad.mensual)} />
+            <SlideKpi label="Total" value={formatTicket(publicidad.total)} accent />
+            <SlideKpi label="Disponible al mes" value={formatTicket(publicidad.mensual)} />
           </div>
           <ul className={`mt-10 space-y-2.5 text-[14px] leading-relaxed ${t.body}`}>
             {publicidad.rubros.map((rubro) => (
@@ -424,13 +468,22 @@ function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
               {propuestaBbr.equipo.join(", ")}.
             </p>
             <p>
-              <strong>Comisión del {pct(propuestaBbr.comision)} + IVA.</strong> Pago del 100% a la
-              firma de oferta de compra o contrato y pago de enganche de los lotes.
+              <strong>Comisión del {pct(propuestaBbr.comision)} + IVA</strong> en venta interna (equipo
+              BBR). Pago del 100% a la firma de oferta de compra o contrato y pago de enganche de los
+              lotes.
             </p>
-            <p>
-              En caso de venta por el desarrollador, la comisión será del{" "}
-              {pct(propuestaBbr.comisionVentaDirecta)} + IVA.
-            </p>
+            {propuestaBbr.comisionInmobiliaria != null ? (
+              <p>
+                Comisión del{" "}
+                <strong>{pct(propuestaBbr.comisionInmobiliaria)} + IVA</strong> en venta externa por
+                inmobiliarias aliadas.
+              </p>
+            ) : (
+              <p>
+                En caso de venta por el desarrollador, la comisión será del{" "}
+                {pct(propuestaBbr.comisionVentaDirecta)} + IVA.
+              </p>
+            )}
           </div>
         </SlideCanvas>
       ),
@@ -451,12 +504,14 @@ function buildNuboSlides(data: PropuestaComercialData): PropuestaSlide[] {
 
 export function NuboPropuestaSlides({
   data,
+  media = NUBO_MEDIA,
   viewerMode = "operator",
 }: {
   data: PropuestaComercialData;
+  media?: PropuestaComercialMedia;
   viewerMode?: "operator" | "developer";
 }) {
-  const slides = useMemo(() => buildNuboSlides(data), [data]);
+  const slides = useMemo(() => buildPropuestaSlides(data, media), [data, media]);
   const isDeveloper = viewerMode === "developer";
 
   return (

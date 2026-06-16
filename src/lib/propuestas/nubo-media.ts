@@ -6,6 +6,7 @@
 const BASE = "/propuestas/nubo";
 
 export const NUBO_MEDIA = {
+  /** Organigrama BBR oficial (PPT NUBO) — usado en todas las propuestas comerciales. */
   organigrama: `${BASE}/organigrama.png`,
   masterPlan: `${BASE}/master-plan.png`,
 } as const;

@@ -80,7 +80,7 @@ export function NuboUbicacionSitioFigure({
   return (
     <div
       ref={containerRef}
-      className={`relative mx-auto w-full max-w-5xl overflow-hidden rounded-sm border bg-slate-900 ${
+      className={`relative mx-auto w-full max-w-5xl overflow-hidden rounded-sm border bg-slate-900 nubo-ubicacion-sitio-figure ${
         editable ? "border-[#2DD4BF] ring-2 ring-[#2DD4BF]/20" : "border-slate-200"
       }`}
       style={{ aspectRatio: NUBO_UBICACION_MAP_ASPECT }}

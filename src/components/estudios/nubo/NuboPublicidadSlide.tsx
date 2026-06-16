@@ -23,6 +23,7 @@ import {
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
 import { BbrHabitareaSlideMark } from "@/components/brand/BbrHabitareaLogo";
 import { SlideCanvas } from "@/components/propuestas/PropuestaSlideDeck";
+import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 
 export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperatorLinks?: boolean }) {
   const [partidas, setPartidas] = useState<readonly NuboPublicidadPartidaMensual[]>(
@@ -51,6 +52,12 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      requestAnimationFrame(refitAllPropuestaSlides);
+    }
+  }, [loading, partidas]);
 
   const columnas = getNuboPublicidadColumnasMes();
   const slideTableWidth =

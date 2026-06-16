@@ -44,6 +44,8 @@ type PropuestaSlideDeckProps = {
   embedded?: boolean;
   /** Ruta dedicada para PDF (visible en pantalla, más fiable que window.print en el deck). */
   printHref?: string;
+  /** Clase extra en la raíz del deck (p. ej. layout compacto NUBO). */
+  deckClassName?: string;
 };
 
 function slideFitCenter(id: string) {
@@ -84,6 +86,7 @@ export function PropuestaSlideDeck({
   viewerMode = "operator",
   embedded = false,
   printHref,
+  deckClassName = "",
 }: PropuestaSlideDeckProps) {
   const isDeveloper = viewerMode === "developer";
   const [index, setIndex] = useState(0);
@@ -241,7 +244,7 @@ export function PropuestaSlideDeck({
 
   return (
     <div
-      className={`propuesta-deck-root propuesta-print-from-slides relative flex flex-col ${t.deck} ${
+      className={`propuesta-deck-root propuesta-print-from-slides relative flex flex-col ${t.deck} ${deckClassName} ${
         embedded ?
           "propuesta-deck-viewport--embedded min-h-0 flex-1"
         : fullscreen ? "h-[100dvh] max-md:h-[100svh] max-md:max-h-[100svh]"
@@ -343,11 +346,11 @@ export function PropuestaSlideDeck({
         <AnimatePresence mode="wait">
           <motion.div
             key={slide.id}
-            initial={{ opacity: 0, x: 20 }}
+            initial={false}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 flex min-h-0 flex-col"
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 flex min-h-[240px] flex-col"
           >
             <PropuestaSlideFit key={slide.id} center={slideFitCenter(slide.id)}>
               {slide.content}

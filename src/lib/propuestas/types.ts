@@ -84,6 +84,8 @@ export type PropuestaComercialData = {
     exclusiva: boolean;
     comision: number;
     comisionVentaDirecta: number;
+    /** Si se define, la comisión secundaria es venta por inmobiliaria (no venta directa del desarrollador). */
+    comisionInmobiliaria?: number;
     iva: boolean;
     pagoComision: string;
     equipo: string[];

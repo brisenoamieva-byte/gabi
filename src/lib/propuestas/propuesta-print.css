@@ -126,6 +126,87 @@
   }
 }
 
+/* Estudio NUBO — pantalla: caber en viewport sin scroll (desktop) */
+@media (min-width: 768px) {
+  .nubo-estudio-deck .propuesta-slide-root {
+    padding: 0.85rem 1.75rem 1rem !important;
+  }
+
+  .nubo-estudio-deck .propuesta-slide-inner {
+    min-height: 0;
+  }
+
+  .nubo-estudio-deck .nubo-portada-shell {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .nubo-estudio-deck .nubo-ubicacion-sitio-figure {
+    aspect-ratio: auto !important;
+    height: min(34vh, 320px);
+    max-height: min(34vh, 320px);
+  }
+
+  .nubo-estudio-deck .nubo-condicion-aside .propuesta-print-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .nubo-estudio-deck .nubo-condicion-aside .propuesta-print-gallery__frame {
+    aspect-ratio: 16 / 10;
+    height: auto;
+    max-height: 7.25rem;
+  }
+
+  .nubo-estudio-deck .nubo-condicion-slide .propuesta-print-gallery__frame {
+    aspect-ratio: 16 / 10;
+    max-height: 6.75rem;
+  }
+
+  .nubo-estudio-deck .propuesta-print-gallery {
+    gap: 0.65rem !important;
+  }
+
+  .nubo-estudio-deck .propuesta-print-gallery__overlay {
+    padding-bottom: 0.45rem !important;
+    padding-top: 1.75rem !important;
+  }
+
+  .nubo-estudio-deck .propuesta-print-gallery__overlay p {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .nubo-estudio-deck .nubo-panel-dark {
+    padding: 0.85rem 1rem !important;
+  }
+
+  .nubo-estudio-deck .nubo-panel-dark ul {
+    gap: 0.15rem;
+  }
+
+  .nubo-estudio-deck .nubo-publicidad-slide {
+    padding-bottom: 0.65rem !important;
+    padding-top: 0.65rem !important;
+  }
+
+  .nubo-estudio-deck .nubo-publicidad-table-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden !important;
+  }
+
+  .nubo-estudio-deck .nubo-publicidad-slide-header {
+    margin-bottom: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+  }
+
+  .nubo-estudio-deck .propuesta-fit-host[data-fit-mode="scale"] {
+    overflow: hidden !important;
+  }
+}
+
 /* Presupuesto publicidad — scroll con encabezado y columna Concepto fijos */
 .nubo-publicidad-table {
   table-layout: fixed;
@@ -1021,6 +1102,33 @@ body.propuesta-printing .propuesta-print-page {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
+  .propuesta-print-page__body .propuesta-desarrollos-logos {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    justify-items: center !important;
+    gap: 0.2in 0.06in !important;
+    margin-top: 0.12in !important;
+  }
+
+  .propuesta-print-page__body .propuesta-desarrollo-logo-cell {
+    align-items: center !important;
+    display: flex !important;
+    height: 0.48in !important;
+    justify-content: center !important;
+    width: 1.05in !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .propuesta-print-page__body .propuesta-desarrollos-logos img {
+    max-height: 0.44in !important;
+    max-width: 1in !important;
+    height: auto !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
   /* Master plan */
   .propuesta-print-page--master-plan .propuesta-print-master-img {
     max-height: 6.8in !important;
@@ -1028,7 +1136,7 @@ body.propuesta-printing .propuesta-print-page {
     width: 100% !important;
   }
 
-  /* Organigrama */
+  /* Organigrama — diagrama BBR */
   .propuesta-print-page--organigrama .propuesta-org-print-header {
     margin-bottom: 0.06in !important;
     padding: 0 !important;
@@ -1038,14 +1146,23 @@ body.propuesta-printing .propuesta-print-page {
     font-size: 15pt !important;
   }
 
-  .propuesta-print-page--organigrama .propuesta-org-print-legend {
-    margin-top: 0.05in !important;
-    padding: 0.06in 0 !important;
+  .propuesta-print-page--organigrama .propuesta-org-print-chart {
+    padding: 0.08in 0 !important;
   }
 
-  .propuesta-print-page--organigrama .propuesta-org-print-scale {
-    transform: none;
-    width: 100%;
+  .propuesta-print-page--organigrama .bbr-organigrama {
+    max-width: 100% !important;
+  }
+
+  .propuesta-print-page--organigrama .bbr-organigrama__node {
+    font-size: 7.5pt !important;
+    line-height: 1.25 !important;
+    padding: 0.06in 0.08in !important;
+  }
+
+  .propuesta-print-page--organigrama .bbr-organigrama__h-connector {
+    width: 0.12in !important;
+    border-top-width: 1px !important;
   }
 
   /* KPIs */

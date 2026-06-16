@@ -1,31 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
+import { readStoredAsesorSession } from "@/lib/asesores/session-client";
 import { PROPUESTAS_REGISTRY } from "@/lib/propuestas/registry";
-import { requireOperatorMessage } from "@/lib/gabi/operator";
-import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
+import { OPERATOR_LOGIN_PATH, requireOperatorMessage } from "@/lib/gabi/operator";
 
 export default function PropuestasPage() {
   const router = useRouter();
   const { ready, isOperator } = useGabiOperator();
-  const [authReady, setAuthReady] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+  const loginHref = useMemo(
+    () => `${OPERATOR_LOGIN_PATH}?next=${encodeURIComponent("/propuestas")}`,
+    [],
+  );
 
   useEffect(() => {
-    if (!localStorage.getItem("gabi_user")) {
-      router.replace(OPERATOR_LOGIN_PATH);
-      return;
+    const session = readStoredAsesorSession();
+    setHasSession(Boolean(session));
+    setAuthChecked(true);
+    if (!session) {
+      router.replace(loginHref);
     }
-    setAuthReady(true);
-  }, [router]);
+  }, [router, loginHref]);
 
-  if (!authReady || !ready) {
+  if (!authChecked || !ready) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
         <p className="text-sm text-slate-500">Cargando propuestas…</p>
+      </main>
+    );
+  }
+
+  if (!hasSession) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8FAFC] px-6">
+        <p className="text-sm text-slate-500">Redirigiendo al acceso de operador…</p>
+        <Link href={loginHref} className="text-sm font-semibold text-[#201044] underline">
+          Entrar en /operador
+        </Link>
       </main>
     );
   }
@@ -34,7 +51,10 @@ export default function PropuestasPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
         <p className="text-sm text-slate-600">{requireOperatorMessage()}</p>
-        <Link href="/dashboard" className="text-sm font-semibold underline">
+        <Link href={loginHref} className="text-sm font-semibold underline">
+          Entrar como operador
+        </Link>
+        <Link href="/dashboard" className="text-sm text-slate-500 underline">
           Volver
         </Link>
       </main>

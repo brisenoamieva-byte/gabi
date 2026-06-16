@@ -7,8 +7,9 @@ import {
   InvesttiSection,
   investtiReport,
 } from "@/components/corredor/investti/InvesttiReportUi";
+import { PropuestaDesarrollosLogos } from "@/components/propuestas/PropuestaDesarrollosLogos";
 import type { PropuestaComercialData } from "@/lib/propuestas/types";
-import { formatPrice } from "@/lib/data";
+import { formatTicket } from "@/lib/data";
 
 function pctLabel(value: number) {
   return `${(value * 100).toFixed(1)}%`;
@@ -64,18 +65,18 @@ function PropuestaCover({ data }: { data: PropuestaComercialData }) {
         />
         <InvesttiCoverStat
           label="Ingreso proyectado"
-          value={formatPrice(escenario.ingresoTotal)}
+          value={formatTicket(escenario.ingresoTotal)}
           note="Inventario Etapa 1"
         />
         <InvesttiCoverStat
           label="Ticket promedio"
-          value={formatPrice(escenario.ticketPromedio)}
+          value={formatTicket(escenario.ticketPromedio)}
           note={`${Math.round(escenario.lotePromedioM2)} m² promedio`}
         />
         <InvesttiCoverStat
           label="Precio / m²"
-          value={formatPrice(escenario.precioM2Promedio)}
-          note={`Base lista ${formatPrice(escenario.precioBaseM2)}/m²`}
+          value={formatTicket(escenario.precioM2Promedio)}
+          note={`Base lista ${formatTicket(escenario.precioBaseM2)}/m²`}
         />
       </div>
     </header>
@@ -143,6 +144,7 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
           <p className={`${investtiReport.sans} text-[14px] leading-relaxed text-neutral-700`}>
             {narrativa.quienesSomos}
           </p>
+          <PropuestaDesarrollosLogos className="mt-6" />
         </InvesttiSection>
 
         <InvesttiSection
@@ -199,12 +201,12 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
             headers={["Tipo", "$/m² lista", "Contado", "12 MSI", "18 MSI", "24 MSI", "30-70"]}
             rows={tiposOrdenados.map((t) => [
               t.tipo,
-              formatPrice(t.precioM2Lista),
-              formatPrice(t.precioM2Contado),
-              formatPrice(t.precioM212Msi),
-              formatPrice(t.precioM218Msi),
-              formatPrice(t.precioM224Msi),
-              formatPrice(t.precioM23070),
+              formatTicket(t.precioM2Lista),
+              formatTicket(t.precioM2Contado),
+              formatTicket(t.precioM212Msi),
+              formatTicket(t.precioM218Msi),
+              formatTicket(t.precioM224Msi),
+              formatTicket(t.precioM23070),
             ])}
           />
         </InvesttiSection>
@@ -238,9 +240,9 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
               l.lote,
               l.superficieM2,
               l.tipo,
-              l.precioLista ? formatPrice(l.precioLista) : "—",
-              l.precioContado ? formatPrice(l.precioContado) : "—",
-              l.mensual12 ? formatPrice(l.mensual12) : "—",
+              l.precioLista ? formatTicket(l.precioLista) : "—",
+              l.precioContado ? formatTicket(l.precioContado) : "—",
+              l.mensual12 ? formatTicket(l.mensual12) : "—",
             ])}
           />
         </InvesttiSection>
@@ -248,16 +250,16 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
         <InvesttiSection
           number="06"
           title="Publicidad y lanzamiento"
-          lead={`${pctLabel(publicidad.porcentaje)} del ingreso proyectado · ${formatPrice(publicidad.total)} total.`}
+          lead={`${pctLabel(publicidad.porcentaje)} del ingreso proyectado · ${formatTicket(publicidad.total)} total.`}
         >
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
             <InvesttiCoverStat
               label="Presupuesto total"
-              value={formatPrice(publicidad.total)}
+              value={formatTicket(publicidad.total)}
             />
             <InvesttiCoverStat
               label="Disponible al mes"
-              value={formatPrice(publicidad.mensual)}
+              value={formatTicket(publicidad.mensual)}
             />
           </div>
           <ol className={`${investtiReport.sans} space-y-2 text-[13px] text-neutral-700`}>
@@ -284,13 +286,22 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
                 {propuestaBbr.equipo.join(", ")}.
               </li>
               <li>
-                <strong>Comisión {pctLabel(propuestaBbr.comision)} + IVA</strong> — pago del 100% a
-                firma de oferta de compra o contrato y pago de enganche.
+                <strong>Comisión {pctLabel(propuestaBbr.comision)} + IVA</strong> — venta interna
+                (equipo BBR); pago del 100% a firma de oferta de compra o contrato y pago de
+                enganche.
               </li>
-              <li>
-                Venta directa por desarrollador: comisión{" "}
-                <strong>{pctLabel(propuestaBbr.comisionVentaDirecta)} + IVA</strong>.
-              </li>
+              {propuestaBbr.comisionInmobiliaria != null ? (
+                <li>
+                  Comisión{" "}
+                  <strong>{pctLabel(propuestaBbr.comisionInmobiliaria)} + IVA</strong> — venta
+                  externa por inmobiliarias aliadas.
+                </li>
+              ) : (
+                <li>
+                  Venta directa por desarrollador: comisión{" "}
+                  <strong>{pctLabel(propuestaBbr.comisionVentaDirecta)} + IVA</strong>.
+                </li>
+              )}
               <li>
                 Horizonte de construcción considerado: <strong>{propuestaBbr.mesesConstruccion} meses</strong>.
               </li>

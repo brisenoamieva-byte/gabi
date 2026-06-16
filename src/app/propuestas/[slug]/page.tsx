@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NuboPropuestaSlides } from "@/components/propuestas/NuboPropuestaSlides";
 import { PropuestaSharePanel } from "@/components/propuestas/PropuestaSharePanel";
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
-import { getPropuestaBySlug } from "@/lib/propuestas/registry";
-import { requireOperatorMessage } from "@/lib/gabi/operator";
-import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
+import { readStoredAsesorSession } from "@/lib/asesores/session-client";
+import { getPropuestaBySlug, getPropuestaMedia } from "@/lib/propuestas/registry";
+import { OPERATOR_LOGIN_PATH, requireOperatorMessage } from "@/lib/gabi/operator";
 import Link from "next/link";
 
 export default function PropuestaDetailPage() {
@@ -15,22 +15,39 @@ export default function PropuestaDetailPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : "";
   const { ready, isOperator, user } = useGabiOperator();
-  const [authReady, setAuthReady] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
 
   const propuesta = getPropuestaBySlug(slug);
+  const loginHref = useMemo(
+    () => `${OPERATOR_LOGIN_PATH}?next=${encodeURIComponent(`/propuestas/${slug}`)}`,
+    [slug],
+  );
 
   useEffect(() => {
-    if (!localStorage.getItem("gabi_user")) {
-      router.replace(OPERATOR_LOGIN_PATH);
-      return;
+    const session = readStoredAsesorSession();
+    setHasSession(Boolean(session));
+    setAuthChecked(true);
+    if (!session) {
+      router.replace(loginHref);
     }
-    setAuthReady(true);
-  }, [router]);
+  }, [router, loginHref]);
 
-  if (!authReady || !ready) {
+  if (!authChecked || !ready) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#EEEBE4]">
         <p className="text-sm text-neutral-600">Cargando propuesta…</p>
+      </main>
+    );
+  }
+
+  if (!hasSession) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#EEEBE4] px-6">
+        <p className="text-sm text-neutral-600">Redirigiendo al acceso de operador…</p>
+        <Link href={loginHref} className="text-sm font-semibold text-[#201044] underline">
+          Entrar en /operador
+        </Link>
       </main>
     );
   }
@@ -39,7 +56,10 @@ export default function PropuestaDetailPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
         <p className="text-sm text-slate-600">{requireOperatorMessage()}</p>
-        <Link href="/dashboard" className="text-sm font-semibold underline">
+        <Link href={loginHref} className="text-sm font-semibold underline">
+          Entrar como operador
+        </Link>
+        <Link href="/dashboard" className="text-sm text-slate-500 underline">
           Volver
         </Link>
       </main>
@@ -71,7 +91,7 @@ export default function PropuestaDetailPage() {
         operatorEmail={user?.email}
         titulo={`${propuesta.meta.titulo} · ${propuesta.meta.ubicacion}`}
       />
-      <NuboPropuestaSlides data={propuesta} />
+      <NuboPropuestaSlides data={propuesta} media={getPropuestaMedia(slug)} />
     </>
   );
 }

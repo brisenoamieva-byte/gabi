@@ -32,7 +32,7 @@ export default function EstudioNuboPreventaPage() {
   }
 
   return (
-    <main className="propuesta-deck-viewport flex h-[100svh] flex-col overflow-hidden bg-[#F8FAFC]">
+    <main className="propuesta-deck-viewport flex h-[100svh] max-h-[100svh] flex-col overflow-hidden bg-[#F8FAFC]">
       <div className="gabi-no-print hidden shrink-0 border-b border-black/8 bg-white px-4 py-2 md:block md:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex flex-wrap items-center gap-3 text-[12px]">
