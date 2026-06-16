@@ -423,7 +423,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
           <strong className="text-gabi-forest">Calendario:</strong> {NUBO_PUBLICIDAD_META.mesInicioLabel} – Jul 2027
         </span>
         <span>
-          <strong className="text-gabi-forest">Año 1:</strong> {formatCeldaPresupuesto(inversionAnual)}
+          <strong className="text-gabi-forest">Etapa 1:</strong> {formatCeldaPresupuesto(inversionAnual)}
         </span>
         <span>
           <strong className="text-gabi-forest">Subtotal:</strong> {formatCeldaPresupuesto(totales.subtotal)}

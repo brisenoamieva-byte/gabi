@@ -9,7 +9,7 @@ export type { NuboPublicidadPartidaMensual as NuboPublicidadPartida };
 export const NUBO_PUBLICIDAD_PARTIDAS = NUBO_PUBLICIDAD_PARTIDAS_MENSUAL;
 
 export const NUBO_PUBLICIDAD_META = {
-  num: "05",
+  num: "04",
   titulo: "Presupuesto de publicidad",
   subtitulo: "Propuesta BBR · arranque comercial",
   contexto:

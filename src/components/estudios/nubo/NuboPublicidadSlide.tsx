@@ -68,25 +68,25 @@ export function NuboPublicidadSlide() {
 
   return (
     <SlideCanvas className="!flex !flex-col !py-3 md:!py-4" brandMark={<BbrHabitareaSlideMark />}>
-      <div className="mb-3 flex shrink-0 flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
-        <div className="flex items-baseline gap-3">
-          <span className="font-[Georgia,'Times_New_Roman',serif] text-2xl tabular-nums text-slate-300 md:text-3xl">
+      <div className="mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 md:mb-4">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white md:h-14 md:w-14 md:text-2xl">
             {NUBO_PUBLICIDAD_META.num}
-          </span>
-          <div>
+          </div>
+          <div className="min-w-0 pt-0.5">
             <h2 className={nuboType.h2}>{NUBO_PUBLICIDAD_META.titulo}</h2>
-            <p className={nuboType.labelMuted}>
+            <p className={`mt-1.5 ${nuboType.label}`}>
               {getNuboPublicidadRangoLabel()} · 2.5% · {NUBO_ESCENARIO_COMERCIAL.totalLotes} lotes
             </p>
           </div>
         </div>
         <div className={`flex flex-wrap gap-x-5 gap-y-1 text-[11px] ${t.body}`}>
           <span>
-            <strong className={t.bodyStrong}>Campaña total (2.5%):</strong>{" "}
+            <strong className={t.bodyStrong}>Porcentaje etapa 1:</strong>{" "}
             {formatTicket(presupuestoTotal)}
           </span>
           <span>
-            <strong className={t.bodyStrong}>Año 1:</strong> {formatTicket(inversionAnual)}
+            <strong className={t.bodyStrong}>Etapa 1:</strong> {formatTicket(inversionAnual)}
           </span>
           <span>
             <strong className={t.bodyStrong}>Con IVA:</strong> {formatTicket(totales.total)}
