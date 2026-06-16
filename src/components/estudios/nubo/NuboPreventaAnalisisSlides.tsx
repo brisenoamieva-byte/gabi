@@ -176,9 +176,9 @@ function ReferenceGallery({
         {items.map((ref) => (
           <figure
             key={ref.src}
-            className="overflow-hidden rounded-xl border border-slate-200/80 shadow-md shadow-slate-900/10 transition-shadow hover:shadow-lg"
+            className="propuesta-print-gallery__card overflow-hidden rounded-xl border border-slate-200/80 shadow-md shadow-slate-900/10 transition-shadow hover:shadow-lg"
           >
-            <div className="relative aspect-[16/10] sm:aspect-[5/3]">
+            <div className="propuesta-print-gallery__frame">
               <Image
                 src={ref.src}
                 alt={ref.nombre}
@@ -188,7 +188,7 @@ function ReferenceGallery({
                 unoptimized
                 onLoad={() => requestAnimationFrame(refitAllPropuestaSlides)}
               />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent px-4 pb-3 pt-12">
+              <div className="propuesta-print-gallery__overlay absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent px-4 pb-3 pt-12 print:hidden">
                 {ref.nombre ? (
                   <p className="text-sm font-semibold text-white md:text-base">{ref.nombre}</p>
                 ) : null}
@@ -197,6 +197,14 @@ function ReferenceGallery({
                 </p>
               </div>
             </div>
+            <figcaption className="propuesta-print-gallery__caption hidden border-t border-slate-200/80 bg-white px-3 py-2 print:block">
+              {ref.nombre ? (
+                <p className="text-sm font-semibold text-slate-800">{ref.nombre}</p>
+              ) : null}
+              <p className={`text-xs leading-snug text-slate-600 ${ref.nombre ? "mt-0.5" : ""}`}>
+                {ref.detalle}
+              </p>
+            </figcaption>
           </figure>
         ))}
       </div>

@@ -105,6 +105,20 @@
   max-width: 10in;
 }
 
+/* Galería de referencias NUBO — pantalla */
+.propuesta-print-gallery__frame {
+  aspect-ratio: 16 / 10;
+  background: #020617;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .propuesta-print-gallery__frame {
+    aspect-ratio: 5 / 3;
+  }
+}
+
 /* Preparación PDF: layout de impresión visible y medible antes del diálogo */
 body.propuesta-printing {
   overflow: visible !important;
@@ -594,20 +608,59 @@ body.propuesta-printing .propuesta-print-page {
     backdrop-filter: none !important;
   }
 
-  /* Galerías NUBO: caption debajo, sin overlay rasterizado */
-  .propuesta-print-gallery figure .absolute {
-    background: none !important;
-    padding: 0.04in 0 0 !important;
+  /* Galerías NUBO: imagen completa arriba, caption debajo */
+  .propuesta-print-gallery__overlay {
+    display: none !important;
+  }
+
+  .propuesta-print-gallery__caption {
+    display: block !important;
+    padding: 0.05in 0.06in !important;
+  }
+
+  .propuesta-print-gallery__caption p {
+    color: #475569 !important;
+    font-size: 8pt !important;
+    line-height: 1.28 !important;
+  }
+
+  .propuesta-print-gallery__caption .font-semibold,
+  .propuesta-print-gallery__caption .text-slate-800 {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+  }
+
+  .propuesta-print-gallery__card {
+    overflow: visible !important;
+  }
+
+  .propuesta-print-gallery__frame {
+    aspect-ratio: auto !important;
+    background: #fff !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
     position: static !important;
   }
 
-  .propuesta-print-gallery figure .absolute p {
-    color: #475569 !important;
+  .propuesta-print-gallery__frame > span,
+  .propuesta-print-gallery__frame > img {
+    display: block !important;
+    height: auto !important;
+    inset: auto !important;
+    position: static !important;
+    width: 100% !important;
   }
 
-  .propuesta-print-gallery figure .absolute .text-white,
-  .propuesta-print-gallery figure .absolute .text-white\/80 {
-    color: #475569 !important;
+  .propuesta-print-gallery__frame img {
+    max-height: 2.35in !important;
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+
+  .propuesta-print-page--accesos .propuesta-print-page__body .grid,
+  .propuesta-print-page--restaurante .propuesta-print-page__body .grid {
+    gap: 0.08in !important;
   }
 
   .propuesta-print-page--diagnostico .propuesta-print-page__body .lg\:grid-cols-4 {
@@ -617,31 +670,6 @@ body.propuesta-printing .propuesta-print-page {
 
   .propuesta-print-page--diagnostico .propuesta-print-page__body blockquote {
     margin-top: 0.1in !important;
-  }
-
-  .propuesta-print-page--accesos .propuesta-print-gallery figure,
-  .propuesta-print-page--restaurante .propuesta-print-gallery figure {
-    overflow: visible !important;
-  }
-
-  .propuesta-print-page--accesos .propuesta-print-gallery [class*="aspect-"],
-  .propuesta-print-page--restaurante .propuesta-print-gallery [class*="aspect-"] {
-    aspect-ratio: 16 / 10 !important;
-    background: #f1f5f9 !important;
-    height: 1.9in !important;
-    width: 100% !important;
-  }
-
-  .propuesta-print-page--accesos .propuesta-print-page__body .grid,
-  .propuesta-print-page--restaurante .propuesta-print-page__body .grid {
-    gap: 0.08in !important;
-  }
-
-  .propuesta-print-page--accesos .propuesta-print-gallery img,
-  .propuesta-print-page--restaurante .propuesta-print-gallery img {
-    max-height: none !important;
-    object-fit: contain !important;
-    object-position: center !important;
   }
 
   /* Accesos / restaurante: texto más compacto para dejar espacio a referencias */
