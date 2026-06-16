@@ -13,12 +13,14 @@ export function GabiPrintBar({
   hint = "«Guardar como PDF» · desactiva «Encabezados y pies de página» · activa «Gráficos de fondo»",
   onPrint,
   skipInvesttiPrep = false,
+  disabled = false,
 }: {
   titulo: string;
   accion?: string;
   hint?: string;
   onPrint?: () => void;
   skipInvesttiPrep?: boolean;
+  disabled?: boolean;
 }) {
   useEffect(() => {
     if (skipInvesttiPrep) return;
@@ -39,6 +41,7 @@ export function GabiPrintBar({
   }, [skipInvesttiPrep, titulo]);
 
   const handlePrint = () => {
+    if (disabled) return;
     if (onPrint) {
       onPrint();
       return;
@@ -60,7 +63,8 @@ export function GabiPrintBar({
         <button
           type="button"
           onClick={handlePrint}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#201044]/15 bg-white px-4 py-2 text-[12px] font-semibold text-[#201044] shadow-sm transition hover:bg-neutral-50"
+          disabled={disabled}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#201044]/15 bg-white px-4 py-2 text-[12px] font-semibold text-[#201044] shadow-sm transition hover:bg-neutral-50 disabled:opacity-40"
         >
           <Printer className="h-4 w-4" />
           {accion}

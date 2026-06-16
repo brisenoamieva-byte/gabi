@@ -100,17 +100,9 @@
   width: 100%;
 }
 
-/* Deck fuera de pantalla pero imprimible (no usar visibility:hidden) */
 .nubo-estudio-print-page__deck {
-  left: -12000px;
-  position: absolute;
-  top: 0;
-  width: 10in;
-}
-
-.nubo-estudio-print-page .propuesta-print-deck--visible .propuesta-print-page {
-  border: none;
-  margin-bottom: 0;
+  margin: 0 auto;
+  max-width: 10in;
 }
 
 /* Preparación PDF: layout de impresión visible y medible antes del diálogo */
@@ -289,7 +281,15 @@ body.propuesta-printing .propuesta-print-page {
     break-after: auto;
   }
 
-  /* Estudio NUBO: todo el PDF en carta horizontal (tabla presupuesto legible) */
+  /* Estudio NUBO: carta horizontal + contenido visible (no off-screen) */
+  .nubo-estudio-print-page .gabi-no-print {
+    display: none !important;
+  }
+
+  .nubo-estudio-print-page {
+    background: #fff !important;
+  }
+
   .nubo-estudio-print-page .propuesta-print-page {
     height: 7.35in;
     max-height: 7.35in;
@@ -297,13 +297,22 @@ body.propuesta-printing .propuesta-print-page {
     page: nubo-estudio-landscape;
   }
 
+  .nubo-estudio-print-page__deck,
   .nubo-estudio-print-page .propuesta-print-deck {
     height: auto !important;
+    left: auto !important;
+    max-width: none !important;
     overflow: visible !important;
-    pointer-events: auto !important;
     position: static !important;
+    top: auto !important;
     visibility: visible !important;
     width: 100% !important;
+  }
+
+  .nubo-estudio-print-page .propuesta-print-deck--visible .propuesta-print-page {
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
   }
 
   /* Presupuesto publicidad — tabla ancha en horizontal */

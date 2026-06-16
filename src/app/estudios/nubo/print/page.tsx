@@ -13,7 +13,6 @@ import { waitForPropuestaPrintImages } from "@/lib/propuestas/propuesta-print-pr
 export default function NuboEstudioPrintPage() {
   const { contenido, media, loading, loadError } = useNuboEstudioPresentation();
   const [ready, setReady] = useState(false);
-  const [printed, setPrinted] = useState(false);
 
   const titulo = `${contenido.meta.titulo} · ${contenido.meta.subtitulo}`;
   const slides = useMemo(
@@ -28,10 +27,8 @@ export default function NuboEstudioPrintPage() {
       refitAllPropuestaSlides();
       requestAnimationFrame(refitAllPropuestaSlides);
     };
-    const onAfterPrint = () => setPrinted(true);
 
     window.addEventListener("beforeprint", onBeforePrint);
-    window.addEventListener("afterprint", onAfterPrint);
 
     void (async () => {
       await waitForPropuestaPrintImages(12_000);
@@ -44,14 +41,11 @@ export default function NuboEstudioPrintPage() {
       });
     })();
 
-    return () => {
-      window.removeEventListener("beforeprint", onBeforePrint);
-      window.removeEventListener("afterprint", onAfterPrint);
-    };
+    return () => window.removeEventListener("beforeprint", onBeforePrint);
   }, [loading, loadError, slides]);
 
-  /** Debe ser síncrono en el clic — await antes de print() bloquea el diálogo en Chrome. */
   const handleSavePdf = () => {
+    if (!ready) return;
     refitAllPropuestaSlides();
     window.print();
   };
@@ -80,53 +74,52 @@ export default function NuboEstudioPrintPage() {
   }
 
   return (
-    <main className="nubo-estudio-print-page min-h-screen bg-white">
-      <GabiPrintBar
-        titulo={titulo}
-        accion="Guardar PDF"
-        hint="Carta horizontal · desactiva encabezados del navegador · activa gráficos de fondo"
-        onPrint={handleSavePdf}
-        skipInvesttiPrep
-      />
+    <main className="nubo-estudio-print-page min-h-screen bg-[#f8fafc]">
+      <div className="gabi-no-print">
+        <GabiPrintBar
+          titulo={titulo}
+          accion="Guardar PDF"
+          hint="Carta horizontal · desactiva encabezados del navegador · activa gráficos de fondo"
+          onPrint={handleSavePdf}
+          skipInvesttiPrep
+          disabled={!ready}
+        />
 
-      <div className="gabi-no-print mx-auto flex max-w-lg flex-col items-center gap-4 px-6 py-16 text-center">
-        {!ready ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin text-[#6cc24a]" />
-            <p className="text-sm text-slate-600">Preparando imágenes…</p>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-slate-600">
-              {printed
-                ? "PDF listo. Puedes guardar de nuevo o volver al estudio."
-                : "Pulsa el botón para abrir el diálogo y guardar como PDF (carta horizontal)."}
-            </p>
-            <button
-              type="button"
-              onClick={handleSavePdf}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800"
-            >
-              <Printer className="h-5 w-5" />
-              Guardar PDF
-            </button>
-            <p className="text-[11px] leading-relaxed text-slate-400">
-              En el diálogo: destino «Guardar como PDF», orientación horizontal, gráficos de fondo
-              activados.
-            </p>
-            {printed ? (
+        <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-6 py-10 text-center">
+          {!ready ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin text-[#6cc24a]" />
+              <p className="text-sm text-slate-600">Preparando imágenes…</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600">
+                Revisa las hojas abajo. Cuando estén bien, pulsa{" "}
+                <strong className="font-semibold">Guardar PDF</strong>.
+              </p>
+              <button
+                type="button"
+                onClick={handleSavePdf}
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 disabled:opacity-40"
+              >
+                <Printer className="h-5 w-5" />
+                Guardar PDF
+              </button>
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                En el diálogo: «Guardar como PDF», orientación horizontal, gráficos de fondo activados.
+              </p>
               <Link
                 href="/estudios/nubo"
                 className="text-sm font-medium text-slate-600 underline-offset-2 hover:underline"
               >
-                ← Volver al estudio NUBO
+                ← Volver al estudio
               </Link>
-            ) : null}
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="nubo-estudio-print-page__deck" aria-hidden={!ready}>
+      <div className="nubo-estudio-print-page__deck px-3 pb-8 md:px-6">
         <PropuestaPrintDeck titulo={titulo} slides={slides} visible landscape />
       </div>
     </main>
