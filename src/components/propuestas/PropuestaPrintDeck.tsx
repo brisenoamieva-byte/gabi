@@ -13,14 +13,23 @@ type PropuestaPrintDeckProps = {
   slides: PropuestaSlide[];
   /** Visible en pantalla (ruta /print); sin clase usa layout oculto del deck principal. */
   visible?: boolean;
+  /** Carta horizontal en todo el documento (estudio NUBO). */
+  landscape?: boolean;
 };
 
-export function PropuestaPrintDeck({ titulo, slides, visible = false }: PropuestaPrintDeckProps) {
+export function PropuestaPrintDeck({
+  titulo,
+  slides,
+  visible = false,
+  landscape = false,
+}: PropuestaPrintDeckProps) {
   const total = slides.length;
 
   return (
     <div
-      className={`propuesta-print-deck${visible ? " propuesta-print-deck--visible" : ""}`}
+      className={`propuesta-print-deck${visible ? " propuesta-print-deck--visible" : ""}${
+        landscape ? " propuesta-print-deck--landscape" : ""
+      }`}
       data-print-visible={visible ? "true" : undefined}
     >
       {slides.map((item, i) => (

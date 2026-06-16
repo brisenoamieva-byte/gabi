@@ -11,10 +11,12 @@ export function GabiPrintBar({
   titulo,
   accion = "PDF carta",
   hint = "«Guardar como PDF» · desactiva «Encabezados y pies de página» · activa «Gráficos de fondo»",
+  onPrint,
 }: {
   titulo: string;
   accion?: string;
   hint?: string;
+  onPrint?: () => void;
 }) {
   useEffect(() => {
     const prep = () => {
@@ -36,7 +38,11 @@ export function GabiPrintBar({
     prepareInvesttiChartsForPrint(titulo);
     requestAnimationFrame(() => {
       prepareInvesttiChartsForPrint(titulo);
-      window.print();
+      if (onPrint) {
+        onPrint();
+      } else {
+        window.print();
+      }
     });
   };
 
