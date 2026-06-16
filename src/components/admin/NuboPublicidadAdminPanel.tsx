@@ -7,7 +7,8 @@ import {
   formatCeldaPresupuesto,
   formatMontoInput,
   getNuboPublicidadColumnasMes,
-  getNuboPublicidadProyectadoConIva,
+  getNuboPublicidadEtapa1ConIva,
+  getNuboPublicidadProyectado,
   getNuboPublicidadRangoLabel,
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
@@ -219,7 +220,8 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
     [payloadPreview],
   );
   const totales = useMemo(() => getNuboPublicidadTotales(payloadPreview), [payloadPreview]);
-  const proyectadoConIva = useMemo(() => getNuboPublicidadProyectadoConIva(), []);
+  const etapa1ConIva = useMemo(() => getNuboPublicidadEtapa1ConIva(), []);
+  const proyectadoTabla = useMemo(() => getNuboPublicidadProyectado(payloadPreview), [payloadPreview]);
 
   const patchRow = (key: string, patch: Partial<EditablePartida>) => {
     setRows((current) =>
@@ -420,12 +422,12 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
           <strong className="text-gabi-forest">Calendario:</strong> {getNuboPublicidadRangoLabel()}
         </span>
         <span>
-          <strong className="text-gabi-forest">Proyectado:</strong>{" "}
-          {formatCeldaPresupuesto(proyectadoConIva)}
-          <span className="text-slate-400"> (2.5% ventas + IVA)</span>
+          <strong className="text-gabi-forest">Etapa 1 (2.5% + IVA):</strong>{" "}
+          {formatCeldaPresupuesto(etapa1ConIva)}
         </span>
         <span>
-          <strong className="text-gabi-forest">Subtotal:</strong> {formatCeldaPresupuesto(totales.subtotal)}
+          <strong className="text-gabi-forest">Proyectado (tabla):</strong>{" "}
+          {formatCeldaPresupuesto(proyectadoTabla)}
         </span>
         <span>
           <strong className="text-gabi-forest">Con IVA:</strong> {formatCeldaPresupuesto(totales.total)}

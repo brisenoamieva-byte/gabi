@@ -9,8 +9,7 @@ import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 import {
   formatCeldaPresupuesto,
   getNuboPublicidadColumnasMes,
-  getNuboPublicidadPresupuestoTotal,
-  getNuboPublicidadProyectadoConIva,
+  getNuboPublicidadEtapa1ConIva,
   getNuboPublicidadRangoLabel,
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
@@ -62,8 +61,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
     () => getNuboPublicidadTotalesMensuales(partidas),
     [partidas],
   );
-  const presupuestoTotal = getNuboPublicidadPresupuestoTotal();
-  const proyectadoConIva = getNuboPublicidadProyectadoConIva();
+  const etapa1ConIva = getNuboPublicidadEtapa1ConIva();
   const totales = useMemo(() => getNuboPublicidadTotales(partidas), [partidas]);
 
   return (
@@ -82,8 +80,8 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
         </div>
         <div className="nubo-publicidad-kpis flex flex-wrap gap-2 text-[11px]">
           {[
-            { label: "Porcentaje etapa 1", value: formatTicket(presupuestoTotal) },
-            { label: "Proyectado", value: formatTicket(proyectadoConIva) },
+            { label: "Porcentaje etapa 1", value: formatTicket(etapa1ConIva) },
+            { label: "Proyectado", value: formatTicket(totales.subtotal) },
             { label: "Con IVA", value: formatTicket(totales.total), accent: true },
           ].map((item) => (
             <span

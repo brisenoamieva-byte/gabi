@@ -66,9 +66,7 @@ export const NUBO_PUBLICIDAD_MES_COL_PX = 54;
 export const NUBO_PUBLICIDAD_TOTAL_COL_PX = 58;
 export const NUBO_PUBLICIDAD_CONCEPTO_COL_PX = 168;
 
-/** Escala para caber ~1846px de ancho en carta horizontal (~10.2in útiles). */
-export const NUBO_PUBLICIDAD_PRINT_ZOOM = 0.53;
-
+/** Ya no se usa zoom en print (corrompe PDF en Chrome). Ancho nativo de referencia. */
 export function getNuboPublicidadTableWidthPx(
   meses = NUBO_PUBLICIDAD_RESUMEN.mesesProyeccion,
 ): number {
@@ -78,6 +76,8 @@ export function getNuboPublicidadTableWidthPx(
     NUBO_PUBLICIDAD_MES_COL_PX * meses
   );
 }
+
+export const NUBO_PUBLICIDAD_TABLE_WIDTH_PX = getNuboPublicidadTableWidthPx();
 
 export function getNuboPublicidadColumnasMes(
   inicio = NUBO_PUBLICIDAD_RESUMEN.mesInicio,
@@ -189,18 +189,33 @@ export function getNuboPublicidadPresupuestoTotal(
 }
 
 /** 2.5% del valor de ventas del proyecto (sin IVA). */
-export function getNuboPublicidadProyectado(
+export function getNuboPublicidadEtapa1(
   valorProyecto = NUBO_PUBLICIDAD_RESUMEN.valorProyecto,
 ) {
   return getNuboPublicidadPresupuestoTotal(valorProyecto);
 }
 
-/** 2.5% del valor de ventas + IVA (referencia comercial). */
-export function getNuboPublicidadProyectadoConIva(
+/** 2.5% del valor de ventas + IVA — referencia comercial etapa 1. */
+export function getNuboPublicidadEtapa1ConIva(
   valorProyecto = NUBO_PUBLICIDAD_RESUMEN.valorProyecto,
   ivaPct = NUBO_PUBLICIDAD_RESUMEN.ivaPct,
 ) {
-  return getNuboPublicidadProyectado(valorProyecto) * (1 + ivaPct);
+  return getNuboPublicidadEtapa1(valorProyecto) * (1 + ivaPct);
+}
+
+/** Suma de la tabla de presupuesto (subtotal sin IVA). */
+export function getNuboPublicidadProyectado(
+  partidas: readonly NuboPublicidadPartidaMensual[] = NUBO_PUBLICIDAD_PARTIDAS_MENSUAL,
+) {
+  return getNuboPublicidadTotales(partidas).subtotal;
+}
+
+/** Suma de la tabla de presupuesto + IVA. */
+export function getNuboPublicidadProyectadoConIva(
+  partidas: readonly NuboPublicidadPartidaMensual[] = NUBO_PUBLICIDAD_PARTIDAS_MENSUAL,
+  ivaPct = NUBO_PUBLICIDAD_RESUMEN.ivaPct,
+) {
+  return getNuboPublicidadTotales(partidas, ivaPct).total;
 }
 
 export function getNuboPublicidadInversionAnual(
