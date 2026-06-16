@@ -60,6 +60,7 @@ function SlideFigure({
         src={src}
         alt={alt}
         fill
+        loading="eager"
         className={`${fit === "cover" ? "object-cover" : "object-contain"} ${
           variant === "gallery" ? "transition duration-500 hover:scale-[1.02]" : ""
         }`}
@@ -93,6 +94,7 @@ function ReferenceGallery({
                 src={ref.src}
                 alt={ref.nombre}
                 fill
+                loading="eager"
                 className="object-cover"
                 unoptimized
                 onLoad={() => requestAnimationFrame(refitAllPropuestaSlides)}

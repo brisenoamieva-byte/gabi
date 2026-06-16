@@ -35,8 +35,16 @@
   }
 }
 
+/* Fuera de pantalla (no display:none) para que el navegador cargue imágenes antes del PDF */
 .propuesta-print-only {
-  display: none;
+  left: -12000px;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  visibility: hidden;
+  width: 8.5in;
+  z-index: -1;
 }
 
 /* Preparación PDF: layout de impresión visible y medible antes del diálogo */
@@ -60,9 +68,12 @@ body.propuesta-printing .gabi-no-print {
 
 body.propuesta-printing .propuesta-print-only {
   display: block !important;
+  left: auto !important;
   position: relative !important;
+  top: auto !important;
   visibility: visible !important;
   width: 100%;
+  z-index: auto;
 }
 
 body.propuesta-printing .propuesta-print-page {
@@ -158,6 +169,12 @@ body.propuesta-printing .propuesta-print-page--publicidad {
 
   .propuesta-print-only {
     display: block !important;
+    left: auto !important;
+    position: static !important;
+    top: auto !important;
+    visibility: visible !important;
+    width: 100%;
+    z-index: auto;
   }
 
   .propuesta-print-deck {
@@ -253,6 +270,12 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     overflow: hidden;
   }
 
+  /* transform: scale() rompe el PDF en Chrome — solo compactación CSS */
+  .propuesta-print-page__body .propuesta-fit-stage {
+    transform: none !important;
+    width: 100% !important;
+  }
+
   .propuesta-print-page__foot {
     border-top: 1px solid #e2e8f0;
     color: #94a3b8;
@@ -287,7 +310,29 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     width: 100%;
   }
 
+  /* Next/Image fill: el contenedor aspect-* necesita altura explícita en impresión */
+  .propuesta-print-page__body [class*="aspect-"] {
+    min-height: 0;
+    position: relative !important;
+  }
+
+  .propuesta-print-page__body [class*="aspect-"] > span,
+  .propuesta-print-page__body [class*="aspect-"] > img {
+    display: block !important;
+    height: 100% !important;
+    inset: 0 !important;
+    max-height: none !important;
+    position: absolute !important;
+    width: 100% !important;
+  }
+
+  .propuesta-print-page__body [class*="aspect-"] img {
+    max-height: none !important;
+    object-fit: cover;
+  }
+
   .propuesta-print-page__body img {
+    display: block !important;
     max-height: 4.2in !important;
     max-width: 100% !important;
     object-fit: contain;
@@ -319,8 +364,9 @@ body.propuesta-printing .propuesta-print-page--publicidad {
 
   .propuesta-print-page--publicidad .nubo-publicidad-table-host table {
     font-size: 5.5pt !important;
-    transform: scale(0.52);
-    transform-origin: top left;
+    table-layout: fixed;
+    transform: none !important;
+    width: 100% !important;
   }
 
   .propuesta-print-page--publicidad .propuesta-print-page__head {
@@ -338,18 +384,34 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     gap: 0.08in !important;
   }
 
+  .propuesta-print-page--accesos .propuesta-print-page__body [class*="aspect-"],
+  .propuesta-print-page--restaurante .propuesta-print-page__body [class*="aspect-"] {
+    height: 2.2in !important;
+    width: 100% !important;
+  }
+
   .propuesta-print-page--accesos .propuesta-print-page__body img,
   .propuesta-print-page--restaurante .propuesta-print-page__body img {
-    max-height: 2.2in !important;
+    max-height: none !important;
     object-fit: cover !important;
   }
 
+  .propuesta-print-page--hotel .propuesta-print-page__body [class*="aspect-"] {
+    height: 3.2in !important;
+  }
+
   .propuesta-print-page--hotel .propuesta-print-page__body img {
-    max-height: 3.2in !important;
+    max-height: none !important;
+  }
+
+  .propuesta-print-page--ubicacion .propuesta-print-page__body [style*="aspect-ratio"] {
+    height: 4.8in !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
 
   .propuesta-print-page--ubicacion .propuesta-print-page__body img {
-    max-height: 5in !important;
+    max-height: none !important;
   }
 
   .propuesta-print-page__body * {

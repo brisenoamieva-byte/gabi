@@ -92,6 +92,7 @@ export function NuboUbicacionSitioFigure({
         src={src}
         alt={alt}
         fill
+        loading="eager"
         className="pointer-events-none object-cover select-none"
         unoptimized
         draggable={false}

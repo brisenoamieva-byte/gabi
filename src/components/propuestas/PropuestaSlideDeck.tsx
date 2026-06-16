@@ -20,7 +20,7 @@ import Link from "next/link";
 import { SlideBrandHeader } from "@/components/brand/BbrHabitareaLogo";
 import { PropuestaSlideFit } from "@/components/propuestas/PropuestaSlideFit";
 import "@/lib/propuestas/propuesta-print.css";
-import { runPropuestaPrintWithPrep } from "@/lib/propuestas/propuesta-print-prep";
+import { runPropuestaPrintWithPrep, waitForPropuestaPrintImages } from "@/lib/propuestas/propuesta-print-prep";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 
@@ -120,6 +120,13 @@ export function PropuestaSlideDeck({
       refitAllPropuestaSlides();
     });
   }, [index, modo]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void waitForPropuestaPrintImages(8000);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [slides]);
 
   const printLayout = (
     <div className="propuesta-print-only propuesta-print-deck">
