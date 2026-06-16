@@ -82,11 +82,11 @@ export function NuboPublicidadSlide() {
         </div>
         <div className={`flex flex-wrap gap-x-5 gap-y-1 text-[11px] ${t.body}`}>
           <span>
-            <strong className={t.bodyStrong}>Año 1:</strong> {formatTicket(inversionAnual)}
-          </span>
-          <span>
             <strong className={t.bodyStrong}>Campaña total (2.5%):</strong>{" "}
             {formatTicket(presupuestoTotal)}
+          </span>
+          <span>
+            <strong className={t.bodyStrong}>Año 1:</strong> {formatTicket(inversionAnual)}
           </span>
           <span>
             <strong className={t.bodyStrong}>Con IVA:</strong> {formatTicket(totales.total)}
@@ -117,7 +117,7 @@ export function NuboPublicidadSlide() {
                 <th className="sticky left-0 z-30 bg-slate-50 px-1.5 py-1.5 text-left text-[9px] font-medium">
                   Concepto
                 </th>
-                <th className="border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right text-[9px] font-medium">
+                <th className="border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right text-[9px] font-bold">
                   Total
                 </th>
                 {columnas.map((col) => (
@@ -157,7 +157,7 @@ export function NuboPublicidadSlide() {
                       </span>
                     </td>
                     <td
-                      className={`border-l border-slate-200 bg-slate-50/50 px-0.5 py-1 text-right tabular-nums text-[10px] align-top ${t.bodyStrong}`}
+                      className={`border-l border-slate-200 bg-slate-50/50 px-0.5 py-1 text-right tabular-nums text-[10px] font-bold align-top ${t.bodyStrong}`}
                     >
                       {formatCeldaPresupuesto(partida.anual)}
                     </td>
@@ -180,7 +180,7 @@ export function NuboPublicidadSlide() {
                 <td className={`sticky left-0 z-30 bg-slate-100 px-1.5 py-1.5 text-[10px] ${t.bodyStrong}`}>
                   Subtotal mensual
                 </td>
-                <td className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right tabular-nums text-[10px] ${t.bodyStrong}`}>
+                <td className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right tabular-nums text-[10px] font-bold ${t.bodyStrong}`}>
                   {formatCeldaPresupuesto(totales.subtotal)}
                 </td>
                 {totalesMes.map((monto, index) => (
@@ -195,7 +195,7 @@ export function NuboPublicidadSlide() {
               <tr className="border-t border-slate-200">
                 <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.body}`}>IVA 16%</td>
                 <td
-                  className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] ${t.body}`}
+                  className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] font-bold ${t.body}`}
                 >
                   {formatCeldaPresupuesto(totales.iva)}
                 </td>
@@ -208,7 +208,7 @@ export function NuboPublicidadSlide() {
                   Total con IVA
                 </td>
                 <td
-                  className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] ${t.bodyStrong}`}
+                  className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] font-bold ${t.bodyStrong}`}
                 >
                   {formatCeldaPresupuesto(totales.total)}
                 </td>

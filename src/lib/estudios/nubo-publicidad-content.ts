@@ -14,7 +14,7 @@ export const NUBO_PUBLICIDAD_META = {
   subtitulo: "Propuesta BBR · arranque comercial",
   contexto:
     "Inversión mes a mes por concepto · calendario desde agosto 2026. Propuesta al 2.5% del valor del proyecto. Montos sujetos a afinación.",
-  nota: "Modelo BBR (referencia Puerta Allende · sep 2024), alineado a propuesta comercial NUBO.",
+  nota: "Modelo BBR, alineado a propuesta comercial NUBO.",
   fuenteReferencia: "Presupuesto 23sep24.xlsx",
   mesInicioLabel: "Agosto 2026",
 } as const;

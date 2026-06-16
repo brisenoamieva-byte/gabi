@@ -476,7 +476,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                 <th className={`bg-[#6cc24a]/5 ${headTh} text-center`}>N</th>
                 <th className={`bg-[#6cc24a]/5 ${headTh} text-left`}>Desde</th>
                 <th className={`bg-[#6cc24a]/5 ${headTh} text-center`}> </th>
-                <th className={`border-l border-slate-200 bg-slate-100 ${headTh} text-right`}>Total</th>
+                <th className={`border-l border-slate-200 bg-slate-100 ${headTh} text-right font-bold`}>Total</th>
                 {columnas.map((col, colIndex) => (
                   <th
                     key={col.indice}
@@ -600,7 +600,7 @@ export function NuboPublicidadAdminPanel({ embedded = false }: { embedded?: bool
                       <Wand2 className="h-3 w-3" />
                     </button>
                   </td>
-                  <td className={`border-l border-slate-100 bg-slate-50/80 ${moneyTd} font-semibold text-gabi-forest`}>
+                  <td className={`border-l border-slate-100 bg-slate-50/80 ${moneyTd} font-bold text-gabi-forest`}>
                     {formatCeldaPresupuesto(rowAnual(row))}
                   </td>
                   {row.meses.map((mes, mesIndex) => (
