@@ -1,71 +1,16 @@
 const FIT_HOST = ".propuesta-fit-host";
 const FIT_STAGE = ".propuesta-fit-stage";
 const MOBILE_FIT_QUERY = "(max-width: 767px)";
-const NUBO_GALLERY_SLIDES = ["accesos", "restaurante"] as const;
-/** Reserva inferior para descendentes (g, y, p) que Chrome recorta en PDF. */
-const PRINT_FIT_SAFETY_PX = 10;
-
-function isOverflowing(host: HTMLElement, stage: HTMLElement, tolerance = 4): boolean {
-  return stage.scrollHeight > host.clientHeight - PRINT_FIT_SAFETY_PX + tolerance;
-}
-
-function ensurePrintSlideNoOverflow(host: HTMLElement, stage: HTMLElement) {
-  for (let i = 0; i < 28; i++) {
-    if (!isOverflowing(host, stage)) break;
-
-    const available = host.clientHeight - PRINT_FIT_SAFETY_PX;
-    if (available <= 0 || stage.scrollHeight <= 0) break;
-
-    const ratio = available / stage.scrollHeight;
-    if (ratio >= 0.998) break;
-
-    const current = parseFloat(stage.style.fontSize) || 100;
-    stage.style.fontSize = `${Math.max(72, current * ratio * 0.992).toFixed(1)}%`;
-  }
-}
-
-/** Ajusta altura de referencias para que quepan sin recorte en accesos / restaurante. */
-export function fitNuboReferenceGalleriesForPrint() {
-  for (const id of NUBO_GALLERY_SLIDES) {
-    const page = document.querySelector<HTMLElement>(`.propuesta-print-page--${id}`);
-    if (!page) continue;
-
-    const host = page.querySelector<HTMLElement>(FIT_HOST);
-    const stage = page.querySelector<HTMLElement>(FIT_STAGE);
-    if (!host || !stage) continue;
-
-    const imgs = page.querySelectorAll<HTMLImageElement>(".propuesta-print-gallery__img");
-
-    const applyImageMax = (inches: number) => {
-      imgs.forEach((img) => {
-        img.style.maxHeight = `${inches.toFixed(2)}in`;
-        img.style.width = "100%";
-        img.style.height = "auto";
-        img.style.objectFit = "contain";
-      });
-    };
-
-    stage.style.fontSize = "";
-    applyImageMax(2.55);
-
-    let maxIn = 2.55;
-    while (isOverflowing(host, stage) && maxIn > 1.3) {
-      maxIn -= 0.08;
-      applyImageMax(maxIn);
-    }
-
-    if (isOverflowing(host, stage) && host.clientHeight > 0 && stage.scrollHeight > 0) {
-      const scale = Math.min(1, host.clientHeight / stage.scrollHeight);
-      stage.style.fontSize = `${(scale * 100).toFixed(1)}%`;
-    }
-  }
-}
 
 export function isPropuestaSlideMobileFit(): boolean {
   if (typeof window === "undefined") {
     return false;
   }
   return window.matchMedia(MOBILE_FIT_QUERY).matches;
+}
+
+function isNuboPrintHost(host: HTMLElement): boolean {
+  return Boolean(host.closest(".nubo-estudio-print-page .propuesta-print-page"));
 }
 
 export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
@@ -76,6 +21,17 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
   stage.style.width = "100%";
   host.style.alignItems = center ? "center" : "flex-start";
 
+  /* NUBO /print: sin escalar ni recortar — el CSS estático + @page define el layout. */
+  if (isPrintHost && isNuboPrintHost(host)) {
+    host.style.overflowY = "visible";
+    host.style.overflowX = "visible";
+    host.dataset.fitMode = "print-static";
+    stage.style.transform = "none";
+    stage.style.width = "100%";
+    stage.style.fontSize = "";
+    return;
+  }
+
   if (isPrintHost) {
     host.style.overflowY = "hidden";
     host.style.overflowX = "hidden";
@@ -83,13 +39,13 @@ export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
     stage.style.transform = "none";
     stage.style.width = "100%";
 
-    const availableH = Math.max(0, host.clientHeight - PRINT_FIT_SAFETY_PX);
+    const ch = host.clientHeight;
     const cw = host.clientWidth;
     const sh = stage.scrollHeight;
     const sw = stage.scrollWidth;
-    if (availableH > 0 && cw > 0 && sh > 0 && sw > 0) {
-      const scale = Math.min(1, availableH / sh, cw / sw);
-      if (scale < 0.999) {
+    if (ch > 0 && cw > 0 && sh > 0 && sw > 0) {
+      const scale = Math.min(1, ch / sh, cw / sw);
+      if (scale < 0.985) {
         stage.style.fontSize = `${(scale * 100).toFixed(1)}%`;
       } else {
         stage.style.fontSize = "";
@@ -140,11 +96,6 @@ export function refitAllPropuestaSlides() {
     const stage = host.querySelector<HTMLElement>(FIT_STAGE);
     if (stage) applyPropuestaSlideFit(host, stage);
   });
-  fitNuboReferenceGalleriesForPrint();
-  document.querySelectorAll<HTMLElement>(".propuesta-print-page " + FIT_HOST).forEach((host) => {
-    const stage = host.querySelector<HTMLElement>(FIT_STAGE);
-    if (stage) ensurePrintSlideNoOverflow(host, stage);
-  });
 }
 
 export function resetAllPropuestaSlideFits() {
@@ -157,11 +108,5 @@ export function resetAllPropuestaSlideFits() {
     host.style.overflowY = "";
     host.style.overflowX = "";
     host.dataset.fitMode = "";
-  });
-  document.querySelectorAll<HTMLImageElement>(".propuesta-print-gallery__img").forEach((img) => {
-    img.style.maxHeight = "";
-    img.style.width = "";
-    img.style.height = "";
-    img.style.objectFit = "";
   });
 }
