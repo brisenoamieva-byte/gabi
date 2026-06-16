@@ -11,10 +11,36 @@ export function isPropuestaSlideMobileFit(): boolean {
 
 export function applyPropuestaSlideFit(host: HTMLElement, stage: HTMLElement) {
   const center = host.dataset.fitCenter === "true";
+  const isPrintHost = Boolean(host.closest(".propuesta-print-page"));
 
   stage.style.transform = "none";
   stage.style.width = "100%";
   host.style.alignItems = center ? "center" : "flex-start";
+
+  if (isPrintHost) {
+    host.style.overflowY = "hidden";
+    host.style.overflowX = "hidden";
+    host.dataset.fitMode = "scale";
+
+    const ch = host.clientHeight;
+    const cw = host.clientWidth;
+    if (ch <= 0 || cw <= 0) return;
+
+    const sh = stage.scrollHeight;
+    const sw = stage.scrollWidth;
+    if (sh <= 0 || sw <= 0) return;
+
+    const isPublicidad = Boolean(host.closest(".propuesta-print-page--publicidad"));
+    const scale = isPublicidad
+      ? Math.min(1, ch / sh)
+      : Math.min(1, ch / sh, cw / sw);
+
+    if (scale < 0.995) {
+      stage.style.transform = `scale(${scale})`;
+      stage.style.transformOrigin = center ? "center center" : "top center";
+    }
+    return;
+  }
 
   if (isPropuestaSlideMobileFit()) {
     host.style.overflowY = "auto";

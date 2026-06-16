@@ -20,6 +20,7 @@ import Link from "next/link";
 import { SlideBrandHeader } from "@/components/brand/BbrHabitareaLogo";
 import { PropuestaSlideFit } from "@/components/propuestas/PropuestaSlideFit";
 import "@/lib/propuestas/propuesta-print.css";
+import { runPropuestaPrintWithPrep } from "@/lib/propuestas/propuesta-print-prep";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 
@@ -44,12 +45,8 @@ function printPropuestaPdf() {
   if (document.fullscreenElement) {
     void document.exitFullscreen();
   }
-  requestAnimationFrame(() => {
-    refitAllPropuestaSlides();
-    requestAnimationFrame(() => {
-      refitAllPropuestaSlides();
-      window.print();
-    });
+  runPropuestaPrintWithPrep(() => {
+    window.print();
   });
 }
 

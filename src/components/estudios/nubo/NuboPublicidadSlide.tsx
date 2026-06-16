@@ -94,7 +94,7 @@ export function NuboPublicidadSlide() {
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-auto border border-slate-200">
+      <div className="nubo-publicidad-table-host relative min-h-0 flex-1 overflow-auto border border-slate-200">
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
