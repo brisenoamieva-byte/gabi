@@ -103,7 +103,10 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
         </div>
       </div>
 
-      <div className="nubo-publicidad-table-host relative min-h-0 flex-1 overflow-auto border border-slate-200">
+      <div
+        className="nubo-publicidad-table-host relative min-h-0 flex-1 overflow-auto overscroll-contain border border-slate-200"
+        style={{ ["--nubo-pub-concepto-w" as string]: `${NUBO_PUBLICIDAD_CONCEPTO_COL_PX}px` }}
+      >
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -111,7 +114,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
           </div>
         ) : (
           <table
-            className="nubo-publicidad-table table-fixed border-collapse text-[10px]"
+            className="nubo-publicidad-table border-separate border-spacing-0 text-[10px]"
             style={{ width: slideTableWidth }}
           >
             <colgroup>
@@ -121,18 +124,18 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
                 <col key={col.indice} style={{ width: NUBO_PUBLICIDAD_MES_COL_PX }} />
               ))}
             </colgroup>
-            <thead className="sticky top-0 z-20 bg-slate-50 shadow-[0_1px_0_#e2e8f0]">
+            <thead>
               <tr className={`border-b border-slate-200 uppercase tracking-wide ${t.body}`}>
-                <th className="sticky left-0 z-30 bg-slate-50 px-1.5 py-1.5 text-left text-[9px] font-medium">
+                <th className="nubo-publicidad-table__corner px-1.5 py-1.5 text-left text-[9px] font-medium">
                   Concepto
                 </th>
-                <th className="border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right text-[9px] font-bold">
+                <th className="nubo-publicidad-table__head px-0.5 py-1.5 text-right text-[9px] font-bold">
                   Total
                 </th>
                 {columnas.map((col) => (
                   <th
                     key={col.indice}
-                    className="px-0.5 py-1.5 text-right text-[9px] font-medium whitespace-nowrap"
+                    className="nubo-publicidad-table__head px-0.5 py-1.5 text-right text-[9px] font-medium whitespace-nowrap"
                     title={col.etiquetaCorta}
                   >
                     {col.etiquetaCompacta}
@@ -153,7 +156,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
                     }`}
                   >
                     <td
-                      className={`sticky left-0 z-10 bg-white px-1.5 py-1 align-top ${
+                      className={`nubo-publicidad-table__concept px-1.5 py-1 align-top ${
                         segmentoBreak ? "border-t border-slate-200 pt-2" : ""
                       }`}
                     >
@@ -186,9 +189,9 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
                 );
               })}
             </tbody>
-            <tfoot className="sticky bottom-0 z-20 bg-slate-100 shadow-[0_-1px_0_#e2e8f0]">
+            <tfoot className="nubo-publicidad-table__foot">
               <tr className="border-t-2 border-slate-900">
-                <td className={`sticky left-0 z-30 bg-slate-100 px-1.5 py-1.5 text-[10px] ${t.bodyStrong}`}>
+                <td className={`nubo-publicidad-table__foot-corner px-1.5 py-1.5 text-[10px] ${t.bodyStrong}`}>
                   Subtotal mensual
                 </td>
                 <td className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1.5 text-right tabular-nums text-[10px] font-bold ${t.bodyStrong}`}>
@@ -204,7 +207,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
                 ))}
               </tr>
               <tr className="border-t border-slate-200">
-                <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.body}`}>IVA 16%</td>
+                <td className={`nubo-publicidad-table__foot-corner px-1.5 py-1 text-[10px] ${t.body}`}>IVA 16%</td>
                 <td
                   className={`border-l border-slate-200 bg-slate-100 px-0.5 py-1 text-right tabular-nums text-[10px] font-bold ${t.body}`}
                 >
@@ -215,7 +218,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
                 ))}
               </tr>
               <tr>
-                <td className={`sticky left-0 bg-slate-100 px-1.5 py-1 text-[10px] ${t.bodyStrong}`}>
+                <td className={`nubo-publicidad-table__foot-corner px-1.5 py-1 text-[10px] ${t.bodyStrong}`}>
                   Total con IVA
                 </td>
                 <td
