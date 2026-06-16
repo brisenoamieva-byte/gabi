@@ -9,7 +9,7 @@ import {
   NUBO_PREVENTA_RESTAURANTE,
 } from "@/lib/estudios/nubo-preventa-content";
 import type { NuboEstudioContenido, NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
-import { DEFAULT_NUBO_UBICACION_MARCADORES, normalizeNuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
+import { DEFAULT_NUBO_UBICACION_MARCADORES } from "@/lib/estudios/nubo-ubicacion-markers";
 
 export function getDefaultNuboEstudioContenido(): NuboEstudioContenido {
   return {

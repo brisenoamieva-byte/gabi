@@ -1,8 +1,5 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
-import {
-  DEFAULT_NUBO_UBICACION_MARCADORES,
-  normalizeNuboUbicacionMarcadores,
-} from "@/lib/estudios/nubo-ubicacion-markers";
+import { normalizeNuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
 import {
   getDefaultNuboEstudioContenido,
   getDefaultNuboEstudioMedia,
