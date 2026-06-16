@@ -16,12 +16,12 @@ export const NUBO_ANALISIS_MEDIA = {
   restauranteLookAndFeel: [
     {
       src: `${ANALISIS}/restaurante-ref-plantado-1.png`,
-      nombre: "Plantado",
+      nombre: "",
       detalle: "Palapa sobre espejo de agua, terrazas bajo árbol y comedor al aire libre.",
     },
     {
       src: `${ANALISIS}/restaurante-ref-plantado-2.png`,
-      nombre: "Plantado",
+      nombre: "",
       detalle: "Lámparas artesanales, muebles naturales y terraza nocturna bajo follaje.",
     },
   ] as const,

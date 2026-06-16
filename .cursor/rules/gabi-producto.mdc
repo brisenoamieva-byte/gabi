@@ -1,0 +1,35 @@
+---
+description: Qué es Gabi, secciones del producto y convenciones generales del repo
+alwaysApply: true
+---
+
+# Gabi — contexto del producto
+
+**Gabi** (gabi.mx) es la guía comercial de BBR Habitarea: recorridos, cotizador, corredor, propuestas, estudios de mercado, admin y portales por desarrollo. Stack: **Next.js App Router**, **Tailwind**, **Supabase**, deploy en **Vercel**.
+
+## Secciones principales
+
+| Ruta | Uso |
+|------|-----|
+| `/recorrido`, `/cotizador`, `/disponibilidad` | Herramientas de campo (PWA, offline) |
+| `/corredor`, `/desarrollos` | Mapa y catálogo comercial |
+| `/propuestas` | Presentaciones comerciales tipo slide deck |
+| `/estudios` (ej. `/estudios/nubo`) | Análisis BBR editables y publicables |
+| `/admin/*` | Panel operador (inventario, leads, catálogo…) |
+| `/gabi` | Landing / acceso |
+
+## Convenciones de trabajo
+
+- **UI y copy en español (México)** — tono profesional, claro, comercial fino (no marketing exagerado).
+- **No commitear ni pushear** salvo que el usuario lo pida explícitamente.
+- **Cambios mínimos** — reutilizar abstracciones existentes; no reinventar patrones ya usados en el módulo.
+- **Assets** en `public/`; datos editables en Supabase con defaults en `src/lib/` como fallback.
+- Antes de publicar: `npm run lint` y `npm run build`. En Windows PowerShell usar `;` no `&&`.
+- Tras cambios de catálogo: `npm run sync` (ver regla `catalog-sync`).
+
+## Dos marcas visuales
+
+- **GABI** (plataforma): navy `#13315C`, teal, surface `#F8FAFC` — `src/lib/brand/colors.ts` → `gabiBrand`
+- **BBR Habitarea** (comercial / estudios / propuestas): purple `#201044`, green `#6CC24A`, cream — `bbrBrand`
+
+Usar la paleta que corresponda al flujo; no mezclar estilos GABI navy con slides BBR sin motivo.

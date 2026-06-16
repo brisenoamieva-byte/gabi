@@ -11,6 +11,7 @@ import {
   getNuboPublicidadColumnasMes,
   getNuboPublicidadInversionAnual,
   getNuboPublicidadPresupuestoTotal,
+  getNuboPublicidadRangoLabel,
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
   NUBO_ESCENARIO_COMERCIAL,
@@ -75,7 +76,7 @@ export function NuboPublicidadSlide() {
           <div>
             <h2 className={nuboType.h2}>{NUBO_PUBLICIDAD_META.titulo}</h2>
             <p className={nuboType.labelMuted}>
-              {NUBO_PUBLICIDAD_META.mesInicioLabel} – Jul 2027 · 2.5% · {NUBO_ESCENARIO_COMERCIAL.totalLotes} lotes
+              {getNuboPublicidadRangoLabel()} · 2.5% · {NUBO_ESCENARIO_COMERCIAL.totalLotes} lotes
             </p>
           </div>
         </div>

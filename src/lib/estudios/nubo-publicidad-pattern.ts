@@ -13,7 +13,7 @@ export function buildMesesFromPatron(input: {
   mesInicio?: number;
   totalMeses?: number;
 }): string[] {
-  const total = input.totalMeses ?? 12;
+  const total = input.totalMeses ?? 30;
   const mesInicio = Math.max(0, Math.min(total - 1, input.mesInicio ?? 0));
   const meses = Array<string>(total).fill("");
 

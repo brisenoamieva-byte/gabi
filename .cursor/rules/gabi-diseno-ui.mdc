@@ -1,0 +1,50 @@
+---
+description: Diseño visual Gabi — paleta, contraste, tipografía y componentes UI
+globs:
+  - src/components/**
+  - src/app/**
+  - src/app/globals.css
+alwaysApply: false
+---
+
+# Gabi — diseño UI
+
+Estilo buscado: **sencillo, fino, premium, legible**. Mucho blanco, bordes suaves, sombras ligeras, jerarquía clara.
+
+## Paleta y tokens
+
+- Tokens GABI: `gabiBrand` en `src/lib/brand/colors.ts`; clases utilitarias en `globals.css` (`.gabi-card`, `.gabi-btn-primary`, `.input-xl`).
+- Tokens BBR: `bbrBrand`; logo `BbrHabitareaLogo` / `BbrHabitareaSlideMark`.
+- Preferir **tokens compartidos** (`text-slate-700`, `text-green-700`, `gabi-forest`) sobre hex sueltos en JSX.
+
+## Tipografía
+
+- **Títulos editoriales / slides**: Georgia / Times — serif, `text-slate-900`.
+- **Cuerpo y UI**: Geist / system sans — `text-slate-600`–`700` sobre blanco.
+- **Labels de sección**: uppercase, `tracking-[0.12em]`, `text-[11px]`–`xs`, verde oscuro `text-green-700` o gris `text-slate-500`.
+
+## Contraste (crítico)
+
+- **Nunca** texto oscuro (`slate-600`–`900`, `t.body`) sobre fondo oscuro (`slate-900`, gradientes oscuros).
+- En paneles oscuros usar clases dedicadas (ej. `.nubo-panel-dark`, `text-white/90`, `text-green-300` para labels).
+- Cada token tipográfico debe incluir **tamaño + color juntos**; no mezclar `nuboType.body` con override `text-slate-200` en la misma className (Tailwind: gana el último en CSS, no el de la className).
+
+## Tailwind
+
+- `tailwind.config.ts` debe incluir `./src/lib/**` — muchos tokens viven en `src/lib/`; si no se escanean, **las clases no existen en producción**.
+- Para estilos críticos de contraste, usar `@layer components` en `globals.css` como respaldo.
+
+## Layout móvil
+
+- Safe areas iOS: clases `propuesta-deck-*` y patrones existentes en slide deck.
+- Botones táctiles ≥ 44px en navegación móvil; headers compactos en pantallas pequeñas.
+
+## Ejemplos
+
+```tsx
+// ❌ Panel oscuro con token de cuerpo claro
+<li className={`${nuboType.small} text-slate-200`}>
+
+// ✅ Token on-dark o clase CSS dedicada
+<li className="nubo-panel-dark__item flex gap-2.5">
+```

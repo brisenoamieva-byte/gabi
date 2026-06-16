@@ -11,6 +11,7 @@ import {
   getNuboPublicidadTotales,
   getNuboPublicidadTotalesMensuales,
   normalizeMontoDigits,
+  NUBO_PUBLICIDAD_MESES_PROYECCION,
   NUBO_PUBLICIDAD_META,
   NUBO_PUBLICIDAD_MES_COL_PX,
   NUBO_PUBLICIDAD_TOTAL_COL_PX,
@@ -25,7 +26,7 @@ import {
 } from "@/lib/estudios/nubo-publicidad-pattern";
 import type { NuboPublicidadPublishMeta } from "@/lib/estudios/nubo-publicidad-store";
 
-const MESES_COUNT = 12;
+const MESES_COUNT = NUBO_PUBLICIDAD_MESES_PROYECCION;
 
 type EditablePartida = {
   key: string;

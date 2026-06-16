@@ -13,6 +13,10 @@ import {
   NUBO_PUBLICIDAD_PARTIDAS_MENSUAL,
   type NuboPublicidadPartidaMensual,
 } from "@/lib/estudios/nubo-publicidad-partidas";
+import {
+  NUBO_PUBLICIDAD_MESES_PROYECCION,
+  padNuboPublicidadMeses,
+} from "@/lib/estudios/nubo-publicidad-content";
 
 function parseJsonField<T extends object>(raw: unknown): T | null {
   if (raw == null) return null;
@@ -29,7 +33,7 @@ function parseJsonField<T extends object>(raw: unknown): T | null {
 }
 
 const ROW_ID = "activo";
-const MESES_COUNT = 12;
+const MESES_COUNT = NUBO_PUBLICIDAD_MESES_PROYECCION;
 const ESTUDIOS_BUCKET = "gabi-estudios";
 
 type NuboEstudioRow = {
@@ -63,9 +67,8 @@ function staticPartidas(): NuboPublicidadPartidaMensual[] {
 
 function normalizePartidas(raw: NuboPublicidadPartidaMensual[]): NuboPublicidadPartidaMensual[] {
   return raw.map((p) => {
-    const meses = Array.from({ length: MESES_COUNT }, (_, i) =>
-      Math.max(0, Number(p.meses?.[i]) || 0),
-    );
+    const inputMeses = Array.isArray(p.meses) ? p.meses.map((m) => Math.max(0, Number(m) || 0)) : [];
+    const meses = padNuboPublicidadMeses(inputMeses, MESES_COUNT);
     return {
       proveedor: String(p.proveedor ?? "").trim(),
       concepto: String(p.concepto ?? "").trim(),
@@ -126,9 +129,13 @@ function normalizeMediaRef(
   raw: Partial<NuboEstudioMedia["accesosRef"][number]> | undefined,
   fallback: NuboEstudioMedia["accesosRef"][number],
 ): NuboEstudioMedia["accesosRef"][number] {
+  const nombre =
+    fallback.nombre === ""
+      ? ""
+      : String(raw?.nombre ?? fallback.nombre).trim();
   return {
     src: String(raw?.src ?? fallback.src).trim(),
-    nombre: String(raw?.nombre ?? fallback.nombre).trim(),
+    nombre,
     detalle: String(raw?.detalle ?? fallback.detalle).trim(),
   };
 }

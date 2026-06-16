@@ -1,0 +1,41 @@
+---
+description: Datos, Supabase, APIs y patrones de contenido editable en Gabi
+globs:
+  - src/lib/**
+  - src/app/api/**
+  - supabase/migrations/**
+  - src/components/admin/**
+alwaysApply: false
+---
+
+# Gabi — datos y backend
+
+## Patrón contenido editable (estudios, recorrido, catálogo)
+
+1. **Defaults estáticos** en `src/lib/.../*-defaults.ts` — la app funciona sin Supabase.
+2. **Tipos** en `*-types.ts`; normalización al leer JSON de BD.
+3. **API routes** en `src/app/api/...` con service role para escritura admin.
+4. **Fetch** en cliente con `cache: "no-store"`; fallback a defaults si falla.
+5. **Upsert parcial** — no borrar campos no enviados al guardar una pestaña (textos vs presupuesto vs imágenes).
+6. **Migraciones** numeradas en `supabase/migrations/`; indicar al usuario aplicarlas en SQL Editor si hace falta.
+
+## Supabase
+
+- Cliente service: `createSupabaseServiceClient()` — solo server/API, nunca exponer `SERVICE_ROLE` al cliente.
+- Variables Vercel: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, etc.
+
+## Catálogo / inventario
+
+- Fuente: `src/lib/data.ts`, `src/lib/catalog/**`.
+- Tras cambios: `npm run sync` (regla `catalog-sync`).
+
+## Admin panels
+
+- UI en `src/components/admin/*`; páginas en `src/app/admin/(panel)/`.
+- Estilo admin: cards blancas, bordes `border-gabi-forest/8`, acciones primarias verdes/navy según contexto.
+- Feedback claro: loading, errores en amber/rojo, confirmación al publicar.
+
+## Imágenes de estudio
+
+- Upload vía API dedicada; URLs en campo `media` JSON.
+- Posiciones configurables (ej. marcadores mapa NUBO) como JSON con defaults + editor drag.

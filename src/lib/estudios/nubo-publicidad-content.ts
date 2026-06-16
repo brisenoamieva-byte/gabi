@@ -28,10 +28,13 @@ export const NUBO_ESCENARIO_COMERCIAL = {
   pctPublicidad: 0.025,
 } as const;
 
+/** Columnas de mes en tabla de presupuesto (Agosto 2026 → 30 meses). */
+export const NUBO_PUBLICIDAD_MESES_PROYECCION = 30;
+
 export const NUBO_PUBLICIDAD_RESUMEN = {
   valorProyecto: NUBO_ESCENARIO_COMERCIAL.ingresoTotal,
   pctPublicidad: NUBO_ESCENARIO_COMERCIAL.pctPublicidad,
-  mesesProyeccion: 12,
+  mesesProyeccion: NUBO_PUBLICIDAD_MESES_PROYECCION,
   mesInicio: { year: 2026, month: 8 },
   ivaPct: 0.16,
 } as const;
@@ -78,6 +81,46 @@ export function getNuboPublicidadColumnasMes(
       etiquetaCompacta: `${mes}'${year}`,
     };
   });
+}
+
+/** Etiqueta de rango calendario (ej. Ago 2026 – Ene 2029). */
+export function getNuboPublicidadRangoLabel(
+  inicio = NUBO_PUBLICIDAD_RESUMEN.mesInicio,
+  cantidad = NUBO_PUBLICIDAD_RESUMEN.mesesProyeccion,
+): string {
+  const columnas = getNuboPublicidadColumnasMes(inicio, cantidad);
+  if (columnas.length === 0) return NUBO_PUBLICIDAD_META.mesInicioLabel;
+  const fin = columnas[columnas.length - 1];
+  return `${NUBO_PUBLICIDAD_META.mesInicioLabel} – ${fin.etiqueta}`;
+}
+
+/** Extiende arreglos legacy (12 meses) al total de columnas. */
+export function padNuboPublicidadMeses(
+  meses: readonly number[],
+  total = NUBO_PUBLICIDAD_MESES_PROYECCION,
+): number[] {
+  if (meses.length >= total) {
+    return meses.slice(0, total).map((m) => Math.max(0, Number(m) || 0));
+  }
+
+  const src = meses.map((m) => Math.max(0, Number(m) || 0));
+  const result = [...src];
+  const nonZero = src.filter((m) => m > 0);
+
+  if (nonZero.length > 0 && src.every((m) => m === nonZero[0])) {
+    while (result.length < total) result.push(nonZero[0]!);
+    return result;
+  }
+
+  if (nonZero.length === 1) {
+    while (result.length < total) result.push(0);
+    return result;
+  }
+
+  while (result.length < total) {
+    result.push(src[result.length % src.length] ?? 0);
+  }
+  return result;
 }
 
 export function getNuboPublicidadTotalesMensuales(

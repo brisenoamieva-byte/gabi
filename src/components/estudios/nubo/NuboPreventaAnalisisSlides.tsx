@@ -98,8 +98,12 @@ function ReferenceGallery({
                 onLoad={() => requestAnimationFrame(refitAllPropuestaSlides)}
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent px-4 pb-3 pt-12">
-                <p className="text-sm font-semibold text-white md:text-base">{ref.nombre}</p>
-                <p className="mt-0.5 text-xs leading-snug text-white/80 md:text-sm">{ref.detalle}</p>
+                {ref.nombre ? (
+                  <p className="text-sm font-semibold text-white md:text-base">{ref.nombre}</p>
+                ) : null}
+                <p className={`text-xs leading-snug text-white/80 md:text-sm ${ref.nombre ? "mt-0.5" : ""}`}>
+                  {ref.detalle}
+                </p>
               </div>
             </div>
           </figure>

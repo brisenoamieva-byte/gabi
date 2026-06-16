@@ -1,0 +1,53 @@
+---
+description: Presentaciones comerciales — slide deck, marca BBR, temas NUBO/propuestas
+globs:
+  - src/components/propuestas/**
+  - src/components/estudios/**
+  - src/lib/propuestas/**
+  - src/lib/estudios/**
+alwaysApply: false
+---
+
+# Gabi — presentaciones (propuestas y estudios)
+
+Patrón estándar: **`PropuestaSlideDeck`** + **`SlideCanvas`** + auto-fit (`PropuestaSlideFit`, `refitAllPropuestaSlides`).
+
+## Estructura de slide
+
+```tsx
+<SlideCanvas align="start" brandMark={<BbrHabitareaSlideMark />}>
+  {/* contenido */}
+</SlideCanvas>
+```
+
+- Fondo blanco, padding responsive (`px-4` móvil → `md:px-10`).
+- Contenido en `.propuesta-slide-inner` con `max-w-6xl`.
+
+## Marca BBR en slides
+
+- Logo **discreto** en franja superior (`SlideBrandHeader` + `BbrHabitareaSlideMark`) — **no** `position: absolute` sobre el contenido.
+- **Portada**: un solo logo grande (`BbrHabitareaLogo`); sin marca duplicada en esquina.
+- Resto de slides: marca pequeña arriba a la derecha vía `brandMark`.
+
+## Temas tipográficos
+
+| Módulo | Archivo |
+|--------|---------|
+| Propuestas genéricas | `src/lib/propuestas/slide-theme.ts` → `propuestaSlide` |
+| Estudio NUBO | `src/lib/estudios/nubo-slide-theme.ts` → `nuboType`, `nuboSurface` |
+
+Al crear un estudio nuevo, extraer tokens a `src/lib/estudios/*-slide-theme.ts` (no inline en el componente).
+
+## Imágenes en slides
+
+- `onLoad={() => requestAnimationFrame(refitAllPropuestaSlides)}` en `<Image>` para re-escalar tras cargar.
+- Galerías: overlay con gradiente oscuro + `text-white` / `text-white/80` en captions.
+
+## Navegación
+
+- Flechas desktop: centradas verticalmente en área slide (`PropuestaSlideDeck`).
+- Móvil: footer fijo con dots + flechas grandes; slide puede hacer scroll si scale < 0.9 (`propuesta-slide-fit.ts`).
+
+## Admin / contenido editable
+
+Estudios como NUBO: defaults en `src/lib/estudios/*-defaults.ts`, API `/api/estudios/...`, editor en `/estudios/.../editar`, publicación a Supabase. Mostrar aviso si solo hay archivo base sin publicar.

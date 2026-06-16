@@ -41,10 +41,11 @@ for (let i = 12; i <= 34; i++) {
 
 /** Calendario NUBO: Ago 2026 = índice 0 → Feb 2027 = índice 6 */
 const EVENTO_FF_MES = 6;
+const MESES_PROYECCION = 30;
 
 for (const partida of partidas) {
   if (partida.concepto === "Evento F&F") {
-    partida.meses = Array.from({ length: 12 }, (_, i) =>
+    partida.meses = Array.from({ length: MESES_PROYECCION }, (_, i) =>
       i === EVENTO_FF_MES ? partida.anual : 0,
     );
   }
@@ -53,7 +54,25 @@ for (const partida of partidas) {
     partida.proveedor = "NUBO";
     partida.concepto = "Construcción de showroom 80 m²";
     partida.anual = 1_700_000;
-    partida.meses = Array.from({ length: 12 }, (_, i) => (i === 0 ? partida.anual : 0));
+    partida.meses = Array.from({ length: MESES_PROYECCION }, (_, i) => (i === 0 ? partida.anual : 0));
+  }
+}
+
+for (const partida of partidas) {
+  if (partida.meses.length < MESES_PROYECCION) {
+    const src = partida.meses;
+    const nonZero = src.filter((m) => m > 0);
+    if (nonZero.length > 0 && src.every((m) => m === nonZero[0])) {
+      partida.meses = Array.from({ length: MESES_PROYECCION }, () => nonZero[0]);
+    } else if (nonZero.length === 1) {
+      partida.meses = [...src, ...Array(MESES_PROYECCION - src.length).fill(0)];
+    } else {
+      partida.meses = Array.from(
+        { length: MESES_PROYECCION },
+        (_, i) => src[i % src.length] ?? 0,
+      );
+    }
+    partida.anual = partida.meses.reduce((sum, m) => sum + m, 0);
   }
 }
 
