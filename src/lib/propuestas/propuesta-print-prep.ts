@@ -119,6 +119,9 @@ export function runPropuestaPrintWithPrep(printFn: () => void): void {
       });
     });
     await waitForPropuestaPrintImages(isPropuestaMobilePrint() ? 6000 : 4000);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 350);
+    });
     printFn();
   })();
 }

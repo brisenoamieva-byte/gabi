@@ -581,6 +581,7 @@ export function NuboPreventaAnalisisSlides({
         backLabel="Estudios"
         viewerMode={viewerMode}
         embedded
+        printOrientation="landscape"
       />
       {!isDeveloper ? (
         <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">

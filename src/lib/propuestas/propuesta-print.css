@@ -115,6 +115,11 @@ body.propuesta-printing .propuesta-print-page--publicidad {
   max-width: 10in;
 }
 
+body.propuesta-printing .propuesta-print-deck--landscape .propuesta-print-page {
+  height: 7.5in;
+  max-width: 10in;
+}
+
 /* Contenedor que escala el contenido para caber sin scroll (desktop) */
 .propuesta-fit-host {
   align-items: flex-start;
@@ -161,7 +166,7 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     size: letter portrait;
   }
 
-  @page publicidad-landscape {
+  @page letter-landscape {
     margin: 0.35in 0.4in;
     size: letter landscape;
   }
@@ -172,7 +177,7 @@ body.propuesta-printing .propuesta-print-page--publicidad {
       size: letter portrait;
     }
 
-    @page publicidad-landscape {
+    @page letter-landscape {
       margin: 0.3in;
       size: letter landscape;
     }
@@ -183,8 +188,6 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     background: #fff !important;
     height: auto !important;
     overflow: visible !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
   }
 
   .propuesta-deck-viewport,
@@ -253,12 +256,17 @@ body.propuesta-printing .propuesta-print-page--publicidad {
     break-after: auto;
   }
 
-  /* Presupuesto publicidad — 1 hoja carta horizontal, sin zoom (corrompe PDF) */
-  .propuesta-print-page--publicidad {
-    break-inside: avoid;
+  /* Deck horizontal: una sola orientación (mezclar portrait+landscape corrompe el PDF en Chrome) */
+  .propuesta-print-deck--landscape .propuesta-print-page {
     height: 7.35in;
     max-height: 7.35in;
-    page: publicidad-landscape;
+    max-width: 10.2in;
+    page: letter-landscape;
+  }
+
+  /* Presupuesto publicidad — tabla a ancho completo en hoja horizontal */
+  .propuesta-print-page--publicidad {
+    break-inside: avoid;
   }
 
   .propuesta-print-page--publicidad .propuesta-print-page__bar,
@@ -398,7 +406,7 @@ body.propuesta-printing .propuesta-print-page--publicidad {
   }
 
   .propuesta-print-page__bar {
-    background: linear-gradient(90deg, #6cc24a 0%, #6cc24a 2.25rem, #e2e8f0 2.25rem, #e2e8f0 100%);
+    background: #6cc24a !important;
     flex-shrink: 0;
     height: 2px;
     margin-bottom: 0.14in;
@@ -558,9 +566,38 @@ body.propuesta-printing .propuesta-print-page--publicidad {
   }
 
   .propuesta-print-page__body * {
+    animation: none !important;
+    box-shadow: none !important;
+    filter: none !important;
     overflow-x: visible;
-    print-color-adjust: exact;
+    text-shadow: none !important;
+    transition: none !important;
+  }
+
+  /* Evita miles de tiles JPEG (Chrome rasteriza cada nodo con exact) */
+  .propuesta-print-page__body .nubo-panel-dark,
+  .propuesta-print-page__body .nubo-panel-dark *,
+  .propuesta-print-page__body [class*="bg-[#6cc24a]"],
+  .propuesta-print-page__body [class*="border-[#6cc24a]"],
+  .propuesta-print-page__bar {
     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Fondos decorativos → planos en PDF (menos capas raster) */
+  .propuesta-print-page__body .nubo-portada-shell {
+    background: #fff !important;
+  }
+
+  /* Framer-motion: el layout de impresión está fuera de pantalla y puede quedar en opacity 0 */
+  .propuesta-print-page__body .propuesta-slide-root,
+  .propuesta-print-page__body .propuesta-slide-root * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .propuesta-print-page__body [class*="hover:"] {
+    transform: none !important;
   }
 
   .propuesta-print-page__body p,

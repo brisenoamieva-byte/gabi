@@ -41,6 +41,8 @@ type PropuestaSlideDeckProps = {
   viewerMode?: "operator" | "developer";
   /** Dentro de un layout con barra superior (p. ej. /estudios/nubo). */
   embedded?: boolean;
+  /** Una sola orientación en todo el PDF evita archivos corruptos en Chrome. */
+  printOrientation?: "portrait" | "landscape";
 };
 
 function slideFitCenter(id: string) {
@@ -80,6 +82,7 @@ export function PropuestaSlideDeck({
   documentView,
   viewerMode = "operator",
   embedded = false,
+  printOrientation = "portrait",
 }: PropuestaSlideDeckProps) {
   const isDeveloper = viewerMode === "developer";
   const [index, setIndex] = useState(0);
@@ -170,7 +173,11 @@ export function PropuestaSlideDeck({
   }, [slides]);
 
   const printLayout = (
-    <div className="propuesta-print-only propuesta-print-deck">
+    <div
+      className={`propuesta-print-only propuesta-print-deck${
+        printOrientation === "landscape" ? " propuesta-print-deck--landscape" : ""
+      }`}
+    >
       {slides.map((item, i) => (
         <div
           key={item.id}
