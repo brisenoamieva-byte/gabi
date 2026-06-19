@@ -8,15 +8,22 @@ import { SembradoReportePanel } from "@/components/admin/SembradoReportePanel";
 import { VisitasMetricasPanel } from "@/components/admin/VisitasMetricasPanel";
 import { ReporteSemanalPanel } from "@/components/admin/ReporteSemanalPanel";
 
+type MetricasTab = "semanal" | "visitas" | "leads" | "sembrado" | "comisiones";
+
 type MetricasAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  initialTab?: MetricasTab;
+  initialDesarrolloId?: string;
 };
 
-type MetricasTab = "semanal" | "visitas" | "leads" | "sembrado" | "comisiones";
-
-export function MetricasAdminPanel({ desarrollos, scopeLabel }: MetricasAdminPanelProps) {
-  const [tab, setTab] = useState<MetricasTab>("semanal");
+export function MetricasAdminPanel({
+  desarrollos,
+  scopeLabel,
+  initialTab = "semanal",
+  initialDesarrolloId,
+}: MetricasAdminPanelProps) {
+  const [tab, setTab] = useState<MetricasTab>(initialTab);
 
   if (!desarrollos.length) {
     return (
@@ -56,7 +63,11 @@ export function MetricasAdminPanel({ desarrollos, scopeLabel }: MetricasAdminPan
       {tab === "semanal" ? (
         <ReporteSemanalPanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
       ) : tab === "leads" ? (
-        <LeadsReportePanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
+        <LeadsReportePanel
+          desarrollos={desarrollos}
+          scopeLabel={scopeLabel}
+          initialDesarrolloId={initialDesarrolloId}
+        />
       ) : tab === "sembrado" ? (
         <SembradoReportePanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
       ) : tab === "comisiones" ? (

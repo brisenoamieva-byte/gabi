@@ -22,6 +22,7 @@ import { LeadsAnualPanel } from "@/components/admin/LeadsAnualPanel";
 type LeadsReportePanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  initialDesarrolloId?: string;
 };
 
 type AsesorOption = { id: string; nombre: string };
@@ -108,11 +109,19 @@ function LeadsEmbudoChart({ embudo, cotizaciones }: { embudo: LeadsEmbudoEtapa[]
   );
 }
 
-export function LeadsReportePanel({ desarrollos, scopeLabel }: LeadsReportePanelProps) {
+export function LeadsReportePanel({
+  desarrollos,
+  scopeLabel,
+  initialDesarrolloId,
+}: LeadsReportePanelProps) {
   const monthRange = useMemo(() => currentMonthRange(), []);
   const [subTab, setSubTab] = useState<LeadsSubTab>("leads");
   const [timeMode, setTimeMode] = useState<TimeSeriesMode>("dia");
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const [desarrolloId, setDesarrolloId] = useState(
+    initialDesarrolloId && desarrollos.some((item) => item.id === initialDesarrolloId)
+      ? initialDesarrolloId
+      : (desarrollos[0]?.id ?? ""),
+  );
   const [desde, setDesde] = useState(monthRange.desde);
   const [hasta, setHasta] = useState(monthRange.hasta);
   const [asesorFilter, setAsesorFilter] = useState("");

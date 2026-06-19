@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
@@ -107,6 +108,7 @@ export function LeadsAdminPanel({
   const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const prevDesarrolloId = useRef<string | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const loadAsesores = useCallback(async () => {
     if (!desarrolloId) {
@@ -239,6 +241,30 @@ export function LeadsAdminPanel({
   useEffect(() => {
     setApplied((prev) => ({ ...prev, leadTab }));
   }, [leadTab]);
+
+  useEffect(() => {
+    if (!showExportMenu) {
+      return;
+    }
+    const closeOnClick = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnClick);
+    return () => document.removeEventListener("mousedown", closeOnClick);
+  }, [showExportMenu]);
+
+  const chartsHref = useMemo(() => {
+    const params = new URLSearchParams({ tab: "leads", desarrolloId: applied.desarrolloId });
+    if (applied.desde) {
+      params.set("desde", applied.desde);
+    }
+    if (applied.hasta) {
+      params.set("hasta", applied.hasta);
+    }
+    return `/admin/metricas?${params.toString()}`;
+  }, [applied.desarrolloId, applied.desde, applied.hasta]);
 
   const etapaOptions = useMemo(() => {
     if (!resumen) {
@@ -444,6 +470,14 @@ export function LeadsAdminPanel({
                     <LayoutList className="h-3.5 w-3.5" />
                     Tabla
                   </button>
+                  <Link
+                    href={chartsHref}
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                    title="Gráficas de leads"
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Gráficas
+                  </Link>
                   <button
                     type="button"
                     onClick={() => setViewMode("tablero")}
@@ -457,7 +491,7 @@ export function LeadsAdminPanel({
                 </div>
               ) : null}
 
-              <div className="relative">
+              <div className="relative" ref={exportMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShowExportMenu((value) => !value)}
@@ -517,7 +551,15 @@ export function LeadsAdminPanel({
               {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
             </p>
 
-            <div className="flex flex-wrap items-end gap-3">
+            <div
+              className="flex flex-wrap items-end gap-3"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyFilters();
+                }
+              }}
+            >
               <label className="block min-w-[160px] text-xs">
                 <span className="mb-1 block font-semibold text-slate-500">Rango</span>
                 <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-medium text-gabi-forest">
@@ -702,13 +744,13 @@ export function LeadsAdminPanel({
                 {resumen?.total ?? 0} en desarrollo · {prospectos.length} en vista
               </p>
             </div>
-            <a
-              href="/admin/metricas"
+            <Link
+              href={chartsHref}
               className="inline-flex items-center gap-1 text-xs font-bold text-gabi-forest hover:underline"
             >
               <BarChart3 className="h-3.5 w-3.5" />
-              Reportes
-            </a>
+              Gráficas
+            </Link>
           </div>
 
           {loading ? (
