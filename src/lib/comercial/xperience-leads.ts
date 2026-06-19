@@ -69,3 +69,93 @@ export const normalizeLeadNombre = (nombre?: string | null) => {
   }
   return value;
 };
+
+/** Códigos visuales al estilo Xperience (prefijo numérico en calificación). */
+export const calificacionCodigo = (calificacion?: string | null): number => {
+  const value = calificacion?.trim() ?? "";
+  if (!value || value === "Sin Calificar") {
+    return 0;
+  }
+  if (value.includes("En Segu") || value.includes("Segumiento")) {
+    return 8;
+  }
+  if (value.includes("Interesado")) {
+    return 15;
+  }
+  if (value.includes("Visita")) {
+    return 12;
+  }
+  if (value.startsWith("Descartado")) {
+    return 1;
+  }
+  return 0;
+};
+
+export const calificacionDisplayLabel = (calificacion?: string | null) => {
+  const label = calificacionLabel(calificacion);
+  const code = calificacionCodigo(calificacion);
+  return `${code} - ${label}`;
+};
+
+export type TipoAsignacion = "directa" | "rol_producto" | "duplicado" | "otro";
+
+export const parseTipoAsignacion = (asignadoPor?: string | null): TipoAsignacion => {
+  const value = (asignadoPor ?? "").trim().toLowerCase();
+  if (!value) {
+    return "otro";
+  }
+  if (value.includes("duplicado")) {
+    return "duplicado";
+  }
+  if (value.includes("rol") && value.includes("producto")) {
+    return "rol_producto";
+  }
+  if (value.includes("directa") || value.includes("directo")) {
+    return "directa";
+  }
+  return "otro";
+};
+
+export const tipoAsignacionLabel = (asignadoPor?: string | null) => {
+  const tipo = parseTipoAsignacion(asignadoPor);
+  if (tipo === "directa") {
+    return "Asignación directa";
+  }
+  if (tipo === "rol_producto") {
+    return "Rol de producto";
+  }
+  if (tipo === "duplicado") {
+    return "Duplicado";
+  }
+  return asignadoPor?.trim() || "—";
+};
+
+export const tipoAsignacionBadgeClass = (asignadoPor?: string | null) => {
+  const tipo = parseTipoAsignacion(asignadoPor);
+  if (tipo === "directa" || tipo === "rol_producto") {
+    return "bg-sky-100 text-sky-800";
+  }
+  if (tipo === "duplicado") {
+    return "bg-amber-100 text-amber-900";
+  }
+  return "bg-slate-100 text-slate-600";
+};
+
+export const formatLeadsDateRangeLabel = (desde?: string, hasta?: string) => {
+  if (!desde && !hasta) {
+    return "Todas las fechas";
+  }
+  const fmt = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  if (desde && hasta) {
+    return `${fmt(desde)} al ${fmt(hasta)}`;
+  }
+  if (desde) {
+    return `Desde ${fmt(desde)}`;
+  }
+  return `Hasta ${fmt(hasta!)}`;
+};

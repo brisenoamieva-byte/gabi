@@ -706,3 +706,48 @@ export const syncLeadIntelligenceForDesarrollo = async (
     scoresUpdated,
   };
 };
+
+export const bulkDeactivateProspectos = async (
+  ids: string[],
+  profile?: AdminProfile,
+): Promise<number> => {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (!uniqueIds.length) {
+    return 0;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: rows, error: fetchError } = await supabase
+    .from("prospectos")
+    .select("id, desarrollo_id")
+    .in("id", uniqueIds)
+    .eq("activo", true);
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
+  const allowed = (rows ?? []).filter(
+    (row) => !profile || canAccessDesarrollo(profile, row.desarrollo_id as string),
+  );
+
+  if (!allowed.length) {
+    throw new Error("No tienes permiso para eliminar estos leads.");
+  }
+
+  const allowedIds = allowed.map((row) => row.id as string);
+  const { error: updateError } = await supabase
+    .from("prospectos")
+    .update({ activo: false, updated_at: new Date().toISOString() })
+    .in("id", allowedIds);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  return allowedIds.length;
+};
