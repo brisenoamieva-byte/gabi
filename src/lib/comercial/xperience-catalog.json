@@ -10,7 +10,11 @@
     "Cañadas la Porta": "canadas-la-porta",
     "Cañadas del Arroyo": "canadas-del-arroyo",
     "Simaté": "simate",
-    "Simate": "simate"
+    "Simate": "simate",
+    "Pasaje Álamos": "pasaje-alamos",
+    "Pasaje Alamos": "pasaje-alamos",
+    "La Vista Residencial": "la-vista-residencial",
+    "La Vista": "la-vista-residencial"
   },
   "asesorIdsByEmail": {
     "emmanuel.escobar@grupoinvestti.com": 2722,
@@ -22,5 +26,40 @@
     "daniela.zarco@grupoinvestti.com": 2730,
     "miriam.cossylion@grupoinvestti.com": 2731,
     "paola.fontecilla@grupoinvestti.com": 2732
+  },
+  "asesorDisplayNamesByEmail": {
+    "emmanuel.escobar@grupoinvestti.com": "Emmanuel Escobar",
+    "alicia.aguilar@grupoinvestti.com": "Alicia Aguilar",
+    "ignacio.underwood@grupoinvestti.com": "Ignacio Underwood",
+    "rafael.belmont@grupoinvestti.com": "Rafael Belmont",
+    "martha.españa@grupoinvestti.com": "Martha Eugenia España Franco",
+    "melissa.macias@grupoinvestti.com": "Melissa Sue Macias Macias",
+    "daniela.zarco@grupoinvestti.com": "Daniela Zarco Medrano",
+    "miriam.cossylion@grupoinvestti.com": "Miriam Jazmin Cossylion Herrera",
+    "paola.fontecilla@grupoinvestti.com": "Paola Fontecilla Uribe"
+  },
+  "vendedorToAsesorEmail": {
+    "Paola Fontecilla Uribe": "paola.fontecilla@grupoinvestti.com",
+    "Melissa Sue Macias Macias": "melissa.macias@grupoinvestti.com",
+    "Miriam Jazmin Cossylion Herrera": "miriam.cossylion@grupoinvestti.com",
+    "Rafael Belmont": "rafael.belmont@grupoinvestti.com",
+    "Daniela Zarco Medrano": "daniela.zarco@grupoinvestti.com",
+    "Ignacio Underwood": "ignacio.underwood@grupoinvestti.com",
+    "Martha Eugenia España Franco": "martha.españa@grupoinvestti.com",
+    "Emmanuel Escobar": "emmanuel.escobar@grupoinvestti.com",
+    "Alicia Aguilar": "alicia.aguilar@grupoinvestti.com",
+    "Ricardo Rafael Rosales Rodríguez": "rbriseno@bbrhabitarea.com",
+    "Ricardo Briseño": "rbriseno@bbrhabitarea.com",
+    "Arturo Rosales Rodríguez": "rgonzalez@bbrhabitarea.com",
+    "Rodrigo Gonzalez": "rgonzalez@bbrhabitarea.com",
+    "Penelope Trejo": "ptrejo@bbrhabitarea.com"
+  },
+  "defaultAsesorIdByDesarrollo": {
+    "pasaje-alamos": "rbriseno",
+    "la-vista-residencial": "rbriseno",
+    "canadas-del-valle": "emmanuel.escobar",
+    "canadas-la-porta": "emmanuel.escobar",
+    "canadas-del-arroyo": "emmanuel.escobar",
+    "simate": "emmanuel.escobar"
   }
 }
