@@ -11,14 +11,12 @@ import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer"
 import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
 import {
   estatusSembradoLabel,
-  LA_VISTA_RESIDENCIAL_ID,
-  LA_VISTA_SEMBRADO_SEGMENTOS,
-  PASAJE_ALAMOS_ID,
-  PASAJE_SEMBRADO_SEGMENTOS,
-  type LaVistaSembradoSegmentoId,
-  type PasajeSembradoSegmentoId,
   type SembradoUnidadRow,
 } from "@/lib/comercial/sembrado-status";
+import {
+  getDefaultSembradoSegmentId,
+  getSembradoSegmentsForDesarrollo,
+} from "@/lib/catalog/desarrollos-registry";
 
 type SembradoAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -234,17 +232,10 @@ function ResumenCards({
   );
 }
 
-type SembradoSegmentoId = PasajeSembradoSegmentoId | LaVistaSembradoSegmentoId;
+type SembradoSegmentoId = string;
 
-const defaultSegmentoForDesarrollo = (id: string): SembradoSegmentoId => {
-  if (id === PASAJE_ALAMOS_ID) {
-    return "departamentos";
-  }
-  if (id === LA_VISTA_RESIDENCIAL_ID) {
-    return "oliveto";
-  }
-  return "departamentos";
-};
+const defaultSegmentoForDesarrollo = (id: string): SembradoSegmentoId =>
+  getDefaultSembradoSegmentId(id) ?? "general";
 
 export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPanelProps) {
   const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
@@ -285,15 +276,9 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
     setApartadoModalOpen(true);
   };
 
-  const esPasajeAlamos = desarrolloId === PASAJE_ALAMOS_ID;
-  const esLaVista = desarrolloId === LA_VISTA_RESIDENCIAL_ID;
-  const tieneSegmentos = esPasajeAlamos || esLaVista;
-
-  const segmentoConfig = esPasajeAlamos
-    ? PASAJE_SEMBRADO_SEGMENTOS[segmento as PasajeSembradoSegmentoId]
-    : esLaVista
-      ? LA_VISTA_SEMBRADO_SEGMENTOS[segmento as LaVistaSembradoSegmentoId]
-      : null;
+  const segmentConfigs = getSembradoSegmentsForDesarrollo(desarrolloId);
+  const tieneSegmentos = segmentConfigs.length > 0;
+  const segmentoConfig = segmentConfigs.find((item) => item.id === segmento) ?? null;
 
   const activeClusterId = tieneSegmentos ? segmentoConfig?.clusterId : undefined;
 
@@ -372,22 +357,16 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
     setSegmento(defaultSegmentoForDesarrollo(desarrolloId));
   }, [desarrolloId]);
 
+  const segmentIcons = [Home, Building2, Layers] as const;
   const segmentTabs: Array<{
     id: SembradoSegmentoId;
     label: string;
     icon: typeof Home;
-  }> = esPasajeAlamos
-    ? [
-        { id: "departamentos", label: "Departamentos", icon: Home },
-        { id: "oficinas", label: "Oficinas", icon: Building2 },
-      ]
-    : esLaVista
-      ? [
-          { id: "oliveto", label: "Oliveto", icon: Home },
-          { id: "benevento", label: "Benevento", icon: Building2 },
-          { id: "volterra", label: "Volterra", icon: Layers },
-        ]
-      : [];
+  }> = segmentConfigs.map((config, index) => ({
+    id: config.id,
+    label: config.label,
+    icon: segmentIcons[index % segmentIcons.length] ?? Home,
+  }));
 
   return (
     <div className="space-y-6">
@@ -399,11 +378,9 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
             </p>
             <h2 className="text-2xl font-black text-gabi-forest">Sembrado y disponibilidad</h2>
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              {esPasajeAlamos
-                ? `Inventario completo y operaciones — ${segmentoConfig?.label.toLowerCase() ?? ""}.`
-                : esLaVista
-                  ? `Inventario completo por cluster — ${segmentoConfig?.label ?? "La Vista"}.`
-                  : "Todas las unidades del desarrollo: estatus comercial, precios, cobranza y curación para recorrido."}
+              {tieneSegmentos
+                ? `Inventario completo por segmento — ${segmentoConfig?.label ?? "selecciona segmento"}.`
+                : "Todas las unidades del desarrollo: estatus comercial, precios, cobranza y curación para recorrido."}
               {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
             </p>
           </div>

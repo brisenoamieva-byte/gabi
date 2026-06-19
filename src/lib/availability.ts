@@ -22,7 +22,7 @@ export const availabilityViewLabel: Record<AvailabilityView, string> = {
 
 export const availabilityViewDescription: Record<AvailabilityView, string> = {
   recomendadas:
-    "Todas las unidades disponibles según el sembrado comercial (sin apartados ni vendidos).",
+    "Todas las unidades disponibles según inventario comercial (sembrado cuando hay conexión).",
 };
 
 const countByTipo = (units: DisponibilidadUnidad[]) => ({

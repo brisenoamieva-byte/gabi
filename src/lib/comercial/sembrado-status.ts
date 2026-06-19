@@ -156,45 +156,14 @@ export type CotizacionRecord = {
 };
 
 export const PASAJE_ALAMOS_ID = "pasaje-alamos";
-
-export const PASAJE_SEMBRADO_SEGMENTOS = {
-  departamentos: {
-    id: "departamentos",
-    label: "Departamentos",
-    clusterId: "pasaje-alamos-departamentos",
-    tipo: "departamento" as const,
-  },
-  oficinas: {
-    id: "oficinas",
-    label: "Oficinas",
-    clusterId: "pasaje-alamos-oficinas",
-    tipo: "oficina" as const,
-  },
-} as const;
-
-export type PasajeSembradoSegmentoId = keyof typeof PASAJE_SEMBRADO_SEGMENTOS;
-
 export const LA_VISTA_RESIDENCIAL_ID = "la-vista-residencial";
 
-export const LA_VISTA_SEMBRADO_SEGMENTOS = {
-  oliveto: {
-    id: "oliveto",
-    label: "Oliveto",
-    clusterId: "oliveto",
-  },
-  benevento: {
-    id: "benevento",
-    label: "Benevento",
-    clusterId: "benevento",
-  },
-  volterra: {
-    id: "volterra",
-    label: "Volterra",
-    clusterId: "volterra",
-  },
-} as const;
-
-export type LaVistaSembradoSegmentoId = keyof typeof LA_VISTA_SEMBRADO_SEGMENTOS;
+export {
+  PASAJE_SEMBRADO_SEGMENTOS,
+  LA_VISTA_SEMBRADO_SEGMENTOS,
+  type PasajeSembradoSegmentoId,
+  type LaVistaSembradoSegmentoId,
+} from "@/lib/catalog/desarrollos-registry";
 
 export type SembradoUnidadRow = {
   unidadId: string;

@@ -5,6 +5,7 @@ import {
   getPrototiposByCluster,
   type DisponibilidadUnidad,
 } from "@/lib/data";
+import { filterClustersForDesarrollo } from "@/lib/catalog/desarrollos-registry";
 import { fetchClusterInventario } from "@/lib/inventario/cluster-inventory-client";
 import {
   OFFLINE_META_KEY,
@@ -67,7 +68,7 @@ const resolveDocumentoUrl = async (params: {
   return { url: data.url, filename: data.filename ?? "documento.pdf" };
 };
 
-const buildDocumentJobs = (): DocumentJob[] => {
+const buildDocumentJobs = (desarrolloId: string): DocumentJob[] => {
   const jobs: DocumentJob[] = [
     {
       tipo: "brochure_desarrollo",
@@ -75,7 +76,9 @@ const buildDocumentJobs = (): DocumentJob[] => {
     },
   ];
 
-  clusters.forEach((cluster) => {
+  const desarrolloClusters = filterClustersForDesarrollo(desarrolloId, clusters);
+
+  desarrolloClusters.forEach((cluster) => {
     jobs.push({
       tipo: "brochure_cluster",
       clusterId: cluster.id,
@@ -114,7 +117,9 @@ const collectAssetUrls = (desarrolloId: string) => {
     urls.add(desarrollo.masterPlanImage);
   }
 
-  clusters.forEach((cluster) => {
+  const desarrolloClusters = filterClustersForDesarrollo(desarrolloId, clusters);
+
+  desarrolloClusters.forEach((cluster) => {
     if (cluster.logo) {
       urls.add(cluster.logo);
     }
@@ -151,10 +156,11 @@ export async function prepareOfflineVisit(
     throw new Error("Desarrollo no encontrado.");
   }
 
-  const documentJobs = buildDocumentJobs();
+  const documentJobs = buildDocumentJobs(desarrolloId);
   const assetUrls = collectAssetUrls(desarrolloId);
+  const desarrolloClusters = filterClustersForDesarrollo(desarrolloId, clusters);
   const totalSteps =
-    ROUTES_TO_PREFETCH.length + documentJobs.length + clusters.length + assetUrls.length;
+    ROUTES_TO_PREFETCH.length + documentJobs.length + desarrolloClusters.length + assetUrls.length;
   let done = 0;
 
   const report = (phase: string) => {
@@ -178,13 +184,13 @@ export async function prepareOfflineVisit(
     report(`Pantalla lista · ${route}`);
   }
 
-  report("Sincronizando inventario curado…");
-  for (const cluster of clusters) {
+  report("Sincronizando inventario del desarrollo…");
+  for (const cluster of desarrolloClusters) {
     try {
       const result = await fetchClusterInventario(desarrolloId, cluster.id);
       if (result.units.length) {
         writeOfflineInventario(desarrolloId, cluster.id, result.units);
-        if (result.source === "supabase") {
+        if (result.source === "sembrado" || result.source === "supabase") {
           inventarioClusters += 1;
         }
       }

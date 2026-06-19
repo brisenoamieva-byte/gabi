@@ -5,7 +5,7 @@ import { CalendarRange, Loader2, Printer, RefreshCw } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ReporteComercialSemanal, ReporteSemanalSegmento } from "@/lib/admin/reporte-semanal/types";
 import { defaultWeekContaining } from "@/lib/admin/reporte-semanal/week-utils";
-import { REPORTE_SEMANAL_DESARROLLOS } from "@/lib/admin/reporte-semanal/segment-config";
+import { hasSegmentedReporteSemanal } from "@/lib/catalog/desarrollos-registry";
 import {
   AbsorcionMensualChart,
   AbsorcionModeloChart,
@@ -199,7 +199,7 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
   const defaultWeek = useMemo(() => defaultWeekContaining(), []);
   const [desarrolloId, setDesarrolloId] = useState(
     () =>
-      desarrollos.find((d) => REPORTE_SEMANAL_DESARROLLOS.includes(d.id as "pasaje-alamos"))?.id ??
+      desarrollos.find((d) => hasSegmentedReporteSemanal(d.id))?.id ??
       desarrollos[0]?.id ??
       "",
   );
@@ -329,7 +329,7 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               {desarrollos.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.nombre}
-                  {REPORTE_SEMANAL_DESARROLLOS.includes(d.id as "pasaje-alamos") ? " · completo" : ""}
+                  {hasSegmentedReporteSemanal(d.id) ? " · completo" : ""}
                 </option>
               ))}
             </select>
@@ -558,7 +558,7 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               : null}
           </div>
 
-          {REPORTE_SEMANAL_DESARROLLOS.includes(desarrolloId as "pasaje-alamos") ? (
+          {hasSegmentedReporteSemanal(desarrolloId) ? (
             <ObjetivosComercialesEditor
               desarrolloId={desarrolloId}
               anio={reporteAnio}

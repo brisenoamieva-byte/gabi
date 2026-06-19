@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
+import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
 import type { Desarrollo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import type { ProspectosResumen } from "@/lib/admin/prospectos-service";
@@ -257,6 +258,8 @@ export function DesarrollosHubPanel({
             </div>
           </div>
         </div>
+
+        <DesarrolloOnboardingCard desarrolloId={selectedDesarrollo.id} />
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {permissions.leads ? (

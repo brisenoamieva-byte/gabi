@@ -1,9 +1,8 @@
 import {
-  LA_VISTA_RESIDENCIAL_ID,
-  LA_VISTA_SEMBRADO_SEGMENTOS,
-  PASAJE_ALAMOS_ID,
-  PASAJE_SEMBRADO_SEGMENTOS,
-} from "@/lib/comercial/sembrado-status";
+  getReporteSemanalDesarrolloIds,
+  getSembradoSegmentsForDesarrollo,
+  hasSegmentedReporteSemanal,
+} from "@/lib/catalog/desarrollos-registry";
 
 export type ReporteSemanalSegmentConfig = {
   id: string;
@@ -13,34 +12,25 @@ export type ReporteSemanalSegmentConfig = {
   resumenKey?: "departamentos" | "oficinas";
 };
 
-const PASAJE_SEGMENTS: ReporteSemanalSegmentConfig[] = Object.values(PASAJE_SEMBRADO_SEGMENTOS).map(
-  (item) => ({
-    id: item.id,
-    label: item.label,
-    clusterId: item.clusterId,
-    resumenKey: item.id as "departamentos" | "oficinas",
-  }),
-);
-
-const LA_VISTA_SEGMENTS: ReporteSemanalSegmentConfig[] = Object.values(
-  LA_VISTA_SEMBRADO_SEGMENTOS,
-).map((item) => ({
-  id: item.id,
-  label: item.label,
-  clusterId: item.clusterId,
-}));
-
 /** Desarrollos con reporte semanal estructurado por segmentos. */
-export const REPORTE_SEMANAL_DESARROLLOS = [PASAJE_ALAMOS_ID, LA_VISTA_RESIDENCIAL_ID] as const;
+export const REPORTE_SEMANAL_DESARROLLOS = getReporteSemanalDesarrolloIds();
 
 export function getReporteSemanalSegments(
   desarrolloId: string,
 ): ReporteSemanalSegmentConfig[] | null {
-  if (desarrolloId === PASAJE_ALAMOS_ID) {
-    return PASAJE_SEGMENTS;
+  if (!hasSegmentedReporteSemanal(desarrolloId)) {
+    return null;
   }
-  if (desarrolloId === LA_VISTA_RESIDENCIAL_ID) {
-    return LA_VISTA_SEGMENTS;
+
+  const segments = getSembradoSegmentsForDesarrollo(desarrolloId);
+  if (!segments.length) {
+    return null;
   }
-  return null;
+
+  return segments.map((segment) => ({
+    id: segment.id,
+    label: segment.label,
+    clusterId: segment.clusterId,
+    resumenKey: segment.resumenKey,
+  }));
 }

@@ -37,7 +37,6 @@ import {
   monthRangeForDate,
   resolveReportePeriodo,
 } from "@/lib/admin/reporte-semanal/week-utils";
-import { PASAJE_SEMBRADO_SEGMENTOS } from "@/lib/comercial/sembrado-status";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
@@ -571,14 +570,14 @@ export async function getReporteComercialSemanal(
       ];
 
   const prospectosMesMap = prospectosPorMes(prospectosAcum);
-  const deptosCluster = PASAJE_SEMBRADO_SEGMENTOS?.departamentos?.clusterId;
-  const oficinasCluster = PASAJE_SEMBRADO_SEGMENTOS?.oficinas?.clusterId;
+  const deptosCluster = segmentConfigs?.find((c) => c.resumenKey === "departamentos")?.clusterId;
+  const oficinasCluster = segmentConfigs?.find((c) => c.resumenKey === "oficinas")?.clusterId;
   const absorcionMensual = buildAbsorcionMensualSeries(
     rows,
     prospectosMesMap,
     visitasMesMap,
-    filters.desarrolloId === "pasaje-alamos" ? deptosCluster : undefined,
-    filters.desarrolloId === "pasaje-alamos" ? oficinasCluster : undefined,
+    deptosCluster,
+    oficinasCluster,
   );
 
   const cancelacionesTotal = segmentos.reduce((s, seg) => s + seg.kpis.cancelacionesSemana, 0);

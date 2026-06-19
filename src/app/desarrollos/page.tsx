@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { DesarrolloSelectorLogo } from "@/components/desarrollos/DesarrolloSelectorLogo";
+import { getDesarrolloSelectorOrder } from "@/lib/catalog/desarrollos-registry";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
@@ -21,21 +22,10 @@ const PRODUCTO_LABEL: Record<string, string> = {
   oficinas: "Oficinas",
 };
 
-/** Orden fijo del hub BBR + Investti asignados al asesor. */
-const DESARROLLO_SELECTOR_ORDER: Record<string, number> = {
-  "la-vista-residencial": 10,
-  "pasaje-alamos": 20,
-  "mision-la-gavia": 30,
-  "canadas-del-valle": 100,
-  "canadas-del-arroyo": 110,
-  simate: 120,
-  "canadas-la-porta": 130,
-};
-
 function sortDesarrollosForHub(items: DesarrolloRecord[]): DesarrolloRecord[] {
   return [...items].sort(
     (a, b) =>
-      (DESARROLLO_SELECTOR_ORDER[a.id] ?? 500) - (DESARROLLO_SELECTOR_ORDER[b.id] ?? 500) ||
+      getDesarrolloSelectorOrder(a.id) - getDesarrolloSelectorOrder(b.id) ||
       a.nombre.localeCompare(b.nombre, "es"),
   );
 }

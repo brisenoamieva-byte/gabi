@@ -55,6 +55,7 @@ import {
 } from "@/lib/inventario/prototipo-precios";
 import { formatAreaM2 } from "@/lib/format/money";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
+import { useDesarrolloInventarioMap } from "@/lib/inventario/use-desarrollo-inventario-map";
 import {
   clusters,
   enrichDesarrolloFromStatic,
@@ -216,6 +217,15 @@ export default function RecorridoPage() {
     }
   }, [activeDesarrollo, availableProductValues, state.productoTipo]);
 
+  const activeClusterIds = useMemo(
+    () => activeClusters.map((cluster) => cluster.id),
+    [activeClusters],
+  );
+  const { getClusterInventario } = useDesarrolloInventarioMap(
+    activeDesarrollo?.id,
+    activeClusterIds,
+  );
+
   const desarrolloPriceRange = useMemo(() => {
     const desarrolloClusters = activeDesarrollo
       ? activeClusters.filter(
@@ -234,7 +244,7 @@ export default function RecorridoPage() {
     const precios = desarrolloPrototipos
       .map((prototipo) => {
         const unidades = getUnidadesPorPrototipo(
-          getDisponibilidadesByCluster(prototipo.clusterId),
+          getClusterInventario(prototipo.clusterId),
           prototipo.id,
         );
         return getPrecioDesdePrototipo(prototipo, unidades);
@@ -249,7 +259,7 @@ export default function RecorridoPage() {
       min: Math.min(...precios),
       max: Math.max(...precios),
     };
-  }, [activeDesarrollo, activeClusters, activePrototipos]);
+  }, [activeDesarrollo, activeClusters, activePrototipos, getClusterInventario]);
 
   const priceOptions = useMemo(
     () => buildPriceOptionsFromRange(desarrolloPriceRange.min, desarrolloPriceRange.max),
@@ -300,19 +310,19 @@ export default function RecorridoPage() {
 
     return cotizadorInventario.length > 0
       ? cotizadorInventario
-      : getDisponibilidadesByCluster(state.clusterId);
-  }, [cotizadorInventario, state.clusterId]);
+      : getClusterInventario(state.clusterId);
+  }, [cotizadorInventario, getClusterInventario, state.clusterId]);
 
   const filteredPrototiposByCluster = useMemo(() => {
     const byCluster = new Map<string, Prototipo[]>();
     activeClusters.forEach((cluster) => {
-      const clusterInventario = getDisponibilidadesByCluster(cluster.id);
+      const clusterInventarioLocal = getClusterInventario(cluster.id);
       const matches = activePrototipos
         .filter((item) => item.clusterId === cluster.id)
         .filter((prototipo) => {
         const productType = getProductoTipo(cluster, prototipo);
         const matchesType = matchesProductoTipo(productType, selectedProductTypes);
-        const unidades = getUnidadesPorPrototipo(clusterInventario, prototipo.id);
+        const unidades = getUnidadesPorPrototipo(clusterInventarioLocal, prototipo.id);
         const precioReferencia = getPrecioDesdePrototipo(prototipo, unidades);
         const matchesPrice =
           precioReferencia >= state.precioMinimo &&
@@ -336,6 +346,7 @@ export default function RecorridoPage() {
     selectedRooms,
     activeClusters,
     activePrototipos,
+    getClusterInventario,
   ]);
 
   const filteredClusters = useMemo(

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import type { ReporteObjetivosAnuales } from "@/lib/admin/reporte-semanal/objetivos-config";
+import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
 
 type ObjetivoSegmento = {
   segmentoId: string;
@@ -73,7 +74,10 @@ export function ObjetivosComercialesEditor({
     void load();
   }, [load]);
 
-  const hasEditable = useMemo(() => items.some((item) => item.valores || item.origen !== "none"), [items]);
+  const hasEditable = useMemo(
+    () => items.some((item) => item.valores || getSembradoSegmentsForDesarrollo(desarrolloId).length > 0),
+    [desarrolloId, items],
+  );
 
   const patchDraft = (segmentoId: string, patch: Partial<ReporteObjetivosAnuales>) => {
     setDrafts((current) => ({

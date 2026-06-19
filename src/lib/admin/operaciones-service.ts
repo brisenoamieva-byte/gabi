@@ -3,11 +3,8 @@ import type { AdminProfile } from "@/lib/admin/types";
 import { getProspectoById } from "@/lib/admin/prospectos-service";
 import { prospectoEtapaFromSembrado } from "@/lib/comercial/prospecto-etapas";
 import { resolveUnidadEstatus } from "@/lib/comercial/unidad-disponibilidad";
+import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
 import {
-  LA_VISTA_RESIDENCIAL_ID,
-  LA_VISTA_SEMBRADO_SEGMENTOS,
-  PASAJE_ALAMOS_ID,
-  PASAJE_SEMBRADO_SEGMENTOS,
   sembradoToInventarioEstatus,
   type OperacionComercialRecord,
   type SembradoUnidadRow,
@@ -234,12 +231,7 @@ export const getSembradoReporte = async (
   const rows = await listSembradoUnidades({ desarrolloId }, profile);
   const base = buildSembradoReporteFromRows(rows);
 
-  const segmentConfigs =
-    desarrolloId === PASAJE_ALAMOS_ID
-      ? Object.values(PASAJE_SEMBRADO_SEGMENTOS)
-      : desarrolloId === LA_VISTA_RESIDENCIAL_ID
-        ? Object.values(LA_VISTA_SEMBRADO_SEGMENTOS)
-        : [];
+  const segmentConfigs = getSembradoSegmentsForDesarrollo(desarrolloId);
 
   const segmentos = segmentConfigs.map((config) => ({
     id: config.id,
