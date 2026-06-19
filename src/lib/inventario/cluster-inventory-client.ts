@@ -2,7 +2,7 @@ import { enrichPasajeInventario } from "@/lib/catalog/pasaje-unidad-detalles";
 import { getDisponibilidadesByCluster, type DisponibilidadUnidad } from "@/lib/data";
 import { readOfflineInventario } from "@/lib/offline/inventario-store";
 
-export type ClusterInventarioSource = "supabase" | "local" | "offline-cache";
+export type ClusterInventarioSource = "sembrado" | "supabase" | "local" | "offline-cache";
 
 export type ClusterInventarioResult = {
   units: DisponibilidadUnidad[];
@@ -29,6 +29,27 @@ export async function fetchClusterInventario(
 
   if (typeof navigator !== "undefined" && !navigator.onLine && offlineNormalized) {
     return { units: offlineNormalized, source: "offline-cache" };
+  }
+
+  try {
+    const params = new URLSearchParams({ desarrolloId, clusterId });
+    const response = await fetch(`/api/inventario/cotizable?${params}`);
+    const data = (await response.json()) as {
+      productos?: DisponibilidadUnidad[];
+      fuente?: string;
+      error?: string;
+    };
+
+    if (response.ok && data.fuente === "sembrado") {
+      return {
+        units: normalizeUnits(data.productos ?? [], desarrolloId),
+        source: "sembrado",
+      };
+    }
+  } catch {
+    if (offlineNormalized) {
+      return { units: offlineNormalized, source: "offline-cache" };
+    }
   }
 
   try {

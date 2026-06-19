@@ -429,8 +429,8 @@ export function PasajeSimuladorPanel({
   );
 
   const prototipos = useMemo(
-    () => (clusterId ? getPrototiposCotizables(clusterId, catalog) : []),
-    [catalog, clusterId],
+    () => (clusterId ? getPrototiposCotizables(clusterId, catalog, inventarioUnidades) : []),
+    [catalog, clusterId, inventarioUnidades],
   );
 
   const unidades = useMemo(

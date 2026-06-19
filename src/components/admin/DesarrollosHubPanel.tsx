@@ -336,7 +336,7 @@ export function DesarrollosHubPanel({
               className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
             >
               <Users className="h-4 w-4" />
-              Asesores
+              Equipo
             </Link>
           ) : null}
           {permissions.metricas ? (

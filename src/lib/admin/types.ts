@@ -68,8 +68,8 @@ export const adminNavItems: AdminNavItem[] = [
   },
   {
     href: "/admin/asesores",
-    label: "Asesores",
-    description: "Usuarios y accesos",
+    label: "Equipo",
+    description: "Portal comercial y accesos admin",
     paso: 3,
     ready: true,
   },

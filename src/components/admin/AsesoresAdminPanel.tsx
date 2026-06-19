@@ -16,7 +16,9 @@ import {
   UserX,
   X,
 } from "lucide-react";
+import type { AdminLinkByAsesor } from "@/lib/admin/equipo-types";
 import type { AsesorKpi, AsesoresKpisResult } from "@/lib/admin/asesores-kpi-service";
+import { adminRolLabel } from "@/lib/admin/permissions";
 import type { Desarrollo } from "@/lib/data";
 import {
   ALL_ASESOR_ROLES,
@@ -32,6 +34,9 @@ type AsesoresAdminPanelProps = {
   scopeLabel?: string;
   isGerenteComercial?: boolean;
   isSuperAdmin?: boolean;
+  embedded?: boolean;
+  adminLinkByAsesorId?: AdminLinkByAsesor;
+  onAdminLinksChange?: () => void;
 };
 
 const emptyForm = {
@@ -81,6 +86,9 @@ export function AsesoresAdminPanel({
   scopeLabel,
   isGerenteComercial = false,
   isSuperAdmin = false,
+  embedded = false,
+  adminLinkByAsesorId = {},
+  onAdminLinksChange,
 }: AsesoresAdminPanelProps) {
   const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
   const [asesores, setAsesores] = useState<AsesorRecord[]>([]);
@@ -371,6 +379,7 @@ export function AsesoresAdminPanel({
       setShowForm(false);
       setForm(emptyForm);
       await loadAsesores();
+      onAdminLinksChange?.();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Error al guardar");
     } finally {
@@ -448,6 +457,7 @@ export function AsesoresAdminPanel({
         withAdminSyncMessage(`Datos de ${savedName} actualizados.`, data.adminSync),
       );
       await loadAsesores();
+      onAdminLinksChange?.();
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : "Error al actualizar");
     } finally {
@@ -553,6 +563,7 @@ export function AsesoresAdminPanel({
         withAdminSyncMessage(`${asesor.nombre} ahora es ${asesorRolLabel[rol]}.`, data.adminSync),
       );
       await loadAsesores();
+      onAdminLinksChange?.();
     } catch (changeError) {
       setError(changeError instanceof Error ? changeError.message : "Error al cambiar rol");
     } finally {
@@ -582,6 +593,7 @@ export function AsesoresAdminPanel({
       setSuccess(
         withAdminSyncMessage(`Acceso admin de ${asesor.nombre} actualizado.`, data.adminSync),
       );
+      onAdminLinksChange?.();
     } catch (syncError) {
       setError(syncError instanceof Error ? syncError.message : "Error al sincronizar admin");
     } finally {
@@ -613,6 +625,7 @@ export function AsesoresAdminPanel({
         ),
       );
       await loadAsesores();
+      onAdminLinksChange?.();
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Error al actualizar");
     } finally {
@@ -665,34 +678,40 @@ export function AsesoresAdminPanel({
       ) : null}
 
       <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
-          Paso 3 · Asesores
-        </p>
-        <h2 className="mt-2 text-2xl font-black text-[#13315C]">Accesos al portal comercial</h2>
-        {scopeLabel ? (
-          <p className="mt-2 inline-flex rounded-full bg-[#13315C]/5 px-3 py-1 text-xs font-semibold text-[#13315C]">
-            Alcance: {scopeLabel}
-          </p>
-        ) : null}
-        <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          {isGerenteComercial ? (
-            <>
-              Crea accesos comerciales para tu desarrollo.{" "}
-              <strong>Gerente</strong>, <strong>Coordinador</strong> y <strong>Director</strong>{" "}
-              tienen permisos amplios en el desarrollo y pueden entrar a{" "}
-              <strong>/admin</strong> además del PIN en el portal de su comercializadora (ej.{" "}
-              <strong>/portal/bbr</strong>).
-            </>
-          ) : (
-            <>
-              Crea accesos comerciales, asigna desarrollos y roles. El PIN de 4 dígitos se genera
-              automáticamente por comercializadora. Compártelo por canal seguro para entrar en el
-              portal correspondiente (ej. <strong>/portal/bbr</strong>).
-            </>
-          )}
-        </p>
+        {!embedded ? (
+          <>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
+              Paso 3 · Asesores
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-[#13315C]">Accesos al portal comercial</h2>
+            {scopeLabel ? (
+              <p className="mt-2 inline-flex rounded-full bg-[#13315C]/5 px-3 py-1 text-xs font-semibold text-[#13315C]">
+                Alcance: {scopeLabel}
+              </p>
+            ) : null}
+            <p className="mt-3 max-w-3xl text-sm text-slate-500">
+              {isGerenteComercial ? (
+                <>
+                  Crea accesos comerciales para tu desarrollo.{" "}
+                  <strong>Gerente</strong>, <strong>Coordinador</strong> y <strong>Director</strong>{" "}
+                  tienen permisos amplios en el desarrollo y pueden entrar a{" "}
+                  <strong>/admin</strong> además del PIN en el portal de su comercializadora (ej.{" "}
+                  <strong>/portal/bbr</strong>).
+                </>
+              ) : (
+                <>
+                  Crea accesos comerciales, asigna desarrollos y roles. El PIN de 4 dígitos se genera
+                  automáticamente por comercializadora. Compártelo por canal seguro para entrar en el
+                  portal correspondiente (ej. <strong>/portal/bbr</strong>).
+                </>
+              )}
+            </p>
+          </>
+        ) : (
+          <h3 className="text-lg font-black text-gabi-forest">Portal comercial (PIN)</h3>
+        )}
 
-        <div className="mt-5 flex flex-wrap items-end gap-3">
+        <div className={`flex flex-wrap items-end gap-3 ${embedded ? "mt-0" : "mt-5"}`}>
           <label className="block min-w-[220px]">
             <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
               {isGerenteComercial ? "Ver asesores de" : "Desarrollo"}
@@ -1037,6 +1056,7 @@ export function AsesoresAdminPanel({
                 <tr>
                   <th className="px-4 py-3">Asesor</th>
                   <th className="px-4 py-3">Rol</th>
+                  <th className="px-4 py-3">Admin</th>
                   <th className="px-4 py-3 text-right">
                     <span className="inline-flex items-center gap-1">
                       <BarChart3 className="h-3.5 w-3.5" />
@@ -1061,6 +1081,7 @@ export function AsesoresAdminPanel({
                     vendidos: 0,
                     conversionPct: null,
                   };
+                  const adminLink = adminLinkByAsesorId[asesor.id];
 
                   return (
                   <tr key={asesor.id} className="border-b border-slate-100 last:border-0">
@@ -1084,6 +1105,26 @@ export function AsesoresAdminPanel({
                           </option>
                         ))}
                       </select>
+                    </td>
+                    <td className="px-4 py-4">
+                      {adminLink ? (
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                            adminLink.activo
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                          title={adminLink.email}
+                        >
+                          {adminLink.activo
+                            ? adminRolLabel[adminLink.rol]
+                            : "Admin inactivo"}
+                        </span>
+                      ) : isLeadershipAsesorRol(asesor.rol) && asesor.activo ? (
+                        <span className="text-[10px] font-semibold text-amber-700">Sin vincular</span>
+                      ) : (
+                        <span className="text-[10px] text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-right">
                       {kpi.leads > 0 ? (

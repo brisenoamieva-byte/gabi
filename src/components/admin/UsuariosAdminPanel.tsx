@@ -10,6 +10,9 @@ import type { AdminUserRecord } from "@/lib/admin/usuarios-service";
 type UsuariosAdminPanelProps = {
   desarrollos: Desarrollo[];
   currentUserId: string;
+  embedded?: boolean;
+  asesorNamesById?: Record<string, string>;
+  onUsuariosChange?: () => void;
 };
 
 const emptyForm = {
@@ -19,7 +22,13 @@ const emptyForm = {
   desarrollosIds: [] as string[],
 };
 
-export function UsuariosAdminPanel({ desarrollos, currentUserId }: UsuariosAdminPanelProps) {
+export function UsuariosAdminPanel({
+  desarrollos,
+  currentUserId,
+  embedded = false,
+  asesorNamesById = {},
+  onUsuariosChange,
+}: UsuariosAdminPanelProps) {
   const [usuarios, setUsuarios] = useState<AdminUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -136,6 +145,7 @@ export function UsuariosAdminPanel({ desarrollos, currentUserId }: UsuariosAdmin
 
       setShowForm(false);
       await loadUsuarios();
+      onUsuariosChange?.();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Error al guardar");
     } finally {
@@ -160,6 +170,7 @@ export function UsuariosAdminPanel({ desarrollos, currentUserId }: UsuariosAdmin
       }
       setSuccess(user.activo ? "Usuario desactivado." : "Usuario reactivado.");
       await loadUsuarios();
+      onUsuariosChange?.();
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Error al actualizar");
     } finally {
@@ -176,24 +187,44 @@ export function UsuariosAdminPanel({ desarrollos, currentUserId }: UsuariosAdmin
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
-          Accesos backoffice
-        </p>
-        <h2 className="mt-2 text-2xl font-black text-[#13315C]">Usuarios admin</h2>
-        <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Invita gerentes y operaciones, y asigna qué desarrollos pueden gestionar en documentos,
-          inventario y asesores.
-        </p>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#2DD4BF] px-4 py-2.5 text-sm font-black text-[#13315C]"
-        >
-          <Plus className="h-4 w-4" />
-          Invitar usuario
-        </button>
-      </div>
+      {!embedded ? (
+        <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
+            Accesos backoffice
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-[#13315C]">Usuarios admin</h2>
+          <p className="mt-3 max-w-3xl text-sm text-slate-500">
+            Invita gerentes y operaciones, y asigna qué desarrollos pueden gestionar en documentos,
+            inventario y asesores.
+          </p>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#2DD4BF] px-4 py-2.5 text-sm font-black text-[#13315C]"
+          >
+            <Plus className="h-4 w-4" />
+            Invitar usuario
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
+          <div>
+            <h3 className="text-lg font-black text-gabi-forest">Acceso admin (email)</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Usuarios de backoffice, operaciones y superadmins. Los gerentes comerciales con rol
+              de liderazgo se vinculan automáticamente desde la pestaña Portal comercial.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2.5 text-sm font-bold text-white"
+          >
+            <Plus className="h-4 w-4" />
+            Invitar usuario
+          </button>
+        </div>
+      )}
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
@@ -236,6 +267,15 @@ export function UsuariosAdminPanel({ desarrollos, currentUserId }: UsuariosAdmin
                     {user.id === currentUserId ? (
                       <span className="rounded-full bg-[#13315C]/10 px-2 py-0.5 text-[10px] font-bold text-[#13315C]">
                         Tú
+                      </span>
+                    ) : null}
+                    {user.asesorId && asesorNamesById[user.asesorId] ? (
+                      <span className="rounded-full bg-gabi-forest/10 px-2 py-0.5 text-[10px] font-bold text-gabi-forest">
+                        Asesor: {asesorNamesById[user.asesorId]}
+                      </span>
+                    ) : !user.asesorId ? (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        Solo backoffice
                       </span>
                     ) : null}
                   </div>

@@ -5,6 +5,16 @@ import {
   getReporteSemanalSegments,
   type ReporteSemanalSegmentConfig,
 } from "@/lib/admin/reporte-semanal/segment-config";
+import { buildAbsorcionMensualSeries } from "@/lib/admin/reporte-semanal/absorcion-mensual";
+import {
+  buildFunnelSegmento,
+  buildVisitasInmobiliarias,
+  normalizeMedioPublicitario,
+} from "@/lib/admin/reporte-semanal/funnel-medio";
+import {
+  getObjetivosSegmento,
+  objetivoAcumuladoHastaMes,
+} from "@/lib/admin/reporte-semanal/objetivos-config";
 import type {
   ReporteComercialSemanal,
   ReporteSemanalAbsorcionModelo,
@@ -15,11 +25,13 @@ import type {
   ReporteSemanalSeguimiento,
   ReporteSemanalSegmento,
 } from "@/lib/admin/reporte-semanal/types";
+import { SEGUIMIENTO_ESTATUS_ORDEN } from "@/lib/admin/reporte-semanal/types";
 import {
   isDateInRange,
   monthRangeForDate,
   resolveReportePeriodo,
 } from "@/lib/admin/reporte-semanal/week-utils";
+import { PASAJE_SEMBRADO_SEGMENTOS } from "@/lib/comercial/sembrado-status";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
@@ -34,27 +46,6 @@ const APARTADO_ESTATUS = new Set([
   "Vendidas en espera de cobro",
   "Vendidas Cobradas",
 ]);
-
-function normalizeMedio(raw: string | null | undefined): string {
-  const value = (raw ?? "").trim().toLowerCase();
-  if (!value) return "Sin medio";
-  if (value.includes("facebook")) return "Facebook";
-  if (value.includes("instagram")) return "Instagram";
-  if (value.includes("tik") && value.includes("tok")) return "Tik Tok";
-  if (value.includes("google") || value.includes("web") || value.includes("página")) {
-    return "Página Web/GOOGLE";
-  }
-  if (value.includes("inmobiliar") || value.includes("asesor externo")) {
-    return "Inmobiliarias/Asesor Externo";
-  }
-  if (value.includes("contacto directo")) return "Contacto Directo";
-  if (value.includes("evento") || value.includes("promocion")) return "Eventos/Promociones";
-  if (value.includes("cross")) return "Crosseling";
-  if (value.includes("espectacular")) return "Espectacular";
-  if (value.includes("portal")) return "Portales";
-  if (value.includes("oficina")) return "Oficina de Ventas";
-  return raw!.trim();
-}
 
 function modeloLabel(row: SembradoUnidadRow): string {
   if (row.prototipoId) {
@@ -90,17 +81,31 @@ function toOperacionLinea(
   };
 }
 
+function sumIngresosVentasEnRango(rows: SembradoUnidadRow[], desde: string, hasta: string): number {
+  let total = 0;
+  for (const row of rows) {
+    const op = row.operacion;
+    if (!op || op.cancelada || !VENTA_ESTATUS.has(op.estatus_sembrado)) continue;
+    if (!isDateInRange(op.fecha_cierre, desde, hasta)) continue;
+    total += Number(op.precio_venta ?? 0);
+  }
+  return total;
+}
+
 function buildSegmentoReporte(
+  desarrolloId: string,
   config: ReporteSemanalSegmentConfig,
   rows: SembradoUnidadRow[],
   periodo: { desde: string; hasta: string },
   mes: { desde: string; hasta: string },
+  mesAnterior: { desde: string; hasta: string },
+  acumuladoDesde: string,
 ): ReporteSemanalSegmento {
+  const objetivos = getObjetivosSegmento(desarrolloId, config.id);
   const segmentRows =
     config.clusterId === "__all__"
       ? rows
       : rows.filter((row) => row.clusterId === config.clusterId);
-  const activas = segmentRows.filter((row) => row.operacion && !row.operacion.cancelada);
 
   let ventasSemana = 0;
   let apartadosSemana = 0;
@@ -152,6 +157,7 @@ function buildSegmentoReporte(
       apartados: 0,
       ventas: 0,
       asignados: 0,
+      afluencia: 0,
     };
 
     if (estatus === "Asignado") {
@@ -203,11 +209,20 @@ function buildSegmentoReporte(
     modeloMap.set(modelo, modeloEntry);
   }
 
-  const objetivoUnidades = segmentRows.length;
+  const totalUnidades = objetivos?.totalUnidades ?? segmentRows.length;
+  const ventasTotales = segmentRows.filter(
+    (r) => r.operacion && VENTA_ESTATUS.has(r.operacion.estatus_sembrado) && !r.operacion.cancelada,
+  ).length;
   const absorcionPct =
-    objetivoUnidades > 0
-      ? Math.round((activas.length / objetivoUnidades) * 10000) / 100
-      : null;
+    totalUnidades > 0 ? Math.round((ventasTotales / totalUnidades) * 10000) / 100 : null;
+
+  const ingresosAnterior = sumIngresosVentasEnRango(segmentRows, mesAnterior.desde, mesAnterior.hasta);
+  const ingresosAcumulado = sumIngresosVentasEnRango(segmentRows, acumuladoDesde, mes.hasta);
+  const mesIndex = new Date(`${mes.hasta}T12:00:00`).getUTCMonth() + 1;
+  const ingresosObjetivoAcum = objetivos ? objetivoAcumuladoHastaMes(objetivos, mesIndex) : 0;
+
+  const avanceVentasObjetivo = objetivos?.ventasUnidades ?? totalUnidades;
+  const avanceApartadosObjetivo = objetivos?.apartadosObjetivo ?? totalUnidades;
 
   return {
     id: config.id,
@@ -222,8 +237,21 @@ function buildSegmentoReporte(
       apartadosMes,
       absorcionPct,
     },
+    avance: {
+      ventas: ventasTotales,
+      ventasObjetivo: avanceVentasObjetivo,
+      ventasDiferencia: ventasTotales - avanceVentasObjetivo,
+      apartadosVentasVigentes: apartadosVigentes,
+      apartadosObjetivo: avanceApartadosObjetivo,
+      apartadosDiferencia: apartadosVigentes - avanceApartadosObjetivo,
+      cancelaciones: cancelacionesSemana,
+      asignados: asignadosActuales,
+      reales: apartadosVigentes,
+      absorcionPct,
+    },
     precios: {
       m2PromedioReal: m2RealCount ? Math.round(m2RealSum / m2RealCount) : null,
+      m2PromedioObjetivo: objetivos?.precioM2Objetivo ?? null,
       m2PromedioInventario: m2InvCount ? Math.round(m2InvSum / m2InvCount) : null,
       areaVendidaM2: areaVendida || null,
     },
@@ -232,6 +260,23 @@ function buildSegmentoReporte(
       comprometidos: Math.round(comprometidos),
       ventasMesMonto: Math.round(ventasMesMonto),
     },
+    ingresosColumnas: {
+      anterior: Math.round(ingresosAnterior),
+      mesActual: Math.round(ventasMesMonto),
+      acumulado: Math.round(ingresosAcumulado),
+      mesSiguienteObjetivo: objetivos?.ingresosMes ?? 0,
+      diferenciaAcumulado: Math.round(ingresosAcumulado - ingresosObjetivoAcum),
+    },
+    objetivoIngresos: objetivos
+      ? {
+          totalObjetivo: objetivos.ingresosTotales,
+          cajaReal: Math.round(cajaSemana),
+          comprometidos: Math.round(comprometidos),
+          pctCaja: Math.round((cajaSemana / objetivos.ingresosTotales) * 1000) / 10,
+          pctComprometidos: Math.round((comprometidos / objetivos.ingresosTotales) * 1000) / 10,
+          pctTotal: Math.round((ingresosAcumulado / objetivos.ingresosTotales) * 1000) / 10,
+        }
+      : null,
     ventasMes: ventasMesLineas.slice(0, 50),
     apartadosVigentes: apartadosVigentesLineas.slice(0, 80),
     canceladosSemana: canceladosLineas.slice(0, 30),
@@ -243,15 +288,21 @@ function buildSegmentoReporte(
 }
 
 function buildGeneralSegmento(
+  desarrolloId: string,
   rows: SembradoUnidadRow[],
   periodo: { desde: string; hasta: string },
   mes: { desde: string; hasta: string },
+  mesAnterior: { desde: string; hasta: string },
+  acumuladoDesde: string,
 ): ReporteSemanalSegmento {
   return buildSegmentoReporte(
+    desarrolloId,
     { id: "general", label: "General", clusterId: "__all__" },
     rows,
     periodo,
     mes,
+    mesAnterior,
+    acumuladoDesde,
   );
 }
 
@@ -264,7 +315,7 @@ function buildMedios(
     const map = new Map<string, number>();
     for (const item of items) {
       if (item.es_spam || item.es_duplicado) continue;
-      const medio = normalizeMedio(item.medio_publicitario ?? item.medio_contacto);
+      const medio = normalizeMedioPublicitario(item.medio_publicitario ?? item.medio_contacto);
       map.set(medio, (map.get(medio) ?? 0) + 1);
     }
     return map;
@@ -294,6 +345,7 @@ function buildMedios(
 function buildSeguimiento(
   prospectosSemana: Awaited<ReturnType<typeof listProspectos>>,
   prospectosMes: Awaited<ReturnType<typeof listProspectos>>,
+  cancelacionesSemana: number,
 ): ReporteSemanalSeguimiento[] {
   const bucket = (p: (typeof prospectosSemana)[number]): string => {
     if (p.etapa === "perdido") return "No comprará";
@@ -307,6 +359,10 @@ function buildSeguimiento(
   const semanaMap = new Map<string, number>();
   const mesMap = new Map<string, number>();
 
+  if (cancelacionesSemana > 0) {
+    semanaMap.set("Canceló", cancelacionesSemana);
+  }
+
   for (const p of prospectosSemana) {
     if (p.es_spam || p.es_duplicado) continue;
     const key = bucket(p);
@@ -318,12 +374,57 @@ function buildSeguimiento(
     mesMap.set(key, (mesMap.get(key) ?? 0) + 1);
   }
 
-  const keys = new Set([...Array.from(semanaMap.keys()), ...Array.from(mesMap.keys())]);
-  return Array.from(keys).map((estatus) => ({
+  const totalMes = Array.from(mesMap.values()).reduce((a, b) => a + b, 0) || 1;
+
+  return SEGUIMIENTO_ESTATUS_ORDEN.filter(
+    (estatus) => (semanaMap.get(estatus) ?? 0) > 0 || (mesMap.get(estatus) ?? 0) > 0,
+  ).map((estatus) => ({
     estatus,
     semana: semanaMap.get(estatus) ?? 0,
     mes: mesMap.get(estatus) ?? 0,
+    pctMes: Math.round(((mesMap.get(estatus) ?? 0) / totalMes) * 1000) / 10,
   }));
+}
+
+function prospectosPorMes(prospectos: Awaited<ReturnType<typeof listProspectos>>): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const p of prospectos) {
+    if (p.es_spam || p.es_duplicado) continue;
+    const key = p.created_at.slice(0, 7);
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  return map;
+}
+
+async function visitasPorMes(desarrolloId: string): Promise<Map<string, number>> {
+  const supabase = createSupabaseServiceClient();
+  const map = new Map<string, number>();
+  if (!supabase) return map;
+
+  const since = new Date();
+  since.setUTCMonth(since.getUTCMonth() - 18);
+
+  const { data } = await supabase
+    .from("visitas_comerciales")
+    .select("occurred_at")
+    .eq("desarrollo_id", desarrolloId)
+    .gte("occurred_at", since.toISOString());
+
+  for (const row of data ?? []) {
+    const key = String(row.occurred_at).slice(0, 7);
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  return map;
+}
+
+function mesAnteriorRange(hasta: string): { desde: string; hasta: string } {
+  const d = new Date(`${hasta}T12:00:00`);
+  const prev = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1));
+  const end = new Date(Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth() + 1, 0));
+  return {
+    desde: prev.toISOString().slice(0, 10),
+    hasta: end.toISOString().slice(0, 10),
+  };
 }
 
 function buildProspectosInteresados(
@@ -359,8 +460,11 @@ export async function getReporteComercialSemanal(
 
   const periodo = resolveReportePeriodo(filters.desde, filters.hasta);
   const mes = monthRangeForDate(periodo.hasta);
+  const mesAnterior = mesAnteriorRange(periodo.hasta);
+  const year = new Date(`${periodo.hasta}T12:00:00`).getUTCFullYear();
+  const acumuladoDesde = `${year}-01-01`;
 
-  const [rows, prospectosSemana, prospectosMes, prospectosAcum, visitasCount] =
+  const [rows, prospectosSemana, prospectosMes, prospectosAcum, visitasCount, visitasMesMap] =
     await Promise.all([
       listSembradoUnidades({ desarrolloId: filters.desarrolloId }, profile),
       listProspectos(
@@ -392,12 +496,69 @@ export async function getReporteComercialSemanal(
         profile,
       ),
       countVisitasPeriodo(filters.desarrolloId, periodo.desde, periodo.hasta),
+      visitasPorMes(filters.desarrolloId),
     ]);
 
   const segmentConfigs = getReporteSemanalSegments(filters.desarrolloId);
   const segmentos = segmentConfigs
-    ? segmentConfigs.map((config) => buildSegmentoReporte(config, rows, periodo, mes))
-    : [buildGeneralSegmento(rows, periodo, mes)];
+    ? segmentConfigs.map((config) =>
+        buildSegmentoReporte(
+          filters.desarrolloId,
+          config,
+          rows,
+          periodo,
+          mes,
+          mesAnterior,
+          acumuladoDesde,
+        ),
+      )
+    : [
+        buildGeneralSegmento(
+          filters.desarrolloId,
+          rows,
+          periodo,
+          mes,
+          mesAnterior,
+          acumuladoDesde,
+        ),
+      ];
+
+  const funnels = segmentConfigs
+    ? segmentConfigs.map((config) =>
+        buildFunnelSegmento({
+          segmentoId: config.id,
+          label: config.label,
+          clusterId: config.clusterId,
+          rows,
+          prospectosSemana,
+          citasSemana: visitasCount,
+          periodo,
+        }),
+      )
+    : [
+        buildFunnelSegmento({
+          segmentoId: "general",
+          label: "General",
+          clusterId: "__all__",
+          rows,
+          prospectosSemana,
+          citasSemana: visitasCount,
+          periodo,
+        }),
+      ];
+
+  const prospectosMesMap = prospectosPorMes(prospectosAcum);
+  const deptosCluster = PASAJE_SEMBRADO_SEGMENTOS?.departamentos?.clusterId;
+  const oficinasCluster = PASAJE_SEMBRADO_SEGMENTOS?.oficinas?.clusterId;
+  const absorcionMensual = buildAbsorcionMensualSeries(
+    rows,
+    prospectosMesMap,
+    visitasMesMap,
+    filters.desarrolloId === "pasaje-alamos" ? deptosCluster : undefined,
+    filters.desarrolloId === "pasaje-alamos" ? oficinasCluster : undefined,
+  );
+
+  const cancelacionesTotal = segmentos.reduce((s, seg) => s + seg.kpis.cancelacionesSemana, 0);
 
   let apartadosDeptos = 0;
   let apartadosOficinas = 0;
@@ -411,6 +572,10 @@ export async function getReporteComercialSemanal(
     apartadosDeptos = segmentos[0]?.kpis.apartadosVigentes ?? 0;
   }
 
+  const tieneObjetivos = segmentConfigs?.some((c) =>
+    Boolean(getObjetivosSegmento(filters.desarrolloId, c.id)),
+  );
+
   return {
     desarrolloId: filters.desarrolloId,
     periodo,
@@ -419,9 +584,13 @@ export async function getReporteComercialSemanal(
       citasVisitas: visitasCount,
       apartadosDeptos,
       apartadosOficinas,
+      apartadosTotal: apartadosDeptos + apartadosOficinas,
     },
+    funnels,
+    absorcionMensual,
     medios: buildMedios(prospectosSemana, prospectosMes, prospectosAcum),
-    seguimiento: buildSeguimiento(prospectosSemana, prospectosMes),
+    seguimiento: buildSeguimiento(prospectosSemana, prospectosMes, cancelacionesTotal),
+    visitasInmobiliarias: buildVisitasInmobiliarias(prospectosSemana, periodo),
     prospectosInteresados: buildProspectosInteresados(prospectosSemana),
     segmentos,
     meta: {
@@ -433,6 +602,7 @@ export async function getReporteComercialSemanal(
         "prospectos",
         "visitas_comerciales",
       ],
+      objetivosOrigen: tieneObjetivos ? "config" : "none",
     },
   };
 }

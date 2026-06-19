@@ -65,7 +65,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },
     { href: "/admin/expedientes", label: "Expedientes", ready: true },
-    { href: "/admin/asesores", label: "Asesores", ready: true },
+    { href: "/admin/asesores", label: "Equipo", ready: true },
     { href: "/admin/metricas", label: "Reportes", ready: true },
     { href: "/admin/guion", label: "Guion", ready: true },
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
@@ -73,7 +73,6 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/estudios-nubo", label: "Estudio NUBO", ready: true },
     { href: "/admin/propuestas", label: "Propuestas", ready: true },
     { href: "/admin/corredor", label: "Corredor sur", ready: true },
-    { href: "/admin/usuarios", label: "Usuarios", ready: true },
   ].filter((item) => canAccessModule(profile, navModules[item.href]));
 
   const handleLogout = async () => {
@@ -125,6 +124,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
               const Icon = navIcons[item.href as keyof typeof navIcons] ?? FileText;
               const active =
                 pathname === item.href ||
+                (item.href === "/admin/asesores" && pathname === "/admin/usuarios") ||
                 (item.href === "/admin/propuestas" && pathname.startsWith("/admin/propuestas/"));
 
               return (

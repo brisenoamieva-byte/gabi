@@ -159,18 +159,33 @@ export const getUnidadesCotizables = (
   inventarioUnidades?: DisponibilidadUnidad[],
 ): DisponibilidadUnidad[] => {
   const units = inventarioUnidades ?? getDisponibilidadesByCluster(clusterId);
-  return units.filter((unit) => unit.estatus === "disponible" && unit.visitable);
+  // Sembrado: solo unidades disponibles. `visitable` aplica al recorrido, no al cotizador.
+  return units.filter((unit) => unit.estatus === "disponible");
 };
 
 export const getPrototiposCotizables = (
   clusterId: string,
   catalog?: CotizadorCatalog,
+  inventarioUnidades?: DisponibilidadUnidad[],
 ): Prototipo[] => {
   const list = catalog
     ? catalog.prototipos.filter((item) => item.clusterId === clusterId)
     : getPrototiposByCluster(clusterId);
 
-  return list.filter((item) => item.activo && !item.soldOut);
+  let filtered = list.filter((item) => item.activo && !item.soldOut);
+
+  if (inventarioUnidades?.length) {
+    const prototiposConStock = new Set(
+      getUnidadesCotizables(clusterId, inventarioUnidades)
+        .map((unit) => unit.prototipoId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    if (prototiposConStock.size) {
+      filtered = filtered.filter((item) => prototiposConStock.has(item.id));
+    }
+  }
+
+  return filtered;
 };
 
 export const buildCotizacionSummary = (
