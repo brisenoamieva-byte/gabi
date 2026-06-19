@@ -23,6 +23,8 @@
     "propuesta:import:nubo": "node scripts/import-nubo-propuesta.mjs",
     "propuesta:assets:nubo": "node scripts/extract-nubo-pptx-assets.mjs",
     "leads:import:xperience": "node scripts/import-xperience-leads.mjs",
+    "leads:assign-pilot": "node scripts/assign-pilot-leads-to-asesor.mjs",
+    "leads:seed-playbook-demo": "node scripts/seed-playbook-demo-lead.mjs",
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",
     "db:verify:migrations": "node scripts/verify-migrations-033-035.mjs",
@@ -32,6 +34,7 @@
     "db:print:037-038": "node scripts/print-apply-sql.mjs 037 038",
     "db:open-sql-editor": "node scripts/open-supabase-sql-editor.mjs",
     "db:smoke:playbook": "node scripts/smoke-playbook-api.mjs",
+    "db:smoke:playbook-queue": "node scripts/smoke-playbook-queue.mjs",
     "drive:test": "node --import tsx scripts/drive-test.mjs",
     "predev": "node scripts/check-supabase-env.mjs && node scripts/catalog-sync-if-needed.mjs",
     "prebuild": "node scripts/generate-gabi-pwa-icons.mjs"

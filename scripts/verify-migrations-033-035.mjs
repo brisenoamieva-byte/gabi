@@ -84,4 +84,18 @@ if (!objetivosError) {
   }
 }
 
+const { data: playbookRows, error: playbookSeedError } = await supabase
+  .from("crm_playbook_configs")
+  .select("desarrollo_id, enabled")
+  .in("desarrollo_id", ["pasaje-alamos", "la-vista-residencial"]);
+
+if (!playbookSeedError) {
+  const count = playbookRows?.length ?? 0;
+  console.log(`Playbooks piloto en BD: ${count}/2`);
+  if (count < 2) {
+    allOk = false;
+    console.log("  → Falta seed playbook; reaplica 038_crm_playbook.sql");
+  }
+}
+
 process.exit(allOk ? 0 : 1);
