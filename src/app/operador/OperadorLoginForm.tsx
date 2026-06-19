@@ -10,7 +10,7 @@ import { writeStoredAsesorSession } from "@/lib/asesores/session-client";
 import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
 import type { AsesorSession } from "@/lib/asesores/types";
 
-const PORTAL_KEY = "gabi_portal";
+import { GABI_PORTAL_KEY, GABI_DESARROLLO_KEY } from "@/lib/session/keys";
 
 export function OperadorLoginForm() {
   const searchParams = useSearchParams();
@@ -38,8 +38,8 @@ export function OperadorLoginForm() {
         return;
       }
 
-      localStorage.removeItem("gabi_desarrollo");
-      localStorage.removeItem(PORTAL_KEY);
+      localStorage.removeItem(GABI_DESARROLLO_KEY);
+      localStorage.removeItem(GABI_PORTAL_KEY);
       writeStoredAsesorSession(data.asesor);
       const next = searchParams.get("next");
       const safeNext =

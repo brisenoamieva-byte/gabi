@@ -244,7 +244,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
         </p>
         {showOperatorLinks ? (
           <Link
-            href="/estudios/nubo/editar"
+            href="/admin/estudios-nubo"
             className="gabi-no-print font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
           >
             Editar estudio

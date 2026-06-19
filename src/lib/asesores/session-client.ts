@@ -1,7 +1,8 @@
 import { asesorSessionLookupIds } from "@/lib/asesores/seed-match";
+import { GABI_USER_KEY } from "@/lib/session/keys";
 import type { AsesorSession } from "@/lib/asesores/types";
 
-const USER_STORAGE_KEY = "gabi_user";
+const USER_STORAGE_KEY = GABI_USER_KEY;
 
 export const readStoredAsesorSession = (): AsesorSession | null => {
   if (typeof window === "undefined") {

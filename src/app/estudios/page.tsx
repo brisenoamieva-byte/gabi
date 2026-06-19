@@ -1,45 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BarChart3, Lock } from "lucide-react";
-import { useGabiOperator } from "@/components/gabi/useGabiOperator";
+import { ArrowLeft, ArrowRight, BarChart3 } from "lucide-react";
+import {
+  GabiAuthLoading,
+  GabiAuthRedirecting,
+  GabiOperatorDenied,
+} from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import { ESTUDIOS_REGISTRY } from "@/lib/estudios/registry";
-import { requireOperatorMessage } from "@/lib/gabi/operator";
-import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
 
 export default function EstudiosPage() {
-  const router = useRouter();
-  const { ready, isOperator } = useGabiOperator();
-  const [authReady, setAuthReady] = useState(false);
+  const { authReady, hasSession, operatorOk, loginHref } = useRequireGabiSession({
+    nextPath: "/estudios",
+    requireOperator: true,
+  });
 
-  useEffect(() => {
-    if (!localStorage.getItem("gabi_user")) {
-      router.replace(OPERATOR_LOGIN_PATH);
-      return;
-    }
-    setAuthReady(true);
-  }, [router]);
-
-  if (!authReady || !ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
-        <p className="text-sm text-slate-500">Cargando estudios…</p>
-      </main>
-    );
+  if (!authReady) {
+    return <GabiAuthLoading message="Cargando estudios…" />;
   }
 
-  if (!isOperator) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
-        <Lock className="h-8 w-8 text-slate-300" />
-        <p className="max-w-sm text-center text-sm text-slate-600">{requireOperatorMessage()}</p>
-        <Link href="/dashboard" className="text-sm font-semibold underline">
-          Volver
-        </Link>
-      </main>
-    );
+  if (!hasSession) {
+    return <GabiAuthRedirecting loginHref={loginHref} />;
+  }
+
+  if (!operatorOk) {
+    return <GabiOperatorDenied loginHref={loginHref} />;
   }
 
   return (

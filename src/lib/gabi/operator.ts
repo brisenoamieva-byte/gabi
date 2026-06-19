@@ -1,6 +1,7 @@
 import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
 
 export const OPERATOR_LOGIN_PATH = "/operador";
+export const GABI_CENTRO_PATH = "/gabi";
 
 /** Correos con acceso de operador gabi (cerebro integral). */
 const OPERATOR_EMAILS = new Set(

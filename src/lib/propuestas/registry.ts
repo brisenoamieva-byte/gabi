@@ -13,38 +13,44 @@ export type PropuestaListItem = {
   estado: PropuestaComercialData["estado"];
 };
 
-export const PROPUESTAS_REGISTRY: PropuestaListItem[] = [
-  {
-    slug: VITA_ALTA_PROPUESTA_GENERATED.slug,
-    titulo: VITA_ALTA_PROPUESTA_GENERATED.meta.titulo,
-    ubicacion: VITA_ALTA_PROPUESTA_GENERATED.meta.ubicacion,
-    desarrollador: VITA_ALTA_PROPUESTA_GENERATED.meta.desarrollador,
-    fecha: VITA_ALTA_PROPUESTA_GENERATED.meta.fecha,
-    estado: VITA_ALTA_PROPUESTA_GENERATED.estado,
-  },
-  {
-    slug: NUBO_PROPUESTA_GENERATED.slug,
-    titulo: NUBO_PROPUESTA_GENERATED.meta.titulo,
-    ubicacion: NUBO_PROPUESTA_GENERATED.meta.ubicacion,
-    desarrollador: NUBO_PROPUESTA_GENERATED.meta.desarrollador,
-    fecha: NUBO_PROPUESTA_GENERATED.meta.fecha,
-    estado: NUBO_PROPUESTA_GENERATED.estado,
-  },
-];
+const PROPUESTAS_DATA: Record<string, PropuestaComercialData> = {
+  [VITA_ALTA_PROPUESTA_GENERATED.slug]: VITA_ALTA_PROPUESTA_GENERATED,
+  [NUBO_PROPUESTA_GENERATED.slug]: NUBO_PROPUESTA_GENERATED,
+};
+
+const PROPUESTA_MEDIA: Record<string, PropuestaComercialMedia> = {
+  [VITA_ALTA_PROPUESTA_GENERATED.slug]: VITA_ALTA_MEDIA,
+  [NUBO_PROPUESTA_GENERATED.slug]: NUBO_MEDIA,
+};
+
+/** Estudio de preventa vinculado a una propuesta (si existe). */
+const PROPUESTA_ESTUDIO_LINK: Record<string, string> = {
+  [NUBO_PROPUESTA_GENERATED.slug]: "/estudios/nubo",
+};
+
+export const PROPUESTAS_REGISTRY: PropuestaListItem[] = Object.values(PROPUESTAS_DATA).map(
+  (propuesta) => ({
+    slug: propuesta.slug,
+    titulo: propuesta.meta.titulo,
+    ubicacion: propuesta.meta.ubicacion,
+    desarrollador: propuesta.meta.desarrollador,
+    fecha: propuesta.meta.fecha,
+    estado: propuesta.estado,
+  }),
+);
 
 export function getPropuestaBySlug(slug: string): PropuestaComercialData | null {
-  if (slug === VITA_ALTA_PROPUESTA_GENERATED.slug) {
-    return VITA_ALTA_PROPUESTA_GENERATED;
-  }
-  if (slug === NUBO_PROPUESTA_GENERATED.slug) {
-    return NUBO_PROPUESTA_GENERATED;
-  }
-  return null;
+  return PROPUESTAS_DATA[slug] ?? null;
 }
 
 export function getPropuestaMedia(slug: string): PropuestaComercialMedia {
-  if (slug === VITA_ALTA_PROPUESTA_GENERATED.slug) {
-    return VITA_ALTA_MEDIA;
-  }
-  return NUBO_MEDIA;
+  return PROPUESTA_MEDIA[slug] ?? NUBO_MEDIA;
+}
+
+export function getPropuestaEstudioLink(slug: string): string | null {
+  return PROPUESTA_ESTUDIO_LINK[slug] ?? null;
+}
+
+export function isPropuestaSlug(slug: string): boolean {
+  return slug in PROPUESTAS_DATA;
 }

@@ -502,7 +502,7 @@ function buildPropuestaSlides(
   ];
 }
 
-export function NuboPropuestaSlides({
+export function PropuestaComercialSlides({
   data,
   media = NUBO_MEDIA,
   viewerMode = "operator",

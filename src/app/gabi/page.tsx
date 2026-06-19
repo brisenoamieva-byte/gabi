@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { GabiLogo, GabiSistemaMark } from "@/components/brand/GabiLogo";
-import { useGabiOperator } from "@/components/gabi/useGabiOperator";
+import { GabiAuthLoading } from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import {
   GABI_ECOSYSTEM,
   GABI_LINEA_LABELS,
@@ -22,28 +21,13 @@ const LINEAS: GabiLineaNegocio[] = [
 ];
 
 export default function GabiCentroPage() {
-  const router = useRouter();
-  const { ready, isOperator } = useGabiOperator();
-  const [authReady, setAuthReady] = useState(false);
+  const { authReady, hasSession, operatorOk } = useRequireGabiSession();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("gabi_user");
-    if (!storedUser) {
-      router.replace(OPERATOR_LOGIN_PATH);
-      return;
-    }
-    setAuthReady(true);
-  }, [router]);
-
-  if (!authReady || !ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-[#201044]">
-        <p className="text-lg font-semibold">Cargando centro gabi…</p>
-      </main>
-    );
+  if (!authReady || !hasSession) {
+    return <GabiAuthLoading message="Cargando centro gabi…" />;
   }
 
-  if (!isOperator) {
+  if (!operatorOk) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8FAFC] px-6 text-[#201044]">
         <GabiSistemaMark size="md" />

@@ -89,6 +89,15 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/estudios/nubo/editar",
+        destination: "/admin/estudios-nubo",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);

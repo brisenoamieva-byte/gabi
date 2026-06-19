@@ -176,7 +176,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
             Reintentar
           </button>
           <Link
-            href={`/operador?next=${encodeURIComponent("/estudios/nubo/editar")}`}
+            href="/admin/estudios-nubo"
             className="rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white"
           >
             Volver a entrar

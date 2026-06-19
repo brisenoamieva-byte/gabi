@@ -1,3 +1,5 @@
+import { GABI_PORTAL_KEY } from "@/lib/session/keys";
+
 export type PortalSession = {
   id: string;
   nombre: string;
@@ -8,7 +10,7 @@ export type PortalSession = {
   colorAccent: string;
 };
 
-export const PORTAL_STORAGE_KEY = "gabi_portal";
+export const PORTAL_STORAGE_KEY = GABI_PORTAL_KEY;
 
 export const portalPinPath = (slug: string) => `/portal/${slug}`;
 

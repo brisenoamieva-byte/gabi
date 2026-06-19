@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { NuboPreventaAnalisisSlides } from "@/components/estudios/nubo/NuboPreventaAnalisisSlides";
-import { PropuestaShareGate } from "@/components/propuestas/PropuestaShareGate";
+import { EstudioShareGate } from "@/components/estudios/EstudioShareGate";
 import { NUBO_ESTUDIO_SHARE_SLUG } from "@/lib/estudios/share-registry";
 
 type SessionState =
@@ -83,9 +83,10 @@ export default function EstudioShareViewPage() {
 
   if (session.status === "gate") {
     return (
-      <PropuestaShareGate
+      <EstudioShareGate
         token={token}
         tituloCliente={session.tituloCliente}
+        headline="NUBO · Condiciones para preventa"
         onAuthenticated={(result) => {
           if (result.estudioSlug) {
             setSession({ status: "ready", estudioSlug: result.estudioSlug });
@@ -93,9 +94,6 @@ export default function EstudioShareViewPage() {
           }
           void checkSession();
         }}
-        authPath="/api/estudios/share/auth"
-        subjectLabel="Estudio de mercado · Confidencial"
-        headline="NUBO · Condiciones para preventa"
       />
     );
   }

@@ -8,7 +8,9 @@ import {
   shouldRemoveLeadFromCrmQueue,
 } from "@/lib/crm/sync-policy";
 
-const CRM_PENDING_KEY = "gabi_crm_pending";
+import { GABI_CRM_PENDING_KEY } from "@/lib/session/keys";
+
+const CRM_PENDING_KEY = GABI_CRM_PENDING_KEY;
 const LEADS_KEY = "gabi_leads";
 
 type PendingLead = {

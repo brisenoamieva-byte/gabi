@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PropuestaShareGate } from "@/components/propuestas/PropuestaShareGate";
-import { NuboPropuestaSlides } from "@/components/propuestas/NuboPropuestaSlides";
+import { PropuestaComercialSlides } from "@/components/propuestas/PropuestaComercialSlides";
 import { getPropuestaBySlug, getPropuestaMedia } from "@/lib/propuestas/registry";
 
 type SessionState =
@@ -103,5 +103,11 @@ export default function PropuestaShareViewPage() {
     );
   }
 
-  return <NuboPropuestaSlides data={propuesta} media={getPropuestaMedia(session.propuestaSlug)} viewerMode="developer" />;
+  return (
+    <PropuestaComercialSlides
+      data={propuesta}
+      media={getPropuestaMedia(session.propuestaSlug)}
+      viewerMode="developer"
+    />
+  );
 }

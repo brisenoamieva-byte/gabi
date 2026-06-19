@@ -1,31 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { InvesttiMetrajeDashboard } from "@/components/corredor/investti/InvesttiMetrajeDashboard";
 import { GabiPrintBar } from "@/components/gabi/GabiPrintBar";
 import { investtiReport } from "@/components/corredor/investti/InvesttiReportUi";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
-import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
+import { GabiAuthLoading } from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import "@/lib/estudios/investti-print.css";
 
 const PRINT_TITLE = "Metraje recomendado — Cañadas del Valle · Grupo Investti";
 
 export default function CorredorInvesttiPage() {
-  const router = useRouter();
-  const [authReady, setAuthReady] = useState(false);
+  const { authReady, hasSession } = useRequireGabiSession({
+    nextPath: "/corredor/investti",
+    requireOperator: true,
+  });
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("gabi_user");
-    if (!storedUser) {
-      router.replace(OPERATOR_LOGIN_PATH);
-      return;
-    }
-    setAuthReady(true);
-  }, [router]);
-
-  if (!authReady) {
+  if (!authReady || !hasSession) {
     return (
       <main className={`flex min-h-screen items-center justify-center ${investtiReport.page}`}>
         <p className={`${investtiReport.sans} text-sm text-neutral-600`}>Cargando documento…</p>
@@ -43,19 +35,19 @@ export default function CorredorInvesttiPage() {
           >
             <div className="flex flex-wrap items-center gap-4 text-[12px]">
               <Link
-                href="/estudios"
-                className="text-neutral-500 underline-offset-2 hover:text-[#1C1830] hover:underline"
+                href="/corredor"
+                className="font-medium text-neutral-600 hover:text-neutral-900 hover:underline"
               >
-                ← Estudios de mercado
+                ← Corredor sur
               </Link>
               <Link
                 href="/gabi"
-                className="text-neutral-400 underline-offset-2 hover:text-[#1C1830] hover:underline"
+                className="font-medium text-neutral-600 hover:text-neutral-900 hover:underline"
               >
                 Centro gabi
               </Link>
             </div>
-            <GabiSistemaMark size="sm" align="end" tone="report" />
+            <GabiSistemaMark size="sm" align="end" />
           </div>
           <InvesttiMetrajeDashboard />
         </div>

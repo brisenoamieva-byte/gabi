@@ -1,64 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
-import { useGabiOperator } from "@/components/gabi/useGabiOperator";
-import { readStoredAsesorSession } from "@/lib/asesores/session-client";
+import {
+  GabiAuthLoading,
+  GabiAuthRedirecting,
+  GabiOperatorDenied,
+} from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import { PROPUESTAS_REGISTRY } from "@/lib/propuestas/registry";
-import { OPERATOR_LOGIN_PATH, requireOperatorMessage } from "@/lib/gabi/operator";
 
 export default function PropuestasPage() {
-  const router = useRouter();
-  const { ready, isOperator } = useGabiOperator();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
-  const loginHref = useMemo(
-    () => `${OPERATOR_LOGIN_PATH}?next=${encodeURIComponent("/propuestas")}`,
-    [],
-  );
+  const { authReady, hasSession, operatorOk, loginHref } = useRequireGabiSession({
+    nextPath: "/propuestas",
+    requireOperator: true,
+  });
 
-  useEffect(() => {
-    const session = readStoredAsesorSession();
-    setHasSession(Boolean(session));
-    setAuthChecked(true);
-    if (!session) {
-      router.replace(loginHref);
-    }
-  }, [router, loginHref]);
-
-  if (!authChecked || !ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
-        <p className="text-sm text-slate-500">Cargando propuestas…</p>
-      </main>
-    );
+  if (!authReady) {
+    return <GabiAuthLoading message="Cargando propuestas…" />;
   }
 
   if (!hasSession) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8FAFC] px-6">
-        <p className="text-sm text-slate-500">Redirigiendo al acceso de operador…</p>
-        <Link href={loginHref} className="text-sm font-semibold text-[#201044] underline">
-          Entrar en /operador
-        </Link>
-      </main>
-    );
+    return <GabiAuthRedirecting loginHref={loginHref} />;
   }
 
-  if (!isOperator) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
-        <p className="text-sm text-slate-600">{requireOperatorMessage()}</p>
-        <Link href={loginHref} className="text-sm font-semibold underline">
-          Entrar como operador
-        </Link>
-        <Link href="/dashboard" className="text-sm text-slate-500 underline">
-          Volver
-        </Link>
-      </main>
-    );
+  if (!operatorOk) {
+    return <GabiOperatorDenied loginHref={loginHref} />;
   }
 
   return (

@@ -55,7 +55,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
 
   const navItems = [
     { href: "/admin/documentos", label: "Documentos", ready: true },
-    { href: "/admin/inventario", label: "Recorrido", ready: true },
+    { href: "/admin/inventario", label: "Inventario", ready: true },
     { href: "/admin/desarrollos", label: "Desarrollos", ready: true },
     { href: "/admin/leads", label: "Leads", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },

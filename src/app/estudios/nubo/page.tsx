@@ -1,34 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { NuboPreventaAnalisisSlides } from "@/components/estudios/nubo/NuboPreventaAnalisisSlides";
 import { EstudioSharePanel } from "@/components/estudios/EstudioSharePanel";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
-import { useGabiOperator } from "@/components/gabi/useGabiOperator";
+import { GabiAuthLoading } from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import { NUBO_ESTUDIO_SHARE_SLUG } from "@/lib/estudios/share-registry";
-import { OPERATOR_LOGIN_PATH } from "@/lib/gabi/operator";
 
 export default function EstudioNuboPreventaPage() {
-  const router = useRouter();
-  const { ready, isOperator, user } = useGabiOperator();
-  const [authReady, setAuthReady] = useState(false);
+  const { authReady, hasSession, isOperator, user } = useRequireGabiSession({
+    nextPath: "/estudios/nubo",
+  });
 
-  useEffect(() => {
-    if (!localStorage.getItem("gabi_user")) {
-      router.replace(OPERATOR_LOGIN_PATH);
-      return;
-    }
-    setAuthReady(true);
-  }, [router]);
-
-  if (!authReady || !ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-[#201044]">
-        <p className="text-sm font-semibold">Cargando análisis…</p>
-      </main>
-    );
+  if (!authReady || !hasSession) {
+    return <GabiAuthLoading message="Cargando análisis…" />;
   }
 
   return (
@@ -48,6 +34,14 @@ export default function EstudioNuboPreventaPage() {
             >
               Propuesta NUBO
             </Link>
+            {isOperator ? (
+              <Link
+                href="/admin/estudios-nubo"
+                className="font-medium text-slate-500 hover:text-[#201044] hover:underline"
+              >
+                Editar estudio
+              </Link>
+            ) : null}
           </div>
           <GabiSistemaMark size="sm" align="end" />
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GABI_USER_KEY } from "@/lib/session/keys";
 import { isGabiOperator } from "@/lib/gabi/operator";
 
 type SessionUser = {
@@ -15,7 +16,7 @@ export function useGabiOperator() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("gabi_user");
+      const stored = localStorage.getItem(GABI_USER_KEY);
       if (!stored) {
         setReady(true);
         return;

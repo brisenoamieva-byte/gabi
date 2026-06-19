@@ -1,69 +1,45 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { NuboPropuestaSlides } from "@/components/propuestas/NuboPropuestaSlides";
-import { PropuestaSharePanel } from "@/components/propuestas/PropuestaSharePanel";
-import { useGabiOperator } from "@/components/gabi/useGabiOperator";
-import { readStoredAsesorSession } from "@/lib/asesores/session-client";
-import { getPropuestaBySlug, getPropuestaMedia } from "@/lib/propuestas/registry";
-import { OPERATOR_LOGIN_PATH, requireOperatorMessage } from "@/lib/gabi/operator";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { PropuestaComercialSlides } from "@/components/propuestas/PropuestaComercialSlides";
+import { PropuestaSharePanel } from "@/components/propuestas/PropuestaSharePanel";
+import {
+  GabiAuthLoading,
+  GabiAuthRedirecting,
+  GabiOperatorDenied,
+} from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
+import {
+  getPropuestaBySlug,
+  getPropuestaEstudioLink,
+  getPropuestaMedia,
+  isPropuestaSlug,
+} from "@/lib/propuestas/registry";
 
 export default function PropuestaDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : "";
-  const { ready, isOperator, user } = useGabiOperator();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
+  const nextPath = slug ? `/propuestas/${slug}` : "/propuestas";
 
-  const propuesta = getPropuestaBySlug(slug);
-  const loginHref = useMemo(
-    () => `${OPERATOR_LOGIN_PATH}?next=${encodeURIComponent(`/propuestas/${slug}`)}`,
-    [slug],
-  );
+  const { authReady, hasSession, operatorOk, user, loginHref } = useRequireGabiSession({
+    nextPath,
+    requireOperator: true,
+  });
 
-  useEffect(() => {
-    const session = readStoredAsesorSession();
-    setHasSession(Boolean(session));
-    setAuthChecked(true);
-    if (!session) {
-      router.replace(loginHref);
-    }
-  }, [router, loginHref]);
+  const propuesta = isPropuestaSlug(slug) ? getPropuestaBySlug(slug) : null;
+  const estudioLink = getPropuestaEstudioLink(slug);
 
-  if (!authChecked || !ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#EEEBE4]">
-        <p className="text-sm text-neutral-600">Cargando propuesta…</p>
-      </main>
-    );
+  if (!authReady) {
+    return <GabiAuthLoading message="Cargando propuesta…" />;
   }
 
   if (!hasSession) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#EEEBE4] px-6">
-        <p className="text-sm text-neutral-600">Redirigiendo al acceso de operador…</p>
-        <Link href={loginHref} className="text-sm font-semibold text-[#201044] underline">
-          Entrar en /operador
-        </Link>
-      </main>
-    );
+    return <GabiAuthRedirecting loginHref={loginHref} />;
   }
 
-  if (!isOperator) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
-        <p className="text-sm text-slate-600">{requireOperatorMessage()}</p>
-        <Link href={loginHref} className="text-sm font-semibold underline">
-          Entrar como operador
-        </Link>
-        <Link href="/dashboard" className="text-sm text-slate-500 underline">
-          Volver
-        </Link>
-      </main>
-    );
+  if (!operatorOk) {
+    return <GabiOperatorDenied loginHref={loginHref} />;
   }
 
   if (!propuesta) {
@@ -79,9 +55,9 @@ export default function PropuestaDetailPage() {
 
   return (
     <>
-      {slug === "nubo" ? (
+      {estudioLink ? (
         <div className="gabi-no-print border-b border-[#6cc24a]/30 bg-[#6cc24a]/10 px-4 py-2 text-center text-[12px] md:px-6">
-          <Link href="/estudios/nubo" className="font-semibold text-[#201044] underline-offset-2 hover:underline">
+          <Link href={estudioLink} className="font-semibold text-[#201044] underline-offset-2 hover:underline">
             Ver análisis de preventa (restaurante campestre + accesos)
           </Link>
         </div>
@@ -91,7 +67,7 @@ export default function PropuestaDetailPage() {
         operatorEmail={user?.email}
         titulo={`${propuesta.meta.titulo} · ${propuesta.meta.ubicacion}`}
       />
-      <NuboPropuestaSlides data={propuesta} media={getPropuestaMedia(slug)} />
+      <PropuestaComercialSlides data={propuesta} media={getPropuestaMedia(slug)} />
     </>
   );
 }
