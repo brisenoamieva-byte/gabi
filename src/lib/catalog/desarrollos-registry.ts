@@ -8,6 +8,13 @@ export const LA_VISTA_RESIDENCIAL_ID = "la-vista-residencial";
 
 export type CotizadorKind = "generic" | "pasaje" | "investti" | "mision-gavia";
 
+export type RegistryCotizadorRules = {
+  enganchePct: number;
+  apartado: number;
+  descuentoStep: number;
+  esquemas: ("mensualidades" | "contado")[];
+};
+
 export type DesarrolloSembradoSegment = {
   id: string;
   label: string;
@@ -21,6 +28,7 @@ export type DesarrolloRegistryEntry = {
   clusterIds: string[];
   sembradoSegments?: DesarrolloSembradoSegment[];
   cotizadorKind: CotizadorKind;
+  cotizadorRules?: RegistryCotizadorRules;
   reporteSemanalSegmented: boolean;
   selectorOrder: number;
 };
@@ -35,6 +43,12 @@ const REGISTRY: DesarrolloRegistryEntry[] = [
       { id: "volterra", label: "Volterra", clusterId: "volterra" },
     ],
     cotizadorKind: "generic",
+    cotizadorRules: {
+      enganchePct: 0.1,
+      apartado: 50000,
+      descuentoStep: 5000,
+      esquemas: ["mensualidades", "contado"],
+    },
     reporteSemanalSegmented: true,
     selectorOrder: 10,
   },
@@ -58,6 +72,12 @@ const REGISTRY: DesarrolloRegistryEntry[] = [
       },
     ],
     cotizadorKind: "pasaje",
+    cotizadorRules: {
+      enganchePct: 0.3,
+      apartado: 50000,
+      descuentoStep: 5000,
+      esquemas: ["mensualidades", "contado"],
+    },
     reporteSemanalSegmented: true,
     selectorOrder: 20,
   },
@@ -131,6 +151,12 @@ export function getCotizadorKind(desarrolloId: string): CotizadorKind {
 
 export function usesDedicatedSimulador(desarrolloId: string): boolean {
   return getCotizadorKind(desarrolloId) !== "generic";
+}
+
+export function getRegistryCotizadorRules(
+  desarrolloId: string,
+): RegistryCotizadorRules | null {
+  return getDesarrolloRegistry(desarrolloId)?.cotizadorRules ?? null;
 }
 
 export function hasSegmentedReporteSemanal(desarrolloId: string): boolean {

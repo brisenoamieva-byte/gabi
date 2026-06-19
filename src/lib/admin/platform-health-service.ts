@@ -22,13 +22,13 @@ const probeColumn = async (
   return !error.message.includes(column);
 };
 
-const probeTable = async (table: string): Promise<boolean> => {
+const probeTable = async (table: string, column = "id"): Promise<boolean> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return false;
   }
 
-  const { error } = await supabase.from(table).select("id", { count: "exact", head: true });
+  const { error } = await supabase.from(table).select(column, { count: "exact", head: true });
   return !error;
 };
 
@@ -141,6 +141,39 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
     ok: capturaOk,
     detail: capturaOk
       ? "Auditoría de webhooks disponible." : "Falta lead_captura_logs — aplica 024.",
+  });
+
+  const propuestasOverridesOk = await probeTable("propuestas_overrides", "slug");
+  checks.push({
+    id: "033",
+    label: "Overrides de propuestas comerciales",
+    migrationFile: "033_propuestas_overrides.sql",
+    ok: propuestasOverridesOk,
+    detail: propuestasOverridesOk
+      ? "Editor de propuestas disponible."
+      : "Falta propuestas_overrides — aplica 033.",
+  });
+
+  const corredorOverridesOk = await probeTable("corredor_desarrollo_overrides", "desarrollo_id");
+  checks.push({
+    id: "034",
+    label: "Overrides catálogo corredor",
+    migrationFile: "034_corredor_overrides.sql",
+    ok: corredorOverridesOk,
+    detail: corredorOverridesOk
+      ? "Editor corredor sur disponible."
+      : "Falta corredor_desarrollo_overrides — aplica 034.",
+  });
+
+  const objetivosOk = await probeTable("comercial_objetivos_anuales");
+  checks.push({
+    id: "035",
+    label: "Objetivos comerciales anuales",
+    migrationFile: "035_comercial_objetivos_anuales.sql",
+    ok: objetivosOk,
+    detail: objetivosOk
+      ? "Metas de reporte semanal en BD."
+      : "Falta comercial_objetivos_anuales — aplica 035.",
   });
 
   await createSupabaseServiceClient()

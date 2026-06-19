@@ -9,6 +9,7 @@ import {
   type Prototipo,
 } from "@/lib/data";
 import { roundMoney } from "@/lib/format/money";
+import { getRegistryCotizadorRules } from "@/lib/catalog/desarrollos-registry";
 
 export type CotizadorCatalog = {
   clusters: Cluster[];
@@ -22,21 +23,6 @@ export type CotizadorRules = {
   apartado: number;
   descuentoStep: number;
   esquemas: CotizadorEsquema[];
-};
-
-export const cotizadorRulesByDesarrollo: Record<string, CotizadorRules> = {
-  "la-vista-residencial": {
-    enganchePct: 0.1,
-    apartado: 50000,
-    descuentoStep: 5000,
-    esquemas: ["mensualidades", "contado"],
-  },
-  "pasaje-alamos": {
-    enganchePct: 0.3,
-    apartado: 50000,
-    descuentoStep: 5000,
-    esquemas: ["mensualidades", "contado"],
-  },
 };
 
 export const defaultCotizadorRules: CotizadorRules = {
@@ -74,8 +60,8 @@ export type CotizacionResult = {
   entrega?: string;
 };
 
-export const getCotizadorRules = (desarrolloId: string) =>
-  cotizadorRulesByDesarrollo[desarrolloId] ?? defaultCotizadorRules;
+export const getCotizadorRules = (desarrolloId: string): CotizadorRules =>
+  getRegistryCotizadorRules(desarrolloId) ?? defaultCotizadorRules;
 
 const findCluster = (clusterId: string, catalog?: CotizadorCatalog) =>
   catalog?.clusters.find((item) => item.id === clusterId) ??
