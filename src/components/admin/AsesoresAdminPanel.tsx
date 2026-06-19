@@ -7,15 +7,25 @@ import {
   Download,
   ExternalLink,
   KeyRound,
+  LayoutGrid,
+  List,
   Loader2,
   Pencil,
   Plus,
+  Search,
   Shield,
   Trash2,
   UserCheck,
   UserX,
   X,
 } from "lucide-react";
+import {
+  AsesorEquipoCard,
+  filterAsesoresEquipo,
+  type EquipoRolFilter,
+  type EquipoStatusFilter,
+  type EquipoViewMode,
+} from "@/components/admin/AsesorEquipoCard";
 import type { AdminLinkByAsesor } from "@/lib/admin/equipo-types";
 import type { AsesorKpi, AsesoresKpisResult } from "@/lib/admin/asesores-kpi-service";
 import { adminRolLabel } from "@/lib/admin/permissions";
@@ -113,6 +123,15 @@ export function AsesoresAdminPanel({
   const [kpiHasta, setKpiHasta] = useState("");
   const [kpis, setKpis] = useState<AsesoresKpisResult | null>(null);
   const [kpiLoading, setKpiLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<EquipoViewMode>("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<EquipoStatusFilter>("active");
+  const [rolFilter, setRolFilter] = useState<EquipoRolFilter>("all");
+
+  const filteredAsesores = useMemo(
+    () => filterAsesoresEquipo(asesores, searchQuery, statusFilter, rolFilter),
+    [asesores, searchQuery, statusFilter, rolFilter],
+  );
 
   const desarrolloNames = useMemo(
     () => Object.fromEntries(desarrollos.map((item) => [item.id, item.nombre])),
@@ -711,7 +730,7 @@ export function AsesoresAdminPanel({
             </p>
           </>
         ) : (
-          <h3 className="text-lg font-black text-gabi-forest">Portal comercial (PIN)</h3>
+          <h3 className="text-lg font-black text-gabi-forest">Asesores</h3>
         )}
 
         <div className={`flex flex-wrap items-end gap-3 ${embedded ? "mt-0" : "mt-5"}`}>
@@ -749,8 +768,73 @@ export function AsesoresAdminPanel({
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#13315C] px-4 text-sm font-semibold text-white disabled:opacity-40"
           >
             <Plus className="h-4 w-4" />
-            {isGerenteComercial ? "Nuevo acceso comercial" : "Nuevo asesor"}
+            {isGerenteComercial ? "Nuevo acceso comercial" : "+ Asesor"}
           </button>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as EquipoStatusFilter)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-gabi-forest"
+            aria-label="Filtrar por estado"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+          <select
+            value={rolFilter}
+            onChange={(event) => setRolFilter(event.target.value as EquipoRolFilter)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-gabi-forest"
+            aria-label="Filtrar por rol"
+          >
+            <option value="all">Todos los roles</option>
+            {ALL_ASESOR_ROLES.map((rol) => (
+              <option key={rol} value={rol}>
+                {asesorRolLabel[rol]}
+              </option>
+            ))}
+          </select>
+          <div className="relative min-w-[200px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Buscar asesor"
+              className="input-cotizador w-full pl-9"
+            />
+          </div>
+          <div className="flex rounded-xl border border-slate-200 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`rounded-lg p-2 transition ${
+                viewMode === "grid"
+                  ? "bg-gabi-forest text-white"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+              aria-label="Vista en tarjetas"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`rounded-lg p-2 transition ${
+                viewMode === "list"
+                  ? "bg-gabi-forest text-white"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+              aria-label="Vista en lista"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+          <span className="text-xs font-semibold text-slate-500">
+            {filteredAsesores.length} de {asesores.length}
+          </span>
         </div>
 
         {!isGerenteComercial ? (
@@ -1054,6 +1138,43 @@ export function AsesoresAdminPanel({
             Cargando asesores...
           </div>
         ) : asesores.length ? (
+          filteredAsesores.length ? (
+          viewMode === "grid" ? (
+            <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredAsesores.map((asesor) => {
+                const kpi: AsesorKpi = kpis?.porAsesor[asesor.id] ?? {
+                  asesorId: asesor.id,
+                  leads: 0,
+                  cotizaciones: 0,
+                  apartados: 0,
+                  vendidos: 0,
+                  conversionPct: null,
+                };
+                return (
+                  <AsesorEquipoCard
+                    key={asesor.id}
+                    asesor={asesor}
+                    kpi={kpi}
+                    desarrolloLabels={asesor.desarrollosIds
+                      .map((id) => desarrolloNames[id] ?? id)
+                      .join(" · ")}
+                    adminLink={adminLinkByAsesorId[asesor.id]}
+                    leadsHref={
+                      kpi.leads > 0
+                        ? buildLeadsHref(desarrolloId, asesor.id, kpiDesde, kpiHasta)
+                        : undefined
+                    }
+                    saving={saving}
+                    savingId={savingId}
+                    onToggleActive={(item) => void handleToggleActive(item)}
+                    onOpenDetails={openEditForm}
+                    onResetPin={(item) => void handleResetPin(item)}
+                    onSyncAdmin={(item) => void handleSyncAdmin(item)}
+                  />
+                );
+              })}
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -1076,7 +1197,7 @@ export function AsesoresAdminPanel({
                 </tr>
               </thead>
               <tbody>
-                {asesores.map((asesor) => {
+                {filteredAsesores.map((asesor) => {
                   const kpi: AsesorKpi = kpis?.porAsesor[asesor.id] ?? {
                     asesorId: asesor.id,
                     leads: 0,
@@ -1238,6 +1359,12 @@ export function AsesoresAdminPanel({
               </tbody>
             </table>
           </div>
+          )
+          ) : (
+            <div className="p-10 text-center text-sm text-slate-500">
+              Ningún asesor coincide con los filtros. Prueba otra búsqueda o estado.
+            </div>
+          )
         ) : (
           <div className="p-10 text-center text-sm text-slate-500">
             No hay asesores para este desarrollo. Crea el primero con el botón de arriba.
