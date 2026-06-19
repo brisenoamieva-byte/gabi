@@ -9,12 +9,51 @@ import { canAccessDesarrollo } from "@/lib/admin/permissions";
 export type LeadsReporteDia = {
   fecha: string;
   total: number;
+  validos: number;
+  duplicados: number;
+};
+
+export type LeadsReporteMes = {
+  mes: string;
+  label: string;
+  total: number;
+  validos: number;
+  duplicados: number;
 };
 
 export type LeadsReporteAsesor = {
   asesorId: string | null;
   asesorNombre: string;
   total: number;
+};
+
+export type LeadsReporteCampana = {
+  campanaId: string | null;
+  campanaNombre: string;
+  canal: string | null;
+  total: number;
+  validos: number;
+};
+
+export type LeadsReporteRegion = {
+  region: string;
+  total: number;
+};
+
+export type LeadsCalificacionResumen = {
+  total: number;
+  calificados: number;
+  noCalificados: number;
+};
+
+export type LeadsInteraccionesResumen = {
+  conCorreo: number;
+  conLlamada: number;
+  conWhatsapp: number;
+  conCrm: number;
+  totalCorreo: number;
+  totalLlamada: number;
+  totalWhatsapp: number;
 };
 
 export type LeadsEmbudoEtapa = {
@@ -25,15 +64,22 @@ export type LeadsEmbudoEtapa = {
 };
 
 export type LeadsReporte = {
+  totalBruto: number;
   total: number;
   cotizaciones: number;
   spam: number;
   duplicados: number;
+  duplicadosSpam: number;
+  calificacion: LeadsCalificacionResumen;
+  interacciones: LeadsInteraccionesResumen;
   embudo: LeadsEmbudoEtapa[];
   porEtapa: Record<string, number>;
   porCalificacion: Record<string, number>;
   porInteres: Record<string, number>;
   porDia: LeadsReporteDia[];
+  porMes: LeadsReporteMes[];
+  porCampana: LeadsReporteCampana[];
+  porRegion: LeadsReporteRegion[];
   porAsesor: LeadsReporteAsesor[];
 };
 
@@ -54,6 +100,38 @@ const eachDayInRange = (desde: string, hasta: string) => {
 
   return days;
 };
+
+const monthLabel = (mes: string) => {
+  const [year, month] = mes.split("-").map(Number);
+  if (!year || !month) {
+    return mes;
+  }
+  return new Date(year, month - 1, 1).toLocaleDateString("es-MX", {
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const eachMonthInRange = (desde: string, hasta: string) => {
+  const months: string[] = [];
+  const start = new Date(`${desde.slice(0, 7)}-01T12:00:00.000Z`);
+  const end = new Date(`${hasta.slice(0, 7)}-01T12:00:00.000Z`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    return months;
+  }
+
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    months.push(cursor.toISOString().slice(0, 7));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return months;
+};
+
+const esCalificado = (calificacion?: string | null) =>
+  calificacionLabel(calificacion) !== "Sin Calificar";
 
 export const getLeadsReporte = async (
   filters: {
@@ -86,11 +164,28 @@ export const getLeadsReporte = async (
   const embudoMap: Record<string, number> = {};
   const porCalificacion: Record<string, number> = {};
   const porInteres: Record<string, number> = {};
-  const porDiaMap = new Map<string, number>();
+  const porDiaMap = new Map<string, { total: number; validos: number; duplicados: number }>();
+  const porMesMap = new Map<string, { total: number; validos: number; duplicados: number }>();
   const porAsesorMap = new Map<string, LeadsReporteAsesor>();
+  const porCampanaMap = new Map<string, LeadsReporteCampana>();
+  const porRegionMap = new Map<string, number>();
+
   let spam = 0;
   let duplicados = 0;
+  let duplicadosSpam = 0;
   let validos = 0;
+  let calificados = 0;
+  let noCalificados = 0;
+
+  const interacciones: LeadsInteraccionesResumen = {
+    conCorreo: 0,
+    conLlamada: 0,
+    conWhatsapp: 0,
+    conCrm: 0,
+    totalCorreo: 0,
+    totalLlamada: 0,
+    totalWhatsapp: 0,
+  };
 
   for (const prospecto of prospectos) {
     porEtapa[prospecto.etapa] = (porEtapa[prospecto.etapa] ?? 0) + 1;
@@ -104,6 +199,12 @@ export const getLeadsReporte = async (
     const calKey = calificacionLabel(prospecto.calificacion);
     porCalificacion[calKey] = (porCalificacion[calKey] ?? 0) + 1;
 
+    if (esCalificado(prospecto.calificacion)) {
+      calificados += 1;
+    } else {
+      noCalificados += 1;
+    }
+
     const interesKey = nivelInteresLabelOrDefault(prospecto.nivel_interes);
     porInteres[interesKey] = (porInteres[interesKey] ?? 0) + 1;
 
@@ -113,14 +214,56 @@ export const getLeadsReporte = async (
     if (prospecto.es_duplicado) {
       duplicados += 1;
     }
+    if (prospecto.es_duplicado && prospecto.es_spam) {
+      duplicadosSpam += 1;
+    }
 
     const fecha = prospecto.created_at.slice(0, 10);
-    porDiaMap.set(fecha, (porDiaMap.get(fecha) ?? 0) + 1);
+    const mes = prospecto.created_at.slice(0, 7);
+    const dayBucket = porDiaMap.get(fecha) ?? { total: 0, validos: 0, duplicados: 0 };
+    dayBucket.total += 1;
+    if (prospecto.es_duplicado) {
+      dayBucket.duplicados += 1;
+    }
+    if (esValido) {
+      dayBucket.validos += 1;
+    }
+    porDiaMap.set(fecha, dayBucket);
+
+    const monthBucket = porMesMap.get(mes) ?? { total: 0, validos: 0, duplicados: 0 };
+    monthBucket.total += 1;
+    if (prospecto.es_duplicado) {
+      monthBucket.duplicados += 1;
+    }
+    if (esValido) {
+      monthBucket.validos += 1;
+    }
+    porMesMap.set(mes, monthBucket);
+
+    const campanaKey = prospecto.campana_id ?? "__sin_campana__";
+    const campanaExisting = porCampanaMap.get(campanaKey);
+    if (campanaExisting) {
+      campanaExisting.total += 1;
+      if (esValido) {
+        campanaExisting.validos += 1;
+      }
+    } else {
+      porCampanaMap.set(campanaKey, {
+        campanaId: prospecto.campana_id,
+        campanaNombre: prospecto.campanaNombre ?? "Sin campaña",
+        canal: prospecto.campanaCanal ?? prospecto.medio_contacto ?? null,
+        total: 1,
+        validos: esValido ? 1 : 0,
+      });
+    }
+
+    const region = prospecto.origen_ciudad?.trim() || "Sin región";
+    porRegionMap.set(region, (porRegionMap.get(region) ?? 0) + 1);
 
     const asesorKey = prospecto.asesor_id ?? "__sin_asesor__";
-    const existing = porAsesorMap.get(asesorKey);
-    if (existing) {
-      existing.total += 1;
+    const existingAsesor = porAsesorMap.get(asesorKey);
+    if (existingAsesor) {
+      existingAsesor.total += 1;
     } else {
       porAsesorMap.set(asesorKey, {
         asesorId: prospecto.asesor_id,
@@ -128,19 +271,48 @@ export const getLeadsReporte = async (
         total: 1,
       });
     }
+
+    if ((prospecto.bandera_correo ?? 0) > 0) {
+      interacciones.conCorreo += 1;
+      interacciones.totalCorreo += prospecto.bandera_correo ?? 0;
+    }
+    if ((prospecto.bandera_llamada ?? 0) > 0) {
+      interacciones.conLlamada += 1;
+      interacciones.totalLlamada += prospecto.bandera_llamada ?? 0;
+    }
+    if ((prospecto.bandera_whatsapp ?? 0) > 0) {
+      interacciones.conWhatsapp += 1;
+      interacciones.totalWhatsapp += prospecto.bandera_whatsapp ?? 0;
+    }
+    if ((prospecto.bandera_crm ?? 0) > 0) {
+      interacciones.conCrm += 1;
+    }
   }
 
   let porDia: LeadsReporteDia[];
 
   if (filters.desde && filters.hasta) {
-    porDia = eachDayInRange(filters.desde, filters.hasta).map((fecha) => ({
-      fecha,
-      total: porDiaMap.get(fecha) ?? 0,
-    }));
+    porDia = eachDayInRange(filters.desde, filters.hasta).map((fecha) => {
+      const bucket = porDiaMap.get(fecha) ?? { total: 0, validos: 0, duplicados: 0 };
+      return { fecha, ...bucket };
+    });
   } else {
     porDia = Array.from(porDiaMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([fecha, total]) => ({ fecha, total }));
+      .map(([fecha, bucket]) => ({ fecha, ...bucket }));
+  }
+
+  let porMes: LeadsReporteMes[];
+
+  if (filters.desde && filters.hasta) {
+    porMes = eachMonthInRange(filters.desde, filters.hasta).map((mes) => {
+      const bucket = porMesMap.get(mes) ?? { total: 0, validos: 0, duplicados: 0 };
+      return { mes, label: monthLabel(mes), ...bucket };
+    });
+  } else {
+    porMes = Array.from(porMesMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([mes, bucket]) => ({ mes, label: monthLabel(mes), ...bucket }));
   }
 
   let cotizaciones = 0;
@@ -189,15 +361,28 @@ export const getLeadsReporte = async (
   });
 
   return {
+    totalBruto: prospectos.length,
     total: validos,
     cotizaciones,
     spam,
     duplicados,
+    duplicadosSpam,
+    calificacion: {
+      total: prospectos.length,
+      calificados,
+      noCalificados,
+    },
+    interacciones,
     embudo,
     porEtapa,
     porCalificacion,
     porInteres,
     porDia,
+    porMes,
+    porCampana: Array.from(porCampanaMap.values()).sort((a, b) => b.total - a.total),
+    porRegion: Array.from(porRegionMap.entries())
+      .map(([region, total]) => ({ region, total }))
+      .sort((a, b) => b.total - a.total),
     porAsesor: Array.from(porAsesorMap.values()).sort((a, b) => b.total - a.total),
   };
 };
