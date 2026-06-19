@@ -21,7 +21,8 @@ import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
 import { DesarrolloHubCard } from "@/components/admin/DesarrolloHubCard";
 import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
 import type { ComercializadoraAdminRecord } from "@/lib/admin/catalog-service";
-import { filterDesarrollosHub } from "@/lib/catalog/desarrollo-hub-utils";
+import { filterDesarrollosHub, getDesarrolloHeroImage } from "@/lib/catalog/desarrollo-hub-utils";
+import { getDesarrolloXperienceProductId } from "@/lib/comercial/xperience-catalog-ids";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import type { Cluster } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
@@ -330,6 +331,8 @@ export function DesarrollosHubPanel({
   if (selectedDesarrollo) {
     const stats = statsById[selectedDesarrollo.id] ?? emptyStats();
     const etapasTop = topEtapas(stats.leadsPorEtapa);
+    const xperienceProductId = getDesarrolloXperienceProductId(selectedDesarrollo.id);
+    const detailHero = getDesarrolloHeroImage(selectedDesarrollo, clusters);
 
     return (
       <div className="space-y-6">
@@ -347,7 +350,17 @@ export function DesarrollosHubPanel({
           style={{ borderTopWidth: 4, borderTopColor: selectedDesarrollo.colorPrincipal }}
         >
           <div className="flex flex-col gap-6 p-5 md:flex-row md:p-6">
-            {selectedDesarrollo.logo ? (
+            {detailHero ? (
+              <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100 md:h-44 md:w-56">
+                <Image
+                  src={detailHero}
+                  alt={selectedDesarrollo.nombre}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 224px"
+                />
+              </div>
+            ) : selectedDesarrollo.logo ? (
               <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 p-4 md:h-28 md:w-44">
                 <Image
                   src={selectedDesarrollo.logo}
@@ -370,6 +383,11 @@ export function DesarrollosHubPanel({
               <h2 className="text-2xl font-black text-gabi-forest md:text-3xl">
                 {selectedDesarrollo.nombre}
               </h2>
+              {xperienceProductId != null ? (
+                <p className="mt-1 text-xs font-semibold tabular-nums text-slate-500">
+                  id: {xperienceProductId}
+                </p>
+              ) : null}
               <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
                 <MapPin className="h-4 w-4 shrink-0" />
                 {selectedDesarrollo.ubicacion}

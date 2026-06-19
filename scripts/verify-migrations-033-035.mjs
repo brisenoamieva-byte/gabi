@@ -48,6 +48,12 @@ const checks = [
     column: "tipo",
     migration: "037_prospecto_qa_satisfaccion.sql",
   },
+  {
+    id: "038",
+    table: "crm_playbook_configs",
+    column: "desarrollo_id",
+    migration: "038_crm_playbook.sql",
+  },
 ];
 
 let allOk = true;

@@ -200,6 +200,17 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta prospecto_encuestas — aplica 037.",
   });
 
+  const playbookOk = await probeTable("crm_playbook_configs", "desarrollo_id");
+  checks.push({
+    id: "038",
+    label: "Playbook CRM asesor",
+    migrationFile: "038_crm_playbook.sql",
+    ok: playbookOk,
+    detail: playbookOk
+      ? "Siguiente paso y bloqueo de etapa en desarrollos piloto."
+      : "Falta crm_playbook_configs — aplica 038.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()

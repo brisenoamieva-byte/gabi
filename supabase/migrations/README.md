@@ -13,6 +13,9 @@ Aplica en **SQL Editor** del proyecto, **en orden numérico**, una por query (o 
 | 022 | `022_expediente_ventas.sql` | expediente_documentos + bucket |
 | 023 | **`023_expediente_comisiones.sql` únicamente** | checklist en docs, enganche, comisiones |
 | 024 | `024_lead_captura_logs.sql` | logs webhook Parseur |
+| 036 | `036_asesores_telefono.sql` | teléfono en asesores |
+| 037 | `037_prospecto_qa_satisfaccion.sql` | QA / satisfacción + `prospecto_encuestas` |
+| 038 | `038_crm_playbook.sql` | playbook CRM + cola «Siguiente paso» |
 
 Migraciones **001–017** son catálogo, admin, inventario y recorrido (suelen estar ya aplicadas en producción).
 
@@ -48,6 +51,28 @@ WHERE table_schema = 'public'
   AND column_name IN ('calificacion', 'es_duplicado', 'nivel_interes');
 ```
 
-En local: `npm run db:migrate:hint`
+En local:
+
+```bash
+npm run db:verify:migrations   # comprueba 033–038
+npm run db:apply:037-038         # requiere SUPABASE_DB_URL o SUPABASE_DB_PASSWORD
+npm run db:print:037-038         # imprime SQL para pegar en SQL Editor
+npm run db:open-sql-editor       # abre SQL Editor del proyecto
+npm run db:smoke:playbook        # tras aplicar, valida tablas + seed piloto
+```
+
+En `.env.local` basta con **una** de estas opciones:
+
+```env
+SUPABASE_DB_URL=postgresql://postgres:[PASSWORD]@db.[ref].supabase.co:5432/postgres
+# o solo:
+SUPABASE_DB_PASSWORD=[PASSWORD]
+```
+
+Si falta conexión Postgres, pega en SQL Editor (una query):
+
+`supabase/migrations/_bundle_037_038_apply_once.sql`
+
+O por archivo: `037_prospecto_qa_satisfaccion.sql` y luego `038_crm_playbook.sql`.
 
 En admin: banner **Salud de plataforma** (`/admin`) indica migraciones faltantes.

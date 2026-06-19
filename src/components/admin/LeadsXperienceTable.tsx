@@ -20,6 +20,7 @@ import {
   tipoAsignacionBadgeClass,
   tipoAsignacionLabel,
 } from "@/lib/comercial/xperience-leads";
+import { formatXperienceLeadId } from "@/lib/comercial/xperience-catalog-ids";
 
 type LeadsXperienceTableProps = {
   prospectos: ProspectoListRow[];
@@ -179,8 +180,12 @@ export function LeadsXperienceTable({
                       aria-label={`Seleccionar lead ${row.xperience_id ?? row.id}`}
                     />
                   </td>
-                  <td className="px-3 py-2 tabular-nums text-slate-600">
-                    {row.xperience_id ?? row.id.slice(0, 8)}
+                  <td className="px-3 py-2 tabular-nums text-slate-700">
+                    {formatXperienceLeadId(row.xperience_id) ?? (
+                      <span className="text-slate-400" title={`Lead GABI · ${row.id}`}>
+                        —
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-slate-600">
                     <p className="whitespace-nowrap">{fecha}</p>
@@ -292,7 +297,7 @@ export const exportLeadsCsv = (
   const lines = prospectos.map((row) => {
     const date = new Date(row.created_at);
     return [
-      row.xperience_id ?? row.id,
+      formatXperienceLeadId(row.xperience_id) ?? "",
       date.toISOString().slice(0, 10),
       date.toTimeString().slice(0, 8),
       desarrolloNombre(row),

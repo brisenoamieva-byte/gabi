@@ -5,6 +5,7 @@ import { INVESTTI_SIMULADOR_CONFIG } from "@/lib/corredor/investti-simulador-con
 import { isInvesttiSimuladorDesarrollo } from "@/lib/corredor/investti-simulador";
 import {
   INVESTTI_DESARROLLO_LOGOS,
+  INVESTTI_DESARROLLO_PORTADAS,
   INVESTTI_TARJETAS_PROCESO,
 } from "@/lib/catalog/investti-recorrido-data";
 
@@ -87,6 +88,7 @@ function corredorToDesarrollo(
     throw new Error(`Desarrollo corredor no encontrado: ${id}`);
   }
   const logo = INVESTTI_DESARROLLO_LOGOS[id];
+  const portada = INVESTTI_DESARROLLO_PORTADAS[id];
   return {
     id,
     nombre: corredor.nombre,
@@ -97,6 +99,7 @@ function corredorToDesarrollo(
     tiposProducto: ["terrenos"],
     estado: "activo",
     logo,
+    masterPlanImage: portada,
     brochurePdf: corredor.brochureUrl,
     tarjetasProcesoPdf: INVESTTI_TARJETAS_PROCESO[id],
     ...INVESTTI_BRAND,
@@ -115,6 +118,7 @@ const canadasLaPortaDesarrollo: Desarrollo = {
   tiposProducto: ["terrenos"],
   estado: "activo",
   logo: INVESTTI_DESARROLLO_LOGOS["canadas-la-porta"],
+  masterPlanImage: INVESTTI_DESARROLLO_PORTADAS["canadas-la-porta"],
   tarjetasProcesoPdf: INVESTTI_TARJETAS_PROCESO["canadas-la-porta"],
   ...INVESTTI_BRAND,
 };
@@ -138,6 +142,8 @@ export const investtiCatalogDesarrollos: Desarrollo[] = [
 export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map((d) => {
   const corredor = getCorredorDesarrolloById(d.id);
   const projectLogo = getDesarrolloLogoUrl({ id: d.id }) ?? d.logo ?? "";
+  const portada =
+    INVESTTI_DESARROLLO_PORTADAS[d.id as InvesttiCatalogDesarrolloId] ?? projectLogo;
   return {
     id: `${d.id}-terrenos`,
     nombre: "Terrenos",
@@ -159,7 +165,7 @@ export const investtiCatalogClusters: Cluster[] = investtiCatalogDesarrollos.map
     precioDesde: d.precioDesde,
     entregaGeneral: "Por confirmar",
     amenidades: corredor?.amenidades ?? [],
-    fotoPortada: projectLogo,
+    fotoPortada: portada,
     logo: projectLogo,
     activo: true,
     brochurePdf: d.brochurePdf,

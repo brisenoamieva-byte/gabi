@@ -10,6 +10,7 @@ import {
   type ProspectoListRow,
 } from "@/lib/admin/prospectos-service";
 import { isProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
@@ -148,6 +149,7 @@ export const updateProspectoForAsesor = async (
     if (!isProspectoEtapa(input.etapa) || !ETAPAS_ASESOR.includes(input.etapa)) {
       throw new Error("Etapa no permitida para asesor.");
     }
+    await validatePlaybookEtapaChange(existing, input.etapa);
   }
 
   const patch: Record<string, unknown> = {

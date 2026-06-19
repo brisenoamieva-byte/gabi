@@ -12,6 +12,7 @@ import {
   prospectoEtapaLabel,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
+import { formatXperienceLeadId } from "@/lib/comercial/xperience-catalog-ids";
 import { XPERIENCE_CALIFICACIONES } from "@/lib/comercial/xperience-leads";
 import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
 
@@ -206,8 +207,16 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">ID Xperience</span>
-                  <span>{detail.xperience_id ?? "—"}</span>
+                  <span className="font-semibold tabular-nums text-gabi-forest">
+                    {formatXperienceLeadId(detail.xperience_id) ?? "—"}
+                  </span>
                 </div>
+                {!detail.xperience_id ? (
+                  <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-slate-400">ID GABI</span>
+                    <span className="font-mono text-slate-500">{detail.id.slice(0, 8)}…</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Producto</span>
                   <span>{detail.producto_nombre ?? detail.desarrollo_id}</span>

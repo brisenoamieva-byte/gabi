@@ -53,6 +53,7 @@ export function DesarrolloHubCard({
   onOpen,
 }: DesarrolloHubCardProps) {
   const heroImage = getDesarrolloHeroImage(desarrollo, clusters);
+  const xperienceId = desarrolloDisplayId(desarrollo);
   const createdLabel = formatCatalogDate(desarrollo.createdAt);
   const updatedLabel =
     formatCatalogDate(desarrollo.updatedAt) ?? formatCatalogDate(stats.campanaUpdatedAt);
@@ -79,9 +80,11 @@ export function DesarrolloHubCard({
               <Building2 className="h-12 w-12" style={{ color: desarrollo.colorPrincipal }} />
             </div>
           )}
-          <span className="absolute right-2 top-2 rounded-md bg-gabi-forest/90 px-2 py-0.5 text-[10px] font-bold tabular-nums text-white shadow">
-            Id: {desarrolloDisplayId(desarrollo)}
-          </span>
+          {xperienceId ? (
+            <span className="absolute right-2 top-2 rounded-md bg-[#1a2b4a]/90 px-2 py-0.5 text-[10px] font-bold tabular-nums text-white shadow">
+              Id: {xperienceId}
+            </span>
+          ) : null}
         </div>
 
         <div className="flex flex-1 flex-col p-4">

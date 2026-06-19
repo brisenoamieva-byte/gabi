@@ -1,0 +1,26 @@
+{
+  "desarrolloProductIds": {
+    "canadas-la-porta": 215,
+    "canadas-del-arroyo": 216,
+    "simate": 217,
+    "canadas-del-valle": 218
+  },
+  "productNameToDesarrolloId": {
+    "Cañadas del Valle": "canadas-del-valle",
+    "Cañadas la Porta": "canadas-la-porta",
+    "Cañadas del Arroyo": "canadas-del-arroyo",
+    "Simaté": "simate",
+    "Simate": "simate"
+  },
+  "asesorIdsByEmail": {
+    "emmanuel.escobar@grupoinvestti.com": 2722,
+    "alicia.aguilar@grupoinvestti.com": 2723,
+    "ignacio.underwood@grupoinvestti.com": 2725,
+    "rafael.belmont@grupoinvestti.com": 2726,
+    "martha.españa@grupoinvestti.com": 2727,
+    "melissa.macias@grupoinvestti.com": 2728,
+    "daniela.zarco@grupoinvestti.com": 2730,
+    "miriam.cossylion@grupoinvestti.com": 2731,
+    "paola.fontecilla@grupoinvestti.com": 2732
+  }
+}

@@ -13,9 +13,19 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import XLSX from "xlsx";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadEnvLocal } from "./load-env-local.mjs";
+
+const CATALOG_PATH = resolve(process.cwd(), "src/lib/comercial/xperience-catalog.json");
+
+const loadDefaultProductoMap = () => {
+  if (!existsSync(CATALOG_PATH)) {
+    return {};
+  }
+  const catalog = JSON.parse(readFileSync(CATALOG_PATH, "utf8"));
+  return catalog.productNameToDesarrolloId ?? {};
+};
 
 const DEFAULT_XLSX = "C:/Users/brise/Downloads/leads_xperience.xlsx";
 
@@ -66,6 +76,15 @@ const parseArgs = () => {
 const resolveDesarrolloId = (producto, fallbackId, productoMap, allowUnmappedFallback) => {
   if (productoMap[producto]) {
     return productoMap[producto];
+  }
+  const trimmed = String(producto ?? "").trim();
+  if (trimmed) {
+    const normalized = trimmed.toLowerCase();
+    for (const [name, id] of Object.entries(productoMap)) {
+      if (name.toLowerCase() === normalized) {
+        return id;
+      }
+    }
   }
   if (allowUnmappedFallback && fallbackId) {
     return fallbackId;
@@ -129,7 +148,10 @@ const upsertCampana = async (supabase, { desarrolloId, nombre, canal }) => {
 
 const main = async () => {
   loadEnvLocal();
-  const { xlsxPath, desarrolloId, productoMap, allowUnmappedFallback } = parseArgs();
+  const parsed = parseArgs();
+  const defaultMap = loadDefaultProductoMap();
+  const productoMap = { ...defaultMap, ...parsed.productoMap };
+  const { xlsxPath, desarrolloId, allowUnmappedFallback } = parsed;
 
   if (!Object.keys(productoMap).length && !allowUnmappedFallback) {
     console.error(
@@ -137,6 +159,9 @@ const main = async () => {
     );
     console.error(
       "  Ejemplo: --map '{\"Pasaje Álamos\":\"pasaje-alamos\",\"La Vista Residencial\":\"la-vista-residencial\"}'",
+    );
+    console.error(
+      "  O usa el mapa Investti por defecto en src/lib/comercial/xperience-catalog.json",
     );
     process.exit(1);
   }

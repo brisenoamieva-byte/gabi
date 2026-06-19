@@ -4,6 +4,7 @@ import {
   updateProspectoForAsesor,
   type AsesorUpdateProspectoInput,
 } from "@/lib/asesores/prospectos-service";
+import { getProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -18,7 +19,8 @@ export async function GET(request: Request, context: RouteContext) {
 
   try {
     const prospecto = await getProspectoForAsesor(asesorId, id);
-    return NextResponse.json({ prospecto });
+    const playbook = await getProspectoPlaybookState(prospecto);
+    return NextResponse.json({ prospecto, playbook });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al cargar prospecto." },
@@ -43,7 +45,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       notas: body.notas,
     });
 
-    return NextResponse.json({ prospecto });
+    const playbook = await getProspectoPlaybookState(prospecto);
+
+    return NextResponse.json({ prospecto, playbook });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al actualizar prospecto." },

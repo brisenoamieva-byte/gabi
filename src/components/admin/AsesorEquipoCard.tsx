@@ -17,6 +17,10 @@ import {
   type AsesorRecord,
   type AsesorRol,
 } from "@/lib/asesores/types";
+import {
+  formatGabiInternalAsesorId,
+  getAsesorXperienceDisplayId,
+} from "@/lib/comercial/xperience-catalog-ids";
 
 const avatarInitials = (nombre: string) =>
   nombre
@@ -26,7 +30,13 @@ const avatarInitials = (nombre: string) =>
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("") || "?";
 
-const shortId = (id: string) => (id.length > 12 ? id.slice(0, 8) : id);
+const shortId = (asesor: AsesorRecord) => {
+  const xperienceId = getAsesorXperienceDisplayId(asesor.email);
+  if (xperienceId != null) {
+    return String(xperienceId);
+  }
+  return formatGabiInternalAsesorId(asesor.id);
+};
 
 type AsesorEquipoCardProps = {
   asesor: AsesorRecord;
@@ -56,6 +66,7 @@ export function AsesorEquipoCard({
   onSyncAdmin,
 }: AsesorEquipoCardProps) {
   const busy = saving || savingId === asesor.id;
+  const asesorIdLabel = shortId(asesor);
 
   return (
     <article
@@ -67,9 +78,11 @@ export function AsesorEquipoCard({
         <span className="rounded-full bg-gabi-forest/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gabi-forest">
           {asesorRolLabel[asesor.rol]}
         </span>
-        <span className="text-[10px] font-semibold tabular-nums text-slate-400" title={asesor.id}>
-          id: {shortId(asesor.id)}
-        </span>
+        {asesorIdLabel ? (
+          <span className="text-[10px] font-semibold tabular-nums text-slate-400" title={asesor.id}>
+            id: {asesorIdLabel}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-4 flex items-start gap-3">
@@ -217,7 +230,8 @@ export function filterAsesoresEquipo(
       asesor.nombre.toLowerCase().includes(q) ||
       asesor.email.toLowerCase().includes(q) ||
       (asesor.telefono ?? "").toLowerCase().includes(q) ||
-      asesor.id.toLowerCase().includes(q)
+      asesor.id.toLowerCase().includes(q) ||
+      String(getAsesorXperienceDisplayId(asesor.email) ?? "").includes(q)
     );
   });
 }

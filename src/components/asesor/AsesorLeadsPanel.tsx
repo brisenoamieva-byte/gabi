@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
+import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
+import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail, ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { prefillCotizadorFromProspecto } from "@/lib/asesores/prefill-cotizador-client";
@@ -28,6 +30,13 @@ import {
   leadPeriodToRange,
   type LeadPeriodFilter,
 } from "@/lib/comercial/format-lead-date";
+import {
+  canAdvancePlaybookEtapa,
+  isCrmPlaybookPilotDesarrollo,
+  type CrmPlaybookConfig,
+  type PlaybookQueueItem,
+} from "@/lib/comercial/crm-playbook";
+import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import {
   isProspectoEtapa,
   PROSPECTO_ETAPAS,
@@ -76,8 +85,10 @@ function AsesorLeadDrawer({
   onUpdated: () => void;
 }) {
   const [detail, setDetail] = useState<ProspectoDetail | null>(null);
+  const [playbook, setPlaybook] = useState<ProspectoPlaybookState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [completingStepId, setCompletingStepId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
@@ -90,7 +101,11 @@ function AsesorLeadDrawer({
       const response = await fetch(
         `/api/asesores/prospectos/${prospectoId}?asesorId=${encodeURIComponent(asesorId)}`,
       );
-      const data = (await response.json()) as { prospecto?: ProspectoDetail; error?: string };
+      const data = (await response.json()) as {
+        prospecto?: ProspectoDetail;
+        playbook?: ProspectoPlaybookState;
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo cargar el prospecto.");
@@ -98,6 +113,7 @@ function AsesorLeadDrawer({
 
       if (data.prospecto) {
         setDetail(data.prospecto);
+        setPlaybook(data.playbook ?? null);
         setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
         setNotas(data.prospecto.notas ?? "");
       }
@@ -114,6 +130,41 @@ function AsesorLeadDrawer({
 
   const etapaEditable = detail ? prospectoEtapaEditableByAsesor(detail.etapa) : false;
 
+  const isEtapaOptionAllowed = (target: ProspectoEtapa) => {
+    if (!detail || !playbook?.config?.enabled || !playbook.config.blockEtapa) {
+      return true;
+    }
+    const current = isProspectoEtapa(detail.etapa) ? detail.etapa : "nuevo";
+    const completedIds = new Set(playbook.completedStepIds);
+    return canAdvancePlaybookEtapa(playbook.config, current, target, completedIds).ok;
+  };
+
+  const handleCompleteStep = async (stepId: string) => {
+    setCompletingStepId(stepId);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/asesores/prospectos/${prospectoId}/playbook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asesorId, stepId }),
+      });
+
+      const data = (await response.json()) as { playbook?: ProspectoPlaybookState; error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo completar el paso.");
+      }
+
+      setPlaybook(data.playbook ?? null);
+      onUpdated();
+    } catch (completeError) {
+      setError(completeError instanceof Error ? completeError.message : "Error al completar paso.");
+    } finally {
+      setCompletingStepId(null);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
@@ -129,7 +180,11 @@ function AsesorLeadDrawer({
         }),
       });
 
-      const data = (await response.json()) as { prospecto?: ProspectoDetail; error?: string };
+      const data = (await response.json()) as {
+        prospecto?: ProspectoDetail;
+        playbook?: ProspectoPlaybookState;
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo guardar.");
@@ -137,6 +192,9 @@ function AsesorLeadDrawer({
 
       if (data.prospecto) {
         setDetail(data.prospecto);
+      }
+      if (data.playbook) {
+        setPlaybook(data.playbook);
       }
       onUpdated();
     } catch (saveError) {
@@ -208,6 +266,15 @@ function AsesorLeadDrawer({
                 </div>
               ) : null}
 
+              {playbook?.config?.enabled ? (
+                <CrmPlaybookChecklist
+                  etapa={isProspectoEtapa(detail.etapa) ? detail.etapa : "nuevo"}
+                  playbook={playbook}
+                  completingStepId={completingStepId}
+                  onCompleteStep={(stepId) => void handleCompleteStep(stepId)}
+                />
+              ) : null}
+
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-slate-600">Etapa</span>
                 <select
@@ -217,11 +284,15 @@ function AsesorLeadDrawer({
                   className={inputClass}
                 >
                   {ETAPAS_ASESOR.map((item) => (
-                    <option key={item} value={item}>
+                    <option key={item} value={item} disabled={!isEtapaOptionAllowed(item)}>
                       {prospectoEtapaLabel[item]}
+                      {!isEtapaOptionAllowed(item) ? " (playbook)" : ""}
                     </option>
                   ))}
                 </select>
+                {playbook?.config?.blockEtapa && !playbook.canAdvanceEtapa ? (
+                  <p className="mt-1 text-xs text-amber-700">{playbook.blockReason}</p>
+                ) : null}
               </label>
 
               <label className="block text-sm">
@@ -319,8 +390,40 @@ export function AsesorLeadsPanel({
   const [newTelefono, setNewTelefono] = useState("");
   const [newMedioContacto, setNewMedioContacto] = useState("contacto-directo");
   const [newNotas, setNewNotas] = useState("");
+  const [playbookQueue, setPlaybookQueue] = useState<PlaybookQueueItem[]>([]);
+  const [playbookConfig, setPlaybookConfig] = useState<CrmPlaybookConfig | null>(null);
+  const playbookEnabled = isCrmPlaybookPilotDesarrollo(desarrolloId) && playbookConfig?.enabled;
 
   const periodRange = useMemo(() => leadPeriodToRange(periodFilter), [periodFilter]);
+
+  const loadPlaybookQueue = useCallback(async () => {
+    if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+      setPlaybookQueue([]);
+      setPlaybookConfig(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/asesores/crm-playbook/queue?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+      );
+      const data = (await response.json()) as {
+        queue?: PlaybookQueueItem[];
+        config?: CrmPlaybookConfig | null;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo cargar la cola de playbook.");
+      }
+
+      setPlaybookQueue(data.queue ?? []);
+      setPlaybookConfig(data.config ?? null);
+    } catch {
+      setPlaybookQueue([]);
+      setPlaybookConfig(null);
+    }
+  }, [asesorId, desarrolloId]);
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -369,7 +472,8 @@ export function AsesorLeadsPanel({
 
   useEffect(() => {
     void loadLeads();
-  }, [loadLeads]);
+    void loadPlaybookQueue();
+  }, [loadLeads, loadPlaybookQueue]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -385,6 +489,7 @@ export function AsesorLeadsPanel({
 
     const data = (await response.json()) as { error?: string };
     if (!response.ok) {
+      setError(data.error ?? "No se pudo mover el prospecto.");
       throw new Error(data.error ?? "No se pudo mover el prospecto.");
     }
 
@@ -392,6 +497,7 @@ export function AsesorLeadsPanel({
       prev.map((row) => (row.id === prospectoId ? { ...row, etapa } : row)),
     );
     void loadLeads();
+    void loadPlaybookQueue();
   };
 
   const resetNewLeadForm = () => {
@@ -455,6 +561,13 @@ export function AsesorLeadsPanel({
 
   return (
     <div className="space-y-4">
+      {playbookEnabled ? (
+        <CrmPlaybookBanner
+          queue={playbookQueue}
+          onSelectLead={(prospectoId) => setSelectedId(prospectoId)}
+        />
+      ) : null}
+
       <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -635,7 +748,10 @@ export function AsesorLeadsPanel({
           asesorId={asesorId}
           prospectoId={selectedId}
           onClose={() => setSelectedId(null)}
-          onUpdated={() => void loadLeads()}
+          onUpdated={() => {
+            void loadLeads();
+            void loadPlaybookQueue();
+          }}
         />
       ) : null}
 

@@ -1,5 +1,11 @@
 import type { Cluster, Desarrollo } from "@/lib/data";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
+import { getInvesttiDesarrolloPortada } from "@/lib/catalog/investti-recorrido-data";
+import {
+  DESARROLLO_HUB_HERO_IMAGES,
+  desarrolloXperienceDisplayId,
+  getDesarrolloXperienceProductId,
+} from "@/lib/comercial/xperience-catalog-ids";
 
 export const formatCatalogDate = (iso?: string | null) => {
   if (!iso) {
@@ -16,6 +22,16 @@ export const getDesarrolloHeroImage = (
   desarrollo: Desarrollo,
   clusters: Cluster[],
 ): string | null => {
+  const investtiPortada = getInvesttiDesarrolloPortada(desarrollo.id);
+  if (investtiPortada) {
+    return investtiPortada;
+  }
+
+  const hubHero = DESARROLLO_HUB_HERO_IMAGES[desarrollo.id];
+  if (hubHero) {
+    return hubHero;
+  }
+
   if (desarrollo.masterPlanImage) {
     return desarrollo.masterPlanImage;
   }
@@ -34,7 +50,8 @@ export const getDesarrolloHeroImage = (
   return null;
 };
 
-export const desarrolloDisplayId = (desarrollo: Desarrollo) => desarrollo.slug;
+export const desarrolloDisplayId = (desarrollo: Desarrollo) =>
+  desarrolloXperienceDisplayId(desarrollo);
 
 export const resolveComercializadorLabel = (
   desarrollo: DesarrolloRecord,
@@ -70,6 +87,7 @@ export const filterDesarrollosHub = (
       desarrollo.ubicacion,
       desarrollo.comercializador,
       desarrollo.desarrollador,
+      String(getDesarrolloXperienceProductId(desarrollo.id) ?? ""),
     ]
       .join(" ")
       .toLowerCase();

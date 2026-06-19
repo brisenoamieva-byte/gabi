@@ -16,6 +16,23 @@ export const INVESTTI_DESARROLLO_LOGOS: Record<InvesttiCatalogDesarrolloId, stri
   "canadas-la-porta": "/corredor/logos/investti/canadas-la-porta.png",
 };
 
+/** Fotos de portada (hero) — paridad Xperience; logos PNG solo en recorrido/PDF. */
+export const INVESTTI_DESARROLLO_PORTADAS: Record<InvesttiCatalogDesarrolloId, string> = {
+  "canadas-del-valle": "/corredor/logos/CANADAS-DEL-VALLE.jpg",
+  "canadas-del-arroyo": "/corredor/logos/CANADAS-DEL-ARROYO.jpg",
+  simate: "/corredor/logos/SIMATE.jpg",
+  "canadas-la-porta": "/propuestas/desarrollos-alianzas/canadas-la-porta.png",
+};
+
+export const getInvesttiDesarrolloPortada = (
+  desarrolloId: string,
+): string | null => {
+  if (!(desarrolloId in INVESTTI_DESARROLLO_PORTADAS)) {
+    return null;
+  }
+  return INVESTTI_DESARROLLO_PORTADAS[desarrolloId as InvesttiCatalogDesarrolloId];
+};
+
 export const grupoInvesttiRecorrido = {
   titulo: "Grupo Investti",
   subtitulo: "Desarrollador",
