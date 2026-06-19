@@ -2,6 +2,7 @@ import {
   clusters,
   comercializadores,
   desarrollos,
+  disponibilidades,
   prototipos,
   type DisponibilidadUnidad,
 } from "@/lib/data";
@@ -13,6 +14,7 @@ import {
   misionLaGaviaDisponibilidades,
   misionLaGaviaPrototipos,
 } from "@/lib/catalog/mision-la-gavia.generated";
+import { LA_VISTA_RESIDENCIAL_ID } from "@/lib/catalog/desarrollos-registry";
 import { getDefaultRecorridoContenido } from "@/lib/catalog/recorrido-content";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
 import { syncSuperficieLegacyFields } from "@/lib/inventario/productos-recomendados";
@@ -23,19 +25,24 @@ export type CatalogSeedResult = {
   desarrollos: number;
   clusters: number;
   prototipos: number;
+  inventarioLaVista: number;
   inventarioPasaje: number;
   inventarioMisionLaGavia: number;
+  inventarioTotal: number;
 };
 
 const PASAJE_DESARROLLO_ID = "pasaje-alamos";
 const INVENTARIO_BATCH_SIZE = 50;
 
 const clusterDesarrolloLookup = new Map(
-  clusters.map((cluster) => [cluster.id, cluster.desarrolloId ?? PASAJE_DESARROLLO_ID]),
+  clusters.map((cluster) => [
+    cluster.id,
+    cluster.desarrolloId ?? LA_VISTA_RESIDENCIAL_ID,
+  ]),
 );
 
 const disponibilidadToRow = (unit: DisponibilidadUnidad) => {
-  const desarrolloId = clusterDesarrolloLookup.get(unit.clusterId) ?? PASAJE_DESARROLLO_ID;
+  const desarrolloId = clusterDesarrolloLookup.get(unit.clusterId) ?? LA_VISTA_RESIDENCIAL_ID;
   const superficies = syncSuperficieLegacyFields(
     unit.tipo,
     unit.superficieTerrenoM2 ?? null,
@@ -73,13 +80,20 @@ const disponibilidadToRow = (unit: DisponibilidadUnidad) => {
   };
 };
 
-export const seedPasajeAlamosInventario = async (): Promise<number> => {
+export const seedInventarioUnits = async (
+  units: DisponibilidadUnidad[],
+  label = "inventario",
+): Promise<number> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     throw new Error("Supabase no configurado. Revisa las variables de entorno.");
   }
 
-  const rows = pasajeAlamosDisponibilidades.map(disponibilidadToRow);
+  if (!units.length) {
+    return 0;
+  }
+
+  const rows = units.map(disponibilidadToRow);
   let loaded = 0;
 
   for (let index = 0; index < rows.length; index += INVENTARIO_BATCH_SIZE) {
@@ -90,9 +104,9 @@ export const seedPasajeAlamosInventario = async (): Promise<number> => {
 
     if (error) {
       const hint = error.message.includes("cajones")
-        ? " Aplica supabase/migrations/017_pasaje_unidad_detalles.sql en Supabase (npm run db:migrate:hint)."
+        ? " Aplica supabase/migrations/017_pasaje_unidad_detalles.sql en Supabase."
         : "";
-      throw new Error(`No se pudo cargar inventario Pasaje Álamos: ${error.message}.${hint}`);
+      throw new Error(`No se pudo cargar ${label}: ${error.message}.${hint}`);
     }
 
     loaded += batch.length;
@@ -101,30 +115,14 @@ export const seedPasajeAlamosInventario = async (): Promise<number> => {
   return loaded;
 };
 
-export const seedMisionLaGaviaInventario = async (): Promise<number> => {
-  const supabase = createSupabaseServiceClient();
-  if (!supabase) {
-    throw new Error("Supabase no configurado. Revisa las variables de entorno.");
-  }
+export const seedPasajeAlamosInventario = async (): Promise<number> =>
+  seedInventarioUnits(pasajeAlamosDisponibilidades, "inventario Pasaje Álamos");
 
-  const rows = misionLaGaviaDisponibilidades.map(disponibilidadToRow);
-  let loaded = 0;
+export const seedMisionLaGaviaInventario = async (): Promise<number> =>
+  seedInventarioUnits(misionLaGaviaDisponibilidades, "inventario Misión La Gavia");
 
-  for (let index = 0; index < rows.length; index += INVENTARIO_BATCH_SIZE) {
-    const batch = rows.slice(index, index + INVENTARIO_BATCH_SIZE);
-    const { error } = await supabase.from("disponibilidad_unidades").upsert(batch, {
-      onConflict: "desarrollo_id,cluster_id,unidad",
-    });
-
-    if (error) {
-      throw new Error(`No se pudo cargar inventario Misión La Gavia: ${error.message}.`);
-    }
-
-    loaded += batch.length;
-  }
-
-  return loaded;
-};
+export const seedLaVistaInventario = async (): Promise<number> =>
+  seedInventarioUnits(disponibilidades, "inventario La Vista Residencial");
 
 export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
   const supabase = createSupabaseServiceClient();
@@ -253,6 +251,7 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
     }
   }
 
+  const inventarioLaVista = await seedLaVistaInventario();
   const inventarioPasaje = await seedPasajeAlamosInventario();
   const inventarioMisionLaGavia = await seedMisionLaGaviaInventario();
 
@@ -261,7 +260,9 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
     desarrollos: desarrollosCount,
     clusters: clustersCount,
     prototipos: prototiposCount,
+    inventarioLaVista,
     inventarioPasaje,
     inventarioMisionLaGavia,
+    inventarioTotal: inventarioLaVista + inventarioPasaje + inventarioMisionLaGavia,
   };
 };

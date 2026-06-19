@@ -129,6 +129,10 @@ export function getCotizadorKind(desarrolloId: string): CotizadorKind {
   return getDesarrolloRegistry(desarrolloId)?.cotizadorKind ?? "generic";
 }
 
+export function usesDedicatedSimulador(desarrolloId: string): boolean {
+  return getCotizadorKind(desarrolloId) !== "generic";
+}
+
 export function hasSegmentedReporteSemanal(desarrolloId: string): boolean {
   return getDesarrolloRegistry(desarrolloId)?.reporteSemanalSegmented ?? false;
 }

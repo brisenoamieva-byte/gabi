@@ -29,9 +29,8 @@ import {
 } from "@/components/corredor/mision-la-gavia/MisionLaGaviaSimuladorPanel";
 import {
   investtiCatalogHasSimulador,
-  isInvesttiCatalogDesarrollo,
 } from "@/lib/catalog/investti-desarrollos";
-import { isMisionLaGaviaDesarrollo, misionLaGaviaHasSimulador } from "@/lib/catalog/mision-la-gavia";
+import { getCotizadorKind } from "@/lib/catalog/desarrollos-registry";
 import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
 import type { MisionLaGaviaEsquemaId } from "@/lib/corredor/mision-la-gavia-simulador";
 
@@ -165,7 +164,9 @@ function ToggleGroup({
 }
 
 export function CotizadorPanel(props: CotizadorPanelProps) {
-  if (isInvesttiCatalogDesarrollo(props.desarrolloId)) {
+  const cotizadorKind = getCotizadorKind(props.desarrolloId);
+
+  if (cotizadorKind === "investti") {
     if (investtiCatalogHasSimulador(props.desarrolloId)) {
       return (
         <InvesttiSimuladorPanel
@@ -182,7 +183,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
     );
   }
 
-  if (props.desarrolloId === "pasaje-alamos") {
+  if (cotizadorKind === "pasaje") {
     return (
       <PasajeSimuladorPanel
         desarrolloId={props.desarrolloId}
@@ -227,7 +228,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
     );
   }
 
-  if (isMisionLaGaviaDesarrollo(props.desarrolloId) && misionLaGaviaHasSimulador()) {
+  if (cotizadorKind === "mision-gavia") {
     return (
       <MisionLaGaviaSimuladorPanel
         desarrolloId={props.desarrolloId}

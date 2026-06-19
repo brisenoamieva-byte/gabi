@@ -43,6 +43,8 @@ type DesarrolloStats = {
   sembradoTotal: number;
   sembradoApartados: number;
   asesoresTotal: number;
+  onboardingPct: number | null;
+  readyForField: boolean | null;
   loading: boolean;
 };
 
@@ -54,6 +56,8 @@ const emptyStats = (): DesarrolloStats => ({
   sembradoTotal: 0,
   sembradoApartados: 0,
   asesoresTotal: 0,
+  onboardingPct: null,
+  readyForField: null,
   loading: true,
 });
 
@@ -130,6 +134,17 @@ export function DesarrollosHubPanel({
               if (response.ok && data.campanas) {
                 next.campanasTotal = data.campanas.length;
                 next.campanasActivas = data.campanas.filter((item) => item.activo).length;
+              }
+            })(),
+            (async () => {
+              const params = new URLSearchParams({ desarrolloId });
+              const response = await fetch(`/api/admin/desarrollos/onboarding?${params.toString()}`);
+              const data = (await response.json()) as {
+                onboarding?: { progressPct: number; readyForField: boolean };
+              };
+              if (response.ok && data.onboarding) {
+                next.onboardingPct = data.onboarding.progressPct;
+                next.readyForField = data.onboarding.readyForField;
               }
             })(),
           );
@@ -472,6 +487,29 @@ export function DesarrollosHubPanel({
                       )
                       .join(" · ")}
                   </p>
+                ) : null}
+
+                {!stats.loading && stats.onboardingPct !== null ? (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-semibold text-slate-500">Listo para campo</span>
+                      <span
+                        className={`font-bold ${
+                          stats.readyForField ? "text-emerald-600" : "text-amber-600"
+                        }`}
+                      >
+                        {stats.onboardingPct}%
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          stats.readyForField ? "bg-emerald-500" : "bg-amber-400"
+                        }`}
+                        style={{ width: `${Math.min(100, stats.onboardingPct)}%` }}
+                      />
+                    </div>
+                  </div>
                 ) : null}
               </div>
             </button>

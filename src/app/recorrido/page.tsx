@@ -24,10 +24,12 @@ import { CotizadorPanel } from "@/components/CotizadorPanel";
 import { InvesttiSimuladorPanel } from "@/components/corredor/investti/InvesttiSimuladorPanel";
 import { MisionLaGaviaSimuladorPanel } from "@/components/corredor/mision-la-gavia/MisionLaGaviaSimuladorPanel";
 import {
+  getCotizadorKind,
+  usesDedicatedSimulador,
+} from "@/lib/catalog/desarrollos-registry";
+import {
   investtiCatalogHasSimulador,
-  isInvesttiCatalogDesarrollo,
 } from "@/lib/catalog/investti-desarrollos";
-import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 import {
   isPasajeDepartamentosCluster,
 } from "@/lib/catalog/pasaje-alamos-acabados";
@@ -526,7 +528,7 @@ export default function RecorridoPage() {
     : 0;
 
   const pasajeSimuladorResult = useMemo(() => {
-    if (activeDesarrollo?.id !== "pasaje-alamos") return null;
+    if (getCotizadorKind(activeDesarrollo?.id ?? "") !== "pasaje") return null;
     const unidadElegida = state.unidadId
       ? clusterInventario.find((unit) => unit.id === state.unidadId) ??
         cotizadorInventario.find((unit) => unit.id === state.unidadId)
@@ -583,7 +585,7 @@ export default function RecorridoPage() {
   ]);
 
   const misionLaGaviaSimuladorResult = useMemo(() => {
-    if (!isMisionLaGaviaDesarrollo(activeDesarrollo?.id)) return null;
+    if (getCotizadorKind(activeDesarrollo?.id ?? "") !== "mision-gavia") return null;
     const unidadRecord = resolveMisionLaGaviaUnidadFromInventario(
       cotizadorInventario,
       state.unidadId || selectedAvailability?.id,
@@ -1552,7 +1554,7 @@ export default function RecorridoPage() {
                           <p className="mt-1 text-sm font-semibold text-slate-500">
                             {masterPlanImage
                               ? "Ubica clusters, plazas, parques y accesos con el cliente antes de filtrar producto."
-                              : isInvesttiCatalogDesarrollo(activeDesarrollo?.id)
+                              : getCotizadorKind(activeDesarrollo?.id ?? "") === "investti"
                                 ? "Revisa etapas, metrajes y amenidades con el brochure antes de abrir el simulador."
                                 : "Confirma escala, metraje y ritmo de venta con el cliente antes de filtrar producto."}
                           </p>
@@ -1926,7 +1928,7 @@ export default function RecorridoPage() {
                             );
                           })}
                         </div>
-                      ) : isInvesttiCatalogDesarrollo(activeDesarrollo?.id) ? (
+                      ) : activeDesarrollo && getCotizadorKind(activeDesarrollo.id) === "investti" ? (
                         <div className="space-y-5 rounded-[2rem] bg-white p-6 shadow-lg">
                           <div>
                             <p className="text-xl font-black text-[#201044]">Terrenos · simulador</p>
@@ -2126,7 +2128,7 @@ export default function RecorridoPage() {
                             Cotizar ahora
                           </button>
                         </div>
-                        {isMisionLaGaviaDesarrollo(activeDesarrollo?.id) ? (
+                        {activeDesarrollo && getCotizadorKind(activeDesarrollo.id) === "mision-gavia" ? (
                           <div className="mt-6 space-y-4 rounded-[1.5rem] border border-[#5B8A7D]/20 bg-slate-50/80 p-5">
                             <p className="text-sm font-black text-[#14453D]">
                               Simulador lista mar26
@@ -2419,9 +2421,7 @@ export default function RecorridoPage() {
 
       {showQuote &&
         activeDesarrollo &&
-        (selectedPrototipo ||
-          isInvesttiCatalogDesarrollo(activeDesarrollo.id) ||
-          isMisionLaGaviaDesarrollo(activeDesarrollo.id)) && (
+        (selectedPrototipo || usesDedicatedSimulador(activeDesarrollo.id)) && (
         <Modal onClose={() => setShowQuote(false)} title="Cotizador">
           <CotizadorPanel
             desarrolloId={activeDesarrollo.id}
@@ -2579,7 +2579,7 @@ export default function RecorridoPage() {
                 </p>
               </SummaryBox>
             ) : null}
-            {!isInvesttiCatalogDesarrollo(activeDesarrollo?.id) ? (
+            {getCotizadorKind(activeDesarrollo?.id ?? "") !== "investti" ? (
               <SummaryBox title="Datos bancarios">
                 <p>{activeDatosBancarios.razonSocial}</p>
                 <p>RFC: {activeDatosBancarios.rfc}</p>
@@ -2590,7 +2590,7 @@ export default function RecorridoPage() {
               </SummaryBox>
             ) : null}
             <div className="flex flex-col gap-3">
-              {!isInvesttiCatalogDesarrollo(activeDesarrollo?.id) ? (
+              {getCotizadorKind(activeDesarrollo?.id ?? "") !== "investti" ? (
                 <button
                   type="button"
                   onClick={copyBankData}
