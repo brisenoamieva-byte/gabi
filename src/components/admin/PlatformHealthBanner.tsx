@@ -1,27 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
 import type { PlatformHealth } from "@/lib/admin/platform-health-types";
+
+type ApplyStatus = {
+  canApply: boolean;
+  pendingIds: string[];
+};
 
 export function PlatformHealthBanner() {
   const [health, setHealth] = useState<PlatformHealth | null>(null);
+  const [applyStatus, setApplyStatus] = useState<ApplyStatus | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState("");
+
+  const loadHealth = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/platform-health");
+      const data = (await response.json()) as PlatformHealth & { error?: string };
+      if (response.ok) {
+        setHealth(data);
+      }
+    } catch {
+      setHealth(null);
+    }
+  }, []);
+
+  const loadApplyStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/db/apply-migrations");
+      if (response.ok) {
+        const data = (await response.json()) as ApplyStatus;
+        setApplyStatus(data);
+      }
+    } catch {
+      setApplyStatus(null);
+    }
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const response = await fetch("/api/admin/platform-health");
-        const data = (await response.json()) as PlatformHealth & { error?: string };
-        if (response.ok) {
-          setHealth(data);
-        }
-      } catch {
-        setHealth(null);
-      }
-    })();
-  }, []);
+    void loadHealth();
+    void loadApplyStatus();
+  }, [loadHealth, loadApplyStatus]);
 
   if (!health || dismissed) {
     return null;
@@ -31,6 +54,46 @@ export function PlatformHealthBanner() {
   const showParseurWarning = !health.parseurSecretConfigured;
   const showQaWarning = !health.qaWebhookSecretConfigured;
   const hasIssues = pending.length > 0 || showParseurWarning || showQaWarning;
+
+  const handleApplyMigrations = async () => {
+    setApplying(true);
+    setApplyMessage("");
+
+    try {
+      const response = await fetch("/api/admin/db/apply-migrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        applied?: string[];
+        error?: string;
+        health?: PlatformHealth;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron aplicar las migraciones.");
+      }
+
+      if (data.health) {
+        setHealth(data.health);
+      } else {
+        await loadHealth();
+      }
+      await loadApplyStatus();
+      setApplyMessage(
+        data.applied?.length
+          ? `Aplicadas: ${data.applied.join(", ")}`
+          : "Migraciones aplicadas.",
+      );
+      setExpanded(true);
+    } catch (error) {
+      setApplyMessage(error instanceof Error ? error.message : "Error al aplicar.");
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (!hasIssues) {
     return null;
@@ -117,6 +180,25 @@ export function PlatformHealthBanner() {
               </span>
             </li>
           ))}
+          {applyStatus?.canApply ? (
+            <li className="pt-2">
+              <button
+                type="button"
+                disabled={applying}
+                onClick={() => void handleApplyMigrations()}
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {applying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                Aplicar migraciones {applyStatus.pendingIds.join(" + ")} en Supabase
+              </button>
+              <p className="mt-1 text-[10px] opacity-80">
+                Requiere SUPABASE_DB_PASSWORD en el servidor (Vercel).
+              </p>
+            </li>
+          ) : null}
+          {applyMessage ? (
+            <li className="rounded-lg bg-white/60 px-3 py-2 text-xs font-medium">{applyMessage}</li>
+          ) : null}
           <li className="flex items-start gap-2">
             {health.parseurSecretConfigured ? (
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />
