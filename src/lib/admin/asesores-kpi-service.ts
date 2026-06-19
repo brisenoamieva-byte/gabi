@@ -18,6 +18,8 @@ export type AsesoresKpisResult = {
   totales: Omit<AsesorKpi, "asesorId">;
 };
 
+const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
+
 const emptyKpi = (asesorId: string): AsesorKpi => ({
   asesorId,
   leads: 0,
@@ -49,6 +51,24 @@ const mergeTotals = (items: AsesorKpi[]): Omit<AsesorKpi, "asesorId"> => {
     ...totals,
     conversionPct: computeConversion(totals.leads, totals.cotizaciones),
   };
+};
+
+const isDateInPeriod = (
+  value: string | null | undefined,
+  desde?: string,
+  hasta?: string,
+): boolean => {
+  if (!value) {
+    return false;
+  }
+  const day = value.slice(0, 10);
+  if (desde && day < desde) {
+    return false;
+  }
+  if (hasta && day > hasta) {
+    return false;
+  }
+  return true;
 };
 
 export const getAsesoresKpis = async (
@@ -83,7 +103,7 @@ export const getAsesoresKpis = async (
 
   let prospectosQuery = supabase
     .from("prospectos")
-    .select("asesor_id, etapa, es_spam, es_duplicado")
+    .select("asesor_id, es_spam, es_duplicado")
     .eq("desarrollo_id", filters.desarrolloId);
 
   if (filters.desde) {
@@ -111,12 +131,6 @@ export const getAsesoresKpis = async (
 
     if (!row.es_spam && !row.es_duplicado) {
       kpi.leads += 1;
-    }
-    if (row.etapa === "apartado") {
-      kpi.apartados += 1;
-    }
-    if (row.etapa === "vendido") {
-      kpi.vendidos += 1;
     }
   }
 
@@ -148,6 +162,41 @@ export const getAsesoresKpis = async (
     const kpi = porAsesorMap.get(row.asesor_id) ?? emptyKpi(row.asesor_id);
     kpi.cotizaciones += 1;
     porAsesorMap.set(row.asesor_id, kpi);
+  }
+
+  const { data: operaciones, error: operacionesError } = await supabase
+    .from("operaciones_comerciales")
+    .select("fecha_apartado, fecha_cierre, estatus_sembrado, prospecto:prospectos(asesor_id)")
+    .eq("desarrollo_id", filters.desarrolloId)
+    .eq("cancelada", false);
+
+  if (operacionesError) {
+    throw new Error(operacionesError.message);
+  }
+
+  for (const row of operaciones ?? []) {
+    const prospecto = row.prospecto as { asesor_id?: string | null } | null;
+    const asesorId = prospecto?.asesor_id;
+    if (!asesorId) {
+      continue;
+    }
+    if (filters.asesorIds?.length && !filters.asesorIds.includes(asesorId)) {
+      continue;
+    }
+
+    const kpi = porAsesorMap.get(asesorId) ?? emptyKpi(asesorId);
+
+    if (isDateInPeriod(row.fecha_apartado, filters.desde, filters.hasta)) {
+      kpi.apartados += 1;
+    }
+    if (
+      VENTA_ESTATUS.has(row.estatus_sembrado) &&
+      isDateInPeriod(row.fecha_cierre, filters.desde, filters.hasta)
+    ) {
+      kpi.vendidos += 1;
+    }
+
+    porAsesorMap.set(asesorId, kpi);
   }
 
   Array.from(porAsesorMap.values()).forEach((kpi) => {

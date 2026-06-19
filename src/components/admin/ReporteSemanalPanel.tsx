@@ -554,9 +554,8 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               <strong>Fuentes:</strong> {reporte.meta.fuentes.join(", ")}.
             </p>
             <p className="mt-1">
-              La afluencia refleja prospectos nuevos en el periodo (CRM). Para el total histórico
-              tipo Xperience/Excel, se requiere integración adicional. Absorción mensual usa datos
-              desde el alta en sistema (~18 meses).
+              Medios: campaña CRM cuando existe; si no, medio publicitario del prospecto. Afluencia =
+              prospectos nuevos en el periodo. Absorción mensual ~18 meses desde alta en GABI.
             </p>
           </footer>
         </>

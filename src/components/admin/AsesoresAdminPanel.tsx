@@ -964,7 +964,8 @@ export function AsesoresAdminPanel({
             </p>
             <h3 className="mt-1 text-lg font-black text-[#13315C]">Rendimiento por asesor</h3>
             <p className="mt-1 max-w-2xl text-xs text-slate-500">
-              Leads válidos, cotizaciones y apartados del periodo. Haz clic en un número de leads para
+              Leads y cotizaciones del CRM; apartados y ventas del sembrado en el periodo. Haz clic en
+              un número de leads para
               ver el detalle en la bandeja comercial.
             </p>
           </div>

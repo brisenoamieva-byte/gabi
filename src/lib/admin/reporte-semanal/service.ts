@@ -9,7 +9,7 @@ import { buildAbsorcionMensualSeries } from "@/lib/admin/reporte-semanal/absorci
 import {
   buildFunnelSegmento,
   buildVisitasInmobiliarias,
-  normalizeMedioPublicitario,
+  resolveProspectoMedioLabel,
 } from "@/lib/admin/reporte-semanal/funnel-medio";
 import {
   getObjetivosSegmento,
@@ -315,7 +315,7 @@ function buildMedios(
     const map = new Map<string, number>();
     for (const item of items) {
       if (item.es_spam || item.es_duplicado) continue;
-      const medio = normalizeMedioPublicitario(item.medio_publicitario ?? item.medio_contacto);
+      const medio = resolveProspectoMedioLabel(item);
       map.set(medio, (map.get(medio) ?? 0) + 1);
     }
     return map;

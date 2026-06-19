@@ -25,6 +25,16 @@ export function normalizeMedioPublicitario(raw: string | null | undefined): stri
   return raw!.trim();
 }
 
+/** Prioriza campaña digital CRM; si no hay, normaliza medio publicitario libre. */
+export function resolveProspectoMedioLabel(prospecto: ProspectoListRow): string {
+  const campana = prospecto.campanaNombre?.trim();
+  if (campana) {
+    const canal = prospecto.campanaCanal?.trim();
+    return canal ? `${campana} (${canal})` : campana;
+  }
+  return normalizeMedioPublicitario(prospecto.medio_publicitario ?? prospecto.medio_contacto);
+}
+
 function isDateInRange(value: string | null | undefined, desde: string, hasta: string) {
   if (!value) return false;
   const day = value.slice(0, 10);
@@ -67,7 +77,7 @@ export function buildFunnelSegmento(input: {
 
   for (const p of input.prospectosSemana) {
     if (p.es_spam || p.es_duplicado) continue;
-    const medio = normalizeMedioPublicitario(p.medio_publicitario ?? p.medio_contacto);
+    const medio = resolveProspectoMedioLabel(p);
     ensureMedio(medio).afluencia += 1;
   }
 
