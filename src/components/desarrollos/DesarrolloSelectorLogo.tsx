@@ -8,6 +8,7 @@ import {
 import {
   DESARROLLO_SELECTOR_LOGO_THUMB_CLASS,
   desarrolloSelectorLogoPaddingClass,
+  desarrolloSelectorLogoImageClass,
   desarrolloSelectorLogoShellClass,
   desarrolloSelectorLogoSrc,
 } from "@/lib/catalog/desarrollo-selector-logo-shell";
@@ -34,6 +35,7 @@ export function DesarrolloSelectorLogo({
   const src = desarrolloSelectorLogoSrc(desarrolloId, logo);
   const shell = desarrolloSelectorLogoShellClass(desarrolloId);
   const padding = desarrolloSelectorLogoPaddingClass(desarrolloId);
+  const imageClass = desarrolloSelectorLogoImageClass(desarrolloId);
 
   return (
     <div
@@ -46,7 +48,7 @@ export function DesarrolloSelectorLogo({
           alt={nombre}
           width={112}
           height={72}
-          className="h-full w-full object-contain object-center"
+          className={imageClass}
           unoptimized={src.endsWith(".png")}
         />
       ) : (

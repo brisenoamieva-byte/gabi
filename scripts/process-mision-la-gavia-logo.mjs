@@ -51,3 +51,21 @@ async function processLogo(srcPath, destName, { onDark = false } = {}) {
 const src = findSource();
 await processLogo(src, "mision-la-gavia.png");
 await processLogo(src, "mision-la-gavia-mark.png", { onDark: true });
+
+const mainPath = path.join(outDir, "mision-la-gavia.png");
+const mainMeta = await sharp(mainPath).metadata();
+const selectorHeight = Math.min(
+  mainMeta.height ?? 500,
+  Math.round((mainMeta.height ?? 606) * 0.82),
+);
+await sharp(mainPath)
+  .extract({
+    left: 0,
+    top: 0,
+    width: mainMeta.width ?? 707,
+    height: selectorHeight,
+  })
+  .trim({ threshold: 12 })
+  .png({ compressionLevel: 9 })
+  .toFile(path.join(outDir, "mision-la-gavia-selector.png"));
+console.log("OK", path.join(outDir, "mision-la-gavia-selector.png"));

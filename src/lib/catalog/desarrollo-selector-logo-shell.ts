@@ -14,12 +14,12 @@ const BBR_SELECTOR_LOGO_SHELL: Record<string, string> = {
   "pasaje-alamos":
     "border-[#242E38]/15 bg-white shadow-[inset_0_1px_0_rgba(15,23,42,0.04)]",
   "mision-la-gavia":
-    "border-[#14453D]/35 bg-[#0C0B0A] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+    "border-[#14453D]/20 bg-white shadow-[inset_0_1px_0_rgba(15,23,42,0.04)]",
 };
 
-/** Logo horizontal (marca) en celdas compactas del selector. */
+/** Logo optimizado para celdas compactas del selector (sin tagline). */
 export const DESARROLLO_SELECTOR_LOGO_ASSET: Partial<Record<string, string>> = {
-  "mision-la-gavia": "/logos/mision-la-gavia-mark.png",
+  "mision-la-gavia": "/logos/mision-la-gavia-selector.png",
 };
 
 export function desarrolloSelectorLogoShellClass(desarrolloId: string): string {
@@ -43,8 +43,19 @@ export function desarrolloSelectorLogoPaddingClass(desarrolloId: string): string
   if (desarrolloId === "canadas-la-porta") {
     return "p-0";
   }
-  if (desarrolloId === "mision-la-gavia" || desarrolloId === "simate") {
+  if (desarrolloId === "mision-la-gavia") {
+    return "px-1 py-0.5";
+  }
+  if (desarrolloId === "simate") {
     return "px-1.5 py-1";
   }
   return "px-2 py-1.5";
+}
+
+export function desarrolloSelectorLogoImageClass(desarrolloId: string): string {
+  const base = "h-full w-full object-contain object-center";
+  if (desarrolloId === "mision-la-gavia") {
+    return `${base} scale-[1.08]`;
+  }
+  return base;
 }
