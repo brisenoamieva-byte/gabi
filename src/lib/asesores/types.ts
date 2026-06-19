@@ -4,6 +4,7 @@ export type AsesorRecord = {
   id: string;
   nombre: string;
   email: string;
+  telefono: string | null;
   rol: AsesorRol;
   activo: boolean;
   desarrollosIds: string[];
@@ -15,6 +16,7 @@ export type AsesorInput = {
   id?: string;
   nombre: string;
   email: string;
+  telefono?: string | null;
   rol: AsesorRol;
   desarrollosIds: string[];
   pin?: string;
@@ -25,6 +27,7 @@ export type AsesorInput = {
 export type AsesorUpdateInput = Partial<Omit<AsesorInput, "nombre" | "email" | "rol" | "desarrollosIds">> & {
   nombre?: string;
   email?: string;
+  telefono?: string | null;
   rol?: AsesorRol;
   desarrollosIds?: string[];
   regeneratePin?: boolean;

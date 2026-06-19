@@ -36,6 +36,12 @@ const checks = [
     column: "id",
     migration: "035_comercial_objetivos_anuales.sql",
   },
+  {
+    id: "036",
+    table: "asesores",
+    column: "telefono",
+    migration: "036_asesores_telefono.sql",
+  },
 ];
 
 let allOk = true;

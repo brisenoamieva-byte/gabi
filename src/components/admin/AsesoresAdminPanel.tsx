@@ -52,6 +52,7 @@ type AsesoresAdminPanelProps = {
 const emptyForm = {
   nombre: "",
   email: "",
+  telefono: "",
   rol: "asesor" as AsesorRol,
   formDesarrolloId: "",
   formDesarrollosIds: [] as string[],
@@ -113,6 +114,7 @@ export function AsesoresAdminPanel({
     id: string;
     nombre: string;
     email: string;
+    telefono: string;
     rol: AsesorRol;
     desarrollosIds: string[];
   } | null>(null);
@@ -371,6 +373,7 @@ export function AsesoresAdminPanel({
         body: JSON.stringify({
           nombre: form.nombre.trim(),
           email: form.email.trim(),
+          telefono: form.telefono.trim() || null,
           rol: isGerenteComercial
             ? ALL_ASESOR_ROLES.includes(form.rol)
               ? form.rol
@@ -415,6 +418,7 @@ export function AsesoresAdminPanel({
       id: asesor.id,
       nombre: asesor.nombre,
       email: asesor.email,
+      telefono: asesor.telefono ?? "",
       rol: asesor.rol,
       desarrollosIds: [...asesor.desarrollosIds],
     });
@@ -459,6 +463,7 @@ export function AsesoresAdminPanel({
         body: JSON.stringify({
           nombre: editForm.nombre.trim(),
           email: editForm.email.trim(),
+          telefono: editForm.telefono.trim() || null,
           rol: editForm.rol,
           desarrollosIds,
         }),
@@ -911,6 +916,21 @@ export function AsesoresAdminPanel({
                 placeholder="asesor@empresa.com"
               />
             </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                Teléfono
+              </span>
+              <input
+                type="tel"
+                value={form.telefono}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, telefono: event.target.value }))
+                }
+                className="input-cotizador"
+                placeholder="+52 442 000 0000"
+                autoComplete="tel"
+              />
+            </label>
 
             {isGerenteComercial ? (
               <>
@@ -1213,6 +1233,9 @@ export function AsesoresAdminPanel({
                     <td className="px-4 py-4">
                       <p className="font-bold text-[#13315C]">{asesor.nombre}</p>
                       <p className="text-xs text-slate-500">{asesor.email}</p>
+                      {asesor.telefono ? (
+                        <p className="text-xs text-slate-400">{asesor.telefono}</p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-4">
                       <select
@@ -1454,6 +1477,23 @@ export function AsesoresAdminPanel({
                   }
                   className="input-cotizador"
                   placeholder="nombre@empresa.com"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Teléfono
+                </span>
+                <input
+                  type="tel"
+                  value={editForm.telefono}
+                  onChange={(event) =>
+                    setEditForm((current) =>
+                      current ? { ...current, telefono: event.target.value } : current,
+                    )
+                  }
+                  className="input-cotizador"
+                  placeholder="+52 442 000 0000"
+                  autoComplete="tel"
                 />
               </label>
               <label className="block">

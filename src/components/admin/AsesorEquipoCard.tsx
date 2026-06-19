@@ -82,6 +82,9 @@ export function AsesorEquipoCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-black text-gabi-forest">{asesor.nombre}</p>
           <p className="truncate text-sm text-slate-600">{asesor.email}</p>
+          {asesor.telefono ? (
+            <p className="truncate text-sm text-slate-500">{asesor.telefono}</p>
+          ) : null}
           <p className="mt-0.5 truncate text-xs text-slate-400" title={desarrolloLabels}>
             {desarrolloLabels}
           </p>
@@ -213,6 +216,7 @@ export function filterAsesoresEquipo(
     return (
       asesor.nombre.toLowerCase().includes(q) ||
       asesor.email.toLowerCase().includes(q) ||
+      (asesor.telefono ?? "").toLowerCase().includes(q) ||
       asesor.id.toLowerCase().includes(q)
     );
   });

@@ -176,6 +176,17 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta comercial_objetivos_anuales — aplica 035.",
   });
 
+  const asesoresTelefonoOk = await probeTable("asesores", "telefono");
+  checks.push({
+    id: "036",
+    label: "Teléfono en asesores",
+    migrationFile: "036_asesores_telefono.sql",
+    ok: asesoresTelefonoOk,
+    detail: asesoresTelefonoOk
+      ? "Contacto telefónico en equipo comercial."
+      : "Falta asesores.telefono — aplica 036.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()

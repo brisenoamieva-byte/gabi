@@ -28,6 +28,7 @@ type AsesorRow = {
   id: string;
   nombre: string;
   email: string;
+  telefono?: string | null;
   pin_hash: string;
   rol: AsesorRol;
   activo: boolean;
@@ -36,16 +37,25 @@ type AsesorRow = {
   updated_at: string;
 };
 
+const ASESOR_PUBLIC_COLUMNS =
+  "id, nombre, email, telefono, rol, activo, desarrollos_ids, created_at, updated_at";
+
 const toRecord = (row: AsesorRow): AsesorRecord => ({
   id: row.id,
   nombre: row.nombre,
   email: row.email,
+  telefono: row.telefono?.trim() || null,
   rol: normalizeAsesorRol(row.rol),
   activo: row.activo,
   desarrollosIds: row.desarrollos_ids ?? [],
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
+
+const normalizeTelefono = (telefono?: string | null) => {
+  const value = telefono?.trim();
+  return value || null;
+};
 
 const assertValidEmail = (email: string) => {
   const normalized = email.trim().toLowerCase();
@@ -62,6 +72,10 @@ const formatAsesorDbError = (message: string) => {
 
   if (message.includes("asesores_email_key") || message.includes("duplicate key")) {
     return "Ese email ya está registrado para otro asesor.";
+  }
+
+  if (message.includes("telefono") && message.includes("schema cache")) {
+    return "Falta columna telefono en asesores. Aplica supabase/migrations/036_asesores_telefono.sql.";
   }
 
   return message;
@@ -201,7 +215,7 @@ export const listAsesores = async (
 
   let query = supabase
     .from("asesores")
-    .select("id, nombre, email, rol, activo, desarrollos_ids, created_at, updated_at")
+    .select(ASESOR_PUBLIC_COLUMNS)
     .order("nombre", { ascending: true });
 
   if (!filters.includeInactive) {
@@ -236,7 +250,7 @@ export const getAsesorById = async (id: string) => {
 
   const { data, error } = await supabase
     .from("asesores")
-    .select("id, nombre, email, rol, activo, desarrollos_ids, created_at, updated_at")
+    .select(ASESOR_PUBLIC_COLUMNS)
     .eq("id", id)
     .maybeSingle();
 
@@ -278,6 +292,7 @@ export const createAsesor = async (profile: AdminProfile, input: AsesorInput) =>
     id,
     nombre: input.nombre.trim(),
     email: assertValidEmail(input.email),
+    telefono: normalizeTelefono(input.telefono),
     pin_hash: hashPin(pin),
     rol: normalized.rol,
     activo: normalized.activo ?? true,
@@ -350,6 +365,9 @@ export const updateAsesor = async (
   if (input.email !== undefined) {
     patch.email = assertValidEmail(input.email);
   }
+  if (input.telefono !== undefined) {
+    patch.telefono = normalizeTelefono(input.telefono);
+  }
   if (input.rol !== undefined) {
     assertGerenteCanAssignRol(profile, input.rol);
     patch.rol = input.rol;
@@ -374,7 +392,7 @@ export const updateAsesor = async (
     .from("asesores")
     .update(patch)
     .eq("id", id)
-    .select("id, nombre, email, rol, activo, desarrollos_ids, created_at, updated_at")
+    .select(ASESOR_PUBLIC_COLUMNS)
     .single();
 
   if (error) {
