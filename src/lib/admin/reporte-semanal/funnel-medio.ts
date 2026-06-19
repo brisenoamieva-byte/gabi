@@ -42,6 +42,14 @@ function isDateInRange(value: string | null | undefined, desde: string, hasta: s
   return day >= desde && day <= hasta;
 }
 
+const APARTADO_ESTATUS = new Set([
+  "Apartado",
+  "Vendido Cobrado 1er Parte",
+  "Vendidas listas para cobro",
+  "Vendidas en espera de cobro",
+  "Vendidas Cobradas",
+]);
+
 export function buildFunnelSegmento(input: {
   segmentoId: string;
   label: string;
@@ -58,8 +66,9 @@ export function buildFunnelSegmento(input: {
       : input.rows.filter((r) => r.clusterId === input.clusterId);
 
   let apartadosVigentes = 0;
-  let ventas = 0;
-  let asignaciones = 0;
+  let apartadosPeriodo = 0;
+  let ventasPeriodo = 0;
+  let asignacionesPeriodo = 0;
   let cotizaciones = 0;
   const medioMap = new Map<string, ReporteSemanalFunnelMedio>();
 
@@ -100,22 +109,24 @@ export function buildFunnelSegmento(input: {
     const entry = ensureMedio(medio);
 
     if (op.estatus_sembrado === "Asignado") {
-      asignaciones += 1;
-      entry.asignaciones += 1;
-    }
-    if (VENTA_ESTATUS.has(op.estatus_sembrado)) {
-      ventas += 1;
-      entry.ventas += 1;
+      if (isDateInRange(op.fecha_apartado, input.periodo.desde, input.periodo.hasta)) {
+        asignacionesPeriodo += 1;
+        entry.asignaciones += 1;
+      }
     }
     if (
-      op.estatus_sembrado === "Apartado" ||
-      op.estatus_sembrado.startsWith("Vendido") ||
-      op.estatus_sembrado.startsWith("Vendidas")
+      VENTA_ESTATUS.has(op.estatus_sembrado) &&
+      isDateInRange(op.fecha_cierre, input.periodo.desde, input.periodo.hasta)
     ) {
+      ventasPeriodo += 1;
+      entry.ventas += 1;
+    }
+    if (isDateInRange(op.fecha_apartado, input.periodo.desde, input.periodo.hasta)) {
+      apartadosPeriodo += 1;
+      entry.apartados += 1;
+    }
+    if (APARTADO_ESTATUS.has(op.estatus_sembrado)) {
       apartadosVigentes += 1;
-      if (isDateInRange(op.fecha_apartado, input.periodo.desde, input.periodo.hasta)) {
-        entry.apartados += 1;
-      }
     }
   }
 
@@ -128,9 +139,10 @@ export function buildFunnelSegmento(input: {
       afluencia: input.prospectosSemana.filter((p) => !p.es_spam && !p.es_duplicado).length,
       cotizaciones,
       citas: input.citasSemana,
+      apartadosPeriodo,
       apartadosVigentes,
-      ventas,
-      asignaciones,
+      ventasPeriodo,
+      asignacionesPeriodo,
     },
     porMedio,
   };

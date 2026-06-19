@@ -154,17 +154,18 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
   return (
     <ChartCard
       title={`Funnel comercial — ${funnel.label}`}
-      subtitle="Afluencia → cotizaciones → citas → apartados → ventas → asignaciones por medio"
+      subtitle="Afluencia → cotizaciones → citas → apartados (periodo) → ventas (periodo) por medio"
     >
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         {(
           [
             ["Afluencia", funnel.etapas.afluencia],
             ["Cotizaciones", funnel.etapas.cotizaciones],
             ["Citas", funnel.etapas.citas],
-            ["Apartados vig.", funnel.etapas.apartadosVigentes],
-            ["Ventas", funnel.etapas.ventas],
-            ["Asignaciones", funnel.etapas.asignaciones],
+            ["Apart. periodo", funnel.etapas.apartadosPeriodo],
+            ["Apart. vigentes", funnel.etapas.apartadosVigentes],
+            ["Ventas periodo", funnel.etapas.ventasPeriodo],
+            ["Asignaciones", funnel.etapas.asignacionesPeriodo],
           ] as const
         ).map(([label, value]) => (
           <div key={label} className="rounded-lg bg-slate-50 px-2 py-2 text-center">

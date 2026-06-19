@@ -128,9 +128,10 @@ export type ReporteSemanalFunnelSegmento = {
     afluencia: number;
     cotizaciones: number;
     citas: number;
+    apartadosPeriodo: number;
     apartadosVigentes: number;
-    ventas: number;
-    asignaciones: number;
+    ventasPeriodo: number;
+    asignacionesPeriodo: number;
   };
   porMedio: ReporteSemanalFunnelMedio[];
 };
@@ -167,6 +168,7 @@ export type ReporteComercialSemanal = {
     afluencia: number;
     cotizaciones: number;
     citasVisitas: number;
+    apartadosPeriodo: number;
     apartadosOficinas: number;
     apartadosDeptos: number;
     apartadosTotal: number;
@@ -181,7 +183,7 @@ export type ReporteComercialSemanal = {
   meta: {
     generadoAt: string;
     fuentes: string[];
-    objetivosOrigen: "config" | "none";
+    objetivosOrigen: "db" | "seed" | "none";
   };
 };
 

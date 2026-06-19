@@ -18,6 +18,7 @@ import {
   PrecioM2Chart,
   SeguimientoChart,
 } from "@/components/admin/ReporteSemanalCharts";
+import { ObjetivosComercialesEditor } from "@/components/admin/ObjetivosComercialesEditor";
 
 type Props = {
   desarrollos: Desarrollo[];
@@ -211,6 +212,10 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
   const [error, setError] = useState("");
 
   const desarrolloNombre = desarrollos.find((d) => d.id === desarrolloId)?.nombre ?? desarrolloId;
+  const reporteAnio = useMemo(
+    () => new Date(`${hasta}T12:00:00`).getFullYear(),
+    [hasta],
+  );
 
   const load = useCallback(async () => {
     if (!desarrolloId) return;
@@ -379,18 +384,21 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               </div>
               <div className="text-right text-xs text-white/60">
                 <p>Generado {new Date(reporte.meta.generadoAt).toLocaleString("es-MX")}</p>
-                {reporte.meta.objetivosOrigen === "config" ? (
-                  <p className="mt-1">Objetivos: configuración anual</p>
+                {reporte.meta.objetivosOrigen === "db" ? (
+                  <p className="mt-1">Objetivos: base de datos ({reporteAnio})</p>
+                ) : reporte.meta.objetivosOrigen === "seed" ? (
+                  <p className="mt-1">Objetivos: valores seed ({reporteAnio})</p>
                 ) : null}
               </div>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
               <KpiTile dark label="Afluencia" value={reporte.resumen.afluencia} />
               <KpiTile dark label="Cotizaciones" value={reporte.resumen.cotizaciones} />
               <KpiTile dark label="Citas / visitas" value={reporte.resumen.citasVisitas} />
+              <KpiTile dark label="Apart. periodo" value={reporte.resumen.apartadosPeriodo} />
               <KpiTile dark label="Apartados deptos." value={reporte.resumen.apartadosDeptos} />
               <KpiTile dark label="Apartados oficinas" value={reporte.resumen.apartadosOficinas} />
-              <KpiTile dark label="Apartados total" value={reporte.resumen.apartadosTotal} />
+              <KpiTile dark label="Apartados vigentes" value={reporte.resumen.apartadosTotal} />
             </div>
           </header>
 
@@ -550,13 +558,22 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               : null}
           </div>
 
+          {REPORTE_SEMANAL_DESARROLLOS.includes(desarrolloId as "pasaje-alamos") ? (
+            <ObjetivosComercialesEditor
+              desarrolloId={desarrolloId}
+              anio={reporteAnio}
+              onSaved={() => void load()}
+            />
+          ) : null}
+
           <footer className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-500">
             <p>
               <strong>Fuentes:</strong> {reporte.meta.fuentes.join(", ")}.
             </p>
             <p className="mt-1">
               Medios: campaña CRM cuando existe; si no, medio publicitario del prospecto. Afluencia =
-              prospectos nuevos en el periodo. Absorción mensual ~18 meses desde alta en GABI.
+              prospectos válidos en el periodo. Apart. periodo = apartados con fecha en la semana;
+              vigentes = stock actual en sembrado.
             </p>
           </footer>
         </>

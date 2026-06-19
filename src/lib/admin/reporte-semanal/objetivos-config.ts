@@ -29,12 +29,20 @@ const PASAJE_OBJETIVOS: Record<string, ReporteObjetivosAnuales> = {
   },
 };
 
-export function getObjetivosSegmento(
+export function getObjetivosSegmentoSeed(
   desarrolloId: string,
   segmentoId: string,
 ): ReporteObjetivosAnuales | null {
   if (desarrolloId !== PASAJE_ALAMOS_ID) return null;
   return PASAJE_OBJETIVOS[segmentoId] ?? null;
+}
+
+/** @deprecated Usar loadObjetivosAnualesMap — fallback síncrono seed local. */
+export function getObjetivosSegmento(
+  desarrolloId: string,
+  segmentoId: string,
+): ReporteObjetivosAnuales | null {
+  return getObjetivosSegmentoSeed(desarrolloId, segmentoId);
 }
 
 /** Objetivo prorrateado al mes calendario del periodo. */

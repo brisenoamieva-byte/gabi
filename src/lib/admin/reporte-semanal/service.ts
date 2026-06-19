@@ -13,9 +13,14 @@ import {
   resolveProspectoMedioLabel,
 } from "@/lib/admin/reporte-semanal/funnel-medio";
 import {
-  getObjetivosSegmento,
   objetivoAcumuladoHastaMes,
+  type ReporteObjetivosAnuales,
 } from "@/lib/admin/reporte-semanal/objetivos-config";
+import {
+  listObjetivosAnuales,
+  loadObjetivosAnualesMap,
+  resolveObjetivosOrigen,
+} from "@/lib/admin/reporte-semanal/objetivos-service";
 import type {
   ReporteComercialSemanal,
   ReporteSemanalAbsorcionModelo,
@@ -101,8 +106,8 @@ function buildSegmentoReporte(
   mes: { desde: string; hasta: string },
   mesAnterior: { desde: string; hasta: string },
   acumuladoDesde: string,
+  objetivos: ReporteObjetivosAnuales | null,
 ): ReporteSemanalSegmento {
-  const objetivos = getObjetivosSegmento(desarrolloId, config.id);
   const segmentRows =
     config.clusterId === "__all__"
       ? rows
@@ -295,6 +300,7 @@ function buildGeneralSegmento(
   mes: { desde: string; hasta: string },
   mesAnterior: { desde: string; hasta: string },
   acumuladoDesde: string,
+  objetivos: ReporteObjetivosAnuales | null,
 ): ReporteSemanalSegmento {
   return buildSegmentoReporte(
     desarrolloId,
@@ -304,6 +310,7 @@ function buildGeneralSegmento(
     mes,
     mesAnterior,
     acumuladoDesde,
+    objetivos,
   );
 }
 
@@ -505,6 +512,13 @@ export async function getReporteComercialSemanal(
     ]);
 
   const segmentConfigs = getReporteSemanalSegments(filters.desarrolloId);
+  const segmentIds = segmentConfigs?.map((config) => config.id) ?? ["general"];
+
+  const [objetivosDbRows, objetivosMap] = await Promise.all([
+    listObjetivosAnuales({ desarrolloId: filters.desarrolloId, anio: year }, profile),
+    loadObjetivosAnualesMap(filters.desarrolloId, year, segmentIds, profile),
+  ]);
+
   const segmentos = segmentConfigs
     ? segmentConfigs.map((config) =>
         buildSegmentoReporte(
@@ -515,6 +529,7 @@ export async function getReporteComercialSemanal(
           mes,
           mesAnterior,
           acumuladoDesde,
+          objetivosMap.get(config.id) ?? null,
         ),
       )
     : [
@@ -525,6 +540,7 @@ export async function getReporteComercialSemanal(
           mes,
           mesAnterior,
           acumuladoDesde,
+          objetivosMap.get("general") ?? null,
         ),
       ];
 
@@ -579,17 +595,23 @@ export async function getReporteComercialSemanal(
     apartadosDeptos = segmentos[0]?.kpis.apartadosVigentes ?? 0;
   }
 
-  const tieneObjetivos = segmentConfigs?.some((c) =>
-    Boolean(getObjetivosSegmento(filters.desarrolloId, c.id)),
+  const apartadosPeriodo = segmentos.reduce((s, seg) => s + seg.kpis.apartadosSemana, 0);
+  const afluenciaValida = prospectosSemana.filter((p) => !p.es_spam && !p.es_duplicado).length;
+
+  const objetivosOrigen = resolveObjetivosOrigen(
+    objetivosDbRows,
+    segmentIds,
+    filters.desarrolloId,
   );
 
   return {
     desarrolloId: filters.desarrolloId,
     periodo,
     resumen: {
-      afluencia: prospectosSemana.length,
+      afluencia: afluenciaValida,
       cotizaciones: cotizacionesSemana.length,
       citasVisitas: visitasCount,
+      apartadosPeriodo,
       apartadosDeptos,
       apartadosOficinas,
       apartadosTotal: apartadosDeptos + apartadosOficinas,
@@ -610,8 +632,9 @@ export async function getReporteComercialSemanal(
         "prospectos",
         "cotizaciones",
         "visitas_comerciales",
+        "comercial_objetivos_anuales",
       ],
-      objetivosOrigen: tieneObjetivos ? "config" : "none",
+      objetivosOrigen,
     },
   };
 }
