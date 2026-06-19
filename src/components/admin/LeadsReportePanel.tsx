@@ -15,6 +15,7 @@ import {
   LeadsTimeSeriesChart,
 } from "@/components/admin/LeadsReporteCharts";
 import { LeadsMexicoMap } from "@/components/admin/LeadsMexicoMap";
+import { QaEncuestaSimulador } from "@/components/admin/QaEncuestaSimulador";
 import { buildQaWebhookUrl } from "@/lib/comercial/qa-webhook-auth";
 import {
   PROSPECTO_ETAPAS,
@@ -660,6 +661,12 @@ export function LeadsReportePanel({
                   {buildQaWebhookUrl()}
                 </p>
               </div>
+
+              <QaEncuestaSimulador
+                desarrolloId={desarrolloId}
+                webhookUrl={buildQaWebhookUrl()}
+                onSubmitted={() => void loadReporte()}
+              />
             </>
           ) : null}
 

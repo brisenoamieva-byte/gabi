@@ -24,6 +24,16 @@ export type IngestEncuestaResult =
 
 const clampScore = (score: number) => Math.min(10, Math.max(0, score));
 
+export const isQaEncuestasAvailable = async (): Promise<boolean> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return false;
+  }
+
+  const { error } = await supabase.from("prospecto_encuestas").select("id", { head: true, count: "exact" });
+  return !error;
+};
+
 export const ingestProspectoEncuesta = async (
   input: IngestEncuestaInput,
 ): Promise<IngestEncuestaResult> => {
