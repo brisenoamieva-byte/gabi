@@ -15,6 +15,8 @@ export type DesarrolloRecord = Desarrollo & {
   comercializadoraId: string;
   recorridoEtapas: string[];
   recorridoVersion: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export const DEFAULT_RECORRIDO_ETAPAS = [

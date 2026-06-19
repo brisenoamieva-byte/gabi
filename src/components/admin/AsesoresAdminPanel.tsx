@@ -45,6 +45,7 @@ type AsesoresAdminPanelProps = {
   isGerenteComercial?: boolean;
   isSuperAdmin?: boolean;
   embedded?: boolean;
+  initialDesarrolloId?: string;
   adminLinkByAsesorId?: AdminLinkByAsesor;
   onAdminLinksChange?: () => void;
 };
@@ -98,10 +99,15 @@ export function AsesoresAdminPanel({
   isGerenteComercial = false,
   isSuperAdmin = false,
   embedded = false,
+  initialDesarrolloId,
   adminLinkByAsesorId = {},
   onAdminLinksChange,
 }: AsesoresAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const [desarrolloId, setDesarrolloId] = useState(
+    initialDesarrolloId && desarrollos.some((item) => item.id === initialDesarrolloId)
+      ? initialDesarrolloId
+      : (desarrollos[0]?.id ?? ""),
+  );
   const [asesores, setAsesores] = useState<AsesorRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -241,6 +247,16 @@ export function AsesoresAdminPanel({
       setDesarrolloId(desarrollos[0].id);
     }
   }, [desarrolloId, desarrollos]);
+
+  useEffect(() => {
+    if (
+      initialDesarrolloId &&
+      desarrollos.some((item) => item.id === initialDesarrolloId) &&
+      desarrolloId !== initialDesarrolloId
+    ) {
+      setDesarrolloId(initialDesarrolloId);
+    }
+  }, [desarrolloId, desarrollos, initialDesarrolloId]);
 
   const openCreateForm = () => {
     const defaultDesarrolloId = desarrolloId || desarrollos[0]?.id || "";

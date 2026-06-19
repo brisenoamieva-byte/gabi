@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { LeadsAnualFila, LeadsReporteAnual } from "@/lib/admin/leads-reporte-anual-service";
-import { MES_LABELS_ANUAL, exportLeadsAnualCsv } from "@/lib/admin/leads-reporte-anual-service";
+import type { LeadsAnualFila, LeadsReporteAnual } from "@/lib/admin/leads-reporte-anual-shared";
+import { MES_LABELS_ANUAL, exportLeadsAnualCsv } from "@/lib/admin/leads-reporte-anual-shared";
 
 function AnualTable({
   title,

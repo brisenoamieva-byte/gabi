@@ -18,6 +18,7 @@ type EquipoAdminPanelProps = {
   isSuperAdmin?: boolean;
   currentUserId: string;
   initialTab?: EquipoTab;
+  initialDesarrolloId?: string;
 };
 
 export type { AdminLinkByAsesor, EquipoTab } from "@/lib/admin/equipo-types";
@@ -30,6 +31,7 @@ export function EquipoAdminPanel({
   isSuperAdmin = false,
   currentUserId,
   initialTab = "comercial",
+  initialDesarrolloId,
 }: EquipoAdminPanelProps) {
   const router = useRouter();
   const [tab, setTab] = useState<EquipoTab>(isSuperAdmin ? initialTab : "comercial");
@@ -191,6 +193,7 @@ export function EquipoAdminPanel({
           isGerenteComercial={isGerenteComercial}
           isSuperAdmin={isSuperAdmin}
           embedded
+          initialDesarrolloId={initialDesarrolloId}
           adminLinkByAsesorId={adminLinkByAsesorId}
           onAdminLinksChange={() => void reloadAdminLinks()}
         />

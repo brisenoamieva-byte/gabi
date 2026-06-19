@@ -85,6 +85,8 @@ const toDesarrollo = (row: {
   crm: Desarrollo["crm"] | null;
   recorrido_etapas: string[] | null;
   recorrido_version: number | null;
+  created_at?: string;
+  updated_at?: string;
 }): DesarrolloRecord =>
   applyDesarrolloCodeDefaults({
     id: row.id,
@@ -108,6 +110,8 @@ const toDesarrollo = (row: {
       ? row.recorrido_etapas
       : [...DEFAULT_RECORRIDO_ETAPAS],
     recorridoVersion: row.recorrido_version ?? 2,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   });
 
 const fallbackComercializadora = (slug: string): ComercializadoraRecord | null => {

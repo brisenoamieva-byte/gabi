@@ -1,38 +1,13 @@
 import { listProspectos } from "@/lib/admin/prospectos-service";
+import type {
+  LeadsAnualFila,
+  LeadsReporteAnual,
+} from "@/lib/admin/leads-reporte-anual-shared";
 import type { AdminProfile } from "@/lib/admin/types";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 
-export type LeadsAnualFila = {
-  id: string;
-  label: string;
-  meses: number[];
-  total: number;
-};
-
-export type LeadsReporteAnual = {
-  anio: number;
-  porProducto: LeadsAnualFila[];
-  porAsesor: LeadsAnualFila[];
-  totalesPorMes: number[];
-  granTotal: number;
-};
-
-const MES_LABELS = [
-  "Ene",
-  "Feb",
-  "Mar",
-  "Abr",
-  "May",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dic",
-];
-
-export const MES_LABELS_ANUAL = MES_LABELS;
+export type { LeadsAnualFila, LeadsReporteAnual } from "@/lib/admin/leads-reporte-anual-shared";
+export { MES_LABELS_ANUAL, exportLeadsAnualCsv } from "@/lib/admin/leads-reporte-anual-shared";
 
 const emptyMeses = () => Array.from({ length: 12 }, () => 0);
 
@@ -109,25 +84,4 @@ export const getLeadsReporteAnual = async (
     totalesPorMes,
     granTotal: prospectos.length,
   };
-};
-
-export const exportLeadsAnualCsv = (reporte: LeadsReporteAnual) => {
-  const header = ["Concepto", ...MES_LABELS, "Total"].join(",");
-
-  const row = (label: string, meses: number[], total: number) =>
-    [label, ...meses.map(String), String(total)].join(",");
-
-  const blocks = [
-    `# Reporte anual ${reporte.anio}`,
-    "Por producto",
-    header,
-    ...reporte.porProducto.map((item) => row(item.label, item.meses, item.total)),
-    row("Total", reporte.totalesPorMes, reporte.granTotal),
-    "",
-    "Por asesor",
-    header,
-    ...reporte.porAsesor.map((item) => row(item.label, item.meses, item.total)),
-  ];
-
-  return blocks.join("\n");
 };

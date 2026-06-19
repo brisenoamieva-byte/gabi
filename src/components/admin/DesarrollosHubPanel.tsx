@@ -9,15 +9,21 @@ import {
   BarChart3,
   Building2,
   ClipboardList,
-  Loader2,
+  LayoutGrid,
   MapPin,
   Megaphone,
+  Plus,
+  Search,
   UserRound,
   Users,
 } from "lucide-react";
 import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
+import { DesarrolloHubCard } from "@/components/admin/DesarrolloHubCard";
 import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
-import type { Desarrollo } from "@/lib/data";
+import type { ComercializadoraAdminRecord } from "@/lib/admin/catalog-service";
+import { filterDesarrollosHub } from "@/lib/catalog/desarrollo-hub-utils";
+import type { DesarrolloRecord } from "@/lib/catalog/types";
+import type { Cluster } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import type { ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
@@ -29,10 +35,15 @@ type HubPermissions = {
   metricas: boolean;
 };
 
+type HubTab = "desarrollos" | "marcas" | "campanas";
+
 type DesarrollosHubPanelProps = {
-  desarrollos: Desarrollo[];
+  desarrollos: DesarrolloRecord[];
+  clusters: Cluster[];
+  comercializadoras: ComercializadoraAdminRecord[];
   scopeLabel?: string;
   permissions: HubPermissions;
+  isSuperAdmin?: boolean;
 };
 
 type DesarrolloStats = {
@@ -40,6 +51,8 @@ type DesarrolloStats = {
   leadsPorEtapa: Record<string, number>;
   campanasTotal: number;
   campanasActivas: number;
+  parseurEmail: string | null;
+  campanaUpdatedAt: string | null;
   sembradoTotal: number;
   sembradoApartados: number;
   asesoresTotal: number;
@@ -53,6 +66,8 @@ const emptyStats = (): DesarrolloStats => ({
   leadsPorEtapa: {},
   campanasTotal: 0,
   campanasActivas: 0,
+  parseurEmail: null,
+  campanaUpdatedAt: null,
   sembradoTotal: 0,
   sembradoApartados: 0,
   asesoresTotal: 0,
@@ -80,25 +95,62 @@ const topEtapas = (porEtapa: Record<string, number>, limit = 3) =>
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit);
 
+const HUB_TABS: Array<{ id: HubTab; label: string }> = [
+  { id: "desarrollos", label: "Desarrollos" },
+  { id: "marcas", label: "Marcas" },
+  { id: "campanas", label: "Grupos de campañas" },
+];
+
 export function DesarrollosHubPanel({
   desarrollos,
+  clusters,
+  comercializadoras,
   scopeLabel,
   permissions,
+  isSuperAdmin = false,
 }: DesarrollosHubPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedFromUrl = searchParams.get("desarrollo");
+  const tabFromUrl = searchParams.get("tab") as HubTab | null;
+  const marcaFromUrl = searchParams.get("marca");
+
   const [statsById, setStatsById] = useState<Record<string, DesarrolloStats>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hubTab, setHubTab] = useState<HubTab>(
+    tabFromUrl && HUB_TABS.some((item) => item.id === tabFromUrl) ? tabFromUrl : "desarrollos",
+  );
+  const [marcaFilter, setMarcaFilter] = useState(marcaFromUrl ?? "");
+
+  const comercializadoraNames = useMemo(
+    () => Object.fromEntries(comercializadoras.map((item) => [item.id, item.nombre])),
+    [comercializadoras],
+  );
 
   const selectedDesarrollo = useMemo(() => {
-    if (!desarrollos.length) {
+    if (!desarrollos.length || !selectedFromUrl) {
       return null;
     }
-    if (selectedFromUrl) {
-      return desarrollos.find((item) => item.id === selectedFromUrl) ?? null;
-    }
-    return null;
+    return desarrollos.find((item) => item.id === selectedFromUrl) ?? null;
   }, [desarrollos, selectedFromUrl]);
+
+  const filteredDesarrollos = useMemo(
+    () => filterDesarrollosHub(desarrollos, searchQuery, marcaFilter || undefined),
+    [desarrollos, marcaFilter, searchQuery],
+  );
+
+  const desarrollosByMarca = useMemo(() => {
+    const counts = desarrollos.reduce<Record<string, number>>((acc, item) => {
+      acc[item.comercializadoraId] = (acc[item.comercializadoraId] ?? 0) + 1;
+      return acc;
+    }, {});
+    return comercializadoras
+      .map((marca) => ({
+        ...marca,
+        desarrollosAsignados: counts[marca.id] ?? 0,
+      }))
+      .filter((marca) => marca.desarrollosAsignados > 0);
+  }, [comercializadoras, desarrollos]);
 
   const loadStats = useCallback(
     async (desarrolloId: string) => {
@@ -129,11 +181,29 @@ export function DesarrollosHubPanel({
               const params = new URLSearchParams({ desarrolloId });
               const response = await fetch(`/api/admin/campanas?${params.toString()}`);
               const data = (await response.json()) as {
-                campanas?: Array<{ activo: boolean }>;
+                campanas?: Array<{
+                  activo: boolean;
+                  parseur_email?: string | null;
+                  updated_at?: string;
+                }>;
               };
               if (response.ok && data.campanas) {
                 next.campanasTotal = data.campanas.length;
                 next.campanasActivas = data.campanas.filter((item) => item.activo).length;
+                const activeWithEmail = data.campanas.find(
+                  (item) => item.activo && item.parseur_email?.trim(),
+                );
+                next.parseurEmail = activeWithEmail?.parseur_email?.trim() ?? null;
+                const latestUpdate = data.campanas.reduce<string | null>((latest, item) => {
+                  if (!item.updated_at) {
+                    return latest;
+                  }
+                  if (!latest || item.updated_at > latest) {
+                    return item.updated_at;
+                  }
+                  return latest;
+                }, null);
+                next.campanaUpdatedAt = latestUpdate;
               }
             })(),
             (async () => {
@@ -195,12 +265,58 @@ export function DesarrollosHubPanel({
     }
   }, [desarrollos, loadStats]);
 
+  useEffect(() => {
+    if (tabFromUrl && HUB_TABS.some((item) => item.id === tabFromUrl)) {
+      setHubTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  useEffect(() => {
+    if (marcaFromUrl) {
+      setMarcaFilter(marcaFromUrl);
+    }
+  }, [marcaFromUrl]);
+
+  const pushHubUrl = (params: { desarrollo?: string | null; tab?: HubTab; marca?: string | null }) => {
+    const next = new URLSearchParams();
+    if (params.tab && params.tab !== "desarrollos") {
+      next.set("tab", params.tab);
+    }
+    if (params.marca) {
+      next.set("marca", params.marca);
+    }
+    if (params.desarrollo) {
+      next.set("desarrollo", params.desarrollo);
+    }
+    const qs = next.toString();
+    router.push(qs ? `/admin/desarrollos?${qs}` : "/admin/desarrollos");
+  };
+
   const selectDesarrollo = (id: string) => {
-    router.push(`/admin/desarrollos?desarrollo=${encodeURIComponent(id)}`);
+    pushHubUrl({ desarrollo: id, tab: hubTab, marca: marcaFilter || null });
   };
 
   const clearSelection = () => {
-    router.push("/admin/desarrollos");
+    pushHubUrl({ tab: hubTab, marca: marcaFilter || null });
+  };
+
+  const setTab = (tab: HubTab) => {
+    setHubTab(tab);
+    pushHubUrl({
+      tab,
+      marca: tab === "desarrollos" ? marcaFilter || null : null,
+    });
+  };
+
+  const selectMarca = (marcaId: string) => {
+    setMarcaFilter(marcaId);
+    setHubTab("desarrollos");
+    pushHubUrl({ tab: "desarrollos", marca: marcaId });
+  };
+
+  const clearMarcaFilter = () => {
+    setMarcaFilter("");
+    pushHubUrl({ tab: "desarrollos" });
   };
 
   if (!desarrollos.length) {
@@ -261,7 +377,8 @@ export function DesarrollosHubPanel({
               <p className="mt-2 text-sm text-slate-600">{selectedDesarrollo.descripcion}</p>
               <div className="mt-4 flex flex-wrap gap-3 text-sm">
                 <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-700">
-                  {selectedDesarrollo.comercializador}
+                  {comercializadoraNames[selectedDesarrollo.comercializadoraId] ??
+                    selectedDesarrollo.comercializador}
                 </span>
                 <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-700">
                   Desde {formatPrice(selectedDesarrollo.precioDesde)}
@@ -270,6 +387,11 @@ export function DesarrollosHubPanel({
                   {selectedDesarrollo.tiposProducto.join(" · ")}
                 </span>
               </div>
+              {stats.parseurEmail ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  Parseur: <span className="font-medium text-slate-700">{stats.parseurEmail}</span>
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -350,11 +472,11 @@ export function DesarrollosHubPanel({
           ) : null}
           {permissions.asesores ? (
             <Link
-              href="/admin/asesores"
+              href={`/admin/asesores?desarrollo=${encodeURIComponent(selectedDesarrollo.id)}`}
               className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
             >
               <Users className="h-4 w-4" />
-              Equipo
+              Asignaciones
             </Link>
           ) : null}
           {permissions.metricas ? (
@@ -389,133 +511,158 @@ export function DesarrollosHubPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">CRM</p>
-        <h2 className="text-2xl font-black text-gabi-forest">Desarrollos</h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-500">
-          Vista central por proyecto: leads, campañas, sembrado y accesos rápidos.
-          {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
-        </p>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 border-b border-slate-200 pb-1 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex gap-1 overflow-x-auto">
+          {HUB_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setTab(tab.id)}
+              className={`shrink-0 border-b-2 px-4 py-2.5 text-sm font-bold transition ${
+                hubTab === tab.id
+                  ? "border-gabi-forest text-gabi-forest"
+                  : "border-transparent text-slate-500 hover:text-gabi-forest"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {hubTab === "desarrollos" ? (
+            <label className="relative min-w-[200px] flex-1 sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Buscar desarrollo"
+                className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none ring-gabi-forest/20 focus:border-gabi-forest focus:ring-2"
+              />
+            </label>
+          ) : null}
+          {isSuperAdmin ? (
+            <Link
+              href="/admin/catalogo"
+              className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-gabi-forest/90"
+            >
+              <Plus className="h-4 w-4" />
+              Desarrollo
+            </Link>
+          ) : null}
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {desarrollos.map((desarrollo) => {
-          const stats = statsById[desarrollo.id] ?? emptyStats();
-          const etapasTop = topEtapas(stats.leadsPorEtapa, 2);
+      {scopeLabel ? (
+        <p className="text-xs text-slate-500">
+          Alcance: <span className="font-semibold">{scopeLabel}</span>
+        </p>
+      ) : null}
 
-          return (
+      {hubTab === "desarrollos" ? (
+        <>
+          {marcaFilter ? (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-slate-500">Filtrando por marca:</span>
+              <button
+                type="button"
+                onClick={clearMarcaFilter}
+                className="inline-flex items-center gap-1 rounded-full bg-gabi-forest/10 px-3 py-1 font-semibold text-gabi-forest hover:bg-gabi-forest/15"
+              >
+                {comercializadoraNames[marcaFilter] ?? marcaFilter}
+                <span className="text-xs opacity-70">×</span>
+              </button>
+            </div>
+          ) : null}
+
+          {!filteredDesarrollos.length ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+              No hay desarrollos que coincidan con la búsqueda.
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filteredDesarrollos.map((desarrollo) => {
+                const stats = statsById[desarrollo.id] ?? emptyStats();
+                return (
+                  <DesarrolloHubCard
+                    key={desarrollo.id}
+                    desarrollo={desarrollo}
+                    clusters={clusters}
+                    comercializadoraNames={comercializadoraNames}
+                    stats={stats}
+                    permissions={permissions}
+                    onOpen={() => selectDesarrollo(desarrollo.id)}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : null}
+
+      {hubTab === "marcas" ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {desarrollosByMarca.map((marca) => (
             <button
-              key={desarrollo.id}
+              key={marca.id}
               type="button"
-              onClick={() => selectDesarrollo(desarrollo.id)}
-              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-gabi-forest/25 hover:shadow-md"
-              style={{ borderTopWidth: 4, borderTopColor: desarrollo.colorPrincipal }}
+              onClick={() => selectMarca(marca.id)}
+              className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-gabi-forest/20 hover:shadow-md"
+              style={{ borderTopWidth: 3, borderTopColor: marca.colorPrimary }}
             >
-              <div className="p-5">
-                <div className="flex items-start gap-4">
-                  {desarrollo.logo ? (
-                    <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 p-2">
-                      <Image
-                        src={desarrollo.logo}
-                        alt={desarrollo.nombre}
-                        width={80}
-                        height={48}
-                        className="max-h-10 w-auto object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: `${desarrollo.colorPrincipal}18` }}
-                    >
-                      <Building2 className="h-6 w-6" style={{ color: desarrollo.colorPrincipal }} />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-xl font-black text-gabi-forest group-hover:text-gabi-forest-light">
-                      {desarrollo.nombre}
-                    </h3>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
-                      <MapPin className="h-3 w-3" />
-                      {desarrollo.ubicacion}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">{desarrollo.comercializador}</p>
-                  </div>
-                </div>
-
-                {stats.loading ? (
-                  <div className="mt-4 flex items-center gap-2 text-sm text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Cargando métricas…
+              <div className="flex items-start gap-4">
+                {marca.logo ? (
+                  <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 p-2">
+                    <Image
+                      src={marca.logo}
+                      alt={marca.nombre}
+                      width={72}
+                      height={40}
+                      className="max-h-10 w-auto object-contain"
+                    />
                   </div>
                 ) : (
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {permissions.leads ? (
-                      <div className="rounded-xl bg-slate-50 px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase text-slate-400">Leads</p>
-                        <p className="text-lg font-black text-gabi-forest">{stats.leadsTotal}</p>
-                      </div>
-                    ) : null}
-                    {permissions.leads ? (
-                      <div className="rounded-xl bg-slate-50 px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase text-slate-400">Campañas</p>
-                        <p className="text-lg font-black text-gabi-forest">{stats.campanasActivas}</p>
-                      </div>
-                    ) : null}
-                    {permissions.sembrado ? (
-                      <div className="rounded-xl bg-slate-50 px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase text-slate-400">Apartados</p>
-                        <p className="text-lg font-black text-gabi-forest">{stats.sembradoApartados}</p>
-                      </div>
-                    ) : null}
-                    {permissions.asesores ? (
-                      <div className="rounded-xl bg-slate-50 px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase text-slate-400">Asesores</p>
-                        <p className="text-lg font-black text-gabi-forest">{stats.asesoresTotal}</p>
-                      </div>
-                    ) : null}
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${marca.colorPrimary}14` }}
+                  >
+                    <LayoutGrid className="h-6 w-6" style={{ color: marca.colorPrimary }} />
                   </div>
                 )}
-
-                {!stats.loading && permissions.leads && etapasTop.length ? (
-                  <p className="mt-3 text-xs text-slate-500">
-                    {etapasTop
-                      .map(
-                        ([etapa, count]) =>
-                          `${prospectoEtapaLabel[etapa as ProspectoEtapa] ?? etapa} (${count})`,
-                      )
-                      .join(" · ")}
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-gabi-forest">{marca.nombre}</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {marca.desarrollosAsignados} desarrollo
+                    {marca.desarrollosAsignados === 1 ? "" : "s"} en tu alcance
                   </p>
-                ) : null}
-
-                {!stats.loading && stats.onboardingPct !== null ? (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between gap-2 text-xs">
-                      <span className="font-semibold text-slate-500">Listo para campo</span>
-                      <span
-                        className={`font-bold ${
-                          stats.readyForField ? "text-emerald-600" : "text-amber-600"
-                        }`}
-                      >
-                        {stats.onboardingPct}%
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          stats.readyForField ? "bg-emerald-500" : "bg-amber-400"
-                        }`}
-                        style={{ width: `${Math.min(100, stats.onboardingPct)}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
+                  <p className="mt-2 text-xs font-semibold text-gabi-forest group-hover:underline">
+                    Ver desarrollos →
+                  </p>
+                </div>
               </div>
             </button>
-          );
-        })}
-      </div>
+          ))}
+          {!desarrollosByMarca.length ? (
+            <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+              No hay marcas configuradas.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {hubTab === "campanas" && permissions.leads ? (
+        <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
+          <CampanasAdminPanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
+        </div>
+      ) : null}
+
+      {hubTab === "campanas" && !permissions.leads ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+          No tienes permiso para administrar campañas.
+        </div>
+      ) : null}
     </div>
   );
 }

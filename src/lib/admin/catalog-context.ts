@@ -5,17 +5,17 @@ import {
   getPrototiposForDesarrolloIds,
   listActiveDesarrollos,
 } from "@/lib/catalog/service";
+import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   disponibilidades as fallbackDisponibilidades,
   type Cluster,
-  type Desarrollo,
   type DisponibilidadUnidad,
   type Prototipo,
 } from "@/lib/data";
 
 export type AdminCatalogContext = {
-  activeDesarrollos: Desarrollo[];
-  allowedDesarrollos: Desarrollo[];
+  activeDesarrollos: DesarrolloRecord[];
+  allowedDesarrollos: DesarrolloRecord[];
   desarrolloNames: Record<string, string>;
   scopeLabel: string;
   clusters: Cluster[];
