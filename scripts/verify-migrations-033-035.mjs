@@ -42,6 +42,12 @@ const checks = [
     column: "telefono",
     migration: "036_asesores_telefono.sql",
   },
+  {
+    id: "037",
+    table: "prospecto_encuestas",
+    column: "tipo",
+    migration: "037_prospecto_qa_satisfaccion.sql",
+  },
 ];
 
 let allOk = true;

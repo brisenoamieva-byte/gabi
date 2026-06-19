@@ -59,6 +59,18 @@ export const exportLeadsReporteCsv = (
       ["Region", "Total"],
       ...reporte.porRegion.map((item) => [item.region, item.total]),
     ]),
+    section("Por estado (Mexico)", [
+      ["Estado", "Total"],
+      ...reporte.porEstado.map((item) => [item.estadoNombre, item.total]),
+    ]),
+    section("QA y satisfaccion", [
+      ["Metrica", "Valor"],
+      ["Encuestas QA", reporte.qa.qaRespondidas],
+      ["Promedio QA", reporte.qa.promedioQa ?? ""],
+      ["Encuestas satisfaccion", reporte.qa.satisfaccionRespondidas],
+      ["Promedio satisfaccion", reporte.qa.promedioSatisfaccion ?? ""],
+      ["Total respuestas", reporte.qa.totalEncuestas],
+    ]),
   ];
 
   return blocks.join("\n\n");

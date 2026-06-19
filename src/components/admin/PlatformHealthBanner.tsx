@@ -29,7 +29,8 @@ export function PlatformHealthBanner() {
 
   const pending = health.checks.filter((item) => !item.ok);
   const showParseurWarning = !health.parseurSecretConfigured;
-  const hasIssues = pending.length > 0 || showParseurWarning;
+  const showQaWarning = !health.qaWebhookSecretConfigured;
+  const hasIssues = pending.length > 0 || showParseurWarning || showQaWarning;
 
   if (!hasIssues) {
     return null;
@@ -50,14 +51,19 @@ export function PlatformHealthBanner() {
             <p className="font-bold">
               {pending.length
                 ? `${pending.length} migración${pending.length === 1 ? "" : "es"} pendiente${pending.length === 1 ? "" : "s"} en Supabase`
-                : "Parseur sin secreto en el servidor"}
+                : showParseurWarning && showQaWarning
+                  ? "Webhooks Parseur y QA sin secreto en el servidor"
+                  : showQaWarning
+                    ? "Webhook QA sin secreto en el servidor"
+                    : "Parseur sin secreto en el servidor"}
             </p>
             <p className="mt-1 text-xs opacity-90">
               {pending.length ? (
                 <>
                   Algunas funciones de Leads (spam, iScore, duplicados) o comisiones pueden fallar
                   hasta aplicar el SQL en el proyecto Supabase.
-                  {showParseurWarning ? " En producción configura también PARSEUR_WEBHOOK_SECRET." : null}
+                  {showParseurWarning ? " En producción configura PARSEUR_WEBHOOK_SECRET." : null}
+                  {showQaWarning ? " Para ADRYO configura QA_WEBHOOK_SECRET." : null}
                 </>
               ) : (
                 <>
@@ -122,6 +128,19 @@ export function PlatformHealthBanner() {
               {health.parseurSecretConfigured
                 ? "Secreto configurado."
                 : "Opcional en local; obligatorio en Vercel (PARSEUR_WEBHOOK_SECRET)."}
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            {health.qaWebhookSecretConfigured ? (
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 text-sky-700" />
+            )}
+            <span>
+              <strong>Webhook QA / ADRYO</strong> —{" "}
+              {health.qaWebhookSecretConfigured
+                ? "Secreto configurado."
+                : "Opcional en local; obligatorio en Vercel (QA_WEBHOOK_SECRET)."}
             </span>
           </li>
         </ul>

@@ -10,5 +10,6 @@ export type PlatformHealth = {
   ok: boolean;
   supabaseConfigured: boolean;
   parseurSecretConfigured: boolean;
+  qaWebhookSecretConfigured: boolean;
   checks: PlatformHealthCheck[];
 };

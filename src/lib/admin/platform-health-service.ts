@@ -37,12 +37,14 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
   const parseurSecretConfigured = Boolean(process.env.PARSEUR_WEBHOOK_SECRET?.trim());
+  const qaWebhookSecretConfigured = Boolean(process.env.QA_WEBHOOK_SECRET?.trim());
 
   if (!supabaseConfigured) {
     return {
       ok: false,
       supabaseConfigured: false,
       parseurSecretConfigured,
+      qaWebhookSecretConfigured,
       checks: [
         {
           id: "supabase",
@@ -187,6 +189,17 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta asesores.telefono — aplica 036.",
   });
 
+  const encuestasOk = await probeTable("prospecto_encuestas", "tipo");
+  checks.push({
+    id: "037",
+    label: "Encuestas QA / Satisfacción",
+    migrationFile: "037_prospecto_qa_satisfaccion.sql",
+    ok: encuestasOk,
+    detail: encuestasOk
+      ? "Webhook ADRYO y reportes QA disponibles."
+      : "Falta prospecto_encuestas — aplica 037.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()
@@ -198,6 +211,7 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
     ok: migrationsOk && parseurSecretConfigured,
     supabaseConfigured: true,
     parseurSecretConfigured,
+    qaWebhookSecretConfigured,
     checks,
   };
 };

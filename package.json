@@ -26,6 +26,7 @@
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",
     "db:verify:migrations": "node scripts/verify-migrations-033-035.mjs",
+    "db:apply:037": "node scripts/apply-migration-037.mjs",
     "drive:test": "node --import tsx scripts/drive-test.mjs",
     "predev": "node scripts/check-supabase-env.mjs && node scripts/catalog-sync-if-needed.mjs",
     "prebuild": "node scripts/generate-gabi-pwa-icons.mjs"
@@ -35,6 +36,7 @@
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
+    "@svg-maps/mexico": "^2.0.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
     "googleapis": "^173.0.0",

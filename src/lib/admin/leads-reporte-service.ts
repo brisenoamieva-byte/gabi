@@ -5,6 +5,12 @@ import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
+import { fetchLeadsQaResumen, type LeadsQaResumen } from "@/lib/admin/qa-satisfaccion-service";
+import {
+  mexicoEstadoNombre,
+  resolveOrigenEstado,
+  type MexicoEstadoId,
+} from "@/lib/comercial/mexico-estados";
 
 export type LeadsReporteDia = {
   fecha: string;
@@ -37,6 +43,12 @@ export type LeadsReporteCampana = {
 
 export type LeadsReporteRegion = {
   region: string;
+  total: number;
+};
+
+export type LeadsReporteEstado = {
+  estadoId: MexicoEstadoId;
+  estadoNombre: string;
   total: number;
 };
 
@@ -80,6 +92,8 @@ export type LeadsReporte = {
   porMes: LeadsReporteMes[];
   porCampana: LeadsReporteCampana[];
   porRegion: LeadsReporteRegion[];
+  porEstado: LeadsReporteEstado[];
+  qa: LeadsQaResumen;
   porAsesor: LeadsReporteAsesor[];
 };
 
@@ -169,6 +183,7 @@ export const getLeadsReporte = async (
   const porAsesorMap = new Map<string, LeadsReporteAsesor>();
   const porCampanaMap = new Map<string, LeadsReporteCampana>();
   const porRegionMap = new Map<string, number>();
+  const porEstadoMap = new Map<MexicoEstadoId, number>();
 
   let spam = 0;
   let duplicados = 0;
@@ -259,6 +274,9 @@ export const getLeadsReporte = async (
 
     const region = prospecto.origen_ciudad?.trim() || "Sin región";
     porRegionMap.set(region, (porRegionMap.get(region) ?? 0) + 1);
+
+    const estadoId = resolveOrigenEstado(prospecto.origen_ciudad);
+    porEstadoMap.set(estadoId, (porEstadoMap.get(estadoId) ?? 0) + 1);
 
     const asesorKey = prospecto.asesor_id ?? "__sin_asesor__";
     const existingAsesor = porAsesorMap.get(asesorKey);
@@ -360,6 +378,13 @@ export const getLeadsReporte = async (
     };
   });
 
+  const qa = await fetchLeadsQaResumen({
+    desarrolloId: filters.desarrolloId,
+    desde: filters.desde,
+    hasta: filters.hasta,
+    asesorId: filters.asesorId,
+  });
+
   return {
     totalBruto: prospectos.length,
     total: validos,
@@ -383,6 +408,14 @@ export const getLeadsReporte = async (
     porRegion: Array.from(porRegionMap.entries())
       .map(([region, total]) => ({ region, total }))
       .sort((a, b) => b.total - a.total),
+    porEstado: Array.from(porEstadoMap.entries())
+      .map(([estadoId, total]) => ({
+        estadoId,
+        estadoNombre: mexicoEstadoNombre(estadoId),
+        total,
+      }))
+      .sort((a, b) => b.total - a.total),
+    qa,
     porAsesor: Array.from(porAsesorMap.values()).sort((a, b) => b.total - a.total),
   };
 };

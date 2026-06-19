@@ -203,6 +203,39 @@ export function LeadsRegionChart({ regiones }: { regiones: LeadsReporteRegion[] 
   );
 }
 
+export function LeadsScoreDistribucionChart({
+  distribucion,
+  emptyLabel,
+}: {
+  distribucion: Record<string, number>;
+  emptyLabel: string;
+}) {
+  const order = ["0-2", "3-4", "5-6", "7-8", "9-10"];
+  const data = order
+    .map((name) => ({ name, value: distribucion[name] ?? 0 }))
+    .filter((item) => item.value > 0);
+
+  if (!data.length) {
+    return (
+      <p className="flex h-full items-center justify-center text-sm text-slate-500">
+        {emptyLabel}
+      </p>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
+        <Tooltip formatter={(value) => [Number(value ?? 0), "Respuestas"]} />
+        <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 export function LeadsInteraccionesDonut({
   items,
 }: {

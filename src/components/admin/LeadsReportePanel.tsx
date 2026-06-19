@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Loader2, Mail, MapPin, MessageCircle, Phone, Users } from "lucide-react";
+import { Download, Loader2, Mail, MapPin, MessageCircle, Phone, Star, Users } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { LeadsEmbudoEtapa, LeadsReporte } from "@/lib/admin/leads-reporte-service";
 import { downloadLeadsReporteCsv } from "@/lib/admin/leads-reporte-export";
@@ -11,8 +11,11 @@ import {
   LeadsCampanaChart,
   LeadsInteraccionesDonut,
   LeadsRegionChart,
+  LeadsScoreDistribucionChart,
   LeadsTimeSeriesChart,
 } from "@/components/admin/LeadsReporteCharts";
+import { LeadsMexicoMap } from "@/components/admin/LeadsMexicoMap";
+import { buildQaWebhookUrl } from "@/lib/comercial/qa-webhook-auth";
 import {
   PROSPECTO_ETAPAS,
   prospectoEtapaLabel,
@@ -27,7 +30,7 @@ type LeadsReportePanelProps = {
 
 type AsesorOption = { id: string; nombre: string };
 type CampanaOption = { id: string; nombre: string };
-type LeadsSubTab = "leads" | "calificaciones" | "regiones" | "interacciones" | "anuales";
+type LeadsSubTab = "leads" | "calificaciones" | "regiones" | "interacciones" | "qa" | "anuales";
 type TimeSeriesMode = "dia" | "mes";
 
 const currentMonthRange = () => {
@@ -214,6 +217,9 @@ export function LeadsReportePanel({
   }, [reporte]);
 
   const topRegion = reporte?.porRegion[0];
+  const topEstado = reporte?.porEstado.find(
+    (item) => item.estadoId !== "unk" && item.estadoId !== "ext",
+  );
   const avgRegion =
     reporte && reporte.porRegion.length
       ? Math.round(reporte.totalBruto / reporte.porRegion.length)
@@ -265,6 +271,7 @@ export function LeadsReportePanel({
               { id: "calificaciones" as const, label: "Calificaciones" },
               { id: "regiones" as const, label: "Regiones" },
               { id: "interacciones" as const, label: "Interacciones" },
+              { id: "qa" as const, label: "QA / Satisfacción" },
               { id: "anuales" as const, label: "Anuales" },
             ] as const
           ).map((item) => (
@@ -517,15 +524,27 @@ export function LeadsReportePanel({
                 <KpiCard label="Promedio por región" value={avgRegion} />
                 <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Región con más leads
+                    Estado con más leads
                   </p>
                   <p className="mt-2 flex items-center gap-2 text-xl font-black text-gabi-forest">
                     <MapPin className="h-5 w-5 shrink-0 text-gabi-sand" />
-                    {topRegion?.region ?? "—"}
+                    {topEstado?.estadoNombre ?? topRegion?.region ?? "—"}
                   </p>
-                  {topRegion ? (
-                    <p className="mt-1 text-sm text-slate-500">{topRegion.total} leads</p>
+                  {(topEstado ?? topRegion) ? (
+                    <p className="mt-1 text-sm text-slate-500">
+                      {(topEstado ?? topRegion)?.total} leads
+                    </p>
                   ) : null}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-black text-gabi-forest">Mapa de México</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Origen geográfico normalizado desde origen_ciudad (paridad Xperience)
+                </p>
+                <div className="mt-4">
+                  <LeadsMexicoMap estados={reporte.porEstado} />
                 </div>
               </div>
 
@@ -537,21 +556,109 @@ export function LeadsReportePanel({
               </ChartCard>
 
               <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-black text-gabi-forest">Detalle por región</h3>
+                <h3 className="text-lg font-black text-gabi-forest">Detalle por estado</h3>
                 <div className="mt-4 space-y-2">
-                  {reporte.porRegion.map((item) => (
+                  {reporte.porEstado.map((item) => (
                     <div
-                      key={item.region}
+                      key={item.estadoId}
                       className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
                     >
-                      <span className="text-sm font-semibold text-gabi-forest">{item.region}</span>
+                      <span className="text-sm font-semibold text-gabi-forest">
+                        {item.estadoNombre}
+                      </span>
                       <span className="text-sm font-bold text-gabi-sand">{item.total}</span>
                     </div>
                   ))}
-                  {!reporte.porRegion.length ? (
+                  {!reporte.porEstado.length ? (
                     <p className="text-sm text-slate-500">Sin datos de región en el periodo.</p>
                   ) : null}
                 </div>
+              </div>
+            </>
+          ) : null}
+
+          {subTab === "qa" ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Star className="h-4 w-4" />
+                    <p className="text-xs font-bold uppercase">Encuestas QA</p>
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-gabi-forest">
+                    {reporte.qa.qaRespondidas}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Promedio{" "}
+                    {reporte.qa.promedioQa != null ? `${reporte.qa.promedioQa}/10` : "—"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Star className="h-4 w-4 text-amber-500" />
+                    <p className="text-xs font-bold uppercase">Satisfacción</p>
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-gabi-forest">
+                    {reporte.qa.satisfaccionRespondidas}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Promedio{" "}
+                    {reporte.qa.promedioSatisfaccion != null
+                      ? `${reporte.qa.promedioSatisfaccion}/10`
+                      : "—"}
+                  </p>
+                </div>
+                <KpiCard label="Total respuestas" value={reporte.qa.totalEncuestas} />
+                <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Canal principal
+                  </p>
+                  <p className="mt-2 text-xl font-black capitalize text-gabi-forest">
+                    {Object.entries(reporte.qa.porCanal).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+                      "—"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">WhatsApp / ADRYO</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <ChartCard title="Distribución QA" subtitle="Escala 0–10 por rangos">
+                  <LeadsScoreDistribucionChart
+                    distribucion={reporte.qa.distribucionQa}
+                    emptyLabel="Sin encuestas QA en el periodo."
+                  />
+                </ChartCard>
+                <ChartCard title="Distribución satisfacción" subtitle="Post-atención / cierre">
+                  <LeadsScoreDistribucionChart
+                    distribucion={reporte.qa.distribucionSatisfaccion}
+                    emptyLabel="Sin encuestas de satisfacción en el periodo."
+                  />
+                </ChartCard>
+              </div>
+
+              <ChartCard title="Respuestas por canal" subtitle="QA + satisfacción">
+                <LeadsInteraccionesDonut
+                  items={Object.entries(reporte.qa.porCanal).map(([name, value]) => ({
+                    name: name.charAt(0).toUpperCase() + name.slice(1),
+                    value,
+                  }))}
+                />
+              </ChartCard>
+
+              <div className="rounded-2xl border border-gabi-forest/10 bg-slate-50 p-5 text-sm text-slate-700">
+                <p className="font-semibold text-gabi-forest">Integración ADRYO / WhatsApp</p>
+                <p className="mt-2">
+                  Configura ADRYO para enviar POST al webhook con{" "}
+                  <code className="rounded bg-white px-1 py-0.5 text-xs">xperienceId</code> o{" "}
+                  <code className="rounded bg-white px-1 py-0.5 text-xs">prospectoId</code>,{" "}
+                  <code className="rounded bg-white px-1 py-0.5 text-xs">tipo</code> (
+                  <code className="text-xs">qa</code> |{" "}
+                  <code className="text-xs">satisfaccion</code>) y{" "}
+                  <code className="rounded bg-white px-1 py-0.5 text-xs">score</code> (0–10).
+                </p>
+                <p className="mt-3 break-all font-mono text-xs text-slate-500">
+                  {buildQaWebhookUrl()}
+                </p>
               </div>
             </>
           ) : null}
@@ -621,11 +728,11 @@ export function LeadsReportePanel({
                 <LeadsInteraccionesDonut items={interaccionesDonut} />
               </ChartCard>
 
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                <p className="font-semibold">Nota</p>
+              <div className="rounded-2xl border border-gabi-forest/10 bg-slate-50 p-4 text-sm text-slate-700">
+                <p className="font-semibold text-gabi-forest">Interacciones</p>
                 <p className="mt-1">
-                  Tiempos de respuesta bot vs asesor y encuestas QA requieren integración ADRYO.
-                  Estos KPIs usan las banderas ya sincronizadas desde import Xperience.
+                  Banderas sincronizadas desde import Xperience. Encuestas QA y satisfacción están
+                  en la pestaña dedicada (webhook ADRYO).
                 </p>
               </div>
             </>
