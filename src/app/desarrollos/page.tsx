@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, LogOut, MapPin } from "lucide-react";
 import Image from "next/image";
@@ -9,15 +9,10 @@ import { GabiLogo } from "@/components/brand/GabiLogo";
 import { DesarrolloSelectorLogo } from "@/components/desarrollos/DesarrolloSelectorLogo";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-  type PortalSession,
-} from "@/lib/portal/session";
-import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
-import { formatPrice, type Asesor } from "@/lib/data";
-
-type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
+import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
+import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+import { formatPrice } from "@/lib/data";
 
 const PRODUCTO_LABEL: Record<string, string> = {
   casas: "Casas",
@@ -47,70 +42,50 @@ function sortDesarrollosForHub(items: DesarrolloRecord[]): DesarrolloRecord[] {
 
 export default function DesarrollosPage() {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [portal, setPortal] = useState<PortalSession | null>(null);
+  const { authReady, user, portal } = useRequireAsesorSession({
+    requireDesarrollo: false,
+    requirePortal: true,
+  });
   const [desarrollosDisponibles, setDesarrollosDisponibles] = useState<DesarrolloRecord[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
 
-  const portalPath = useMemo(() => resolveAdvisorEntryPath(portal), [portal]);
-
   useEffect(() => {
-    const storedUser = localStorage.getItem("gabi_user");
-    const session = readPortalSession();
-
-    if (!storedUser || !session) {
-      router.replace(session ? portalPath : "/portal");
+    if (!authReady || !user) {
       return;
     }
 
-    try {
-      const parsedUser = JSON.parse(storedUser) as SessionUser;
-      setUser(parsedUser);
-      setPortal(session);
+    const loadDesarrollos = async () => {
+      setLoadingCatalog(true);
+      try {
+        const ids = user.desarrollosIds.join(",");
+        const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
+        const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
+        setDesarrollosDisponibles(
+          sortDesarrollosForHub(
+            (data.desarrollos ?? []).map((item) => applyDesarrolloCodeDefaults(item)),
+          ),
+        );
+      } catch {
+        setDesarrollosDisponibles([]);
+      } finally {
+        setLoadingCatalog(false);
+      }
+    };
 
-      const loadDesarrollos = async () => {
-        setLoadingCatalog(true);
-        try {
-          const freshUser = (await refreshStoredAsesorSession(parsedUser)) ?? parsedUser;
-          setUser(freshUser);
-
-          const ids = freshUser.desarrollosIds.join(",");
-          const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
-          const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
-          setDesarrollosDisponibles(
-            sortDesarrollosForHub(
-              (data.desarrollos ?? []).map((item) => applyDesarrolloCodeDefaults(item)),
-            ),
-          );
-        } catch {
-          setDesarrollosDisponibles([]);
-        } finally {
-          setLoadingCatalog(false);
-        }
-      };
-
-      void loadDesarrollos();
-    } catch {
-      localStorage.removeItem("gabi_user");
-      router.replace(portalPath);
-    }
-  }, [portalPath, router]);
+    void loadDesarrollos();
+  }, [authReady, user]);
 
   const handleSelect = (desarrolloId: string) => {
-    localStorage.setItem("gabi_desarrollo", desarrolloId);
+    localStorage.setItem(GABI_DESARROLLO_KEY, desarrolloId);
     router.push("/dashboard");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("gabi_user");
-    localStorage.removeItem("gabi_desarrollo");
-    router.replace(portalPath);
-  };
+  const handleLogout = () => logoutAsesorSession(router);
 
   const accent = portal?.colorAccent ?? "#6cc24a";
   const primary = portal?.colorPrimary ?? "#201044";
 
-  if (!user) {
+  if (!authReady || !user) {
     return (
       <main
         className="flex min-h-screen items-center justify-center"

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -24,39 +24,23 @@ import {
   CANADAS_DEL_VALLE_ID,
   getCompetidoresDirectosCDV,
 } from "@/lib/corredor/investti-analisis";
-import {
-  CORREDOR_DESARROLLADORES,
-  CORREDOR_DESARROLLOS,
-  getCorredorDesarrolloById,
-} from "@/lib/corredor/zona-sur-seed";
+import { CORREDOR_DESARROLLADORES } from "@/lib/corredor/zona-sur-seed";
+import { useResolvedCorredorCatalog } from "@/lib/corredor/use-resolved-corredor-catalog";
 import { CORREDOR_INMOBILIARIA } from "@/lib/corredor/inmobiliaria";
 import { CORREDOR_FICHA_ETAPAS, type CorredorFichaEtapa } from "@/lib/corredor/types";
 import { formatPrice, formatTicket } from "@/lib/data";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
 
 export default function CorredorDesarrolloPage() {
   const params = useParams();
-  const router = useRouter();
   const desarrolloId = typeof params.desarrolloId === "string" ? params.desarrolloId : "";
-  const desarrollo = getCorredorDesarrolloById(desarrolloId);
+  const { authReady } = useRequireAsesorSession({ requireDesarrollo: false });
+  const { desarrollos, loading: catalogLoading, getById } = useResolvedCorredorCatalog();
+  const desarrollo = getById(desarrolloId);
   const [etapa, setEtapa] = useState<CorredorFichaEtapa>("desarrollador");
   const [loteM2, setLoteM2] = useState(330);
   const [enganchePct, setEnganchePct] = useState(15);
   const [plazoMeses, setPlazoMeses] = useState(60);
-  const [authReady, setAuthReady] = useState(false);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("gabi_user");
-    if (!storedUser) {
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-      return;
-    }
-    setAuthReady(true);
-  }, [router]);
 
   useEffect(() => {
     if (desarrollo) {
@@ -71,10 +55,10 @@ export default function CorredorDesarrolloPage() {
     if (desarrollo.id === CANADAS_DEL_VALLE_ID) {
       return getCompetidoresDirectosCDV();
     }
-    return CORREDOR_DESARROLLOS.filter(
+    return desarrollos.filter(
       (d) => d.id !== desarrollo.id && d.desarrolladorId !== desarrollo.desarrolladorId,
     ).slice(0, 5);
-  }, [desarrollo]);
+  }, [desarrollo, desarrollos]);
 
   const desarrolladorInfo = useMemo(() => {
     if (!desarrollo) return null;
@@ -91,7 +75,7 @@ export default function CorredorDesarrolloPage() {
     return { ticket, enganche, financiado, mensualidad, precioM2 };
   }, [desarrollo, loteM2, enganchePct, plazoMeses]);
 
-  if (!authReady) {
+  if (!authReady || catalogLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-[#201044]">
         <p className="text-lg font-semibold">Cargando ficha...</p>
@@ -163,7 +147,7 @@ export default function CorredorDesarrolloPage() {
           </div>
           <div className="mt-3">
             <CorredorMap
-              desarrollos={CORREDOR_DESARROLLOS}
+              desarrollos={desarrollos}
               selectedId={desarrollo.id}
               onSelect={() => undefined}
               singleDesarrolloId={desarrollo.id}
@@ -222,7 +206,7 @@ export default function CorredorDesarrolloPage() {
             {desarrolladorInfo ? (
               <ul className="mt-4 space-y-2 text-sm">
                 {desarrolladorInfo.proyectos.map((pid) => {
-                  const p = getCorredorDesarrolloById(pid);
+                  const p = getById(pid);
                   if (!p) return null;
                   return (
                     <li key={pid} className="rounded-lg bg-[#F2F0E9] px-3 py-2">

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
 import { CorredorDesarrolloCard } from "@/components/corredor/CorredorDesarrolloCard";
@@ -17,31 +16,18 @@ import {
   DEFAULT_CORREDOR_FILTERS,
   filterCorredorDesarrollos,
 } from "@/lib/corredor/filters";
-import { CORREDOR_DESARROLLOS } from "@/lib/corredor/zona-sur-seed";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
+import { useResolvedCorredorCatalog } from "@/lib/corredor/use-resolved-corredor-catalog";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
 
 export default function CorredorPage() {
-  const router = useRouter();
+  const { authReady } = useRequireAsesorSession({ requireDesarrollo: false });
+  const { desarrollos, loading: catalogLoading } = useResolvedCorredorCatalog();
   const [filters, setFilters] = useState(DEFAULT_CORREDOR_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [authReady, setAuthReady] = useState(false);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("gabi_user");
-    if (!storedUser) {
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-      return;
-    }
-    setAuthReady(true);
-  }, [router]);
 
   const filtered = useMemo(
-    () => filterCorredorDesarrollos(CORREDOR_DESARROLLOS, filters),
-    [filters],
+    () => filterCorredorDesarrollos(desarrollos, filters),
+    [desarrollos, filters],
   );
 
   const sorted = useMemo(() => {
@@ -50,7 +36,7 @@ export default function CorredorPage() {
     );
   }, [filtered]);
 
-  if (!authReady) {
+  if (!authReady || catalogLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-[#201044]">
         <p className="text-lg font-semibold">Cargando corredor sur...</p>

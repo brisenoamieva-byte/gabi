@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -26,18 +25,11 @@ import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
 import { PrepareOfflineVisitButton } from "@/components/PrepareOfflineVisitButton";
 import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
-import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
-import { formatPrice, type Asesor, type Desarrollo } from "@/lib/data";
-
-type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
-
-type PortalSession = {
-  nombre: string;
-  logo: string;
-};
+  clearSelectedDesarrollo,
+  logoutAsesorSession,
+} from "@/lib/session/asesor-session-actions";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+import { formatPrice, type Desarrollo } from "@/lib/data";
 
 type QuickAction = {
   title: string;
@@ -81,77 +73,12 @@ const quickActions: QuickAction[] = [
 export default function DashboardPage() {
   const router = useRouter();
   const { isOperator } = useGabiOperator();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
-  const [portal, setPortal] = useState<PortalSession | null>(null);
+  const { authReady, user, desarrollo, portal } = useRequireAsesorSession();
 
-  useEffect(() => {
-    const portal = readPortalSession();
-    const storedUser = localStorage.getItem("gabi_user");
-    const storedDevelopment = localStorage.getItem("gabi_desarrollo");
+  const handleLogout = () => logoutAsesorSession(router);
+  const handleChangeDevelopment = () => clearSelectedDesarrollo(router);
 
-    if (!storedUser) {
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-      return;
-    }
-
-    if (!storedDevelopment) {
-      router.replace("/desarrollos");
-      return;
-    }
-
-    const loadSession = async () => {
-      try {
-        const parsedUser = JSON.parse(storedUser) as SessionUser;
-        const freshUser = (await refreshStoredAsesorSession(parsedUser)) ?? parsedUser;
-
-        if (!freshUser.desarrollosIds.includes(storedDevelopment)) {
-          localStorage.removeItem("gabi_desarrollo");
-          router.replace("/desarrollos");
-          return;
-        }
-
-        const response = await fetch(
-          `/api/catalog/desarrollos?ids=${encodeURIComponent(storedDevelopment)}`,
-        );
-        const data = (await response.json()) as { desarrollos?: Desarrollo[] };
-        const selectedDevelopment = data.desarrollos?.[0];
-
-        if (!selectedDevelopment) {
-          localStorage.removeItem("gabi_desarrollo");
-          router.replace("/desarrollos");
-          return;
-        }
-
-        if (portal) {
-          setPortal(portal);
-        }
-
-        setUser(freshUser);
-        setDesarrollo(selectedDevelopment);
-      } catch {
-        localStorage.removeItem("gabi_user");
-        localStorage.removeItem("gabi_desarrollo");
-        router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-      }
-    };
-
-    void loadSession();
-  }, [router]);
-
-  const handleLogout = () => {
-    const portal = readPortalSession();
-    localStorage.removeItem("gabi_user");
-    localStorage.removeItem("gabi_desarrollo");
-    router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-  };
-
-  const handleChangeDevelopment = () => {
-    localStorage.removeItem("gabi_desarrollo");
-    router.push("/desarrollos");
-  };
-
-  if (!user || !desarrollo) {
+  if (!authReady || !user || !desarrollo) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-[#1e293b]">
         <p className="text-lg font-semibold text-slate-500">Cargando gabi...</p>

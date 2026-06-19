@@ -17,22 +17,17 @@ import {
   INVESTTI_GRUPO_LOGO,
   isInvesttiCatalogDesarrollo,
 } from "@/lib/catalog/investti-desarrollos";
-import { getDatosBancarios, type Asesor, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
+import { getDatosBancarios, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
 import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-  type PortalSession,
-} from "@/lib/portal/session";
 import {
   readCotizadorProspectoId,
   RECORRIDO_SNAPSHOT_KEY,
 } from "@/lib/asesores/prefill-cotizador-client";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
+import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
 
 const RECORRIDO_KEY = RECORRIDO_SNAPSHOT_KEY;
-
-type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
 
 type RecorridoSnapshot = {
   clusterId?: string;
@@ -80,15 +75,13 @@ function resolveDefaultPrototipo(
   return prototipos[0]?.id;
 }
 
-type SessionStatus = "loading" | "ready" | "redirecting";
+type CatalogStatus = "idle" | "loading" | "ready" | "redirecting";
 
 export default function CotizadorPage() {
   const router = useRouter();
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("loading");
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
+  const { authReady, user, desarrollo, portal } = useRequireAsesorSession();
+  const [catalogStatus, setCatalogStatus] = useState<CatalogStatus>("idle");
   const [catalog, setCatalog] = useState<CotizadorCatalog>({ clusters: [], prototipos: [] });
-  const [portal, setPortal] = useState<PortalSession | null>(null);
   const [clusterId, setClusterId] = useState("");
   const [prototipoId, setPrototipoId] = useState<string | undefined>();
   const [unidadId, setUnidadId] = useState<string | undefined>();
@@ -115,35 +108,16 @@ export default function CotizadorPage() {
   const [copiedBank, setCopiedBank] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("gabi_user");
-    const storedDevelopment = localStorage.getItem("gabi_desarrollo");
-
-    if (!storedUser) {
-      setSessionStatus("redirecting");
-      const portal = readPortalSession();
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+    if (!authReady || !desarrollo) {
       return;
     }
 
-    if (!storedDevelopment) {
-      setSessionStatus("redirecting");
-      router.replace("/desarrollos");
-      return;
-    }
+    const loadCatalog = async () => {
+      setCatalogStatus("loading");
 
-    const loadSession = async () => {
       try {
-        const parsedUser = JSON.parse(storedUser) as SessionUser;
-
-        if (!parsedUser.desarrollosIds.includes(storedDevelopment)) {
-          localStorage.removeItem("gabi_desarrollo");
-          setSessionStatus("redirecting");
-          router.replace("/desarrollos");
-          return;
-        }
-
         const catalogResponse = await fetch(
-          `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(storedDevelopment)}`,
+          `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(desarrollo.id)}`,
         );
         const catalogData = (await catalogResponse.json()) as {
           desarrollo?: Desarrollo;
@@ -158,15 +132,9 @@ export default function CotizadorPage() {
         };
 
         if (!selectedDevelopment || selectedDevelopment.estado !== "activo") {
-          localStorage.removeItem("gabi_desarrollo");
-          setSessionStatus("redirecting");
+          setCatalogStatus("redirecting");
           router.replace("/desarrollos");
           return;
-        }
-
-        const portalSession = readPortalSession();
-        if (portalSession) {
-          setPortal(portalSession);
         }
 
         const recorridoRaw = localStorage.getItem(RECORRIDO_KEY);
@@ -176,8 +144,6 @@ export default function CotizadorPage() {
 
         const defaultCluster = resolveDefaultCluster(recorrido, loadedCatalog);
 
-        setUser(parsedUser);
-        setDesarrollo(selectedDevelopment);
         setCatalog(loadedCatalog);
         setClusterId(defaultCluster);
         setPrototipoId(resolveDefaultPrototipo(defaultCluster, recorrido, loadedCatalog));
@@ -189,21 +155,18 @@ export default function CotizadorPage() {
         setClienteTelefono(recorrido?.cliente?.telefono?.trim() || undefined);
         setProspectoRegistrado(nombreRecorrido);
         setProspectoId(readCotizadorProspectoId() ?? undefined);
-        setSessionStatus("ready");
+        setCatalogStatus("ready");
       } catch {
-        localStorage.removeItem("gabi_user");
-        localStorage.removeItem("gabi_desarrollo");
-        setSessionStatus("redirecting");
-        const portal = readPortalSession();
-        router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+        setCatalogStatus("redirecting");
+        logoutAsesorSession(router);
       }
     };
 
-    void loadSession();
-  }, [router]);
+    void loadCatalog();
+  }, [authReady, desarrollo, router]);
 
   useEffect(() => {
-    if (sessionStatus !== "ready") {
+    if (catalogStatus !== "ready") {
       return;
     }
 
@@ -220,7 +183,7 @@ export default function CotizadorPage() {
     } catch {
       // Ignorar errores de almacenamiento local.
     }
-  }, [clienteNombre, sessionStatus]);
+  }, [clienteNombre, catalogStatus]);
 
   const catalogMemo = useMemo(() => catalog, [catalog]);
 
@@ -265,18 +228,15 @@ export default function CotizadorPage() {
     window.setTimeout(() => setCopiedBank(false), 2000);
   };
 
-  const handleLogout = () => {
-    const portal = readPortalSession();
-    localStorage.removeItem("gabi_user");
-    localStorage.removeItem("gabi_desarrollo");
-    router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-  };
+  const handleLogout = () => logoutAsesorSession(router);
 
-  if (sessionStatus !== "ready" || !user || !desarrollo) {
+  const isReady = authReady && catalogStatus === "ready" && user && desarrollo;
+
+  if (!isReady) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] px-6 text-center text-[#1e293b]">
         <p className="text-base font-semibold sm:text-lg">
-          {sessionStatus === "redirecting"
+          {catalogStatus === "redirecting" || !authReady
             ? "Redirigiendo al acceso de asesores..."
             : "Cargando cotizador..."}
         </p>

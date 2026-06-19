@@ -10,24 +10,21 @@ import {
   GabiOperatorDenied,
 } from "@/components/gabi/GabiAuthGate";
 import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
-import {
-  getPropuestaBySlug,
-  getPropuestaEstudioLink,
-  getPropuestaMedia,
-  isPropuestaSlug,
-} from "@/lib/propuestas/registry";
+import { getPropuestaEstudioLink, isPropuestaSlug } from "@/lib/propuestas/registry";
+import { useResolvedPropuesta } from "@/lib/propuestas/use-resolved-propuesta";
 
 export default function PropuestaDetailPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : "";
   const nextPath = slug ? `/propuestas/${slug}` : "/propuestas";
 
-  const { authReady, hasSession, operatorOk, user, loginHref } = useRequireGabiSession({
-    nextPath,
-    requireOperator: true,
-  });
+  const { authReady, hasSession, operatorOk, isOperator, user, loginHref } =
+    useRequireGabiSession({
+      nextPath,
+      requireOperator: true,
+    });
 
-  const propuesta = isPropuestaSlug(slug) ? getPropuestaBySlug(slug) : null;
+  const propuestaQuery = useResolvedPropuesta(isPropuestaSlug(slug) ? slug : "");
   const estudioLink = getPropuestaEstudioLink(slug);
 
   if (!authReady) {
@@ -42,7 +39,7 @@ export default function PropuestaDetailPage() {
     return <GabiOperatorDenied loginHref={loginHref} />;
   }
 
-  if (!propuesta) {
+  if (!isPropuestaSlug(slug)) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p className="text-sm text-slate-600">Propuesta no encontrada.</p>
@@ -53,21 +50,57 @@ export default function PropuestaDetailPage() {
     );
   }
 
+  if (propuestaQuery.status === "loading") {
+    return <GabiAuthLoading message="Cargando contenido…" />;
+  }
+
+  if (propuestaQuery.status === "error") {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-sm text-slate-600">{propuestaQuery.message}</p>
+        <button
+          type="button"
+          onClick={() => void propuestaQuery.reload()}
+          className="text-sm font-semibold underline"
+        >
+          Reintentar
+        </button>
+      </main>
+    );
+  }
+
+  const { propuesta, media } = propuestaQuery.data;
+
   return (
     <>
-      {estudioLink ? (
-        <div className="gabi-no-print border-b border-[#6cc24a]/30 bg-[#6cc24a]/10 px-4 py-2 text-center text-[12px] md:px-6">
-          <Link href={estudioLink} className="font-semibold text-[#201044] underline-offset-2 hover:underline">
-            Ver análisis de preventa (restaurante campestre + accesos)
-          </Link>
-        </div>
-      ) : null}
+      <div className="gabi-no-print space-y-2 border-b border-black/8 bg-white px-4 py-2 text-center text-[12px] md:px-6">
+        {estudioLink ? (
+          <p>
+            <Link
+              href={estudioLink}
+              className="font-semibold text-[#201044] underline-offset-2 hover:underline"
+            >
+              Ver análisis de preventa (restaurante campestre + accesos)
+            </Link>
+          </p>
+        ) : null}
+        {isOperator ? (
+          <p>
+            <Link
+              href={`/admin/propuestas/${slug}`}
+              className="font-semibold text-[#201044] underline-offset-2 hover:underline"
+            >
+              Editar textos y condiciones BBR
+            </Link>
+          </p>
+        ) : null}
+      </div>
       <PropuestaSharePanel
         slug={slug}
         operatorEmail={user?.email}
         titulo={`${propuesta.meta.titulo} · ${propuesta.meta.ubicacion}`}
       />
-      <PropuestaComercialSlides data={propuesta} media={getPropuestaMedia(slug)} />
+      <PropuestaComercialSlides data={propuesta} media={media} />
     </>
   );
 }

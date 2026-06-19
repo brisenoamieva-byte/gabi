@@ -10,6 +10,8 @@ import {
 } from "@/lib/portal/investti-simulador";
 import { readStoredAsesorSession } from "@/lib/asesores/session-client";
 import { PORTAL_STORAGE_KEY, type PortalSession } from "@/lib/portal/session";
+import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
+import { GABI_DESARROLLO_KEY, GABI_USER_KEY } from "@/lib/session/keys";
 
 export default function InvesttiSimuladorEntryPage() {
   const router = useRouter();
@@ -22,16 +24,13 @@ export default function InvesttiSimuladorEntryPage() {
 
     const stored = readStoredAsesorSession();
     if (stored && !getInvesttiDesarrolloIdsForAsesor(stored).length) {
-      localStorage.removeItem("gabi_user");
-      localStorage.removeItem("gabi_desarrollo");
+      localStorage.removeItem(GABI_USER_KEY);
+      localStorage.removeItem(GABI_DESARROLLO_KEY);
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem(PORTAL_STORAGE_KEY);
-    localStorage.removeItem("gabi_user");
-    localStorage.removeItem("gabi_desarrollo");
-    router.replace("/");
+    logoutAsesorSession(router, { clearPortal: true, redirect: "/" });
   };
 
   if (!portal) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Pencil } from "lucide-react";
 import {
   GabiAuthLoading,
   GabiAuthRedirecting,
@@ -55,12 +55,14 @@ export default function PropuestasPage() {
 
         <div className="mt-8 space-y-3">
           {PROPUESTAS_REGISTRY.map((p) => (
-            <Link
+            <div
               key={p.slug}
-              href={`/propuestas/${p.slug}`}
-              className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex min-w-0 items-start gap-4">
+              <Link
+                href={`/propuestas/${p.slug}`}
+                className="group flex min-w-0 flex-1 items-start gap-4"
+              >
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#201044]/6">
                   <FileText className="h-5 w-5" />
                 </span>
@@ -71,9 +73,24 @@ export default function PropuestasPage() {
                     {p.desarrollador} · {p.fecha} · {p.estado}
                   </p>
                 </div>
+              </Link>
+              <div className="flex shrink-0 gap-2">
+                <Link
+                  href={`/admin/propuestas/${p.slug}`}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar
+                </Link>
+                <Link
+                  href={`/propuestas/${p.slug}`}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#201044] px-3 text-white"
+                  aria-label={`Abrir ${p.titulo}`}
+                >
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
               </div>
-              <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 group-hover:text-[#201044]" />
-            </Link>
+            </div>
           ))}
         </div>
       </section>

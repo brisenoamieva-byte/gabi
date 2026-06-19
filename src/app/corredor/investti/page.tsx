@@ -5,7 +5,6 @@ import { InvesttiMetrajeDashboard } from "@/components/corredor/investti/Investt
 import { GabiPrintBar } from "@/components/gabi/GabiPrintBar";
 import { investtiReport } from "@/components/corredor/investti/InvesttiReportUi";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
-import { GabiAuthLoading } from "@/components/gabi/GabiAuthGate";
 import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import "@/lib/estudios/investti-print.css";
 

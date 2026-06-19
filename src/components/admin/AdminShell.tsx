@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -24,6 +24,8 @@ const navIcons = {
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
   "/admin/estudios-nubo": Presentation,
+  "/admin/propuestas": BriefcaseBusiness,
+  "/admin/corredor": MapPin,
 } as const;
 
 const navModules: Record<string, AdminModule> = {
@@ -41,6 +43,8 @@ const navModules: Record<string, AdminModule> = {
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
   "/admin/estudios-nubo": "catalogo",
+  "/admin/propuestas": "catalogo",
+  "/admin/corredor": "catalogo",
 };
 
 type AdminShellProps = {
@@ -67,6 +71,8 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
     { href: "/admin/investti-simulador", label: "Simulador Investti", ready: true },
     { href: "/admin/estudios-nubo", label: "Estudio NUBO", ready: true },
+    { href: "/admin/propuestas", label: "Propuestas", ready: true },
+    { href: "/admin/corredor", label: "Corredor sur", ready: true },
     { href: "/admin/usuarios", label: "Usuarios", ready: true },
   ].filter((item) => canAccessModule(profile, navModules[item.href]));
 
@@ -117,7 +123,9 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = navIcons[item.href as keyof typeof navIcons] ?? FileText;
-              const active = pathname === item.href;
+              const active =
+                pathname === item.href ||
+                (item.href === "/admin/propuestas" && pathname.startsWith("/admin/propuestas/"));
 
               return (
                 <Link

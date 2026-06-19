@@ -14,17 +14,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
 import type { AsesorDisponibilidadRow } from "@/lib/inventario/asesor-disponibilidad";
-import { formatPrice, type Asesor, type Cluster, type Desarrollo } from "@/lib/data";
+import { formatPrice, type Cluster, type Desarrollo } from "@/lib/data";
 import {
   estatusSembradoLabel,
   type SembradoUnidadRow,
 } from "@/lib/comercial/sembrado-status";
-import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
-
-type SessionUser = Pick<Asesor, "id" | "nombre" | "desarrollosIds">;
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
 
 type DisponibilidadPanelProps = {
   fromAdmin?: boolean;
@@ -68,8 +63,11 @@ export function DisponibilidadPanel({
   desarrolloIdParam = null,
 }: DisponibilidadPanelProps) {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [canEditSembrado, setCanEditSembrado] = useState(false);
+  const [adminDesarrollosIds, setAdminDesarrollosIds] = useState<string[]>([]);
   const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
+  const [catalogReady, setCatalogReady] = useState(false);
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [clusterId, setClusterId] = useState<string>("");
   const [unidades, setUnidades] = useState<AsesorDisponibilidadRow[]>([]);
@@ -80,6 +78,25 @@ export function DisponibilidadPanel({
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<SembradoUnidadRow | null>(null);
 
+  const isAdminEditMode = fromAdmin && canEditSembrado;
+  const needsAsesorAuth = !isAdminEditMode;
+
+  const {
+    authReady: asesorAuthReady,
+    user: asesorUser,
+    desarrollo: asesorDesarrollo,
+  } = useRequireAsesorSession({
+    enabled: adminChecked && needsAsesorAuth,
+    requireDesarrollo: !desarrolloIdParam,
+  });
+
+  const user = isAdminEditMode
+    ? { id: "admin", nombre: "Gerencia", desarrollosIds: adminDesarrollosIds }
+    : asesorUser;
+
+  const resolvedDesarrolloId =
+    desarrolloIdParam ?? asesorDesarrollo?.id ?? null;
+
   const sembradoByUnidadId = useMemo(
     () => new Map(sembradoRows.map((row) => [row.unidadId, row])),
     [sembradoRows],
@@ -87,52 +104,47 @@ export function DisponibilidadPanel({
 
   useEffect(() => {
     void (async () => {
-      const portal = readPortalSession();
-      const adminResponse = await fetch("/api/admin/me");
-      const adminData = (await adminResponse.json()) as {
-        authenticated?: boolean;
-        canEditSembrado?: boolean;
-        desarrollosIds?: string[];
-      };
-
-      const canEdit = Boolean(adminData.authenticated && adminData.canEditSembrado);
-      setEditMode(canEdit && fromAdmin);
-
-      const storedUser = localStorage.getItem("gabi_user");
-      const storedDevelopment =
-        desarrolloIdParam ?? localStorage.getItem("gabi_desarrollo");
-
-      if (!canEdit || !fromAdmin) {
-        if (!storedUser) {
-          router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-          return;
-        }
-        if (!storedDevelopment) {
-          router.replace("/desarrollos");
-          return;
-        }
-      }
-
-      if (canEdit && fromAdmin && !storedDevelopment) {
-        setError("Falta desarrolloId en la URL.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        if (!canEdit || !fromAdmin) {
-          const parsedUser = JSON.parse(storedUser!) as SessionUser;
-          if (!parsedUser.desarrollosIds.includes(storedDevelopment!)) {
-            router.replace("/desarrollos");
-            return;
-          }
-          setUser(parsedUser);
-        } else {
-          setUser({ id: "admin", nombre: "Gerencia", desarrollosIds: adminData.desarrollosIds ?? [] });
-        }
+        const adminResponse = await fetch("/api/admin/me");
+        const adminData = (await adminResponse.json()) as {
+          authenticated?: boolean;
+          canEditSembrado?: boolean;
+          desarrollosIds?: string[];
+        };
 
+        const canEdit = Boolean(adminData.authenticated && adminData.canEditSembrado);
+        setCanEditSembrado(canEdit);
+        setAdminDesarrollosIds(adminData.desarrollosIds ?? []);
+        setEditMode(canEdit && fromAdmin);
+      } finally {
+        setAdminChecked(true);
+      }
+    })();
+  }, [fromAdmin]);
+
+  useEffect(() => {
+    if (!adminChecked) {
+      return;
+    }
+
+    if (needsAsesorAuth && !asesorAuthReady) {
+      return;
+    }
+
+    if (isAdminEditMode && !resolvedDesarrolloId) {
+      setError("Falta desarrolloId en la URL.");
+      setLoading(false);
+      return;
+    }
+
+    if (!resolvedDesarrolloId) {
+      return;
+    }
+
+    void (async () => {
+      try {
         const catalogResponse = await fetch(
-          `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(storedDevelopment!)}`,
+          `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(resolvedDesarrolloId)}`,
         );
         const catalogData = (await catalogResponse.json()) as {
           desarrollo?: Desarrollo;
@@ -140,7 +152,7 @@ export function DisponibilidadPanel({
         };
 
         if (!catalogData.desarrollo) {
-          if (canEdit && fromAdmin) {
+          if (isAdminEditMode) {
             setError("Desarrollo no encontrado.");
             setLoading(false);
             return;
@@ -153,11 +165,19 @@ export function DisponibilidadPanel({
         setDesarrollo(catalogData.desarrollo);
         setClusters(loadedClusters);
         setClusterId(loadedClusters[0]?.id ?? "");
+        setCatalogReady(true);
       } catch {
-        router.replace(canEdit && fromAdmin ? "/admin/sembrado" : "/dashboard");
+        router.replace(isAdminEditMode ? "/admin/sembrado" : "/dashboard");
       }
     })();
-  }, [router, fromAdmin, desarrolloIdParam]);
+  }, [
+    adminChecked,
+    asesorAuthReady,
+    isAdminEditMode,
+    needsAsesorAuth,
+    resolvedDesarrolloId,
+    router,
+  ]);
 
   const loadUnidades = useCallback(async () => {
     if (!desarrollo?.id || !clusterId) {
@@ -210,8 +230,11 @@ export function DisponibilidadPanel({
   }, [desarrollo?.id, clusterId, editMode]);
 
   useEffect(() => {
+    if (!catalogReady) {
+      return;
+    }
     void loadUnidades();
-  }, [loadUnidades]);
+  }, [catalogReady, loadUnidades]);
 
   const toggleVisitable = async (row: AsesorDisponibilidadRow) => {
     setTogglingId(row.unidadId);
@@ -250,7 +273,7 @@ export function DisponibilidadPanel({
     return counts;
   }, [unidades]);
 
-  if (!user || !desarrollo) {
+  if (!adminChecked || (needsAsesorAuth && !asesorAuthReady) || !catalogReady || !user || !desarrollo) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9]">
         <Loader2 className="h-6 w-6 animate-spin text-slate-400" />

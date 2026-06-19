@@ -1,77 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ArrowLeft, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AsesorLeadsPanel } from "@/components/asesor/AsesorLeadsPanel";
-import { refreshStoredAsesorSession } from "@/lib/asesores/session-client";
-import { formatPrice, type Asesor, type Desarrollo } from "@/lib/data";
-import { readPortalSession, resolveAdvisorEntryPath } from "@/lib/portal/session";
-
-type SessionUser = Pick<Asesor, "id" | "nombre" | "email" | "rol" | "desarrollosIds">;
+import { formatPrice } from "@/lib/data";
+import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
 
 export default function MisLeadsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [desarrollo, setDesarrollo] = useState<Desarrollo | null>(null);
+  const { authReady, user, desarrollo } = useRequireAsesorSession();
 
-  useEffect(() => {
-    const portal = readPortalSession();
-    const storedUser = localStorage.getItem("gabi_user");
-    const storedDevelopment = localStorage.getItem("gabi_desarrollo");
-
-    if (!storedUser) {
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-      return;
-    }
-
-    if (!storedDevelopment) {
-      router.replace("/desarrollos");
-      return;
-    }
-
-    const loadSession = async () => {
-      try {
-        const parsedUser = JSON.parse(storedUser) as SessionUser;
-        const freshUser = (await refreshStoredAsesorSession(parsedUser)) ?? parsedUser;
-
-        if (!freshUser.desarrollosIds.includes(storedDevelopment)) {
-          localStorage.removeItem("gabi_desarrollo");
-          router.replace("/desarrollos");
-          return;
-        }
-
-        const response = await fetch(
-          `/api/catalog/desarrollos?ids=${encodeURIComponent(storedDevelopment)}`,
-        );
-        const data = (await response.json()) as { desarrollos?: Desarrollo[] };
-        const selectedDevelopment = data.desarrollos?.[0];
-
-        if (!selectedDevelopment) {
-          router.replace("/desarrollos");
-          return;
-        }
-
-        setUser(freshUser);
-        setDesarrollo(selectedDevelopment);
-      } catch {
-        router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-      }
-    };
-
-    void loadSession();
-  }, [router]);
-
-  const handleLogout = () => {
-    const portal = readPortalSession();
-    localStorage.removeItem("gabi_user");
-    localStorage.removeItem("gabi_desarrollo");
-    router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
-  };
-
-  if (!user || !desarrollo) {
+  if (!authReady || !user || !desarrollo) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-slate-500">
         Cargando…
@@ -92,7 +34,7 @@ export default function MisLeadsPage() {
           </Link>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => logoutAsesorSession(router)}
             aria-label="Cerrar sesión"
             className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#201044] text-white"
           >

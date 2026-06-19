@@ -648,3 +648,7 @@ export const CORREDOR_ZONA: CorredorZonaContexto = {
 export function getCorredorDesarrolloById(id: string): CorredorDesarrollo | undefined {
   return CORREDOR_DESARROLLOS.find((d) => d.id === id);
 }
+
+export function isCorredorDesarrolloId(id: string): boolean {
+  return CORREDOR_DESARROLLOS.some((d) => d.id === id);
+}

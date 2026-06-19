@@ -5,26 +5,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
-  Briefcase,
   Building2,
   CheckCircle2,
   ClipboardCheck,
   Copy,
   FileText,
-  GraduationCap,
-  HeartPulse,
-  Landmark,
   MapPin,
-  Route,
   ShieldCheck,
-  ShoppingBag,
-  Sparkles,
-  Store,
-  Trees,
   TrendingUp,
-  UtensilsCrossed,
-  X,
-  type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -46,14 +34,12 @@ import {
 import {
   resolveMisionLaGaviaUnidadFromInventario,
   simularMisionLaGavia,
-  type MisionLaGaviaEsquemaId,
 } from "@/lib/corredor/mision-la-gavia-simulador";
 import {
   computePasajeSimulador,
   formatMonthYear,
   formatPctShort,
   PASAJE_FECHA_ENTREGA,
-  type PasajeEsquemaPago,
   type PasajeUnidadTipo,
 } from "@/lib/cotizador/pasaje-simulador";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
@@ -68,7 +54,6 @@ import {
   prototipoMuestraPrecioDesde,
 } from "@/lib/inventario/prototipo-precios";
 import { formatAreaM2 } from "@/lib/format/money";
-import { formatSuperficiesLabel } from "@/lib/inventario/productos-recomendados";
 import { fetchClusterInventario } from "@/lib/inventario/cluster-inventory-client";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 import {
@@ -76,7 +61,6 @@ import {
   enrichDesarrolloFromStatic,
   getDatosBancarios,
   desarrollos,
-  formatPrice,
   getDisponibilidadesByCluster,
   getPrototipoById,
   prototipos as catalogPrototipos,
@@ -85,403 +69,86 @@ import {
   type Desarrollo,
   type DisponibilidadUnidad,
   type Prototipo,
-  type PuntoInteres,
 } from "@/lib/data";
 import {
   getDefaultRecorridoContenido,
   type RecorridoContenido,
-  type RecorridoZonaContent,
 } from "@/lib/catalog/recorrido-content";
 import {
   leadRegistrationMessage,
   shouldQueueLeadForCrm,
 } from "@/lib/crm/sync-policy";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
+import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+
 import {
-  readPortalSession,
-  resolveAdvisorEntryPath,
-} from "@/lib/portal/session";
-
-type ProductoFiltro = "casa" | "departamento" | "terreno" | "oficina";
-type ProductoSeleccion = "todos" | ProductoFiltro;
-type RecamarasFiltro = "2" | "3" | "4+";
-type RecamarasSeleccion = "cualquiera" | RecamarasFiltro;
-type ClienteTemporal = {
-  nombre: string;
-  telefono: string;
-  email: string;
-  medioContacto: Cliente["medioContacto"];
-  objetivo: "vivir" | "invertir";
-  presupuesto: number;
-  familia: "1-2" | "3-4" | "5+";
-  mascotas: boolean;
-  notas: string;
-};
-
-type RecorridoState = {
-  etapa: number;
-  recorridoVersion?: number;
-  leadId?: string;
-  cliente: ClienteTemporal;
-  productoTipo: ProductoSeleccion[];
-  precioMinimo: number;
-  precioMaximo: number;
-  recamarasFiltro: RecamarasSeleccion[];
-  clusterId: string;
-  prototipoId: string;
-  unidadId: string;
-  descuento: number;
-  esquema: "mensualidades" | "contado";
-  pasajeEsquema?: PasajeEsquemaPago;
-  pasajeLibreEnganche?: number;
-  pasajeLibreMensualidades?: number;
-  pasajeLibreFechaFiniquito?: string;
-  pasajeLibreSinMensEnganche?: number;
-  pasajeLibreSinMensPago?: number;
-  pasajeLibreSinMensFechaPago?: string;
-  pasajeLibreSinMensFechaFiniquito?: string;
-  misionLaGaviaEsquema?: MisionLaGaviaEsquemaId;
-};
-
-const STORAGE_KEY = "gabi_recorrido_actual";
-const CLIENTES_KEY = "gabi_clientes";
-const LEADS_KEY = "gabi_leads";
-const CRM_PENDING_KEY = "gabi_crm_pending";
-
-const migrateLegacyEtapa = (
-  etapa: number,
-  parsed: Partial<RecorridoState>,
-  stageCount = DEFAULT_RECORRIDO_ETAPAS.length,
-) => {
-  if (parsed.recorridoVersion === RECORRIDO_VERSION) {
-    return Math.min(Math.max(etapa, 0), stageCount - 1);
-  }
-
-  if (etapa >= 2) {
-    if (etapa === LEGACY_ETAPA_COUNT - 1) {
-      return stageCount - 1;
-    }
-
-    if (parsed.clusterId || parsed.prototipoId) {
-      return 3;
-    }
-
-    return 2;
-  }
-
-  return etapa;
-};
-const RECORRIDO_VERSION = 2;
-const LEGACY_ETAPA_COUNT = 4;
-
-const confianzaItems = [
-  {
-    title: "Saludar, sonreír, presentarse",
-    detail: "Primer contacto cálido y profesional.",
-  },
-  {
-    title: "Entregar tarjeta digital",
-    detail: "Refuerza confianza y deja un canal claro de contacto.",
-  },
-  {
-    title: "Ofrecer bebida",
-    detail: "Agua, café o refresco para bajar tensión y abrir conversación.",
-  },
-  {
-    title: "Frase de rompimiento de hielo",
-    detail: "Conecta antes de preguntar; observa lenguaje corporal.",
-  },
-  {
-    title: "Llenar formato de afluencia",
-    detail: "Registra origen y datos clave sin interrumpir la plática.",
-  },
-];
-const cierreItems = [
-  "¿Qué producto y ubicación se queda?",
-  "¿Anticipo con tarjeta crédito o débito?",
-  "¿Formalizamos ahora o dejar pasar promo?",
-  "Solicitud de compra generada",
-  "Felicitar y agradecer",
-];
-const medioContactoOptions: { value: Cliente["medioContacto"]; label: string }[] = [
-  { value: "contacto-directo", label: "Contacto Directo" },
-  { value: "referido", label: "Referido" },
-  { value: "medios-digitales", label: "Medios Digitales" },
-  { value: "pase", label: "Pase" },
-  { value: "inmobiliaria-externo", label: "Inmobiliaria/externo" },
-  { value: "espectacular", label: "Espectacular" },
-  { value: "cross-selling", label: "Cross Selling" },
-];
-
-const initialState: RecorridoState = {
-  etapa: 0,
-  recorridoVersion: RECORRIDO_VERSION,
-  leadId: undefined,
-  cliente: {
-    nombre: "",
-    telefono: "",
-    email: "",
-    medioContacto: "contacto-directo",
-    objetivo: "vivir",
-    presupuesto: 3500000,
-    familia: "1-2",
-    mascotas: false,
-    notas: "",
-  },
-  productoTipo: ["todos"],
-  precioMinimo: 2500000,
-  precioMaximo: 7000000,
-  recamarasFiltro: ["cualquiera"],
-  clusterId: "",
-  prototipoId: "",
-  unidadId: "",
-  descuento: 0,
-  esquema: "mensualidades",
-};
-
-const money = (value: number) => formatPrice(Math.max(0, value));
-const PRICE_STEP = 250000;
-const DEFAULT_PRICE_OPTIONS = [
-  2500000,
-  3000000,
-  3500000,
-  4000000,
-  4500000,
-  5000000,
-  5500000,
-  6000000,
-  6500000,
-  7000000,
-];
-
-const roundDownToStep = (value: number) =>
-  Math.floor(value / PRICE_STEP) * PRICE_STEP;
-
-const roundUpToStep = (value: number) =>
-  Math.ceil(value / PRICE_STEP) * PRICE_STEP;
-
-const buildPriceOptionsFromRange = (
-  minPrice: number,
-  maxPrice: number,
-): number[] => {
-  if (!Number.isFinite(minPrice) || !Number.isFinite(maxPrice) || maxPrice <= 0) {
-    return DEFAULT_PRICE_OPTIONS;
-  }
-
-  const start = Math.max(0, roundDownToStep(minPrice));
-  const end = Math.max(start + PRICE_STEP, roundUpToStep(maxPrice));
-  const stops = Math.min(40, Math.ceil((end - start) / PRICE_STEP) + 1);
-  const options: number[] = [];
-
-  for (let i = 0; i < stops; i += 1) {
-    options.push(start + i * PRICE_STEP);
-  }
-
-  return options;
-};
-
-type StoredContact = {
-  id?: string;
-  email?: string;
-  telefono?: string;
-  normalizedEmail?: string;
-  normalizedPhone?: string;
-  cliente?: Partial<ClienteTemporal>;
-};
-
-const normalizeEmail = (value?: string) => value?.trim().toLowerCase() ?? "";
-const normalizePhone = (value?: string) => value?.replace(/\D/g, "") ?? "";
-
-const readLocalArray = <T,>(key: string): T[] => {
-  try {
-    const value = localStorage.getItem(key);
-    const parsed = value ? JSON.parse(value) : [];
-    return Array.isArray(parsed) ? (parsed as T[]) : [];
-  } catch {
-    return [];
-  }
-};
-
-const writeLocalArray = <T,>(key: string, value: T[]) => {
-  localStorage.setItem(key, JSON.stringify(value));
-};
-
-const contactMatches = (contact: StoredContact, email: string, phone: string) => {
-  const contactEmail = normalizeEmail(
-    contact.normalizedEmail || contact.email || contact.cliente?.email,
-  );
-  const contactPhone = normalizePhone(
-    contact.normalizedPhone || contact.telefono || contact.cliente?.telefono,
-  );
-
-  return Boolean((email && contactEmail === email) || (phone && contactPhone === phone));
-};
-
-const productTypeOptions: { value: ProductoSeleccion; label: string }[] = [
-  { value: "todos", label: "Todos" },
-  { value: "casa", label: "Casa" },
-  { value: "departamento", label: "Departamento" },
-  { value: "terreno", label: "Terreno" },
-  { value: "oficina", label: "Oficina" },
-];
-
-const desarrolloTipoToProducto: Record<
-  Desarrollo["tiposProducto"][number],
-  ProductoFiltro
-> = {
-  casas: "casa",
-  departamentos: "departamento",
-  terrenos: "terreno",
-  oficinas: "oficina",
-};
-
-const getProductTypeOptionsForDesarrollo = (
-  desarrollo: Desarrollo | null,
-): { value: ProductoSeleccion; label: string }[] => {
-  const allowed = new Set<ProductoFiltro>(
-    (desarrollo?.tiposProducto ?? []).map((tipo) => desarrolloTipoToProducto[tipo]),
-  );
-
-  if (allowed.size === 0) {
-    return productTypeOptions;
-  }
-
-  return productTypeOptions.filter(
-    (option) => option.value === "todos" || allowed.has(option.value),
-  );
-};
-
-const normalizeProductoTipo = (value: unknown): ProductoSeleccion[] => {
-  if (Array.isArray(value)) {
-    const validValues = value.filter((item): item is ProductoSeleccion =>
-      productTypeOptions.some((option) => option.value === item),
-    );
-
-    return validValues.length ? validValues : ["todos"];
-  }
-
-  if (productTypeOptions.some((option) => option.value === value)) {
-    return [value as ProductoSeleccion];
-  }
-
-  return ["todos"];
-};
-
-const recamarasOptions: { value: RecamarasSeleccion; label: string }[] = [
-  { value: "cualquiera", label: "Cualquiera" },
-  { value: "2", label: "2" },
-  { value: "3", label: "3" },
-  { value: "4+", label: "4+" },
-];
-
-const normalizeRecamarasFiltro = (value: unknown): RecamarasSeleccion[] => {
-  if (Array.isArray(value)) {
-    const validValues = value.filter((item): item is RecamarasSeleccion =>
-      recamarasOptions.some((option) => option.value === item),
-    );
-
-    return validValues.length ? validValues : ["cualquiera"];
-  }
-
-  if (recamarasOptions.some((option) => option.value === value)) {
-    return [value as RecamarasSeleccion];
-  }
-
-  return ["cualquiera"];
-};
-
-const hasTerrenos = (cluster: Cluster) =>
-  cluster.tipo === "terrenos" || cluster.descripcion.toLowerCase().includes("terreno");
-
-const getProductoTipo = (cluster: Cluster, prototipo: Prototipo): ProductoFiltro => {
-  const name = prototipo.nombre.toLowerCase();
-
-  if (cluster.tipo === "oficinas") {
-    return "oficina";
-  }
-
-  if (cluster.tipo === "departamentos" || name.includes("tarento")) {
-    return "departamento";
-  }
-
-  return "casa";
-};
-
-const productTypeLabels: Record<ProductoFiltro, string> = {
-  casa: "Casas",
-  departamento: "Departamentos",
-  terreno: "Terrenos",
-  oficina: "Oficinas",
-};
-
-const getClusterProductLabels = (
-  cluster: Cluster,
-  prototipos: Prototipo[],
-  includeTerrenos: boolean,
-) => {
-  const productTypes = new Set<ProductoFiltro>();
-
-  prototipos.forEach((prototipo) => {
-    productTypes.add(getProductoTipo(cluster, prototipo));
-  });
-
-  if (cluster.tipo === "oficinas" && productTypes.size === 0) {
-    productTypes.add("oficina");
-  }
-
-  if (includeTerrenos) {
-    productTypes.add("terreno");
-  }
-
-  return Array.from(productTypes).map((type) => productTypeLabels[type]);
-};
-
-const matchesRecamaras = (recamaras: number, filtros: RecamarasSeleccion[]) => {
-  if (filtros.includes("cualquiera")) {
-    return true;
-  }
-
-  return filtros.some((filtro) =>
-    filtro === "4+" ? recamaras >= 4 : recamaras === Number(filtro),
-  );
-};
-
-const matchesProductoTipo = (productType: ProductoFiltro, filtros: ProductoSeleccion[]) =>
-  filtros.includes("todos") || filtros.includes(productType);
-
-const availabilityStatusLabel: Record<DisponibilidadUnidad["estatus"], string> = {
-  disponible: "Disponible",
-  apartado: "Apartado",
-  vendido: "Vendido",
-  bloqueado: "Bloqueado",
-};
-
-const availabilityStatusClass: Record<DisponibilidadUnidad["estatus"], string> = {
-  disponible: "bg-[#22c55e] text-white ring-[#22c55e]/30",
-  apartado: "bg-[#6CC24A] text-white ring-[#6CC24A]/30",
-  vendido: "bg-slate-400 text-white ring-slate-300",
-  bloqueado: "bg-slate-700 text-white ring-slate-400",
-};
-
-const availabilityTypeLabel: Record<"todos" | DisponibilidadUnidad["tipo"], string> = {
-  todos: "Todos",
-  casa: "Casas",
-  departamento: "Deptos",
-  terreno: "Terrenos",
-  oficina: "Oficinas",
-};
-
-type RecommendedAvailability = {
-  unit: DisponibilidadUnidad;
-  prototipo?: Prototipo;
-  score: number;
-  reasons: string[];
-};
+  confianzaItems,
+  cierreItems,
+  initialRecorridoState,
+  medioContactoOptions,
+  migrateLegacyRecorridoEtapa,
+  RECORRIDO_VERSION,
+} from "@/lib/recorrido/constants";
+import {
+  buildPriceOptionsFromRange,
+  contactMatches,
+  DEFAULT_PRICE_OPTIONS,
+  getClusterProductLabels,
+  getProductoTipo,
+  getProductTypeOptionsForDesarrollo,
+  hasTerrenos,
+  matchesProductoTipo,
+  matchesRecamaras,
+  normalizeEmail,
+  normalizePhone,
+  normalizeProductoTipo,
+  normalizeRecamarasFiltro,
+  PRICE_STEP,
+  readLocalArray,
+  recamarasOptions,
+  roundDownToStep,
+  roundUpToStep,
+  writeLocalArray,
+} from "@/lib/recorrido/filters";
+import { formatRecorridoMoney } from "@/lib/recorrido/format";
+import {
+  RECORRIDO_CLIENTES_KEY,
+  RECORRIDO_CRM_PENDING_KEY,
+  RECORRIDO_LEADS_KEY,
+  RECORRIDO_STORAGE_KEY,
+} from "@/lib/recorrido/storage-keys";
+import type {
+  ClienteTemporal,
+  ProductoSeleccion,
+  RecamarasSeleccion,
+  RecorridoState,
+  RecommendedAvailability,
+  StoredContact,
+} from "@/lib/recorrido/types";
+import {
+  AvailabilityUnitCard,
+  AvailabilityUnitDetail,
+  BudgetCurrencyInput,
+  Field,
+  ListBox,
+  Modal,
+  NearbyPointsPanel,
+  PriceSelector,
+  ProductNarrativeCard,
+  SectionTitle,
+  Spec,
+  StepCard,
+  SummaryBox,
+  ToggleCard,
+  ToggleGroup,
+  ZoneMap,
+} from "@/components/recorrido/RecorridoUi";
 
 export default function RecorridoPage() {
   const router = useRouter();
+  const { authReady, user, desarrollo: sessionDesarrollo } = useRequireAsesorSession();
   const defaultContenido = getDefaultRecorridoContenido("la-vista-residencial");
-  const [state, setState] = useState<RecorridoState>(initialState);
+  const [state, setState] = useState<RecorridoState>(initialRecorridoState);
   const [loaded, setLoaded] = useState(false);
   const [activeDesarrollo, setActiveDesarrollo] = useState<Desarrollo | null>(null);
   const [activeContenido, setActiveContenido] = useState<RecorridoContenido>(defaultContenido);
@@ -966,9 +633,6 @@ export default function RecorridoPage() {
     return list;
   }, [state.cliente.familia, state.cliente.objetivo, state.cliente.presupuesto]);
 
-  const [asesorNombre, setAsesorNombre] = useState<string | undefined>();
-  const [asesorId, setAsesorId] = useState<string | undefined>();
-
   const masterPlanImage = useMemo(() => {
     return (
       activeDesarrollo?.masterPlanImage ??
@@ -982,31 +646,11 @@ export default function RecorridoPage() {
   }, [activeContenido.overview.masterPlanStats]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("gabi_user");
-      if (raw) {
-        const parsed = JSON.parse(raw) as { id?: string; nombre?: string };
-        if (parsed?.nombre) setAsesorNombre(parsed.nombre);
-        if (parsed?.id) setAsesorId(parsed.id);
-      }
-    } catch {
-      // Ignorar parse errors en localStorage.
-    }
-  }, []);
-
-  useEffect(() => {
-    const portal = readPortalSession();
-    if (!localStorage.getItem("gabi_user")) {
-      router.replace(portal ? resolveAdvisorEntryPath(portal) : "/portal");
+    if (!authReady || !sessionDesarrollo) {
       return;
     }
 
-    if (!localStorage.getItem("gabi_desarrollo")) {
-      router.replace("/desarrollos");
-      return;
-    }
-
-    const desarrolloId = localStorage.getItem("gabi_desarrollo") ?? "";
+    const desarrolloId = sessionDesarrollo.id;
 
     const loadCatalog = async () => {
       try {
@@ -1049,30 +693,30 @@ export default function RecorridoPage() {
 
     void loadCatalog();
 
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(RECORRIDO_STORAGE_KEY);
 
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Partial<RecorridoState>;
         setState({
-          ...initialState,
+          ...initialRecorridoState,
           ...parsed,
-          etapa: migrateLegacyEtapa(parsed.etapa ?? 0, parsed),
+          etapa: migrateLegacyRecorridoEtapa(parsed.etapa ?? 0, parsed),
           recorridoVersion: RECORRIDO_VERSION,
           productoTipo: normalizeProductoTipo(parsed.productoTipo),
           recamarasFiltro: normalizeRecamarasFiltro(parsed.recamarasFiltro),
         });
       } catch {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(RECORRIDO_STORAGE_KEY);
       }
     }
 
     setLoaded(true);
-  }, [router]);
+  }, [authReady, sessionDesarrollo]);
 
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(RECORRIDO_STORAGE_KEY, JSON.stringify(state));
     }
   }, [loaded, state]);
 
@@ -1127,8 +771,8 @@ export default function RecorridoPage() {
       return false;
     }
 
-    const existingClients = readLocalArray<StoredContact>(CLIENTES_KEY);
-    const existingLeads = readLocalArray<StoredContact>(LEADS_KEY);
+    const existingClients = readLocalArray<StoredContact>(RECORRIDO_CLIENTES_KEY);
+    const existingLeads = readLocalArray<StoredContact>(RECORRIDO_LEADS_KEY);
     const duplicate = [...existingClients, ...existingLeads].find((contact) =>
       contactMatches(contact, normalizedEmail, normalizedPhone),
     );
@@ -1143,9 +787,7 @@ export default function RecorridoPage() {
 
     setIsRegisteringLead(true);
 
-    const storedUser = localStorage.getItem("gabi_user");
-    const asesor = storedUser ? JSON.parse(storedUser) : null;
-    const desarrolloId = localStorage.getItem("gabi_desarrollo") ?? "";
+    const desarrolloId = sessionDesarrollo?.id ?? activeDesarrollo?.id ?? "";
     const lead = {
       id: crypto.randomUUID(),
       cliente: state.cliente,
@@ -1153,7 +795,7 @@ export default function RecorridoPage() {
       email: normalizedEmail,
       telefono: normalizedPhone,
       medioContacto: state.cliente.medioContacto,
-      asesorId: asesor?.id ?? "local",
+      asesorId: user?.id ?? "local",
       desarrolloId,
       normalizedEmail,
       normalizedPhone,
@@ -1194,14 +836,14 @@ export default function RecorridoPage() {
         crmId: result.crmId,
         crmReason: result.reason,
       };
-      writeLocalArray(LEADS_KEY, [...existingLeads, savedLead]);
+      writeLocalArray(RECORRIDO_LEADS_KEY, [...existingLeads, savedLead]);
       patchState({ leadId: savedLead.id });
 
       void trackVisita({
         tipo: "lead_registrado",
         desarrolloId,
         asesorId: lead.asesorId,
-        asesorNombre: asesor?.nombre,
+        asesorNombre: user?.nombre,
         clienteNombre: clientName,
         clienteEmail: normalizedEmail,
         clienteTelefono: normalizedPhone,
@@ -1211,8 +853,8 @@ export default function RecorridoPage() {
       });
 
       if (shouldQueueLeadForCrm(result)) {
-        writeLocalArray(CRM_PENDING_KEY, [
-          ...readLocalArray(CRM_PENDING_KEY),
+        writeLocalArray(RECORRIDO_CRM_PENDING_KEY, [
+          ...readLocalArray(RECORRIDO_CRM_PENDING_KEY),
           savedLead,
         ]);
       }
@@ -1222,13 +864,13 @@ export default function RecorridoPage() {
       return true;
     } catch {
       const queuedLead = { ...lead, crmStatus: "local" };
-      writeLocalArray(LEADS_KEY, [...existingLeads, queuedLead]);
+      writeLocalArray(RECORRIDO_LEADS_KEY, [...existingLeads, queuedLead]);
       patchState({ leadId: queuedLead.id });
       void trackVisita({
         tipo: "lead_registrado",
         desarrolloId,
         asesorId: lead.asesorId,
-        asesorNombre: asesor?.nombre,
+        asesorNombre: user?.nombre,
         clienteNombre: clientName,
         clienteEmail: normalizedEmail,
         clienteTelefono: normalizedPhone,
@@ -1398,31 +1040,12 @@ export default function RecorridoPage() {
   };
 
   const finishRecorrido = async () => {
-    let asesorId = "local";
-    let asesorNombre = "Asesor";
-    let desarrolloId = activeDesarrollo?.id ?? "";
-
-    try {
-      const userRaw = localStorage.getItem("gabi_user");
-      const storedDesarrollo = localStorage.getItem("gabi_desarrollo");
-      if (userRaw) {
-        const user = JSON.parse(userRaw) as { id?: string; nombre?: string };
-        if (user.id) {
-          asesorId = user.id;
-        }
-        if (user.nombre) {
-          asesorNombre = user.nombre;
-        }
-      }
-      if (storedDesarrollo) {
-        desarrolloId = storedDesarrollo;
-      }
-    } catch {
-      // Usar valores por defecto si la sesión local está corrupta.
-    }
+    const asesorId = user?.id ?? "local";
+    const asesorNombre = user?.nombre ?? "Asesor";
+    const desarrolloId = sessionDesarrollo?.id ?? activeDesarrollo?.id ?? "";
 
     const clientId = crypto.randomUUID();
-    const saved = localStorage.getItem(CLIENTES_KEY);
+    const saved = localStorage.getItem(RECORRIDO_CLIENTES_KEY);
     const previousClients = saved ? JSON.parse(saved) : [];
     const newClient = {
       id: clientId,
@@ -1443,8 +1066,8 @@ export default function RecorridoPage() {
       precioFinal,
     };
 
-    localStorage.setItem(CLIENTES_KEY, JSON.stringify([...previousClients, newClient]));
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(RECORRIDO_CLIENTES_KEY, JSON.stringify([...previousClients, newClient]));
+    localStorage.removeItem(RECORRIDO_STORAGE_KEY);
 
     let emailSent = false;
 
@@ -1490,7 +1113,7 @@ export default function RecorridoPage() {
 
   const progress = ((state.etapa + 1) / recorridoEtapas.length) * 100;
 
-  if (!loaded) {
+  if (!authReady || !loaded) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-[#1e293b]">
         <p className="text-xl font-bold">Cargando recorrido...</p>
@@ -1729,8 +1352,8 @@ export default function RecorridoPage() {
                           className="mt-4 w-full accent-[#6CC24A]"
                         />
                         <div className="mt-2 flex justify-between text-xs font-semibold text-slate-400">
-                          <span>{money(2500000)}</span>
-                          <span>{money(7000000)}</span>
+                          <span>{formatRecorridoMoney(2500000)}</span>
+                          <span>{formatRecorridoMoney(7000000)}</span>
                         </div>
                       </Field>
                       <Field label="¿Familia tamaño?">
@@ -2196,7 +1819,7 @@ export default function RecorridoPage() {
                                 {cluster.descripcion}
                               </p>
                               <p className="mt-4 text-lg font-black text-[#6CC24A]">
-                                Desde {money(cluster.precioDesde)}
+                                Desde {formatRecorridoMoney(cluster.precioDesde)}
                               </p>
                               <div className="mt-2 min-h-[4.75rem] rounded-2xl bg-slate-50 p-3">
                                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
@@ -2301,7 +1924,7 @@ export default function RecorridoPage() {
                               </h3>
                               <p className="mt-2 font-black text-[#6CC24A]">
                                 {desde ? "Desde " : ""}
-                                {money(precioDesde)}
+                                {formatRecorridoMoney(precioDesde)}
                               </p>
                               {unidades.length > 0 ? (
                                 <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -2419,7 +2042,7 @@ export default function RecorridoPage() {
                         <p className="mt-2 text-2xl font-black text-[#6CC24A]">
                           {muestraPrecioDesdePrototipo ? (
                             <>
-                              Desde {money(precioDesdePrototipoSeleccionado)}
+                              Desde {formatRecorridoMoney(precioDesdePrototipoSeleccionado)}
                               <span className="mt-1 block text-sm font-semibold text-slate-500">
                                 {unidadesPrototipoSeleccionado.length} unidades de este modelo;
                                 el precio varía por nivel y ubicación.
@@ -2428,9 +2051,9 @@ export default function RecorridoPage() {
                           ) : (
                             <>
                               <span className="mr-3 text-lg text-slate-400 line-through">
-                                {money(selectedPrototipo.precioBase)}
+                                {formatRecorridoMoney(selectedPrototipo.precioBase)}
                               </span>
-                              {money(precioDesdePrototipoSeleccionado)}
+                              {formatRecorridoMoney(precioDesdePrototipoSeleccionado)}
                             </>
                           )}
                         </p>
@@ -2533,8 +2156,8 @@ export default function RecorridoPage() {
                               inventarioUnidades={cotizadorInventario}
                               catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
                               clienteNombre={state.cliente.nombre}
-                              asesorNombre={asesorNombre}
-                              asesorId={asesorId}
+                              asesorNombre={user?.nombre}
+                              asesorId={user?.id}
                               esquema={state.misionLaGaviaEsquema ?? "contado"}
                               showSelectors
                               showCopy
@@ -2829,8 +2452,8 @@ export default function RecorridoPage() {
             clienteTelefono={state.cliente.telefono}
             desarrolloLogo={activeDesarrollo.logo}
             prospectoRegistrado={prospectoCotizadorRegistrado}
-            asesorNombre={asesorNombre}
-            asesorId={asesorId}
+            asesorNombre={user?.nombre}
+            asesorId={user?.id}
             catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
             showCopy
             showPdf
@@ -2887,7 +2510,7 @@ export default function RecorridoPage() {
               <p>{selectedCluster?.nombre || "Sin cluster"}</p>
               <p>{selectedPrototipo?.nombre || "Sin prototipo"}</p>
               <p className="font-black text-[#6CC24A]">
-                {money(
+                {formatRecorridoMoney(
                   pasajeSimuladorResult?.precioTotal ??
                     misionLaGaviaSimuladorResult?.precioTotal ??
                     precioFinal,
@@ -2895,13 +2518,13 @@ export default function RecorridoPage() {
               </p>
               {pasajeSimuladorResult ? (
                 <p className="text-xs text-slate-500">
-                  Lista {money(pasajeSimuladorResult.precioLista)} · Contado{" "}
-                  {money(pasajeSimuladorResult.precioContado)}
+                  Lista {formatRecorridoMoney(pasajeSimuladorResult.precioLista)} · Contado{" "}
+                  {formatRecorridoMoney(pasajeSimuladorResult.precioContado)}
                 </p>
               ) : misionLaGaviaSimuladorResult ? (
                 <p className="text-xs text-slate-500">
                   {misionLaGaviaSimuladorResult.unidad} · Lista{" "}
-                  {money(misionLaGaviaSimuladorResult.precioLista)} ·{" "}
+                  {formatRecorridoMoney(misionLaGaviaSimuladorResult.precioLista)} ·{" "}
                   {misionLaGaviaSimuladorResult.esquemaLabel}
                 </p>
               ) : null}
@@ -2910,19 +2533,19 @@ export default function RecorridoPage() {
               <SummaryBox title={`Esquema · ${misionLaGaviaSimuladorResult.esquemaLabel}`}>
                 <p>
                   Enganche ({formatPctShort(misionLaGaviaSimuladorResult.enganchePct)}):{" "}
-                  <strong>{money(misionLaGaviaSimuladorResult.enganche)}</strong>
+                  <strong>{formatRecorridoMoney(misionLaGaviaSimuladorResult.enganche)}</strong>
                 </p>
                 {misionLaGaviaSimuladorResult.numMensualidades &&
                 misionLaGaviaSimuladorResult.mensualidad ? (
                   <p>
                     {misionLaGaviaSimuladorResult.numMensualidades} pagos de{" "}
-                    <strong>{money(misionLaGaviaSimuladorResult.mensualidad)}</strong>
+                    <strong>{formatRecorridoMoney(misionLaGaviaSimuladorResult.mensualidad)}</strong>
                   </p>
                 ) : null}
                 {misionLaGaviaSimuladorResult.finiquito ? (
                   <p>
                     Finiquito ({formatPctShort(misionLaGaviaSimuladorResult.finiquitoPct ?? 0)}):{" "}
-                    <strong>{money(misionLaGaviaSimuladorResult.finiquito)}</strong>
+                    <strong>{formatRecorridoMoney(misionLaGaviaSimuladorResult.finiquito)}</strong>
                   </p>
                 ) : null}
               </SummaryBox>
@@ -2931,13 +2554,13 @@ export default function RecorridoPage() {
               <SummaryBox title={`Esquema · ${pasajeSimuladorResult.esquemaLabel}`}>
                 <p>
                   Enganche ({formatPctShort(pasajeSimuladorResult.enganchePct)}):{" "}
-                  <strong>{money(pasajeSimuladorResult.enganche)}</strong>
+                  <strong>{formatRecorridoMoney(pasajeSimuladorResult.enganche)}</strong>
                 </p>
                 {pasajeSimuladorResult.numMensualidades &&
                 pasajeSimuladorResult.mensualidadCliente ? (
                   <p>
                     {pasajeSimuladorResult.numMensualidades} mensualidades de{" "}
-                    <strong>{money(pasajeSimuladorResult.mensualidadCliente)}</strong>
+                    <strong>{formatRecorridoMoney(pasajeSimuladorResult.mensualidadCliente)}</strong>
                     {pasajeSimuladorResult.fechaPrimerMes &&
                     pasajeSimuladorResult.fechaUltimoMes
                       ? ` · ${formatMonthYear(pasajeSimuladorResult.fechaPrimerMes)} → ${formatMonthYear(
@@ -2950,7 +2573,7 @@ export default function RecorridoPage() {
                 pasajeSimuladorResult.pagoIntermedioPct ? (
                   <p>
                     Pago ({formatPctShort(pasajeSimuladorResult.pagoIntermedioPct)}):{" "}
-                    <strong>{money(pasajeSimuladorResult.pagoIntermedio)}</strong>
+                    <strong>{formatRecorridoMoney(pasajeSimuladorResult.pagoIntermedio)}</strong>
                     {pasajeSimuladorResult.fechaPagoIntermedio
                       ? ` en ${formatMonthYear(pasajeSimuladorResult.fechaPagoIntermedio)}`
                       : ""}
@@ -2959,7 +2582,7 @@ export default function RecorridoPage() {
                 {pasajeSimuladorResult.finiquito ? (
                   <p>
                     Finiquito ({formatPctShort(pasajeSimuladorResult.finiquitoPct ?? 0)}):{" "}
-                    <strong>{money(pasajeSimuladorResult.finiquito)}</strong>
+                    <strong>{formatRecorridoMoney(pasajeSimuladorResult.finiquito)}</strong>
                     {pasajeSimuladorResult.fechaFiniquito
                       ? ` en ${formatMonthYear(pasajeSimuladorResult.fechaFiniquito)}`
                       : ""}
@@ -3011,590 +2634,3 @@ export default function RecorridoPage() {
   );
 }
 
-function StepCard({
-  eyebrow,
-  title,
-  tip,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  tip: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-        <p className="text-sm font-black uppercase tracking-[0.25em] text-[#6CC24A]">
-          {eyebrow}
-        </p>
-        <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <h2 className="text-3xl font-black text-[#201044] md:text-5xl">{title}</h2>
-          <div className="flex max-w-xl items-start gap-3 rounded-2xl bg-[#6CC24A]/15 p-4 text-[#201044]">
-            <Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#6CC24A]" />
-            <p className="font-bold">{tip}</p>
-          </div>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function BudgetCurrencyInput({
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  value: number;
-  min: number;
-  max: number;
-  onChange: (value: number) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-
-  const clamp = (amount: number) => Math.min(max, Math.max(min, amount));
-
-  return (
-    <input
-      type="text"
-      inputMode="numeric"
-      autoComplete="off"
-      value={editing ? draft : money(value)}
-      onFocus={(event) => {
-        setEditing(true);
-        setDraft(String(value));
-        requestAnimationFrame(() => event.target.select());
-      }}
-      onBlur={() => {
-        setEditing(false);
-        const parsed = clamp(Number(draft.replace(/\D/g, "")) || min);
-        onChange(parsed);
-      }}
-      onChange={(event) => {
-        const digits = event.target.value.replace(/\D/g, "");
-        setDraft(digits);
-        if (digits) {
-          onChange(clamp(Number(digits)));
-        }
-      }}
-      className="input-xl tabular-nums tracking-tight"
-      aria-label="Presupuesto aproximado en pesos mexicanos"
-    />
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-base font-black text-[#201044]">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function PriceSelector({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  options: number[];
-  onChange: (value: number) => void;
-}) {
-  const optionValues = options.includes(value)
-    ? options
-    : [...options, value].sort((a, b) => a - b);
-
-  return (
-    <Field label={label}>
-      <select
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="input-xl appearance-none"
-      >
-        {optionValues.map((option) => (
-          <option key={option} value={option}>
-            {formatPrice(option)}
-          </option>
-        ))}
-      </select>
-    </Field>
-  );
-}
-
-function AvailabilityUnitCard({
-  unit,
-  recommendation,
-  rank,
-  selected,
-  onSelect,
-}: {
-  unit: DisponibilidadUnidad;
-  recommendation?: RecommendedAvailability;
-  rank?: number;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const prototipo = recommendation?.prototipo ?? (unit.prototipoId ? getPrototipoById(unit.prototipoId) : undefined);
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full rounded-[1.5rem] p-4 text-left shadow-lg transition active:scale-[0.99] ${
-        selected ? "bg-[#201044] text-white" : "bg-white text-[#201044]"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        {rank ? (
-          <span
-            className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black ${
-              selected ? "bg-[#6CC24A] text-white" : "bg-[#6CC24A]/15 text-[#6CC24A]"
-            }`}
-          >
-            {rank}
-          </span>
-        ) : null}
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-xl font-black">{unit.unidad}</span>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-black ${availabilityStatusClass[unit.estatus]}`}
-            >
-              {availabilityStatusLabel[unit.estatus]}
-            </span>
-          </span>
-          <span className="mt-1 block text-sm font-semibold opacity-75">
-            {prototipo?.nombre ?? availabilityTypeLabel[unit.tipo]}
-            {unit.precio ? ` | ${money(unit.precio)}` : ""}
-            {formatSuperficiesLabel(unit) ? ` | ${formatSuperficiesLabel(unit)}` : ""}
-            {unit.entrega ? ` | Entrega ${unit.entrega}` : ""}
-          </span>
-          <span className="mt-3 block rounded-2xl bg-white/10 p-3 text-sm font-semibold">
-            {recommendation?.reasons[0] ??
-              unit.razonesVenta[0] ??
-              "Unidad disponible para comparar con el cliente."}
-          </span>
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function AvailabilityUnitDetail({
-  unit,
-  recommendation,
-  onShow,
-  onQuote,
-}: {
-  unit?: DisponibilidadUnidad;
-  recommendation?: RecommendedAvailability;
-  onShow: () => void;
-  onQuote: () => void;
-}) {
-  if (!unit) {
-    return (
-      <div className="rounded-[2rem] bg-white p-5 shadow-lg">
-        <p className="text-sm font-black uppercase tracking-[0.22em] text-[#6CC24A]">
-          Unidad seleccionada
-        </p>
-        <p className="mt-4 rounded-2xl bg-slate-50 p-4 font-semibold text-slate-500">
-          No hay unidades disponibles cargadas para este cluster.
-        </p>
-      </div>
-    );
-  }
-
-  const reasons = (recommendation?.reasons ?? unit.razonesVenta).slice(0, 3);
-
-  return (
-    <div className="rounded-[2rem] bg-white p-5 shadow-lg">
-      <p className="text-sm font-black uppercase tracking-[0.22em] text-[#6CC24A]">
-        Unidad seleccionada
-      </p>
-      <div className="mt-4 space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-2xl font-black text-[#201044]">{unit.unidad}</h3>
-            <p className="mt-1 font-semibold capitalize text-slate-500">
-              {unit.tipo}
-              {unit.etapa ? ` | Etapa ${unit.etapa}` : ""}
-            </p>
-          </div>
-          <span
-            className={`rounded-full px-3 py-2 text-xs font-black ${availabilityStatusClass[unit.estatus]}`}
-          >
-            {availabilityStatusLabel[unit.estatus]}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Spec label="Precio" value={unit.precio ? money(unit.precio) : "Por confirmar"} />
-          <Spec
-            label="Superficie"
-            value={formatSuperficiesLabel(unit) || "Por confirmar"}
-          />
-          <Spec label="Entrega" value={unit.entrega ?? "Por confirmar"} />
-          <Spec label="Nivel" value={unit.nivel ?? "-"} />
-        </div>
-        {reasons.length ? (
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-sm font-black uppercase tracking-wide text-slate-400">Qué decir</p>
-            <div className="mt-3 space-y-2">
-              {reasons.map((reason) => (
-                <p key={reason} className="flex gap-2 text-sm font-semibold text-[#201044]">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#22c55e]" />
-                  {reason}
-                </p>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {unit.instruccionRecorrido && (
-          <p className="rounded-2xl bg-[#6CC24A]/10 p-4 text-sm font-bold text-[#201044]">
-            Recorrido: {unit.instruccionRecorrido}
-          </p>
-        )}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={onShow}
-            className="rounded-2xl border border-[#201044]/20 bg-white px-4 py-4 text-sm font-black text-[#201044] shadow-sm"
-          >
-            Mostrar esta unidad
-          </button>
-          <button
-            type="button"
-            disabled={!unit.prototipoId}
-            onClick={onQuote}
-            className="rounded-2xl bg-[#6CC24A] px-4 py-4 text-sm font-black text-white shadow-sm disabled:opacity-40"
-          >
-            Usar para cotización
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ToggleGroup({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          className={`min-h-14 rounded-xl px-4 text-base font-black transition ${
-            value === option.value ? "bg-[#201044] text-white shadow" : "text-slate-500"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ToggleCard({
-  label,
-  checked,
-  onClick,
-}: {
-  label: string;
-  checked: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-24 rounded-2xl p-5 text-left text-lg font-black shadow-sm transition ${
-        checked ? "bg-[#201044] text-white" : "bg-slate-50 text-[#201044]"
-      }`}
-    >
-      <span className="mb-3 block">{label}</span>
-      <span className="text-sm opacity-75">{checked ? "Sí" : "No"}</span>
-    </button>
-  );
-}
-
-function SectionTitle({ title }: { title: string }) {
-  return <h2 className="text-2xl font-black text-[#201044] md:text-3xl">{title}</h2>;
-}
-
-function ProductNarrativeCard({
-  step,
-  title,
-  subtitle,
-  icon,
-  children,
-}: {
-  step: string;
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.3 }}
-      className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7"
-    >
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
-            Paso {step}
-          </p>
-          <h3 className="mt-2 text-2xl font-black text-[#201044] md:text-4xl">
-            {title}
-          </h3>
-          <p className="mt-2 max-w-3xl text-base font-semibold text-slate-500 md:text-lg">
-            {subtitle}
-          </p>
-        </div>
-        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[#201044] text-white">
-          {icon}
-        </div>
-      </div>
-      {children}
-    </motion.section>
-  );
-}
-
-function ZoneMap({ zona }: { zona: RecorridoZonaContent }) {
-  const destacados = zona.puntosCercanos.filter((punto) => punto.destacado);
-
-  return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg">
-      <div className="relative h-[280px] bg-slate-100 md:h-[420px]">
-        <iframe
-          title={`Mapa de ubicación · ${zona.centro}`}
-          src={zona.mapaEmbedUrl}
-          className="h-full w-full border-0"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-        <div className="pointer-events-none absolute left-4 top-4 max-w-xs rounded-2xl bg-white/95 p-4 shadow-xl backdrop-blur">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#6CC24A]">
-            Punto central
-          </p>
-          <p className="mt-1 text-lg font-black text-[#201044]">{zona.centro}</p>
-          <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500">
-            {zona.direccion}
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4 p-4">
-        <a
-          href={zona.mapaUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="flex min-h-14 items-center justify-center rounded-2xl bg-[#201044] px-4 text-center text-sm font-black text-white transition hover:bg-[#35156D] active:scale-95"
-        >
-          Abrir ubicación exacta en Google Maps
-        </a>
-        <div>
-          <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-            Referencias clave
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {destacados.map((punto) => (
-              <span
-                key={punto.id}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#6CC24A]/25 bg-[#6CC24A]/10 px-3 py-1.5 text-xs font-bold text-[#201044]"
-              >
-                <MapPin className="h-3 w-3 text-[#6CC24A]" />
-                {punto.nombre} · {punto.tiempo}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const categoriaIconMap: Record<string, LucideIcon> = {
-  Comercio: ShoppingBag,
-  Supermercados: Store,
-  Educación: GraduationCap,
-  Salud: HeartPulse,
-  Conectividad: Route,
-  "Cultura y ocio": Landmark,
-  Empleo: Briefcase,
-  "Vida diaria": UtensilsCrossed,
-  Entorno: Trees,
-};
-
-function NearbyPointCard({ punto }: { punto: PuntoInteres }) {
-  const Icon = categoriaIconMap[punto.categoria] ?? MapPin;
-
-  return (
-    <article
-      className={`rounded-2xl border p-4 transition ${
-        punto.destacado
-          ? "border-[#6CC24A]/35 bg-[#6CC24A]/8"
-          : "border-slate-200 bg-white"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span
-          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-            punto.destacado ? "bg-[#201044] text-white" : "bg-slate-100 text-[#201044]"
-          }`}
-        >
-          <Icon className="h-4 w-4" strokeWidth={2.25} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-wide text-[#6CC24A]">
-              {punto.categoria}
-            </p>
-            {punto.destacado ? (
-              <span className="rounded-full bg-[#201044] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                Clave
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 font-black leading-snug text-[#201044]">{punto.nombre}</p>
-          <p className="mt-1 text-sm font-semibold text-slate-500">Aprox. {punto.tiempo}</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">{punto.detalle}</p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function NearbyPointsPanel({ zona }: { zona: RecorridoZonaContent }) {
-  const grouped = useMemo(() => {
-    const map = new Map<string, PuntoInteres[]>();
-
-    for (const categoria of zona.categoriasOrden) {
-      const items = zona.puntosCercanos.filter((punto) => punto.categoria === categoria);
-      if (items.length) {
-        map.set(categoria, items);
-      }
-    }
-
-    return map;
-  }, [zona]);
-
-  return (
-    <div className="max-h-[520px] space-y-5 overflow-y-auto pr-1">
-      {Array.from(grouped.entries()).map(([categoria, puntos]) => (
-        <section key={categoria}>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-[#201044]">
-            {categoria}
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-              {puntos.length}
-            </span>
-          </h4>
-          <div className="grid gap-3">
-            {puntos.map((punto) => (
-              <NearbyPointCard key={punto.id} punto={punto} />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function Spec({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-4">
-      <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 font-black text-[#201044]">{value}</p>
-    </div>
-  );
-}
-
-function ListBox({
-  title,
-  items,
-  positive = false,
-}: {
-  title: string;
-  items: string[];
-  positive?: boolean;
-}) {
-  return (
-    <div className="rounded-[1.5rem] bg-white p-5 shadow-lg">
-      <h3 className="mb-4 text-lg font-black text-[#201044]">{title}</h3>
-      <div className="space-y-2">
-        {items.map((item) => (
-          <p key={item} className="flex gap-2 text-sm font-semibold text-slate-600">
-            {positive ? (
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-[#22c55e]" />
-            ) : (
-              <X className="h-5 w-5 shrink-0 text-slate-400" />
-            )}
-            {item}
-          </p>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Modal({
-  title,
-  children,
-  onClose,
-  size = "default",
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-  size?: "default" | "wide";
-}) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#0f172a]/70 p-2 md:p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={`max-h-[94vh] w-full overflow-auto rounded-[2rem] bg-white p-5 shadow-2xl md:p-8 ${
-          size === "wide" ? "max-w-[96rem]" : "max-w-5xl"
-        }`}
-      >
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-black text-[#201044] md:text-3xl">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-[#201044]"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-
-function SummaryBox({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-5">
-      <h3 className="mb-3 text-lg font-black text-[#201044]">{title}</h3>
-      <div className="space-y-1 font-semibold text-slate-600">{children}</div>
-    </div>
-  );
-}

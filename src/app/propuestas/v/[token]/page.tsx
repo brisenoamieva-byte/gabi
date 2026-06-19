@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PropuestaShareGate } from "@/components/propuestas/PropuestaShareGate";
 import { PropuestaComercialSlides } from "@/components/propuestas/PropuestaComercialSlides";
-import { getPropuestaBySlug, getPropuestaMedia } from "@/lib/propuestas/registry";
+import { useResolvedPropuesta } from "@/lib/propuestas/use-resolved-propuesta";
 
 type SessionState =
   | { status: "loading" }
@@ -16,6 +16,9 @@ export default function PropuestaShareViewPage() {
   const params = useParams();
   const token = typeof params.token === "string" ? params.token : "";
   const [session, setSession] = useState<SessionState>({ status: "loading" });
+
+  const propuestaSlug = session.status === "ready" ? session.propuestaSlug : "";
+  const propuestaQuery = useResolvedPropuesta(propuestaSlug);
 
   const checkSession = useCallback(async () => {
     if (!token) {
@@ -94,19 +97,26 @@ export default function PropuestaShareViewPage() {
     );
   }
 
-  const propuesta = getPropuestaBySlug(session.propuestaSlug);
-  if (!propuesta) {
+  if (propuestaQuery.status === "loading") {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
-        <p className="text-sm text-slate-500">Propuesta no disponible.</p>
+        <p className="text-sm text-slate-500">Cargando propuesta…</p>
+      </main>
+    );
+  }
+
+  if (propuestaQuery.status === "error") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-6 text-center">
+        <p className="text-sm text-slate-500">{propuestaQuery.message}</p>
       </main>
     );
   }
 
   return (
     <PropuestaComercialSlides
-      data={propuesta}
-      media={getPropuestaMedia(session.propuestaSlug)}
+      data={propuestaQuery.data.propuesta}
+      media={propuestaQuery.data.media}
       viewerMode="developer"
     />
   );

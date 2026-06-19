@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { GABI_MASTER_COOKIE } from "@/lib/gabi/master-session-constants";
 import { peekMasterSessionEmail } from "@/lib/gabi/master-session-token";
 import { isGabiOperator } from "@/lib/gabi/operator";
+import {
+  isOperatorIntelRoute,
+  operatorLoginRedirectUrl,
+} from "@/lib/gabi/operator-routes";
 
 const isDevPwaAsset = (pathname: string) =>
   pathname === "/sw.js" ||
@@ -20,6 +24,12 @@ export async function middleware(request: NextRequest) {
   // En desarrollo, bloquear SW de builds previos (evita 404 en CSS/JS).
   if (process.env.NODE_ENV === "development" && isDevPwaAsset(pathname)) {
     return new NextResponse(null, { status: 404 });
+  }
+
+  if (isOperatorIntelRoute(pathname) && !hasMasterAdminAccess(request)) {
+    return NextResponse.redirect(
+      operatorLoginRedirectUrl(request.url, pathname, request.nextUrl.search),
+    );
   }
 
   if (!pathname.startsWith("/admin")) {
@@ -77,5 +87,18 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/sw.js", "/workbox-:path*", "/fallback-:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/gabi",
+    "/gabi/:path*",
+    "/propuestas",
+    "/propuestas/:path*",
+    "/estudios",
+    "/estudios/:path*",
+    "/corredor/investti",
+    "/corredor/investti/:path*",
+    "/sw.js",
+    "/workbox-:path*",
+    "/fallback-:path*",
+  ],
 };
