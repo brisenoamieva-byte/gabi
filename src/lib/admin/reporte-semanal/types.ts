@@ -114,6 +114,7 @@ export type ReporteSemanalSegmento = {
 export type ReporteSemanalFunnelMedio = {
   medio: string;
   afluencia: number;
+  cotizaciones: number;
   citas: number;
   apartados: number;
   ventas: number;
@@ -125,6 +126,7 @@ export type ReporteSemanalFunnelSegmento = {
   label: string;
   etapas: {
     afluencia: number;
+    cotizaciones: number;
     citas: number;
     apartadosVigentes: number;
     ventas: number;
@@ -163,6 +165,7 @@ export type ReporteComercialSemanal = {
   periodo: ReporteSemanalPeriodo;
   resumen: {
     afluencia: number;
+    cotizaciones: number;
     citasVisitas: number;
     apartadosOficinas: number;
     apartadosDeptos: number;

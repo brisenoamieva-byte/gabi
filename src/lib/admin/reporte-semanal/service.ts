@@ -6,6 +6,7 @@ import {
   type ReporteSemanalSegmentConfig,
 } from "@/lib/admin/reporte-semanal/segment-config";
 import { buildAbsorcionMensualSeries } from "@/lib/admin/reporte-semanal/absorcion-mensual";
+import { listCotizacionesFunnelSemana } from "@/lib/admin/reporte-semanal/cotizaciones-periodo";
 import {
   buildFunnelSegmento,
   buildVisitasInmobiliarias,
@@ -464,7 +465,7 @@ export async function getReporteComercialSemanal(
   const year = new Date(`${periodo.hasta}T12:00:00`).getUTCFullYear();
   const acumuladoDesde = `${year}-01-01`;
 
-  const [rows, prospectosSemana, prospectosMes, prospectosAcum, visitasCount, visitasMesMap] =
+  const [rows, prospectosSemana, prospectosMes, prospectosAcum, visitasCount, visitasMesMap, cotizacionesSemana] =
     await Promise.all([
       listSembradoUnidades({ desarrolloId: filters.desarrolloId }, profile),
       listProspectos(
@@ -497,6 +498,10 @@ export async function getReporteComercialSemanal(
       ),
       countVisitasPeriodo(filters.desarrolloId, periodo.desde, periodo.hasta),
       visitasPorMes(filters.desarrolloId),
+      listCotizacionesFunnelSemana(
+        { desarrolloId: filters.desarrolloId, desde: periodo.desde, hasta: periodo.hasta },
+        profile,
+      ),
     ]);
 
   const segmentConfigs = getReporteSemanalSegments(filters.desarrolloId);
@@ -531,6 +536,7 @@ export async function getReporteComercialSemanal(
           clusterId: config.clusterId,
           rows,
           prospectosSemana,
+          cotizacionesSemana,
           citasSemana: visitasCount,
           periodo,
         }),
@@ -542,6 +548,7 @@ export async function getReporteComercialSemanal(
           clusterId: "__all__",
           rows,
           prospectosSemana,
+          cotizacionesSemana,
           citasSemana: visitasCount,
           periodo,
         }),
@@ -581,6 +588,7 @@ export async function getReporteComercialSemanal(
     periodo,
     resumen: {
       afluencia: prospectosSemana.length,
+      cotizaciones: cotizacionesSemana.length,
       citasVisitas: visitasCount,
       apartadosDeptos,
       apartadosOficinas,
@@ -600,6 +608,7 @@ export async function getReporteComercialSemanal(
         "operaciones_comerciales",
         "cobranza_mensual",
         "prospectos",
+        "cotizaciones",
         "visitas_comerciales",
       ],
       objetivosOrigen: tieneObjetivos ? "config" : "none",

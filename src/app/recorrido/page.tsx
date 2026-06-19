@@ -54,7 +54,6 @@ import {
   prototipoMuestraPrecioDesde,
 } from "@/lib/inventario/prototipo-precios";
 import { formatAreaM2 } from "@/lib/format/money";
-import { fetchClusterInventario } from "@/lib/inventario/cluster-inventory-client";
 import { useClusterInventario } from "@/lib/inventario/use-cluster-inventario";
 import {
   clusters,
@@ -164,9 +163,6 @@ export default function RecorridoPage() {
     defaultContenido.tecnicasCierre[0]?.id ?? null,
   );
   const [copied, setCopied] = useState(false);
-  const [remoteAvailabilityUnits, setRemoteAvailabilityUnits] = useState<
-    DisponibilidadUnidad[] | null
-  >(null);
   const [clientValidationMessage, setClientValidationMessage] = useState("");
   const [clientValidationStatus, setClientValidationStatus] = useState<
     "idle" | "success" | "error"
@@ -292,7 +288,7 @@ export default function RecorridoPage() {
     () => normalizeRecamarasFiltro(state.recamarasFiltro),
     [state.recamarasFiltro],
   );
-  const { units: cotizadorInventario } = useClusterInventario(
+  const { units: cotizadorInventario, source: clusterInventarioSource } = useClusterInventario(
     activeDesarrollo?.id,
     state.clusterId || undefined,
   );
@@ -388,127 +384,106 @@ export default function RecorridoPage() {
   );
   const availabilityCluster =
     activeClusters.find((cluster) => cluster.id === availabilityClusterId) ?? selectedCluster;
-  useEffect(() => {
-    if (!availabilityCluster || !activeDesarrollo) {
-      setRemoteAvailabilityUnits(null);
-      return;
-    }
 
-    let cancelled = false;
-
-    const loadCuratedProducts = async () => {
-      const result = await fetchClusterInventario(
-        activeDesarrollo.id,
-        availabilityCluster.id,
-      );
-
-      if (cancelled) {
-        return;
-      }
-
-      if (result.source === "supabase") {
-        setRemoteAvailabilityUnits(result.units);
-      } else {
-        setRemoteAvailabilityUnits(null);
-      }
-    };
-
-    void loadCuratedProducts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeDesarrollo, availabilityCluster]);
-
-  const isCuratedAvailability =
-    remoteAvailabilityUnits !== null && remoteAvailabilityUnits.length > 0;
-
-  const availabilityUnits = useMemo(
-    () => {
-      if (!availabilityCluster) {
-        return [];
-      }
-
-      if (isCuratedAvailability) {
-        return remoteAvailabilityUnits ?? [];
-      }
-
-      return getDisponibilidadesByCluster(availabilityCluster.id);
-    },
-    [availabilityCluster, isCuratedAvailability, remoteAvailabilityUnits],
+  const { units: availabilityHookUnits, source: availabilityHookSource } = useClusterInventario(
+    activeDesarrollo?.id,
+    availabilityCluster?.id,
   );
 
-  const recommendedAvailability = useMemo<RecommendedAvailability[]>(() => {
-    if (isCuratedAvailability) {
-      return availabilityUnits
-        .filter((unit) => unit.estatus === "disponible")
-        .sort((a, b) => (a.orden ?? 99) - (b.orden ?? 99))
-        .map((unit) => {
-          const prototipo = unit.prototipoId ? getPrototipoById(unit.prototipoId) : undefined;
-          const reasons = [
-            ...unit.razonesVenta,
-            unit.instruccionRecorrido,
-          ].filter(Boolean) as string[];
-
-          return {
-            unit,
-            prototipo,
-            score: 100 - (unit.orden ?? 0),
-            reasons: reasons.length
-              ? reasons
-              : ["Producto seleccionado por gerencia comercial para mostrar en visita."],
-          };
-        });
+  const availabilityInventario = useMemo(() => {
+    if (
+      availabilityCluster?.id &&
+      state.clusterId === availabilityCluster.id &&
+      cotizadorInventario.length > 0
+    ) {
+      return { units: cotizadorInventario, source: clusterInventarioSource };
     }
 
-    const scored = availabilityUnits
-      .filter((unit) => unit.estatus !== "vendido" && unit.estatus !== "bloqueado")
-      .map((unit) => {
-        const prototipo = unit.prototipoId ? getPrototipoById(unit.prototipoId) : undefined;
-        const productMatches = matchesProductoTipo(unit.tipo, selectedProductTypes);
-        const priceMatches = unit.precio ? unit.precio <= state.cliente.presupuesto : false;
-        const roomsMatches = prototipo
-          ? matchesRecamaras(prototipo.recamaras, selectedRooms)
-          : unit.tipo === "terreno";
-        const immediateDelivery = unit.entrega?.toLowerCase().includes("inmediata") ?? false;
-        const selectedPrototypeMatches =
-          Boolean(selectedPrototipo && unit.prototipoId === selectedPrototipo.id);
-        const priorityScore =
-          unit.prioridadComercial === "alta"
-            ? 15
-            : unit.prioridadComercial === "media"
-              ? 8
-              : 0;
-        const statusScore =
-          unit.estatus === "disponible" ? 25 : unit.estatus === "apartado" ? -35 : -80;
-        const visitableScore = unit.visitable ? 10 : -20;
-        const score =
-          (productMatches ? 40 : 0) +
-          (priceMatches ? 30 : 0) +
-          (roomsMatches ? 20 : 0) +
-          (immediateDelivery ? 15 : 0) +
-          (selectedPrototypeMatches ? 10 : 0) +
-          priorityScore +
-          statusScore +
-          visitableScore;
-        const reasons = [
-          productMatches && "Coincide con el tipo de producto que busca el cliente.",
-          priceMatches && "Está dentro del presupuesto capturado.",
-          roomsMatches && prototipo && `Coincide con ${prototipo.recamaras} recámaras.`,
-          immediateDelivery && "Tiene entrega inmediata.",
-          selectedPrototypeMatches && "Coincide con el prototipo seleccionado.",
-          unit.visitable && "Es una unidad visitable para dirigir el recorrido.",
-          ...unit.razonesVenta,
-        ].filter(Boolean) as string[];
+    return { units: availabilityHookUnits, source: availabilityHookSource };
+  }, [
+    availabilityCluster?.id,
+    availabilityHookSource,
+    availabilityHookUnits,
+    clusterInventarioSource,
+    cotizadorInventario,
+    state.clusterId,
+  ]);
 
-        return { unit, prototipo, score, reasons };
-      })
-      .sort((a, b) => b.score - a.score);
+  const isSembradoInventory = useMemo(() => {
+    const source = availabilityInventario.source;
+    return source === "sembrado" || source === "offline-cache";
+  }, [availabilityInventario.source]);
 
-    return scored.slice(0, 3);
+  const availabilityUnits = useMemo(() => {
+    if (!availabilityCluster) {
+      return [];
+    }
+
+    if (availabilityInventario.source !== "local") {
+      return availabilityInventario.units;
+    }
+
+    return getDisponibilidadesByCluster(availabilityCluster.id);
+  }, [availabilityCluster, availabilityInventario.source, availabilityInventario.units]);
+
+  const recommendedAvailability = useMemo<RecommendedAvailability[]>(() => {
+    const scoreUnit = (unit: DisponibilidadUnidad) => {
+      const prototipo = unit.prototipoId ? getPrototipoById(unit.prototipoId) : undefined;
+      const productMatches = matchesProductoTipo(unit.tipo, selectedProductTypes);
+      const priceMatches = unit.precio ? unit.precio <= state.cliente.presupuesto : false;
+      const roomsMatches = prototipo
+        ? matchesRecamaras(prototipo.recamaras, selectedRooms)
+        : unit.tipo === "terreno";
+      const immediateDelivery = unit.entrega?.toLowerCase().includes("inmediata") ?? false;
+      const selectedPrototypeMatches =
+        Boolean(selectedPrototipo && unit.prototipoId === selectedPrototipo.id);
+      const priorityScore =
+        unit.prioridadComercial === "alta"
+          ? 15
+          : unit.prioridadComercial === "media"
+            ? 8
+            : 0;
+      const visitableScore = unit.visitable ? 5 : 0;
+      const score =
+        (productMatches ? 40 : 0) +
+        (priceMatches ? 30 : 0) +
+        (roomsMatches ? 20 : 0) +
+        (immediateDelivery ? 15 : 0) +
+        (selectedPrototypeMatches ? 10 : 0) +
+        priorityScore +
+        visitableScore;
+      const reasons = [
+        productMatches && "Coincide con el tipo de producto que busca el cliente.",
+        priceMatches && "Está dentro del presupuesto capturado.",
+        roomsMatches && prototipo && `Coincide con ${prototipo.recamaras} recámaras.`,
+        immediateDelivery && "Tiene entrega inmediata.",
+        selectedPrototypeMatches && "Coincide con el prototipo seleccionado.",
+        unit.visitable && "Marcada como unidad visitable.",
+        ...unit.razonesVenta,
+        unit.instruccionRecorrido,
+      ].filter(Boolean) as string[];
+
+      return {
+        unit,
+        prototipo,
+        score,
+        reasons: reasons.length
+          ? reasons
+          : ["Disponible en inventario comercial (sembrado)."],
+      };
+    };
+
+    return availabilityUnits
+      .filter((unit) => unit.estatus === "disponible")
+      .map(scoreUnit)
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          (a.unit.orden ?? 99) - (b.unit.orden ?? 99) ||
+          a.unit.unidad.localeCompare(b.unit.unidad, "es"),
+      );
   }, [
     availabilityUnits,
-    isCuratedAvailability,
     selectedProductTypes,
     selectedRooms,
     selectedPrototipo,
@@ -520,9 +495,9 @@ export default function RecorridoPage() {
         availabilityUnits,
         undefined,
         mapProductoFiltroToAvailabilityTipo(selectedProductTypes),
-        isCuratedAvailability,
+        isSembradoInventory,
       ),
-    [availabilityUnits, isCuratedAvailability, selectedProductTypes],
+    [availabilityUnits, isSembradoInventory, selectedProductTypes],
   );
   const selectedAvailability =
     (selectedAvailabilityId
@@ -2130,7 +2105,7 @@ export default function RecorridoPage() {
                             }}
                             className="rounded-2xl border border-[#201044]/20 bg-white px-5 py-5 text-lg font-black text-[#201044] shadow-lg active:scale-95"
                           >
-                            Ver unidades recomendadas
+                            Ver unidades disponibles
                           </button>
                           <button
                             type="button"
@@ -2297,7 +2272,7 @@ export default function RecorridoPage() {
       {showAvailability && availabilityCluster && (
         <Modal
           onClose={() => setShowAvailability(false)}
-          title={`Unidades recomendadas · ${availabilityCluster.nombre}`}
+          title={`Unidades disponibles · ${availabilityCluster.nombre}`}
           size="wide"
         >
           <div className="space-y-5">
@@ -2345,11 +2320,11 @@ export default function RecorridoPage() {
                     A dónde dirigir al cliente
                   </p>
                   <h3 className="mt-2 text-2xl font-black">
-                    Te recomendamos mostrar estas unidades.
+                    Unidades disponibles para mostrar en visita.
                   </h3>
                   <p className="mt-2 text-sm font-semibold text-white/75">
-                    {isCuratedAvailability
-                      ? "Seleccionadas por gerencia comercial para esta visita."
+                    {isSembradoInventory
+                      ? "Inventario completo según sembrado. Ordenadas por afinidad con el perfil del cliente."
                       : "Ordenadas por presupuesto, producto, recámaras, entrega y disponibilidad."}
                   </p>
                 </div>
@@ -2370,7 +2345,7 @@ export default function RecorridoPage() {
                 ) : (
                   <div className="rounded-[1.5rem] bg-white p-5 shadow-lg">
                     <p className="text-xl font-black text-[#201044]">
-                      No hay unidades recomendables en este momento.
+                      No hay unidades disponibles en este momento.
                     </p>
                     <p className="mt-2 text-sm font-semibold text-slate-500">
                       Descarga el inventario PDF o confirma disponibilidad con administración comercial.

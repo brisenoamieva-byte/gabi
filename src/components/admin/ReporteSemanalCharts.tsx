@@ -142,6 +142,7 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
   const data = funnel.porMedio.slice(0, 8).map((m) => ({
     medio: m.medio.length > 18 ? `${m.medio.slice(0, 16)}…` : m.medio,
     Afluencia: m.afluencia,
+    Cotizaciones: m.cotizaciones,
     Citas: m.citas,
     Apartados: m.apartados,
     Ventas: m.ventas,
@@ -153,12 +154,13 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
   return (
     <ChartCard
       title={`Funnel comercial — ${funnel.label}`}
-      subtitle="Afluencia → citas → apartados → ventas → asignaciones por medio"
+      subtitle="Afluencia → cotizaciones → citas → apartados → ventas → asignaciones por medio"
     >
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {(
           [
             ["Afluencia", funnel.etapas.afluencia],
+            ["Cotizaciones", funnel.etapas.cotizaciones],
             ["Citas", funnel.etapas.citas],
             ["Apartados vig.", funnel.etapas.apartadosVigentes],
             ["Ventas", funnel.etapas.ventas],
@@ -180,6 +182,7 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Afluencia" fill={FOREST} radius={[2, 2, 0, 0]} />
+            <Bar dataKey="Cotizaciones" fill="#94a3b8" radius={[2, 2, 0, 0]} />
             <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]} />
             <Bar dataKey="Ventas" fill={MINT} radius={[2, 2, 0, 0]} />
           </BarChart>

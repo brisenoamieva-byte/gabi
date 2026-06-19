@@ -17,12 +17,12 @@ export type AvailabilityConfig = {
 };
 
 export const availabilityViewLabel: Record<AvailabilityView, string> = {
-  recomendadas: "Unidades recomendadas",
+  recomendadas: "Unidades disponibles",
 };
 
 export const availabilityViewDescription: Record<AvailabilityView, string> = {
   recomendadas:
-    "Unidades seleccionadas por gerencia comercial para mostrar en visita.",
+    "Todas las unidades disponibles según el sembrado comercial (sin apartados ni vendidos).",
 };
 
 const countByTipo = (units: DisponibilidadUnidad[]) => ({
@@ -64,19 +64,19 @@ const inferLayoutMode = (
 
 const buildAdvisorHint = (
   units: DisponibilidadUnidad[],
-  curated: boolean,
+  fromSembrado: boolean,
 ) => {
   if (!units.length) {
-    return "No hay unidades recomendadas en este cluster. Descarga el inventario PDF para consultar el corte oficial.";
+    return "No hay unidades disponibles en este cluster. Descarga el inventario PDF para consultar el corte oficial.";
   }
 
   const disponibles = units.filter((unit) => unit.estatus === "disponible").length;
 
-  if (curated) {
-    return `Lista curada por gerencia comercial (${disponibles} disponible${disponibles === 1 ? "" : "s"}). Para inventario completo, descarga el PDF oficial.`;
+  if (fromSembrado) {
+    return `${disponibles} unidad${disponibles === 1 ? "" : "es"} disponible${disponibles === 1 ? "" : "s"} según sembrado. Ordenadas por afinidad con el perfil del cliente.`;
   }
 
-  return `Unidades sugeridas para esta visita (${disponibles} disponible${disponibles === 1 ? "" : "s"}). Para inventario completo, descarga el PDF oficial.`;
+  return `${disponibles} unidad${disponibles === 1 ? "" : "es"} disponible${disponibles === 1 ? "" : "s"} para esta visita. Descarga el PDF para el inventario oficial completo.`;
 };
 
 const inferSuggestedTypeFilter = (
@@ -97,7 +97,7 @@ export const resolveAvailabilityConfig = (
   units: DisponibilidadUnidad[],
   plano?: DisponibilidadPlano,
   preferredProductTypes: Array<DisponibilidadUnidad["tipo"]> = [],
-  curated = false,
+  fromSembrado = false,
 ): AvailabilityConfig => {
   const layoutMode = inferLayoutMode(units, plano);
 
@@ -105,7 +105,7 @@ export const resolveAvailabilityConfig = (
     views: ["recomendadas"],
     primaryView: "recomendadas",
     layoutMode,
-    advisorHint: buildAdvisorHint(units, curated),
+    advisorHint: buildAdvisorHint(units, fromSembrado),
     suggestedTypeFilter: inferSuggestedTypeFilter(units, preferredProductTypes),
   };
 };

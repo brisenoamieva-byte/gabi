@@ -1,3 +1,4 @@
+import type { CotizacionFunnelRow } from "@/lib/admin/reporte-semanal/cotizaciones-periodo";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
 import type { ReporteSemanalFunnelMedio, ReporteSemanalFunnelSegmento } from "@/lib/admin/reporte-semanal/types";
 import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
@@ -47,6 +48,7 @@ export function buildFunnelSegmento(input: {
   clusterId: string;
   rows: SembradoUnidadRow[];
   prospectosSemana: ProspectoListRow[];
+  cotizacionesSemana: CotizacionFunnelRow[];
   citasSemana: number;
   periodo: { desde: string; hasta: string };
 }): ReporteSemanalFunnelSegmento {
@@ -58,6 +60,7 @@ export function buildFunnelSegmento(input: {
   let apartadosVigentes = 0;
   let ventas = 0;
   let asignaciones = 0;
+  let cotizaciones = 0;
   const medioMap = new Map<string, ReporteSemanalFunnelMedio>();
 
   const ensureMedio = (medio: string): ReporteSemanalFunnelMedio => {
@@ -66,6 +69,7 @@ export function buildFunnelSegmento(input: {
     const entry: ReporteSemanalFunnelMedio = {
       medio,
       afluencia: 0,
+      cotizaciones: 0,
       citas: 0,
       apartados: 0,
       ventas: 0,
@@ -79,6 +83,14 @@ export function buildFunnelSegmento(input: {
     if (p.es_spam || p.es_duplicado) continue;
     const medio = resolveProspectoMedioLabel(p);
     ensureMedio(medio).afluencia += 1;
+  }
+
+  for (const cotizacion of input.cotizacionesSemana) {
+    if (input.clusterId !== "__all__" && cotizacion.clusterId !== input.clusterId) {
+      continue;
+    }
+    cotizaciones += 1;
+    ensureMedio(cotizacion.medioLabel).cotizaciones += 1;
   }
 
   for (const row of segmentRows) {
@@ -114,6 +126,7 @@ export function buildFunnelSegmento(input: {
     label: input.label,
     etapas: {
       afluencia: input.prospectosSemana.filter((p) => !p.es_spam && !p.es_duplicado).length,
+      cotizaciones,
       citas: input.citasSemana,
       apartadosVigentes,
       ventas,
