@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Copy,
   Loader2,
   Send,
   X,
@@ -60,6 +61,7 @@ export function GuardiasAdminPanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -162,6 +164,41 @@ export function GuardiasAdminPanel({
       setError(clearError instanceof Error ? clearError.message : "Error al quitar");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCopyWeek = async () => {
+    setCopying(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("/api/admin/guardias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "copyWeek", desarrolloId, weekStart }),
+      });
+      const data = (await response.json()) as {
+        copied?: number;
+        skipped?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo copiar la semana.");
+      }
+
+      const copied = data.copied ?? 0;
+      const skipped = data.skipped ?? 0;
+      setSuccess(
+        copied
+          ? `Semana copiada a la siguiente (${copied} turno${copied === 1 ? "" : "s"}${skipped ? `, ${skipped} omitidos` : ""}).`
+          : "No hay guardias en esta semana para copiar.",
+      );
+    } catch (copyError) {
+      setError(copyError instanceof Error ? copyError.message : "Error al copiar");
+    } finally {
+      setCopying(false);
     }
   };
 
@@ -268,6 +305,20 @@ export function GuardiasAdminPanel({
               Hoy
             </button>
           </div>
+
+          <button
+            type="button"
+            disabled={copying || loading || !desarrolloId}
+            onClick={() => void handleCopyWeek()}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-gabi-forest disabled:opacity-50"
+          >
+            {copying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+            Copiar a siguiente semana
+          </button>
 
           <button
             type="button"

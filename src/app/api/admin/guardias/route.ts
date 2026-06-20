@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  copyGuardiasWeekToNext,
   listGuardiaConflictos,
   listGuardiasWeek,
   publishGuardiasWeek,
@@ -74,6 +75,17 @@ export async function POST(request: Request) {
     if (body.action === "publish") {
       const weekStart = body.weekStart?.trim() || getWeekStartMonday();
       const result = await publishGuardiasWeek(desarrolloId, weekStart, session.profile);
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "copyWeek") {
+      const weekStart = body.weekStart?.trim() || getWeekStartMonday();
+      const result = await copyGuardiasWeekToNext(
+        desarrolloId,
+        weekStart,
+        session.profile,
+        session.userId,
+      );
       return NextResponse.json(result);
     }
 

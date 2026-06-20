@@ -3,6 +3,7 @@ import type { AdminProfile } from "@/lib/admin/types";
 import {
   getWeekDates,
   isGuardiaTurno,
+  shiftWeekStart,
   type GuardiaEstado,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
@@ -208,6 +209,76 @@ export const clearGuardiaSlot = async (
     assertGuardiasTable(error.message);
     throw new Error(error.message);
   }
+};
+
+export const copyGuardiasWeekToNext = async (
+  desarrolloId: string,
+  fromWeekStart: string,
+  profile: AdminProfile,
+  adminUserId: string,
+): Promise<{ copied: number; skipped: number }> => {
+  assertDesarrolloAccess(profile, desarrolloId);
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const sourceWeek = await listGuardiasWeek(desarrolloId, fromWeekStart, profile);
+  if (!sourceWeek.asignaciones.length) {
+    return { copied: 0, skipped: 0 };
+  }
+
+  const toWeekStart = shiftWeekStart(fromWeekStart, 1);
+  const fromDates = sourceWeek.weekDates;
+  const toDates = getWeekDates(toWeekStart);
+  const dateMap = new Map(fromDates.map((fecha, index) => [fecha, toDates[index]]));
+
+  const targetWeek = await listGuardiasWeek(desarrolloId, toWeekStart, profile);
+  const occupiedSlots = new Set(
+    targetWeek.asignaciones.map((item) => `${item.fecha}|${item.turno}`),
+  );
+
+  const now = new Date().toISOString();
+  let copied = 0;
+  let skipped = 0;
+
+  for (const item of sourceWeek.asignaciones) {
+    const targetDate = dateMap.get(item.fecha);
+    if (!targetDate) {
+      continue;
+    }
+
+    const slotKey = `${targetDate}|${item.turno}`;
+    if (occupiedSlots.has(slotKey)) {
+      skipped += 1;
+      continue;
+    }
+
+    const { error } = await supabase.from("guardia_asignaciones").upsert(
+      {
+        desarrollo_id: desarrolloId,
+        asesor_id: item.asesorId,
+        fecha: targetDate,
+        turno: item.turno,
+        estado: "borrador",
+        notas: item.notas,
+        creado_por_admin_id: adminUserId,
+        updated_at: now,
+      },
+      { onConflict: "desarrollo_id,fecha,turno" },
+    );
+
+    if (error) {
+      assertGuardiasTable(error.message);
+      throw new Error(error.message);
+    }
+
+    copied += 1;
+    occupiedSlots.add(slotKey);
+  }
+
+  return { copied, skipped };
 };
 
 export const publishGuardiasWeek = async (

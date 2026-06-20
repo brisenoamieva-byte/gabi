@@ -16,6 +16,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
+import { AsesorGuardiaHoyCard } from "@/components/asesor/AsesorGuardiaHoyCard";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
 import { PrepareOfflineVisitButton } from "@/components/PrepareOfflineVisitButton";
 import {
@@ -185,6 +186,14 @@ export default function DashboardPage() {
               </p>
             </div>
           </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.055 }}
+        >
+          <AsesorGuardiaHoyCard asesorId={user.id} desarrolloId={desarrollo.id} />
         </motion.div>
 
         <motion.div

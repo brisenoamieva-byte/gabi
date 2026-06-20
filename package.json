@@ -33,6 +33,7 @@
     "db:verify:migrations": "node scripts/verify-migrations-033-035.mjs",
     "db:apply:037": "node scripts/apply-migration-037.mjs",
     "db:apply:038": "node scripts/apply-migration-038.mjs",
+    "db:apply:039": "node scripts/apply-migration-039.mjs",
     "db:apply:037-038": "node scripts/apply-migrations-037-038.mjs",
     "db:print:037-038": "node scripts/print-apply-sql.mjs 037 038",
     "db:open-sql-editor": "node scripts/open-supabase-sql-editor.mjs",
