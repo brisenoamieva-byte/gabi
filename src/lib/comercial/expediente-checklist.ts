@@ -56,6 +56,7 @@ export const CHECKLIST_LA_CEIBA: ExpedienteChecklistItem[] = [
 const CHECKLIST_POR_DESARROLLO: Record<string, ExpedienteChecklistItem[]> = {
   "pasaje-alamos": CHECKLIST_LA_CEIBA,
   "la-vista-residencial": CHECKLIST_LA_CEIBA,
+  "mision-la-gavia": CHECKLIST_LA_CEIBA,
 };
 
 /** Desarrollos sin catálogo propio usan plantilla La Ceiba. */

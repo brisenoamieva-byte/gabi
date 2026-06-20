@@ -880,7 +880,7 @@ export const asesores: Asesor[] = [
     pin: '1234',
     rol: 'director',
     activo: true,
-    desarrollosIds: ['la-vista-residencial', 'pasaje-alamos', 'mision-la-gavia', ...INVESTTI_DESARROLLO_IDS]
+    desarrollosIds: ['pasaje-alamos', 'mision-la-gavia', ...INVESTTI_DESARROLLO_IDS]
   },
   {
     id: 'rodrigo',
@@ -889,7 +889,7 @@ export const asesores: Asesor[] = [
     pin: '5678',
     rol: 'asesor',
     activo: true,
-    desarrollosIds: ['la-vista-residencial', ...INVESTTI_DESARROLLO_IDS]
+    desarrollosIds: [...INVESTTI_DESARROLLO_IDS]
   },
   {
     id: 'investti-demo',

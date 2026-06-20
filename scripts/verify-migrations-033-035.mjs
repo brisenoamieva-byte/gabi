@@ -54,6 +54,12 @@ const checks = [
     column: "desarrollo_id",
     migration: "038_crm_playbook.sql",
   },
+  {
+    id: "039",
+    table: "guardia_asignaciones",
+    column: "turno",
+    migration: "039_guardias_calendario.sql",
+  },
 ];
 
 let allOk = true;

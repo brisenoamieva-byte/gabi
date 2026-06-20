@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin, CalendarClock } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -27,6 +27,7 @@ const navIcons = {
   "/admin/estudios-nubo": Presentation,
   "/admin/propuestas": BriefcaseBusiness,
   "/admin/corredor": MapPin,
+  "/admin/guardias": CalendarClock,
 } as const;
 
 const navModules: Record<string, AdminModule> = {
@@ -47,6 +48,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/estudios-nubo": "catalogo",
   "/admin/propuestas": "catalogo",
   "/admin/corredor": "catalogo",
+  "/admin/guardias": "guardias",
 };
 
 type AdminShellProps = {
@@ -64,6 +66,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/inventario", label: "Inventario", ready: true },
     { href: "/admin/desarrollos", label: "Desarrollos", ready: true },
     { href: "/admin/leads", label: "Leads", ready: true },
+    { href: "/admin/guardias", label: "Guardias", ready: true },
     { href: "/admin/crm-playbook", label: "Playbook CRM", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },

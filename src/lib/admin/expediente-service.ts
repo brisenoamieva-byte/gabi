@@ -11,6 +11,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
   getGoogleDriveOperacionFolderUrl,
   isGoogleDriveConfiguredForDesarrollo,
+  assertGoogleDriveRequiredForDesarrollo,
 } from "@/lib/integrations/google-drive-config";
 import { uploadExpedienteToGoogleDrive } from "@/lib/integrations/google-drive-service";
 
@@ -301,7 +302,7 @@ export const uploadExpedienteDocumento = async (input: {
   nombre: string;
   notas?: string;
   confirmReplace?: boolean;
-  adminId: string;
+  adminId?: string | null;
   profile: AdminProfile;
 }) => {
   const supabase = createSupabaseServiceClient();
@@ -313,6 +314,8 @@ export const uploadExpedienteDocumento = async (input: {
   if (!detail) {
     throw new Error("Operación no encontrada.");
   }
+
+  assertGoogleDriveRequiredForDesarrollo(detail.operacion.desarrollo_id);
 
   const codigo = input.checklistCodigo.trim().toUpperCase();
   const mimeType = assertMime(input.file);
@@ -374,7 +377,7 @@ export const uploadExpedienteDocumento = async (input: {
     storage_path: storagePath,
     mime_type: mimeType,
     tamano_bytes: input.file.size,
-    subido_por: input.adminId,
+    subido_por: input.adminId ?? null,
     notas: input.notas?.trim() || null,
     activo: true,
   };

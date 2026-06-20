@@ -55,6 +55,7 @@ const CHECKLIST_POR_DESARROLLO: Record<string, ExpedienteChecklistItem[]> = {
   "la-ceiba-bosque-urbano": CHECKLIST_LA_CEIBA,
   "pasaje-alamos": CHECKLIST_LA_CEIBA,
   "la-vista-residencial": CHECKLIST_LA_CEIBA,
+  "mision-la-gavia": CHECKLIST_LA_CEIBA,
 };
 
 export const getExpedienteChecklist = (desarrolloId: string): ExpedienteChecklistItem[] =>

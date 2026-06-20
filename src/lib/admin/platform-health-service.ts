@@ -211,6 +211,17 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta crm_playbook_configs — aplica 038.",
   });
 
+  const guardiasOk = await probeTable("guardia_asignaciones", "turno");
+  checks.push({
+    id: "039",
+    label: "Calendario guardias oficina",
+    migrationFile: "039_guardias_calendario.sql",
+    ok: guardiasOk,
+    detail: guardiasOk
+      ? "Guardias matutino/vespertino por desarrollo."
+      : "Falta guardia_asignaciones — aplica 039.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()

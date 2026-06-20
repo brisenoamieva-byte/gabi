@@ -46,6 +46,10 @@ export const canAccessModule = (profile: AdminProfile, module: AdminModule) => {
     return profile.rol === "gerente" || isSuperAdmin(profile);
   }
 
+  if (module === "guardias") {
+    return profile.rol === "gerente" || isSuperAdmin(profile);
+  }
+
   if (profile.rol === "operaciones") {
     return module === "documentos" || module === "inventario";
   }

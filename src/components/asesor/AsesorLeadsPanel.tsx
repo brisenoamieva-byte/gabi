@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
+import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedienteApartadoPanel";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { formatPrice } from "@/lib/data";
@@ -265,6 +266,12 @@ function AsesorLeadDrawer({
                   . Gerencia administra apartado y venta; tú puedes dejar notas.
                 </div>
               ) : null}
+
+              <AsesorExpedienteApartadoPanel
+                asesorId={asesorId}
+                prospectoId={detail.id}
+                etapa={detail.etapa}
+              />
 
               {playbook?.config?.enabled ? (
                 <CrmPlaybookChecklist
