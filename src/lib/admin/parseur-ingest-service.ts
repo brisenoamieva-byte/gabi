@@ -6,6 +6,7 @@ import {
   isParseurFailureEvent,
   type ParseurLeadFields,
 } from "@/lib/comercial/parseur-fields";
+import { resolveLeadAsesorId, dispatchLeadInboundNotifications } from "@/lib/comercial/lead-inbound-notifications";
 import {
   computeIscore,
   computeSellerScore,
@@ -232,7 +233,8 @@ export const ingestParseurLead = async (options: {
   }
 
   const desarrolloId = campana.desarrollo_id;
-  const asesorId = await matchAsesorId(desarrolloId, fields.vendedor);
+  const matchedAsesor = await matchAsesorId(desarrolloId, fields.vendedor);
+  const asesorId = matchedAsesor ?? (await resolveLeadAsesorId(desarrolloId));
   const leadRow = buildLeadRow(campana, fields, asesorId);
 
   try {
@@ -355,6 +357,12 @@ export const ingestParseurLead = async (options: {
       parseurDocumentId: fields.documentId,
       payload: options.payload,
     });
+
+    try {
+      await dispatchLeadInboundNotifications(created.id);
+    } catch (notifyError) {
+      console.error("[parseur-ingest] WhatsApp notify failed", notifyError);
+    }
 
     return {
       status: "created",

@@ -11,6 +11,7 @@ export type CampanaRecord = {
   canal: string | null;
   tipo: CampanaTipo;
   parseur_email: string | null;
+  meta_lead_form_id: string | null;
   activo: boolean;
   created_at: string;
   updated_at: string;
@@ -30,6 +31,7 @@ export type UpdateCampanaInput = {
   canal?: string;
   tipo?: CampanaTipo;
   parseurEmail?: string | null;
+  metaLeadFormId?: string | null;
   activo?: boolean;
 };
 
@@ -145,6 +147,9 @@ export const updateCampana = async (
   }
   if (input.parseurEmail !== undefined) {
     patch.parseur_email = input.parseurEmail?.trim() || null;
+  }
+  if (input.metaLeadFormId !== undefined) {
+    patch.meta_lead_form_id = input.metaLeadFormId?.trim() || null;
   }
   if (input.activo !== undefined) {
     patch.activo = input.activo;
