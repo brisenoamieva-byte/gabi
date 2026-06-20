@@ -1,4 +1,3 @@
-import { asesorSessionLookupIds } from "@/lib/asesores/seed-match";
 import { GABI_USER_KEY } from "@/lib/session/keys";
 import type { AsesorSession } from "@/lib/asesores/types";
 
@@ -25,8 +24,8 @@ export const writeStoredAsesorSession = (asesor: AsesorSession) => {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(asesor));
 };
 
-const fetchAsesorSessionById = async (id: string): Promise<AsesorSession | null> => {
-  const response = await fetch(`/api/asesores/session?id=${encodeURIComponent(id)}`);
+const fetchAsesorSessionFromServer = async (): Promise<AsesorSession | null> => {
+  const response = await fetch("/api/asesores/session");
   const data = (await response.json()) as { asesor?: AsesorSession; error?: string };
   if (!response.ok || !data.asesor) {
     return null;
@@ -34,20 +33,16 @@ const fetchAsesorSessionById = async (id: string): Promise<AsesorSession | null>
   return data.asesor;
 };
 
-export const refreshStoredAsesorSession = async (
-  stored: AsesorSession,
-): Promise<AsesorSession | null> => {
+export const refreshStoredAsesorSession = async (): Promise<AsesorSession | null> => {
   try {
-    for (const lookupId of asesorSessionLookupIds(stored.id)) {
-      const asesor = await fetchAsesorSessionById(lookupId);
-      if (asesor) {
-        writeStoredAsesorSession(asesor);
-        return asesor;
-      }
+    const fromCookie = await fetchAsesorSessionFromServer();
+    if (fromCookie) {
+      writeStoredAsesorSession(fromCookie);
+      return fromCookie;
     }
 
-    return stored;
+    return null;
   } catch {
-    return stored;
+    return null;
   }
 };

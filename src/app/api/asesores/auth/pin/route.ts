@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getDesarrolloIdsForComercializadora } from "@/lib/catalog/service";
 import { authenticateAsesorByPin, authenticateInvesttiSimuladorByPin } from "@/lib/asesores/auth";
 import { isValidPin } from "@/lib/asesores/pin-server";
+import {
+  asesorSessionCookieOptions,
+  signAsesorSession,
+  ASESOR_SESSION_COOKIE,
+} from "@/lib/asesores/session-cookie";
 import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
 import { checkRateLimit, getRequestClientKey } from "@/lib/rate-limit";
 
@@ -30,10 +35,16 @@ export async function POST(request: Request) {
       if (!investtiResult) {
         return NextResponse.json({ error: "PIN incorrecto." }, { status: 401 });
       }
-      return NextResponse.json({
+      const response = NextResponse.json({
         asesor: investtiResult.asesor,
         source: investtiResult.source,
       });
+      response.cookies.set(
+        ASESOR_SESSION_COOKIE,
+        signAsesorSession(investtiResult.asesor.id),
+        asesorSessionCookieOptions(),
+      );
+      return response;
     }
 
     const desarrolloIds = await getDesarrolloIdsForComercializadora(portal);
@@ -43,7 +54,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "PIN incorrecto." }, { status: 401 });
     }
 
-    return NextResponse.json({ asesor: result.asesor, source: result.source });
+    const response = NextResponse.json({ asesor: result.asesor, source: result.source });
+    response.cookies.set(
+      ASESOR_SESSION_COOKIE,
+      signAsesorSession(result.asesor.id),
+      asesorSessionCookieOptions(),
+    );
+    return response;
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error de autenticación" },

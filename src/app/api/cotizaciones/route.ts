@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { saveCotizacion, upsertProspectoFromVisita } from "@/lib/admin/prospectos-service";
+import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const asesorId = resolveAsesorIdForApi(body.asesorId as string | undefined);
 
     if (!body.desarrolloId) {
       return NextResponse.json({ error: "desarrolloId requerido." }, { status: 400 });
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
         email: body.clienteEmail,
         telefono: body.clienteTelefono,
         medioContacto: body.medioContacto,
-        asesorId: body.asesorId,
+        asesorId,
         etapa: "cotizo",
       });
       prospectoId = prospecto.id;
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
     const cotizacion = await saveCotizacion({
       desarrolloId: body.desarrolloId,
       prospectoId,
-      asesorId: body.asesorId,
+      asesorId,
       unidadId: body.unidadId,
       clusterId: body.clusterId,
       prototipoId: body.prototipoId,
@@ -44,6 +46,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ cotizacion, prospectoId });
   } catch (error) {
+    const authResponse = asesorSessionErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al guardar cotización." },
       { status: 500 },

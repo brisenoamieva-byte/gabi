@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { GABI_MASTER_COOKIE } from "@/lib/gabi/master-session-constants";
-import { peekMasterSessionEmail } from "@/lib/gabi/master-session-token";
+import { verifyMasterSessionValueEdge } from "@/lib/gabi/master-session-edge";
 import { isGabiOperator } from "@/lib/gabi/operator";
 import {
   isOperatorIntelRoute,
@@ -13,8 +13,8 @@ const isDevPwaAsset = (pathname: string) =>
   pathname.startsWith("/workbox-") ||
   pathname.startsWith("/fallback-");
 
-function hasMasterAdminAccess(request: NextRequest): boolean {
-  const email = peekMasterSessionEmail(request.cookies.get(GABI_MASTER_COOKIE)?.value);
+async function hasMasterAdminAccess(request: NextRequest): Promise<boolean> {
+  const email = await verifyMasterSessionValueEdge(request.cookies.get(GABI_MASTER_COOKIE)?.value);
   return Boolean(email && isGabiOperator({ email }));
 }
 
@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
 
-  if (isOperatorIntelRoute(pathname) && !hasMasterAdminAccess(request)) {
+  if (isOperatorIntelRoute(pathname) && !(await hasMasterAdminAccess(request))) {
     return NextResponse.redirect(
       operatorLoginRedirectUrl(request.url, pathname, request.nextUrl.search),
     );
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
-  const masterAdmin = hasMasterAdminAccess(request);
+  const masterAdmin = await hasMasterAdminAccess(request);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

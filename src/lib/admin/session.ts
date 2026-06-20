@@ -24,7 +24,7 @@ const normalizeAdminRol = (rol: string): AdminProfile["rol"] => {
   if (rol === "operaciones") {
     return "operaciones";
   }
-  return "superadmin";
+  return "operaciones";
 };
 
 function buildOwnerAdminSession(email: string): { userId: string; profile: AdminProfile } {

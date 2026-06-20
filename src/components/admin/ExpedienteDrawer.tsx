@@ -66,7 +66,7 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [generatingPack, setGeneratingPack] = useState(false);
-  const [etapaAbierta, setEtapaAbierta] = useState<ExpedienteChecklistEtapa | null>("contrato");
+  const [etapaAbierta, setEtapaAbierta] = useState<ExpedienteChecklistEtapa | null>("apartado");
 
   const loadDetail = useCallback(async () => {
     setLoading(true);

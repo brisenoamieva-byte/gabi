@@ -16,15 +16,15 @@ export type AsesorGuardiaHoy = {
   notas: string | null;
 };
 
-export const getGuardiaHoyForAsesor = async (
+export const getGuardiasHoyForAsesor = async (
   asesorId: string,
   desarrolloId: string,
-): Promise<AsesorGuardiaHoy | null> => {
+): Promise<AsesorGuardiaHoy[]> => {
   await assertAsesorDesarrollo(asesorId, desarrolloId);
 
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
-    return null;
+    return [];
   }
 
   const today = formatDateYmd(new Date());
@@ -36,27 +36,33 @@ export const getGuardiaHoyForAsesor = async (
     .eq("asesor_id", asesorId)
     .eq("fecha", today)
     .eq("estado", "publicada")
-    .maybeSingle();
+    .order("turno", { ascending: true });
 
   if (error) {
     if (error.message.includes("guardia_asignaciones")) {
-      return null;
+      return [];
     }
     throw new Error(error.message);
   }
 
-  if (!data) {
-    return null;
-  }
+  return (data ?? []).map((row) => {
+    const turno = row.turno as GuardiaTurno;
+    return {
+      fecha: row.fecha as string,
+      turno,
+      turnoLabel: guardiaTurnoShortLabel[turno],
+      turnoShortLabel: guardiaTurnoShortLabel[turno],
+      horario: guardiaTurnoLabel[turno],
+      notas: (row.notas as string | null) ?? null,
+    };
+  });
+};
 
-  const turno = data.turno as GuardiaTurno;
-
-  return {
-    fecha: data.fecha as string,
-    turno,
-    turnoLabel: guardiaTurnoShortLabel[turno],
-    turnoShortLabel: guardiaTurnoShortLabel[turno],
-    horario: guardiaTurnoLabel[turno],
-    notas: (data.notas as string | null) ?? null,
-  };
+/** @deprecated Usa getGuardiasHoyForAsesor */
+export const getGuardiaHoyForAsesor = async (
+  asesorId: string,
+  desarrolloId: string,
+): Promise<AsesorGuardiaHoy | null> => {
+  const guardias = await getGuardiasHoyForAsesor(asesorId, desarrolloId);
+  return guardias[0] ?? null;
 };

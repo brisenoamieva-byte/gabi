@@ -4,24 +4,26 @@ import {
   updateProspectoForAsesor,
   type AsesorUpdateProspectoInput,
 } from "@/lib/asesores/prospectos-service";
+import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 import { getProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, context: RouteContext) {
   const { searchParams } = new URL(request.url);
-  const asesorId = searchParams.get("asesorId")?.trim();
   const { id } = await context.params;
 
-  if (!asesorId) {
-    return NextResponse.json({ error: "asesorId requerido." }, { status: 400 });
-  }
-
   try {
+    const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
     const prospecto = await getProspectoForAsesor(asesorId, id);
     const playbook = await getProspectoPlaybookState(prospecto);
     return NextResponse.json({ prospecto, playbook });
   } catch (error) {
+    const authResponse = asesorSessionErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al cargar prospecto." },
       { status: 400 },
@@ -34,11 +36,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const body = (await request.json()) as AsesorUpdateProspectoInput & { asesorId?: string };
-    const asesorId = body.asesorId?.trim();
-
-    if (!asesorId) {
-      return NextResponse.json({ error: "asesorId requerido." }, { status: 400 });
-    }
+    const asesorId = resolveAsesorIdForApi(body.asesorId);
 
     const prospecto = await updateProspectoForAsesor(asesorId, id, {
       etapa: body.etapa,
@@ -49,6 +47,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({ prospecto, playbook });
   } catch (error) {
+    const authResponse = asesorSessionErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al actualizar prospecto." },
       { status: 400 },

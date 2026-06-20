@@ -15,6 +15,7 @@ export function logoutAsesorSession(
   options?: { clearPortal?: boolean; redirect?: string },
 ) {
   const portal = readPortalSession();
+  void fetch("/api/asesores/auth/logout", { method: "POST" }).catch(() => undefined);
   localStorage.removeItem(GABI_USER_KEY);
   localStorage.removeItem(GABI_DESARROLLO_KEY);
   if (options?.clearPortal) {

@@ -69,7 +69,15 @@ export function useRequireAsesorSession(options: Options = {}) {
 
     const load = async () => {
       try {
-        const freshUser = (await refreshStoredAsesorSession(stored)) ?? stored;
+        const freshUser = await refreshStoredAsesorSession();
+        if (!freshUser) {
+          localStorage.removeItem(GABI_USER_KEY);
+          localStorage.removeItem(GABI_DESARROLLO_KEY);
+          router.replace(
+            portalSession ? resolveAdvisorEntryPath(portalSession) : "/portal",
+          );
+          return;
+        }
 
         if (requireDesarrollo && storedDevelopment) {
           if (!freshUser.desarrollosIds.includes(storedDevelopment)) {

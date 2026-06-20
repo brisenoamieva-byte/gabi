@@ -11,14 +11,14 @@ type AsesorGuardiaHoyCardProps = {
 };
 
 export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHoyCardProps) {
-  const [guardia, setGuardia] = useState<AsesorGuardiaHoy | null>(null);
+  const [guardias, setGuardias] = useState<AsesorGuardiaHoy[]>([]);
   const [loading, setLoading] = useState(false);
 
   const isPilot = desarrolloId === GUARDIAS_PILOT_DESARROLLO_ID;
 
   const load = useCallback(async () => {
     if (!isPilot) {
-      setGuardia(null);
+      setGuardias([]);
       return;
     }
 
@@ -27,13 +27,13 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
     try {
       const params = new URLSearchParams({ asesorId, desarrolloId });
       const response = await fetch(`/api/asesores/guardias?${params}`);
-      const data = (await response.json()) as { guardia?: AsesorGuardiaHoy | null };
+      const data = (await response.json()) as { guardias?: AsesorGuardiaHoy[] };
 
       if (response.ok) {
-        setGuardia(data.guardia ?? null);
+        setGuardias(data.guardias ?? []);
       }
     } catch {
-      setGuardia(null);
+      setGuardias([]);
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
     );
   }
 
-  if (!guardia) {
+  if (!guardias.length) {
     return null;
   }
 
@@ -66,15 +66,19 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
           <CalendarClock className="h-5 w-5" />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
             Tu guardia hoy
           </p>
-          <p className="mt-0.5 text-lg font-black text-[#201044]">{guardia.turnoLabel}</p>
-          <p className="text-sm text-slate-600">{guardia.horario}</p>
-          {guardia.notas ? (
-            <p className="mt-1 text-xs text-slate-500">{guardia.notas}</p>
-          ) : null}
+          {guardias.map((guardia) => (
+            <div key={guardia.turno}>
+              <p className="text-lg font-black text-[#201044]">{guardia.turnoLabel}</p>
+              <p className="text-sm text-slate-600">{guardia.horario}</p>
+              {guardia.notas ? (
+                <p className="mt-0.5 text-xs text-slate-500">{guardia.notas}</p>
+              ) : null}
+            </div>
+          ))}
         </div>
       </div>
     </div>

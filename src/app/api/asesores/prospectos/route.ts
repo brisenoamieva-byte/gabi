@@ -5,10 +5,10 @@ import {
   listProspectosForAsesor,
   type AsesorCreateProspectoInput,
 } from "@/lib/asesores/prospectos-service";
+import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const asesorId = searchParams.get("asesorId")?.trim();
   const desarrolloId = searchParams.get("desarrolloId")?.trim();
   const etapa = searchParams.get("etapa") ?? undefined;
   const search = searchParams.get("search") ?? undefined;
@@ -16,11 +16,12 @@ export async function GET(request: Request) {
   const hasta = searchParams.get("hasta") ?? undefined;
   const withResumen = searchParams.get("resumen") === "1";
 
-  if (!asesorId || !desarrolloId) {
-    return NextResponse.json({ error: "asesorId y desarrolloId requeridos." }, { status: 400 });
+  if (!desarrolloId) {
+    return NextResponse.json({ error: "desarrolloId requerido." }, { status: 400 });
   }
 
   try {
+    const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
     const [prospectos, resumen] = await Promise.all([
       listProspectosForAsesor(asesorId, { desarrolloId, etapa, search, desde, hasta }),
       withResumen
@@ -30,6 +31,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ prospectos, resumen });
   } catch (error) {
+    const authResponse = asesorSessionErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al listar prospectos." },
       { status: 400 },
@@ -40,11 +46,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as AsesorCreateProspectoInput & { asesorId?: string };
-    const asesorId = body.asesorId?.trim();
+    const asesorId = resolveAsesorIdForApi(body.asesorId);
 
-    if (!asesorId || !body.desarrolloId?.trim() || !body.nombre?.trim()) {
+    if (!body.desarrolloId?.trim() || !body.nombre?.trim()) {
       return NextResponse.json(
-        { error: "Completa asesor, desarrollo y nombre." },
+        { error: "Completa desarrollo y nombre." },
         { status: 400 },
       );
     }
@@ -60,6 +66,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ prospecto }, { status: 201 });
   } catch (error) {
+    const authResponse = asesorSessionErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al crear prospecto." },
       { status: 400 },

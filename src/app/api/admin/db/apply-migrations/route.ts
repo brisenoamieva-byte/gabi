@@ -5,7 +5,7 @@ import {
 } from "@/lib/admin/apply-sql-migrations";
 import { getPlatformHealth } from "@/lib/admin/platform-health-service";
 import { canApplySupabaseMigrations } from "@/lib/admin/resolve-supabase-db-url";
-import { canAccessModule, isSuperAdmin } from "@/lib/admin/permissions";
+import { isSuperAdmin } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
 export async function GET() {
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  if (!isSuperAdmin(session.profile) && !canAccessModule(session.profile, "leads")) {
+  if (!isSuperAdmin(session.profile)) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  if (!isSuperAdmin(session.profile) && !canAccessModule(session.profile, "leads")) {
+  if (!isSuperAdmin(session.profile)) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 

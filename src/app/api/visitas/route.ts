@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { sendPostVisitaEmailFromVisita } from "@/lib/email/send-post-visita";
+import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 import { insertVisita } from "@/lib/visitas/service";
 import type { VisitaInput } from "@/lib/visitas/types";
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as VisitaInput;
+    const asesorId = resolveAsesorIdForApi(body.asesorId);
 
-    if (!body.tipo || !body.desarrolloId || !body.asesorId) {
+    if (!body.tipo || !body.desarrolloId) {
       return NextResponse.json({ error: "Datos incompletos." }, { status: 400 });
     }
 
@@ -15,7 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Tipo de visita inválido." }, { status: 400 });
     }
 
-    const result = await insertVisita(body);
+    const result = await insertVisita({ ...body, asesorId });
     if (!result) {
       return NextResponse.json(
         { error: "No se pudo registrar la visita (servidor)." },
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
 
     let emailResult = null;
     if (body.tipo === "recorrido_completado" && body.clienteEmail?.trim()) {
-      emailResult = await sendPostVisitaEmailFromVisita(body);
+      emailResult = await sendPostVisitaEmailFromVisita({ ...body, asesorId });
     }
 
     return NextResponse.json({
@@ -35,6 +37,11 @@ export async function POST(request: Request) {
       emailReason: emailResult && !emailResult.sent ? emailResult.reason : undefined,
     });
   } catch (error) {
+    const authResponse = asesorSessionErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al registrar visita." },
       { status: 400 },
