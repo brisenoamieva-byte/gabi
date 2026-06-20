@@ -190,6 +190,9 @@ export function GuardiasAdminPanel({
 
       const copied = data.copied ?? 0;
       const skipped = data.skipped ?? 0;
+      if (copied > 0) {
+        setWeekStart((prev) => shiftWeekStart(prev, 1));
+      }
       setSuccess(
         copied
           ? `Semana copiada a la siguiente (${copied} turno${copied === 1 ? "" : "s"}${skipped ? `, ${skipped} omitidos` : ""}).`

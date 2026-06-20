@@ -16,6 +16,10 @@ Aplica en **SQL Editor** del proyecto, **en orden numérico**, una por query (o 
 | 036 | `036_asesores_telefono.sql` | teléfono en asesores |
 | 037 | `037_prospecto_qa_satisfaccion.sql` | QA / satisfacción + `prospecto_encuestas` |
 | 038 | `038_crm_playbook.sql` | playbook CRM + cola «Siguiente paso» |
+| 039 | `039_guardias_calendario.sql` | calendario guardias oficina |
+| 040 | `040_prospecto_encuestas_rls.sql` | RLS en `prospecto_encuestas` |
+
+Bundles para SQL Editor: `_bundle_039_apply_once.sql`, `_bundle_040_apply_once.sql`.
 
 Migraciones **001–017** son catálogo, admin, inventario y recorrido (suelen estar ya aplicadas en producción).
 

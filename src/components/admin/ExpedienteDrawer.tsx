@@ -28,7 +28,7 @@ import {
 } from "@/lib/comercial/expediente-checklist";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import { canGenerateApartadoPack } from "@/lib/comercial/expediente-template-map";
-import { formatPrice } from "@/lib/data";
+import { desarrollos, formatPrice } from "@/lib/data";
 
 type ExpedienteDrawerProps = {
   operacionId: string;
@@ -475,13 +475,18 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
     );
   };
 
+  const desarrolloLabel = detail
+    ? (desarrollos.find((d) => d.id === detail.operacion.desarrollo_id)?.nombre ??
+      detail.operacion.desarrollo_id)
+    : "";
+
   return (
     <div className="fixed inset-0 z-[60] flex justify-end bg-black/40">
       <div className="flex h-full w-full max-w-3xl flex-col bg-white shadow-xl">
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-              Expediente legal · La Ceiba
+              Expediente legal · {desarrolloLabel || "Desarrollo"}
             </p>
             <h3 className="text-xl font-black text-gabi-forest">
               {detail?.operacion.cliente_nombre ?? "Cargando…"}

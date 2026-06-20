@@ -222,6 +222,16 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta guardia_asignaciones — aplica 039.",
   });
 
+  checks.push({
+    id: "040",
+    label: "RLS encuestas prospecto",
+    migrationFile: "040_prospecto_encuestas_rls.sql",
+    ok: encuestasOk,
+    detail: encuestasOk
+      ? "Tabla prospecto_encuestas OK — aplica 040 en SQL Editor para RLS service_role."
+      : "Falta prospecto_encuestas — aplica 037.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()
