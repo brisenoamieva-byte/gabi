@@ -5,6 +5,7 @@ import { BarChart3, Loader2, Users } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { VisitasResumen } from "@/lib/visitas/types";
 import { formatPrice } from "@/lib/data";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type VisitasMetricasPanelProps = {
   desarrollos: Desarrollo[];
@@ -17,7 +18,7 @@ const tipoLabel = {
 } as const;
 
 export function VisitasMetricasPanel({ desarrollos, scopeLabel }: VisitasMetricasPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

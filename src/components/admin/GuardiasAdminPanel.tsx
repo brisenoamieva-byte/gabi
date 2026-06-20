@@ -12,6 +12,7 @@ import {
 import type { GuardiaAsignacionRecord, GuardiaConflicto } from "@/lib/admin/guardias-service";
 import type { AsesorRecord } from "@/lib/asesores/types";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import {
   formatDayHeader,
   formatWeekRangeLabel,
@@ -47,13 +48,10 @@ export function GuardiasAdminPanel({
   scopeLabel,
   initialDesarrolloId,
 }: GuardiasAdminPanelProps) {
-  const defaultDesarrollo =
-    initialDesarrolloId ??
-    desarrollos.find((d) => d.id === GUARDIAS_PILOT_DESARROLLO_ID)?.id ??
-    desarrollos[0]?.id ??
-    "";
-
-  const [desarrolloId, setDesarrolloId] = useState(defaultDesarrollo);
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos, {
+    urlDesarrolloId: initialDesarrolloId,
+    fallbackDesarrolloId: GUARDIAS_PILOT_DESARROLLO_ID,
+  });
   const [weekStart, setWeekStart] = useState(getWeekStartMonday());
   const [week, setWeek] = useState<WeekPayload | null>(null);
   const [asesores, setAsesores] = useState<AsesorRecord[]>([]);

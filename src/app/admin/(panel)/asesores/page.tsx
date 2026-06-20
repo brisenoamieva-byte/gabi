@@ -5,7 +5,7 @@ import { requireAdminModule } from "@/lib/admin/guards";
 import { isSuperAdmin } from "@/lib/admin/permissions";
 
 type PageProps = {
-  searchParams?: { tab?: string; desarrollo?: string };
+  searchParams?: { tab?: string; desarrollo?: string; desarrolloId?: string };
 };
 
 export default async function AdminAsesoresPage({ searchParams }: PageProps) {
@@ -13,10 +13,11 @@ export default async function AdminAsesoresPage({ searchParams }: PageProps) {
   const catalog = await getAdminCatalogContext(session.profile);
   const initialTab: EquipoTab =
     isSuperAdmin(session.profile) && searchParams?.tab === "admin" ? "admin" : "comercial";
+  const urlDesarrollo = searchParams?.desarrolloId ?? searchParams?.desarrollo;
   const initialDesarrolloId =
-    searchParams?.desarrollo &&
-    catalog.allowedDesarrollos.some((item) => item.id === searchParams.desarrollo)
-      ? searchParams.desarrollo
+    urlDesarrollo &&
+    catalog.allowedDesarrollos.some((item) => item.id === urlDesarrollo)
+      ? urlDesarrollo
       : undefined;
 
   return (

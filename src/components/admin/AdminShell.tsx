@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin, CalendarClock } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { adminRolLabel, canAccessModule } from "@/lib/admin/permissions";
+import {
+  ADMIN_DESARROLLO_CHANGE_EVENT,
+  readStoredAdminDesarrolloId,
+} from "@/lib/admin/admin-desarrollo-session";
 import type { AdminModule, AdminProfile } from "@/lib/admin/types";
 
 const navIcons = {
@@ -60,6 +65,19 @@ type AdminShellProps = {
 export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [navDesarrolloId, setNavDesarrolloId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNavDesarrolloId(readStoredAdminDesarrolloId());
+    const onChange = () => setNavDesarrolloId(readStoredAdminDesarrolloId());
+    window.addEventListener(ADMIN_DESARROLLO_CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(ADMIN_DESARROLLO_CHANGE_EVENT, onChange);
+  }, [pathname]);
+
+  const navHref = (href: string) =>
+    navDesarrolloId
+      ? `${href}?desarrolloId=${encodeURIComponent(navDesarrolloId)}`
+      : href;
 
   const navItems = [
     { href: "/admin/documentos", label: "Documentos", ready: true },
@@ -136,7 +154,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={navHref(item.href)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
                     active
                       ? "bg-gabi-forest text-white"

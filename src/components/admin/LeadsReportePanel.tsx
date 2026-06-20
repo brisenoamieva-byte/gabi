@@ -22,6 +22,7 @@ import {
   prospectoEtapaLabel,
 } from "@/lib/comercial/prospecto-etapas";
 import { LeadsAnualPanel } from "@/components/admin/LeadsAnualPanel";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type LeadsReportePanelProps = {
   desarrollos: Desarrollo[];
@@ -121,11 +122,9 @@ export function LeadsReportePanel({
   const monthRange = useMemo(() => currentMonthRange(), []);
   const [subTab, setSubTab] = useState<LeadsSubTab>("leads");
   const [timeMode, setTimeMode] = useState<TimeSeriesMode>("dia");
-  const [desarrolloId, setDesarrolloId] = useState(
-    initialDesarrolloId && desarrollos.some((item) => item.id === initialDesarrolloId)
-      ? initialDesarrolloId
-      : (desarrollos[0]?.id ?? ""),
-  );
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos, {
+    urlDesarrolloId: initialDesarrolloId,
+  });
   const [desde, setDesde] = useState(monthRange.desde);
   const [hasta, setHasta] = useState(monthRange.hasta);
   const [asesorFilter, setAsesorFilter] = useState("");

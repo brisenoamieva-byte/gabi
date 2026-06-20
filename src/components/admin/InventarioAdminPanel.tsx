@@ -9,6 +9,7 @@ import {
   templateCsv,
 } from "@/lib/inventario/csv-productos";
 import type { ProductoRecomendadoRecord } from "@/lib/inventario/productos-recomendados";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 const downloadTextFile = (filename: string, content: string, mime = "text/csv;charset=utf-8") => {
   const blob = new Blob([content], { type: mime });
@@ -33,7 +34,7 @@ export function InventarioAdminPanel({
   clusters,
   prototipos,
 }: InventarioAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [clusterId, setClusterId] = useState("");
   const [productos, setProductos] = useState<ProductoRecomendadoRecord[]>([]);
   const [loading, setLoading] = useState(true);

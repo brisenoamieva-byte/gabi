@@ -14,6 +14,7 @@ import {
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type CrmPlaybookAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -37,7 +38,7 @@ const pilotDesarrollos = (desarrollos: Desarrollo[]) =>
 
 export function CrmPlaybookAdminPanel({ desarrollos, scopeLabel }: CrmPlaybookAdminPanelProps) {
   const options = pilotDesarrollos(desarrollos);
-  const [desarrolloId, setDesarrolloId] = useState(options[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(options);
   const [config, setConfig] = useState<CrmPlaybookConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

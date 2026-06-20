@@ -25,6 +25,8 @@ import {
 } from "@/lib/comercial/prospecto-etapas";
 import { NIVELES_INTERES, nivelInteresLabel } from "@/lib/comercial/prospecto-interes";
 import { formatLeadsDateRangeLabel } from "@/lib/comercial/xperience-leads";
+import { resolveAdminDesarrolloId } from "@/lib/admin/admin-desarrollo-session";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type LeadsAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -68,13 +70,16 @@ export function LeadsAdminPanel({
   initialHasta,
 }: LeadsAdminPanelProps) {
   const monthDefault = currentMonthRange();
+  const resolvedDesarrolloId = resolveAdminDesarrolloId(desarrollos, {
+    urlDesarrolloId: initialDesarrolloId,
+  });
 
   const [leadTab, setLeadTab] = useState<LeadTab>("leads");
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
 
-  const [desarrolloId, setDesarrolloId] = useState(
-    initialDesarrolloId ?? desarrollos[0]?.id ?? "",
-  );
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos, {
+    urlDesarrolloId: initialDesarrolloId,
+  });
   const [etapaFilter, setEtapaFilter] = useState("");
   const [asesorFilter, setAsesorFilter] = useState(initialAsesorId ?? "");
   const [campanaFilter, setCampanaFilter] = useState("");
@@ -83,7 +88,7 @@ export function LeadsAdminPanel({
   const [hasta, setHasta] = useState(initialHasta ?? monthDefault.hasta);
 
   const [applied, setApplied] = useState({
-    desarrolloId: initialDesarrolloId ?? desarrollos[0]?.id ?? "",
+    desarrolloId: resolvedDesarrolloId,
     etapaFilter: "",
     asesorFilter: initialAsesorId ?? "",
     campanaFilter: "",

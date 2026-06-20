@@ -3,3 +3,5 @@ export const GABI_USER_KEY = "gabi_user";
 export const GABI_DESARROLLO_KEY = "gabi_desarrollo";
 export const GABI_PORTAL_KEY = "gabi_portal";
 export const GABI_CRM_PENDING_KEY = "gabi_crm_pending";
+/** Desarrollo activo en backoffice admin (persiste al cambiar de módulo). */
+export const GABI_ADMIN_DESARROLLO_KEY = "gabi-admin-desarrollo-id";

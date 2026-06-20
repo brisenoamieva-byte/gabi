@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/documentos-scope";
 import type { DocumentoRecord } from "@/lib/admin/types";
 import type { Cluster, Desarrollo, DisponibilidadUnidad, Prototipo } from "@/lib/data";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type DocumentosAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -74,7 +75,7 @@ export function DocumentosAdminPanel({
   disponibilidades,
   prototipos,
 }: DocumentosAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [alcance, setAlcance] = useState<DocumentoAlcance>("desarrollo");
   const [clusterId, setClusterId] = useState("");
   const [etapa, setEtapa] = useState("");

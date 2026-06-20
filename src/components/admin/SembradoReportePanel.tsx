@@ -5,6 +5,7 @@ import { Building2, Loader2 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { SembradoReporte } from "@/lib/admin/operaciones-service";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type SembradoReportePanelProps = {
   desarrollos: Desarrollo[];
@@ -12,7 +13,7 @@ type SembradoReportePanelProps = {
 };
 
 export function SembradoReportePanel({ desarrollos, scopeLabel }: SembradoReportePanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [reporte, setReporte] = useState<SembradoReporte | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

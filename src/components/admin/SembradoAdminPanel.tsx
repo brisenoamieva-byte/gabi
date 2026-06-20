@@ -17,6 +17,7 @@ import {
   getDefaultSembradoSegmentId,
   getSembradoSegmentsForDesarrollo,
 } from "@/lib/catalog/desarrollos-registry";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type SembradoAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -238,9 +239,9 @@ const defaultSegmentoForDesarrollo = (id: string): SembradoSegmentoId =>
   getDefaultSembradoSegmentId(id) ?? "general";
 
 export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [segmento, setSegmento] = useState<SembradoSegmentoId>(() =>
-    defaultSegmentoForDesarrollo(desarrollos[0]?.id ?? ""),
+    defaultSegmentoForDesarrollo(desarrolloId),
   );
   const [estatusFilter, setEstatusFilter] = useState("");
   const [showAllUnits, setShowAllUnits] = useState(true);
@@ -256,6 +257,12 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
   const [operacionId, setOperacionId] = useState<string | null>(null);
   const [expedienteOperacionId, setExpedienteOperacionId] = useState<string | null>(null);
   const [unidadEdit, setUnidadEdit] = useState<SembradoUnidadRow | null>(null);
+
+  useEffect(() => {
+    if (desarrolloId) {
+      setSegmento(defaultSegmentoForDesarrollo(desarrolloId));
+    }
+  }, [desarrolloId]);
 
   const unidadesDisponibles = useMemo(
     () => filas.filter((row) => !row.operacion && row.estatusInventario === "disponible"),

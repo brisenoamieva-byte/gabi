@@ -38,6 +38,7 @@ import {
   type AsesorRecord,
   type AsesorRol,
 } from "@/lib/asesores/types";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type AsesoresAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -103,11 +104,9 @@ export function AsesoresAdminPanel({
   adminLinkByAsesorId = {},
   onAdminLinksChange,
 }: AsesoresAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(
-    initialDesarrolloId && desarrollos.some((item) => item.id === initialDesarrolloId)
-      ? initialDesarrolloId
-      : (desarrollos[0]?.id ?? ""),
-  );
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos, {
+    urlDesarrolloId: initialDesarrolloId,
+  });
   const [asesores, setAsesores] = useState<AsesorRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -241,22 +240,6 @@ export function AsesoresAdminPanel({
   useEffect(() => {
     void loadKpis();
   }, [loadKpis]);
-
-  useEffect(() => {
-    if (!desarrolloId && desarrollos[0]?.id) {
-      setDesarrolloId(desarrollos[0].id);
-    }
-  }, [desarrolloId, desarrollos]);
-
-  useEffect(() => {
-    if (
-      initialDesarrolloId &&
-      desarrollos.some((item) => item.id === initialDesarrolloId) &&
-      desarrolloId !== initialDesarrolloId
-    ) {
-      setDesarrolloId(initialDesarrolloId);
-    }
-  }, [desarrolloId, desarrollos, initialDesarrolloId]);
 
   const openCreateForm = () => {
     const defaultDesarrolloId = desarrolloId || desarrollos[0]?.id || "";

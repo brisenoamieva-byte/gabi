@@ -6,6 +6,7 @@ import type { Desarrollo } from "@/lib/data";
 import type { ReporteComercialSemanal, ReporteSemanalSegmento } from "@/lib/admin/reporte-semanal/types";
 import { defaultWeekContaining } from "@/lib/admin/reporte-semanal/week-utils";
 import { hasSegmentedReporteSemanal } from "@/lib/catalog/desarrollos-registry";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import {
   AbsorcionMensualChart,
   AbsorcionModeloChart,
@@ -197,12 +198,10 @@ function SegmentoDetalle({ segmento }: { segmento: ReporteSemanalSegmento }) {
 
 export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
   const defaultWeek = useMemo(() => defaultWeekContaining(), []);
-  const [desarrolloId, setDesarrolloId] = useState(
-    () =>
-      desarrollos.find((d) => hasSegmentedReporteSemanal(d.id))?.id ??
-      desarrollos[0]?.id ??
-      "",
-  );
+  const segmentedFallback = desarrollos.find((d) => hasSegmentedReporteSemanal(d.id))?.id;
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos, {
+    fallbackDesarrolloId: segmentedFallback,
+  });
   const [desde, setDesde] = useState(defaultWeek.desde);
   const [hasta, setHasta] = useState(defaultWeek.hasta);
   const [reporte, setReporte] = useState<ReporteComercialSemanal | null>(null);

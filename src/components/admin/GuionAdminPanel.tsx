@@ -9,6 +9,7 @@ import {
   formToContenido,
   type RecorridoContenidoForm,
 } from "@/lib/catalog/recorrido-content-editor";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type GuionAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -54,7 +55,7 @@ function Field({
 }
 
 export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [form, setForm] = useState<RecorridoContenidoForm | null>(null);
   const [baseContent, setBaseContent] = useState<RecorridoContenido | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,12 +110,6 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
   useEffect(() => {
     void loadContenido();
   }, [loadContenido]);
-
-  useEffect(() => {
-    if (!desarrolloId && desarrollos[0]?.id) {
-      setDesarrolloId(desarrollos[0].id);
-    }
-  }, [desarrolloId, desarrollos]);
 
   const saveContenido = async () => {
     if (!form || !baseContent || !desarrolloId) {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FolderOpen, Loader2, RefreshCw, Search } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ExpedienteListRow } from "@/lib/admin/expediente-service";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { ComisionesAdminPanel } from "@/components/admin/ComisionesAdminPanel";
 import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
@@ -29,7 +30,7 @@ function progresoColor(pct: number) {
 
 export function ExpedientesAdminPanel({ desarrollos, scopeLabel }: ExpedientesAdminPanelProps) {
   const [tab, setTab] = useState<"expedientes" | "comisiones">("expedientes");
-  const [desarrolloId, setDesarrolloId] = useState(desarrollos[0]?.id ?? "");
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [expedientes, setExpedientes] = useState<ExpedienteListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

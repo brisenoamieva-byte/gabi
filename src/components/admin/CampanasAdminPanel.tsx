@@ -5,6 +5,7 @@ import { Check, Copy, Loader2, Plus, RefreshCw } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { CampanaRecord, CampanaTipo } from "@/lib/admin/campanas-service";
 import { buildParseurWebhookUrl } from "@/lib/comercial/parseur-webhook-url";
+import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type CampanasAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -55,9 +56,10 @@ export function CampanasAdminPanel({
   embedded = false,
   initialDesarrolloId,
 }: CampanasAdminPanelProps) {
-  const [desarrolloId, setDesarrolloId] = useState(
-    embedded ? (initialDesarrolloId ?? "") : (desarrollos[0]?.id ?? ""),
-  );
+  const scopedDesarrollo = useAdminDesarrolloSelection(desarrollos);
+  const [embeddedDesarrolloId, setEmbeddedDesarrolloId] = useState(initialDesarrolloId ?? "");
+  const desarrolloId = embedded ? embeddedDesarrolloId : scopedDesarrollo.desarrolloId;
+  const setDesarrolloId = embedded ? setEmbeddedDesarrolloId : scopedDesarrollo.setDesarrolloId;
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -100,7 +102,7 @@ export function CampanasAdminPanel({
 
   useEffect(() => {
     if (embedded && initialDesarrolloId) {
-      setDesarrolloId(initialDesarrolloId);
+      setEmbeddedDesarrolloId(initialDesarrolloId);
     }
   }, [embedded, initialDesarrolloId]);
 
