@@ -6,8 +6,25 @@ import {
   resolveChecklistCodigo,
   type ExpedienteChecklistEtapa,
 } from "@/lib/comercial/expediente-checklist";
-import type { OperacionComercialRecord } from "@/lib/comercial/sembrado-status";
+import {
+  buildExpedienteDocContext,
+  expedienteDocxMime,
+  renderExpedienteDocx,
+  resolveExpedienteTemplatePath,
+} from "@/lib/comercial/expediente-doc-generator";
+import {
+  canGenerateApartadoPack,
+  getApartadoTemplateDefs,
+  getExpedienteTemplateBaseDir,
+} from "@/lib/comercial/expediente-template-map";
+import type {
+  CotizacionRecord,
+  OperacionComercialRecord,
+  ProspectoRecord,
+} from "@/lib/comercial/sembrado-status";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { desarrollos } from "@/lib/data";
+import { existsSync } from "node:fs";
 import {
   getGoogleDriveOperacionFolderUrl,
   isGoogleDriveConfiguredForDesarrollo,
@@ -575,4 +592,114 @@ export const deactivateExpedienteDocumento = async (
   if (updateError) {
     throw new Error(updateError.message);
   }
+};
+
+export type GenerateApartadoPackResult = {
+  generated: ExpedienteDocumentoRecord[];
+  skipped: { codigo: string; reason: string }[];
+  missingTemplates: string[];
+};
+
+export const generateApartadoPack = async (
+  operacionId: string,
+  profile: AdminProfile,
+  adminId: string,
+  options?: { confirmReplace?: boolean },
+): Promise<GenerateApartadoPackResult> => {
+  const detail = await getExpedienteDetail(operacionId, profile);
+  if (!detail) {
+    throw new Error("Operación no encontrada.");
+  }
+
+  const desarrolloId = detail.operacion.desarrollo_id;
+  if (!canGenerateApartadoPack(desarrolloId)) {
+    throw new Error("Generación automática no disponible para este desarrollo.");
+  }
+
+  const baseDir = getExpedienteTemplateBaseDir(desarrolloId);
+  if (!baseDir) {
+    throw new Error("Plantillas no configuradas para este desarrollo.");
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  let prospecto: ProspectoRecord | null = null;
+  if (detail.operacion.prospecto_id) {
+    const { data } = await supabase
+      .from("prospectos")
+      .select("*")
+      .eq("id", detail.operacion.prospecto_id)
+      .maybeSingle();
+    prospecto = (data as ProspectoRecord | null) ?? null;
+  }
+
+  let cotizacion: CotizacionRecord | null = null;
+  if (detail.operacion.cotizacion_id) {
+    const { data } = await supabase
+      .from("cotizaciones")
+      .select("*")
+      .eq("id", detail.operacion.cotizacion_id)
+      .maybeSingle();
+    cotizacion = (data as CotizacionRecord | null) ?? null;
+  }
+
+  const desarrolloNombre = desarrollos.find((d) => d.id === desarrolloId)?.nombre ?? desarrolloId;
+
+  const context = buildExpedienteDocContext({
+    operacion: detail.operacion,
+    unidadNumero: detail.unidadNumero,
+    desarrolloNombre,
+    prospecto,
+    cotizacion,
+  });
+
+  const generated: ExpedienteDocumentoRecord[] = [];
+  const skipped: { codigo: string; reason: string }[] = [];
+  const missingTemplates: string[] = [];
+
+  const safeCliente = detail.operacion.cliente_nombre.replace(/[^\w.\-() ]+/g, "_").slice(0, 40);
+
+  for (const tpl of getApartadoTemplateDefs(desarrolloId)) {
+    const templatePath = resolveExpedienteTemplatePath(baseDir, tpl.fileName);
+    if (!existsSync(templatePath)) {
+      missingTemplates.push(tpl.fileName);
+      continue;
+    }
+
+    try {
+      const buffer = renderExpedienteDocx(templatePath, context);
+      const fileName = `${tpl.codigo}-${safeCliente}.docx`;
+      const file = new File([new Uint8Array(buffer)], fileName, { type: expedienteDocxMime });
+
+      const documento = await uploadExpedienteDocumento({
+        operacionId,
+        file,
+        checklistCodigo: tpl.codigo,
+        etapaChecklist: "apartado",
+        nombre: tpl.titulo,
+        confirmReplace: options?.confirmReplace ?? false,
+        adminId,
+        profile,
+      });
+      generated.push(documento);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "EXPEDIENTE_ALREADY_EXISTS"
+      ) {
+        skipped.push({ codigo: tpl.codigo, reason: "ya_existe" });
+        continue;
+      }
+      skipped.push({
+        codigo: tpl.codigo,
+        reason: error instanceof Error ? error.message : "Error al generar",
+      });
+    }
+  }
+
+  return { generated, skipped, missingTemplates };
 };

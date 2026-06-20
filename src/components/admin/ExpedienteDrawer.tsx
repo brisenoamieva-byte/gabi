@@ -6,12 +6,17 @@ import {
   Circle,
   ExternalLink,
   FileCheck,
+  FileStack,
   Loader2,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import type { ExpedienteDetail, ExpedienteDocumentoRecord } from "@/lib/admin/expediente-service";
+import type {
+  ExpedienteDetail,
+  ExpedienteDocumentoRecord,
+  GenerateApartadoPackResult,
+} from "@/lib/admin/expediente-service";
 import type { SolicitudComisionRecord } from "@/lib/admin/comision-service";
 import type { ComisionElegibilidad, ComisionPagoTrigger } from "@/lib/comercial/comision-reglas";
 import { evaluarElegibilidadComision } from "@/lib/comercial/comision-reglas";
@@ -22,6 +27,7 @@ import {
   type ExpedienteChecklistItem,
 } from "@/lib/comercial/expediente-checklist";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
+import { canGenerateApartadoPack } from "@/lib/comercial/expediente-template-map";
 import { formatPrice } from "@/lib/data";
 
 type ExpedienteDrawerProps = {
@@ -59,6 +65,7 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
   const [pendingReplace, setPendingReplace] = useState<ExpedienteDocumentoRecord | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [generatingPack, setGeneratingPack] = useState(false);
   const [etapaAbierta, setEtapaAbierta] = useState<ExpedienteChecklistEtapa | null>("contrato");
 
   const loadDetail = useCallback(async () => {
@@ -338,6 +345,66 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
     }
   };
 
+  const generateApartadoPack = async (confirmReplace = false) => {
+    if (!detail) {
+      return;
+    }
+
+    setGeneratingPack(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/expedientes/${operacionId}/generate-apartado`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirmReplace }),
+        },
+      );
+      const data = (await response.json()) as {
+        result?: GenerateApartadoPackResult;
+        expediente?: ExpedienteDetail;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo generar el pack de apartado.");
+      }
+
+      const result = data.result;
+      if (result) {
+        const skippedExisting = result.skipped.filter((s) => s.reason === "ya_existe");
+        if (skippedExisting.length && !confirmReplace) {
+          const replace = window.confirm(
+            `${skippedExisting.length} documento(s) ya existen. ¿Reemplazarlos con la versión generada?`,
+          );
+          if (replace) {
+            await generateApartadoPack(true);
+            return;
+          }
+        }
+
+        if (result.generated.length === 0 && result.skipped.length > 0) {
+          setError(
+            `No se generaron documentos. Omitidos: ${result.skipped.map((s) => s.codigo).join(", ")}`,
+          );
+        }
+      }
+
+      if (data.expediente) {
+        setDetail(data.expediente);
+      } else {
+        void loadDetail();
+      }
+      onUpdated?.();
+    } catch (generateError) {
+      setError(generateError instanceof Error ? generateError.message : "Error al generar.");
+    } finally {
+      setGeneratingPack(false);
+    }
+  };
+
   const renderChecklistItem = (item: ExpedienteChecklistItem) => {
     const doc = documentoPorCodigo.get(item.codigo);
     const requerido = item.requeridoFormalizacion || item.requeridoApartado;
@@ -478,6 +545,21 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
                   <p className="text-xs text-slate-500">
                     {detail.progreso.apartado.completados}/{detail.progreso.apartado.requeridos} documentos
                   </p>
+                  {canGenerateApartadoPack(detail.operacion.desarrollo_id) ? (
+                    <button
+                      type="button"
+                      disabled={generatingPack}
+                      onClick={() => void generateApartadoPack()}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-gabi-forest/20 bg-white px-3 py-2 text-xs font-bold text-gabi-forest hover:bg-gabi-forest/5 disabled:opacity-50"
+                    >
+                      {generatingPack ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <FileStack className="h-3.5 w-3.5" />
+                      )}
+                      Generar pack apartado
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
