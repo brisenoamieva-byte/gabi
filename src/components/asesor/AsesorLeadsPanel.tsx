@@ -50,6 +50,7 @@ type AsesorLeadsPanelProps = {
   asesorId: string;
   desarrolloId: string;
   desarrolloNombre: string;
+  initialProspectoId?: string;
 };
 
 type ViewMode = "lista" | "tablero";
@@ -379,6 +380,7 @@ export function AsesorLeadsPanel({
   asesorId,
   desarrolloId,
   desarrolloNombre,
+  initialProspectoId,
 }: AsesorLeadsPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
   const [periodFilter, setPeriodFilter] = useState<LeadPeriodFilter>("");
@@ -481,6 +483,12 @@ export function AsesorLeadsPanel({
     void loadLeads();
     void loadPlaybookQueue();
   }, [loadLeads, loadPlaybookQueue]);
+
+  useEffect(() => {
+    if (initialProspectoId) {
+      setSelectedId(initialProspectoId);
+    }
+  }, [initialProspectoId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);

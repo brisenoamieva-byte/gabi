@@ -8,15 +8,15 @@ import {
   ChevronRight,
   LogOut,
   MapPinned,
-  Route,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
+import { AsesorDashboardCrmHero } from "@/components/asesor/AsesorDashboardCrmHero";
 import { AsesorGuardiaHoyCard } from "@/components/asesor/AsesorGuardiaHoyCard";
+import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
 import { PrepareOfflineVisitButton } from "@/components/PrepareOfflineVisitButton";
 import {
@@ -24,22 +24,23 @@ import {
   logoutAsesorSession,
 } from "@/lib/session/asesor-session-actions";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
-import { formatPrice, type Desarrollo } from "@/lib/data";
+import { formatPrice } from "@/lib/data";
 
-type QuickAction = {
+type ToolTile = {
   title: string;
   description: string;
   icon: LucideIcon;
-  href?: string;
-  renderExtra?: (desarrollo: Desarrollo) => React.ReactNode;
+  href: string;
+  accent?: boolean;
 };
 
-const quickActions: QuickAction[] = [
+const visitTools: ToolTile[] = [
   {
-    title: "Mis prospectos",
-    description: "Seguimiento de tus leads",
-    icon: UsersRound,
-    href: "/mis-leads",
+    title: "Nuevo recorrido",
+    description: "Guía con el cliente en showroom",
+    icon: MapPinned,
+    href: "/recorrido",
+    accent: true,
   },
   {
     title: "Cotizador",
@@ -49,7 +50,7 @@ const quickActions: QuickAction[] = [
   },
   {
     title: "Disponibilidad",
-    description: "Unidades y estatus del sembrado",
+    description: "Unidades y sembrado",
     icon: Building2,
     href: "/disponibilidad",
   },
@@ -74,7 +75,6 @@ export default function DashboardPage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-[#F2F0E9] text-[#1e293b]">
-      {/* Header compacto — contexto, no protagonista */}
       <header className="border-b border-[#201044]/8 bg-white/90 px-5 py-3 backdrop-blur md:px-10">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -89,9 +89,7 @@ export default function DashboardPage() {
               />
             ) : null}
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-[#201044]">
-                Hola, {firstName}
-              </p>
+              <p className="truncate text-sm font-bold text-[#201044]">Hola, {firstName}</p>
               <p className="truncate text-xs text-slate-500">{portal?.nombre ?? "Comercial"}</p>
             </div>
           </div>
@@ -115,26 +113,25 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-5 py-6 md:px-10 md:py-8">
-        {/* Contexto del desarrollo — una línea, no un billboard */}
+      <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-5 py-5 md:px-10 md:py-7">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl border border-[#201044]/8 bg-white px-4 py-3 shadow-sm"
+          className="flex items-center gap-3 rounded-2xl border border-[#201044]/8 bg-white px-4 py-2.5 shadow-sm"
         >
           {desarrollo.logo ? (
-            <div className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F2F0E9] p-1.5">
+            <div className="flex h-10 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F2F0E9] p-1">
               <Image
                 src={desarrollo.logo}
                 alt=""
                 width={120}
                 height={80}
-                className="h-auto max-h-8 w-full object-contain"
+                className="h-auto max-h-7 w-full object-contain"
               />
             </div>
           ) : (
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
-              <Building2 className="h-5 w-5" />
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#201044]/6 text-[#201044]">
+              <Building2 className="h-4 w-4" />
             </span>
           )}
           <div className="min-w-0 flex-1">
@@ -143,57 +140,18 @@ export default function DashboardPage() {
               Desde {formatPrice(desarrollo.precioDesde)} · {desarrollo.ubicacion}
             </p>
           </div>
-          {desarrollo.desarrolladorLogo ? (
-            <Image
-              src={desarrollo.desarrolladorLogo}
-              alt={desarrollo.desarrollador}
-              width={100}
-              height={40}
-              className="hidden h-6 w-auto shrink-0 object-contain opacity-80 sm:block"
-            />
-          ) : null}
-        </motion.div>
-
-        {/* CTA principal — lo primero que debe tocar el asesor */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-        >
-          <Link
-            href="/recorrido"
-            className="group relative flex min-h-[9.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] bg-[#6cc24a] p-6 text-[#201044] shadow-lg shadow-[#6cc24a]/25 transition active:scale-[0.99] md:min-h-[10.5rem] md:p-8"
-          >
-            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/15" />
-            <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-[#201044]/5" />
-            <div className="relative flex items-start justify-between gap-3">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#201044]/12">
-                <MapPinned className="h-7 w-7" strokeWidth={2.25} />
-              </span>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#201044] text-white transition group-hover:scale-105">
-                <ArrowRight className="h-5 w-5" />
-              </span>
-            </div>
-            <div className="relative mt-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#201044]/60">
-                Acción principal
-              </p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">
-                Nuevo recorrido
-              </h2>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#201044]/75 md:text-base">
-                Guía paso a paso con el cliente en showroom o campo.
-              </p>
-            </div>
-          </Link>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.055 }}
+          transition={{ delay: 0.04 }}
         >
-          <AsesorGuardiaHoyCard asesorId={user.id} desarrolloId={desarrollo.id} />
+          <AsesorDashboardCrmHero
+            asesorId={user.id}
+            desarrolloId={desarrollo.id}
+            desarrolloNombre={desarrollo.nombre}
+          />
         </motion.div>
 
         <motion.div
@@ -201,35 +159,94 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.06 }}
         >
-          <Link
-            href="/corredor"
-            className="group flex min-h-[7rem] flex-col justify-between rounded-2xl border border-[#201044]/10 bg-white p-5 shadow-sm transition hover:border-[#6cc24a]/40 hover:shadow-md active:scale-[0.99] md:p-6"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
-                <Route className="h-6 w-6" />
-              </span>
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition group-hover:border-[#201044]/20 group-hover:text-[#201044]">
-                <ArrowRight className="h-4 w-4" />
-              </span>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                Zona sur · Corregidora / Batán
-              </p>
-              <h2 className="mt-1 text-xl font-black text-[#201044]">Corredor Metropolitano</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Mapa, comparativo y filtros para vender terrenos en el corredor 411 / 413.
-              </p>
-            </div>
-          </Link>
+          <AsesorGuardiaHoyCard asesorId={user.id} desarrolloId={desarrollo.id} />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="grid gap-3"
+        >
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            Herramientas de visita
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {visitTools.map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <Link
+                  key={tool.href}
+                  href={tool.href}
+                  className={`group flex min-h-[5.5rem] flex-col justify-between rounded-2xl border p-4 shadow-sm transition active:scale-[0.99] ${
+                    tool.accent
+                      ? "border-[#6cc24a]/35 bg-[#6cc24a]/8 hover:border-[#6cc24a]/50 hover:bg-[#6cc24a]/12"
+                      : "border-slate-200/90 bg-white hover:border-[#201044]/12 hover:shadow-md"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span
+                      className={`grid h-9 w-9 place-items-center rounded-xl ${
+                        tool.accent
+                          ? "bg-[#201044]/10 text-[#201044]"
+                          : "bg-[#201044]/6 text-[#201044]"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={2.25} />
+                    </span>
+                    <ChevronRight
+                      className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#201044]"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#201044]">{tool.title}</h3>
+                    <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                      {tool.description}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid gap-2 sm:grid-cols-2"
+        >
+          <Link
+            href="/mis-leads"
+            className="group flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-[#201044]/12 hover:shadow-md active:scale-[0.99]"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
+              <UsersRound className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-black text-[#201044]">Lista y tablero</h3>
+              <p className="text-xs text-slate-500">Vista completa de prospectos</p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-[#201044]" />
+          </Link>
+
+          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Material</p>
+            <div>
+              <h3 className="text-sm font-black text-[#201044]">Brochure PDF</h3>
+              <DocumentDownloadButton
+                variant="desarrollo"
+                desarrolloId={desarrollo.id}
+                className="mt-2"
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="grid gap-2"
         >
           <PrepareOfflineVisitButton
             desarrolloId={desarrollo.id}
@@ -238,53 +255,8 @@ export default function DashboardPage() {
           <InstallGabiApp variant="dashboard" />
         </motion.div>
 
-        {/* Herramientas secundarias — grid equilibrado */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.title}
-                href={action.href!}
-                className="group flex min-h-[6.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-[#201044]/12 hover:shadow-md active:scale-[0.99]"
-              >
-                <div className="flex items-start justify-between">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#201044]/6 text-[#201044]">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <ChevronRight className="h-5 w-5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#201044]" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-[#201044]">{action.title}</h3>
-                  <p className="mt-0.5 text-xs text-slate-500">{action.description}</p>
-                </div>
-              </Link>
-            );
-          })}
-
-          <div className="flex min-h-[6.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-              Material
-            </p>
-            <div>
-              <h3 className="text-lg font-black text-[#201044]">Brochure</h3>
-              <p className="mt-0.5 text-xs text-slate-500">PDF oficial del desarrollo</p>
-              <DocumentDownloadButton
-                variant="desarrollo"
-                desarrolloId={desarrollo.id}
-                className="mt-3"
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        <p className="mt-auto pt-4 text-center text-xs text-slate-400">
-          gabi · Guía comercial en visita
+        <p className="mt-auto pt-2 text-center text-xs text-slate-400">
+          gabi · CRM y herramientas de venta en campo
         </p>
       </section>
     </main>

@@ -3,14 +3,17 @@
 import { ArrowLeft, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { AsesorLeadsPanel } from "@/components/asesor/AsesorLeadsPanel";
 import { formatPrice } from "@/lib/data";
 import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
 
-export default function MisLeadsPage() {
+function MisLeadsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialProspectoId = searchParams.get("prospecto") ?? undefined;
   const { authReady, user, desarrollo } = useRequireAsesorSession();
 
   if (!authReady || !user || !desarrollo) {
@@ -64,8 +67,23 @@ export default function MisLeadsPage() {
           asesorId={user.id}
           desarrolloId={desarrollo.id}
           desarrolloNombre={desarrollo.nombre}
+          initialProspectoId={initialProspectoId}
         />
       </section>
     </main>
+  );
+}
+
+export default function MisLeadsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-slate-500">
+          Cargando…
+        </main>
+      }
+    >
+      <MisLeadsContent />
+    </Suspense>
   );
 }
