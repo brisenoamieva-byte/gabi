@@ -84,6 +84,28 @@ Por favor contacta en menos de 5 minutos.
 
 Variables: desarrollo, nombre prospecto, teléfono, campaña.
 
+### Plantilla 3 — Nudge cumplimiento CRM (asesor)
+
+| Campo | Valor |
+|--------|--------|
+| Nombre | `gabi_crm_pendiente_asesor` |
+| Categoría | **Utility** |
+| Idioma | Spanish (MEX) |
+
+**Body:**
+
+```
+Hola {{1}}, tienes {{2}} paso(s) vencido(s) en {{3}}.
+
+Prioridad: {{4}}.
+
+Actualiza tu CRM en GABI hoy.
+```
+
+Variables: nombre asesor, cantidad vencidos, desarrollo, prioridad (prospecto + paso).
+
+> Se envía solo si hay pasos **vencidos** (no solo pendientes), vía cron de cumplimiento CRM.
+
 > Los nombres deben coincidir exactamente con los del código. La revisión de Meta puede tardar 24–48 h.
 
 ---

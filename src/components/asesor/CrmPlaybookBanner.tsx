@@ -1,15 +1,16 @@
 "use client";
 
-import { ArrowRight, ListOrdered, Sparkles } from "lucide-react";
+import { ArrowRight, AlertTriangle, ListOrdered, Sparkles } from "lucide-react";
 import type { PlaybookQueueItem } from "@/lib/comercial/crm-playbook";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 
 type CrmPlaybookBannerProps = {
   queue: PlaybookQueueItem[];
+  overdueCount?: number;
   onSelectLead: (prospectoId: string) => void;
 };
 
-export function CrmPlaybookBanner({ queue, onSelectLead }: CrmPlaybookBannerProps) {
+export function CrmPlaybookBanner({ queue, overdueCount = 0, onSelectLead }: CrmPlaybookBannerProps) {
   if (!queue.length) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5">
@@ -30,6 +31,13 @@ export function CrmPlaybookBanner({ queue, onSelectLead }: CrmPlaybookBannerProp
 
   return (
     <div className="space-y-3">
+      {overdueCount > 0 ? (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+          {overdueCount} paso(s) vencido(s) en tu CRM — prioriza antes del reporte comercial.
+        </div>
+      ) : null}
+
       <div className="rounded-2xl border border-[#201044]/10 bg-gradient-to-br from-[#201044] to-[#2d1a5c] p-5 text-white shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

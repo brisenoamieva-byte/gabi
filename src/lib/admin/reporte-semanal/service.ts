@@ -42,6 +42,7 @@ import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { getDesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
 
 const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
 const APARTADO_ESTATUS = new Set([
@@ -603,6 +604,36 @@ export async function getReporteComercialSemanal(
     filters.desarrolloId,
   );
 
+  const complianceReport = await getDesarrolloComplianceReport(filters.desarrolloId, profile);
+  const saludCrm = complianceReport.playbookEnabled
+    ? {
+        enabled: true,
+        compliancePct: complianceReport.compliancePct,
+        confidencePct: complianceReport.confidencePct,
+        pipelineReliableCount: complianceReport.pipelineReliableCount,
+        pipelineExcludedCount: complianceReport.pipelineExcludedCount,
+        overdueCount: complianceReport.overdueCount,
+        exceptionCount: complianceReport.exceptionCount,
+        asesoresEnRiesgo: complianceReport.asesores
+          .filter((item) => item.overdueIssues > 0 || item.compliancePct < 85)
+          .slice(0, 6)
+          .map((item) => ({
+            asesorNombre: item.asesorNombre,
+            compliancePct: item.compliancePct,
+            overdueIssues: item.overdueIssues,
+          })),
+      }
+    : {
+        enabled: false,
+        compliancePct: 100,
+        confidencePct: 100,
+        pipelineReliableCount: 0,
+        pipelineExcludedCount: 0,
+        overdueCount: 0,
+        exceptionCount: 0,
+        asesoresEnRiesgo: [],
+      };
+
   return {
     desarrolloId: filters.desarrolloId,
     periodo,
@@ -622,6 +653,7 @@ export async function getReporteComercialSemanal(
     visitasInmobiliarias: buildVisitasInmobiliarias(prospectosSemana, periodo),
     prospectosInteresados: buildProspectosInteresados(prospectosSemana),
     segmentos,
+    saludCrm,
     meta: {
       generadoAt: new Date().toISOString(),
       fuentes: [

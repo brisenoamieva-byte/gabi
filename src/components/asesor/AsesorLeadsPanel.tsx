@@ -33,10 +33,10 @@ import {
 } from "@/lib/comercial/format-lead-date";
 import {
   canAdvancePlaybookEtapa,
-  isCrmPlaybookPilotDesarrollo,
   type CrmPlaybookConfig,
   type PlaybookQueueItem,
 } from "@/lib/comercial/crm-playbook";
+import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import {
   isProspectoEtapa,
@@ -401,38 +401,56 @@ export function AsesorLeadsPanel({
   const [newNotas, setNewNotas] = useState("");
   const [playbookQueue, setPlaybookQueue] = useState<PlaybookQueueItem[]>([]);
   const [playbookConfig, setPlaybookConfig] = useState<CrmPlaybookConfig | null>(null);
-  const playbookEnabled = isCrmPlaybookPilotDesarrollo(desarrolloId) && playbookConfig?.enabled;
+  const [complianceOverdue, setComplianceOverdue] = useState(0);
+  const playbookEnabledApi = useCrmPlaybookEnabled(asesorId, desarrolloId);
+  const playbookEnabled = playbookEnabledApi && playbookConfig?.enabled;
 
   const periodRange = useMemo(() => leadPeriodToRange(periodFilter), [periodFilter]);
 
   const loadPlaybookQueue = useCallback(async () => {
-    if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+    if (!playbookEnabledApi) {
       setPlaybookQueue([]);
       setPlaybookConfig(null);
       return;
     }
 
     try {
-      const response = await fetch(
-        `/api/asesores/crm-playbook/queue?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
-      );
-      const data = (await response.json()) as {
+      const [playbookRes, complianceRes] = await Promise.all([
+        fetch(
+          `/api/asesores/crm-playbook/queue?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+        ),
+        fetch(
+          `/api/asesores/crm-compliance/summary?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+        ),
+      ]);
+
+      const data = (await playbookRes.json()) as {
         queue?: PlaybookQueueItem[];
         config?: CrmPlaybookConfig | null;
         error?: string;
       };
 
-      if (!response.ok) {
+      if (!playbookRes.ok) {
         throw new Error(data.error ?? "No se pudo cargar la cola de playbook.");
       }
 
       setPlaybookQueue(data.queue ?? []);
       setPlaybookConfig(data.config ?? null);
+
+      if (complianceRes.ok) {
+        const complianceData = (await complianceRes.json()) as {
+          summary?: { overdueCount?: number };
+        };
+        setComplianceOverdue(complianceData.summary?.overdueCount ?? 0);
+      } else {
+        setComplianceOverdue(0);
+      }
     } catch {
       setPlaybookQueue([]);
       setPlaybookConfig(null);
+      setComplianceOverdue(0);
     }
-  }, [asesorId, desarrolloId]);
+  }, [asesorId, desarrolloId, playbookEnabledApi]);
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -579,6 +597,7 @@ export function AsesorLeadsPanel({
       {playbookEnabled ? (
         <CrmPlaybookBanner
           queue={playbookQueue}
+          overdueCount={complianceOverdue}
           onSelectLead={(prospectoId) => setSelectedId(prospectoId)}
         />
       ) : null}

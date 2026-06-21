@@ -18,6 +18,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { PostVisitaModal } from "@/components/recorrido/PostVisitaModal";
+import {
+  RecorridoComplianceGate,
+  readRecorridoComplianceOverride,
+  writeRecorridoComplianceOverride,
+} from "@/components/recorrido/RecorridoComplianceGate";
+import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import { trackVisita } from "@/lib/visitas/client";
 import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
@@ -189,6 +195,16 @@ export default function RecorridoPage() {
   ]);
   const [activeClusters, setActiveClusters] = useState<Cluster[]>(clusters);
   const [activePrototipos, setActivePrototipos] = useState<Prototipo[]>(catalogPrototipos);
+  const [complianceGate, setComplianceGate] = useState<{
+    playbookEnabled: boolean;
+    overdueCount: number;
+    pendingCount: number;
+    threshold: number;
+    shouldBlock: boolean;
+    message: string;
+    topExceptions: ProspectoComplianceRow[];
+  } | null>(null);
+  const [complianceAcknowledged, setComplianceAcknowledged] = useState(false);
   const selectedProductTypes = useMemo(
     () => normalizeProductoTipo(state.productoTipo),
     [state.productoTipo],
@@ -679,7 +695,27 @@ export default function RecorridoPage() {
       }
     };
 
+    if (!user?.id) {
+      setLoaded(true);
+      return;
+    }
+
     void loadCatalog();
+
+    if (readRecorridoComplianceOverride(user.id)) {
+      setComplianceAcknowledged(true);
+    }
+
+    void fetch(
+      `/api/asesores/crm-compliance/gate?asesorId=${encodeURIComponent(user.id)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+    )
+      .then((res) => res.json())
+      .then((data: { gate?: typeof complianceGate }) => {
+        if (data.gate) {
+          setComplianceGate(data.gate);
+        }
+      })
+      .catch(() => setComplianceGate(null));
 
     const saved = localStorage.getItem(RECORRIDO_STORAGE_KEY);
 
@@ -700,7 +736,7 @@ export default function RecorridoPage() {
     }
 
     setLoaded(true);
-  }, [authReady, sessionDesarrollo]);
+  }, [authReady, sessionDesarrollo, user?.id]);
 
   useEffect(() => {
     if (loaded) {
@@ -1106,6 +1142,32 @@ export default function RecorridoPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-[#1e293b]">
         <p className="text-xl font-bold">Cargando recorrido...</p>
       </main>
+    );
+  }
+
+  const showComplianceGate =
+    complianceGate?.playbookEnabled &&
+    complianceGate.overdueCount > 0 &&
+    !complianceAcknowledged;
+
+  if (showComplianceGate && complianceGate) {
+    return (
+      <RecorridoComplianceGate
+        desarrolloNombre={activeDesarrollo?.nombre ?? sessionDesarrollo?.nombre ?? "Desarrollo"}
+        overdueCount={complianceGate.overdueCount}
+        pendingCount={complianceGate.pendingCount}
+        threshold={complianceGate.threshold}
+        shouldBlock={complianceGate.shouldBlock}
+        message={complianceGate.message}
+        topExceptions={complianceGate.topExceptions}
+        onContinue={() => {
+          if (user?.id && complianceGate.shouldBlock) {
+            writeRecorridoComplianceOverride(user.id);
+          }
+          setComplianceAcknowledged(true);
+        }}
+        onBack={() => router.replace("/dashboard")}
+      />
     );
   }
 

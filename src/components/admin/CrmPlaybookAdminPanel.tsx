@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import {
-  CRM_PLAYBOOK_PILOT_DESARROLLO_IDS,
   type CrmPlaybookConfig,
   type PlaybookActionKind,
   type PlaybookStep,
@@ -31,10 +30,7 @@ const ACTION_KINDS: Array<{ value: PlaybookActionKind; label: string }> = [
 const inputClass =
   "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#201044] focus:outline-none focus:ring-2 focus:ring-[#201044]/15";
 
-const pilotDesarrollos = (desarrollos: Desarrollo[]) =>
-  desarrollos.filter((item) =>
-    (CRM_PLAYBOOK_PILOT_DESARROLLO_IDS as readonly string[]).includes(item.id),
-  );
+const pilotDesarrollos = (desarrollos: Desarrollo[]) => desarrollos;
 
 export function CrmPlaybookAdminPanel({ desarrollos, scopeLabel }: CrmPlaybookAdminPanelProps) {
   const options = pilotDesarrollos(desarrollos);

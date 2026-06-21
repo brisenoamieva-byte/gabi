@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarRange, Loader2, Printer, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { CalendarRange, Loader2, Printer, RefreshCw, ShieldCheck } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ReporteComercialSemanal, ReporteSemanalSegmento } from "@/lib/admin/reporte-semanal/types";
 import { defaultWeekContaining } from "@/lib/admin/reporte-semanal/week-utils";
@@ -369,6 +370,53 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
 
       {reporte ? (
         <>
+          {reporte.saludCrm.enabled ? (
+            <section className="no-print rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gabi-sand">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Confianza del CRM
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Los embudos de este reporte reflejan actividad comercial; la confianza indica qué
+                    porcentaje del pipeline activo está documentado al día.
+                  </p>
+                </div>
+                <Link
+                  href={`/admin/crm-compliance?desarrolloId=${encodeURIComponent(desarrolloId)}`}
+                  className="text-sm font-semibold text-gabi-forest hover:underline"
+                >
+                  Abrir Salud CRM
+                </Link>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiTile label="Cumplimiento playbook" value={`${reporte.saludCrm.compliancePct}%`} />
+                <KpiTile label="Confianza de datos" value={`${reporte.saludCrm.confidencePct}%`} />
+                <KpiTile label="Pipeline confiable" value={reporte.saludCrm.pipelineReliableCount} />
+                <KpiTile
+                  label="Excluidos del embudo"
+                  value={reporte.saludCrm.pipelineExcludedCount}
+                />
+              </div>
+              {reporte.saludCrm.asesoresEnRiesgo.length > 0 ? (
+                <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 text-sm">
+                  {reporte.saludCrm.asesoresEnRiesgo.map((item) => (
+                    <li
+                      key={item.asesorNombre}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5"
+                    >
+                      <span className="font-medium text-gabi-forest">{item.asesorNombre}</span>
+                      <span className="text-slate-500">
+                        {item.compliancePct}% · {item.overdueIssues} vencido(s)
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
+
           <header className="rounded-2xl border border-gabi-forest/10 bg-gradient-to-br from-gabi-forest to-[#1a3a32] p-6 text-white shadow-lg print:shadow-none">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>

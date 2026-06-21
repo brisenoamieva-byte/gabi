@@ -2,6 +2,7 @@ import {
   LA_VISTA_RESIDENCIAL_ID,
   PASAJE_ALAMOS_ID,
 } from "@/lib/catalog/desarrollos-registry";
+import { MISION_LA_GAVIA_DESARROLLO_ID } from "@/lib/catalog/mision-la-gavia";
 import type { ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { PROSPECTO_ETAPAS } from "@/lib/comercial/prospecto-etapas";
 
@@ -28,6 +29,7 @@ export type CrmPlaybookConfig = {
 export const CRM_PLAYBOOK_PILOT_DESARROLLO_IDS = [
   PASAJE_ALAMOS_ID,
   LA_VISTA_RESIDENCIAL_ID,
+  MISION_LA_GAVIA_DESARROLLO_ID,
 ] as const;
 
 export type CrmPlaybookPilotDesarrolloId = (typeof CRM_PLAYBOOK_PILOT_DESARROLLO_IDS)[number];
@@ -116,6 +118,19 @@ export const DEFAULT_CRM_PLAYBOOKS: Record<CrmPlaybookPilotDesarrolloId, CrmPlay
         : step,
     ),
   },
+  [MISION_LA_GAVIA_DESARROLLO_ID]: {
+    desarrolloId: MISION_LA_GAVIA_DESARROLLO_ID,
+    enabled: true,
+    blockEtapa: true,
+    steps: basePasos().map((step) =>
+      step.id === "necesidades"
+        ? {
+            ...step,
+            hint: "Torre, modelo (2R/3R) y nivel según perfil del cliente.",
+          }
+        : step,
+    ),
+  },
 };
 
 export const getDefaultCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig | null => {
@@ -124,6 +139,13 @@ export const getDefaultCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig |
   }
   return DEFAULT_CRM_PLAYBOOKS[desarrolloId as CrmPlaybookPilotDesarrolloId];
 };
+
+export const buildGenericCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig => ({
+  desarrolloId,
+  enabled: true,
+  blockEtapa: true,
+  steps: basePasos(),
+});
 
 export const sortPlaybookSteps = (steps: PlaybookStep[]) =>
   [...steps].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
@@ -234,3 +256,84 @@ export const scorePlaybookQueueItem = (
   const urgency = Math.min(ageHours / 24, 14) * 5;
   return pendingRequired * 100 + etapaWeight + urgency;
 };
+
+/** Plazos SLA por paso (horas desde la fecha base del prospecto). */
+export const PLAYBOOK_STEP_SLA_HOURS: Record<string, number> = {
+  "contacto-24h": 24,
+  "datos-completos": 48,
+  recorrido: 72,
+  necesidades: 72,
+  cotizacion: 96,
+  seguimiento: 168,
+};
+
+export const DEFAULT_PLAYBOOK_SLA_HOURS = 72;
+
+export type ComplianceIssueStatus = "pending" | "overdue";
+
+export type PlaybookComplianceIssue = {
+  stepId: string;
+  stepLabel: string;
+  stepEtapa: ProspectoEtapa;
+  status: ComplianceIssueStatus;
+  dueAt: string;
+  hoursOverdue: number;
+};
+
+export const getPlaybookStepSlaHours = (stepId: string): number =>
+  PLAYBOOK_STEP_SLA_HOURS[stepId] ?? DEFAULT_PLAYBOOK_SLA_HOURS;
+
+export const getPlaybookStepBaseTimestamp = (
+  step: PlaybookStep,
+  prospecto: { created_at: string; updated_at: string },
+): string =>
+  step.id === "contacto-24h" || step.etapa === "nuevo"
+    ? prospecto.created_at
+    : prospecto.updated_at;
+
+export const getPlaybookStepDueAt = (
+  step: PlaybookStep,
+  prospecto: { created_at: string; updated_at: string },
+): Date => {
+  const baseMs = new Date(getPlaybookStepBaseTimestamp(step, prospecto)).getTime();
+  const slaHours = getPlaybookStepSlaHours(step.id);
+  return new Date(baseMs + slaHours * 60 * 60 * 1000);
+};
+
+export const classifyPlaybookComplianceIssue = (
+  step: PlaybookStep,
+  prospecto: { created_at: string; updated_at: string },
+  now = Date.now(),
+): PlaybookComplianceIssue => {
+  const dueAt = getPlaybookStepDueAt(step, prospecto);
+  const overdueMs = now - dueAt.getTime();
+  const hoursOverdue = overdueMs > 0 ? overdueMs / (1000 * 60 * 60) : 0;
+
+  return {
+    stepId: step.id,
+    stepLabel: step.label,
+    stepEtapa: step.etapa,
+    status: overdueMs > 0 ? "overdue" : "pending",
+    dueAt: dueAt.toISOString(),
+    hoursOverdue: Math.round(hoursOverdue * 10) / 10,
+  };
+};
+
+export const getAllPendingRequiredUpToEtapa = (
+  config: CrmPlaybookConfig,
+  etapa: ProspectoEtapa,
+  completedIds: Set<string>,
+): PlaybookStep[] => {
+  const currentIdx = etapaIndex(etapa);
+  const pending: PlaybookStep[] = [];
+
+  for (let idx = 0; idx <= currentIdx; idx += 1) {
+    const stepEtapa = PROSPECTO_ETAPAS[idx];
+    pending.push(...getPendingRequiredForEtapa(config, stepEtapa, completedIds));
+  }
+
+  return pending;
+};
+
+export const hasCompleteContactData = (email: string | null, telefono: string | null): boolean =>
+  Boolean(email?.trim() && telefono?.trim());

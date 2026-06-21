@@ -6,6 +6,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
+import {
+  RecorridoComplianceGate,
+  readRecorridoComplianceOverride,
+  writeRecorridoComplianceOverride,
+} from "@/components/recorrido/RecorridoComplianceGate";
+import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import { InvesttiDesarrolloLogo } from "@/components/corredor/investti/InvesttiDesarrolloLogo";
 import {
   getPrototiposCotizables,
@@ -106,6 +112,16 @@ export default function CotizadorPage() {
   const [prospectoRegistrado, setProspectoRegistrado] = useState<string | undefined>();
   const [prospectoId, setProspectoId] = useState<string | undefined>();
   const [copiedBank, setCopiedBank] = useState(false);
+  const [complianceGate, setComplianceGate] = useState<{
+    playbookEnabled: boolean;
+    overdueCount: number;
+    pendingCount: number;
+    threshold: number;
+    shouldBlock: boolean;
+    message: string;
+    topExceptions: ProspectoComplianceRow[];
+  } | null>(null);
+  const [complianceAcknowledged, setComplianceAcknowledged] = useState(false);
 
   useEffect(() => {
     if (!authReady || !desarrollo) {
@@ -156,6 +172,23 @@ export default function CotizadorPage() {
         setProspectoRegistrado(nombreRecorrido);
         setProspectoId(readCotizadorProspectoId() ?? undefined);
         setCatalogStatus("ready");
+
+        if (user?.id) {
+          if (readRecorridoComplianceOverride(user.id)) {
+            setComplianceAcknowledged(true);
+          }
+
+          void fetch(
+            `/api/asesores/crm-compliance/gate?asesorId=${encodeURIComponent(user.id)}&desarrolloId=${encodeURIComponent(selectedDevelopment.id)}`,
+          )
+            .then((res) => res.json())
+            .then((data: { gate?: typeof complianceGate }) => {
+              if (data.gate) {
+                setComplianceGate(data.gate);
+              }
+            })
+            .catch(() => setComplianceGate(null));
+        }
       } catch {
         setCatalogStatus("redirecting");
         logoutAsesorSession(router);
@@ -163,7 +196,7 @@ export default function CotizadorPage() {
     };
 
     void loadCatalog();
-  }, [authReady, desarrollo, router]);
+  }, [authReady, desarrollo, router, user?.id]);
 
   useEffect(() => {
     if (catalogStatus !== "ready") {
@@ -231,6 +264,33 @@ export default function CotizadorPage() {
   const handleLogout = () => logoutAsesorSession(router);
 
   const isReady = authReady && catalogStatus === "ready" && user && desarrollo;
+
+  const showComplianceGate =
+    isReady &&
+    complianceGate?.playbookEnabled &&
+    complianceGate.overdueCount > 0 &&
+    !complianceAcknowledged;
+
+  if (showComplianceGate && complianceGate) {
+    return (
+      <RecorridoComplianceGate
+        desarrolloNombre={desarrollo.nombre}
+        overdueCount={complianceGate.overdueCount}
+        pendingCount={complianceGate.pendingCount}
+        threshold={complianceGate.threshold}
+        shouldBlock={complianceGate.shouldBlock}
+        message={complianceGate.message}
+        topExceptions={complianceGate.topExceptions}
+        onContinue={() => {
+          if (complianceGate.shouldBlock) {
+            writeRecorridoComplianceOverride(user.id);
+          }
+          setComplianceAcknowledged(true);
+        }}
+        onBack={() => router.replace("/dashboard")}
+      />
+    );
+  }
 
   if (!isReady) {
     return (

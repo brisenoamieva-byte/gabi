@@ -6,6 +6,7 @@ import {
 import { normalizePhoneForMetaWhatsApp } from "@/lib/whatsapp/phone";
 import {
   WHATSAPP_TEMPLATE_ASESOR,
+  WHATSAPP_TEMPLATE_COMPLIANCE,
   WHATSAPP_TEMPLATE_LANGUAGE,
   WHATSAPP_TEMPLATE_PROSPECT,
 } from "@/lib/whatsapp/templates";
@@ -113,5 +114,24 @@ export const sendAsesorLeadAlert = async (
     prospectNombre,
     prospectTelefono || "Sin teléfono",
     campanaNombre || "Directo",
+  ]);
+};
+
+export const sendAsesorComplianceNudge = async (
+  desarrolloId: string,
+  toPhone: string,
+  asesorNombre: string,
+  overdueCount: number,
+  desarrolloNombre: string,
+  priorityLabel: string,
+): Promise<SendWhatsAppTemplateResult> => {
+  const config = getWhatsAppCloudConfig(desarrolloId);
+  const firstName = asesorNombre.split(/\s+/)[0] || asesorNombre;
+
+  return sendTemplateMessage(config, toPhone, WHATSAPP_TEMPLATE_COMPLIANCE, [
+    firstName,
+    String(overdueCount),
+    desarrolloNombre,
+    priorityLabel.slice(0, 200),
   ]);
 };

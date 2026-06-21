@@ -232,6 +232,42 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta prospecto_encuestas — aplica 037.",
   });
 
+  const leadCarouselOk = await probeTable("lead_carousel_state", "desarrollo_id");
+  checks.push({
+    id: "041",
+    label: "WhatsApp leads y carrusel guardia",
+    migrationFile: "041_whatsapp_lead_notifications.sql",
+    ok: leadCarouselOk,
+    detail: leadCarouselOk
+      ? "Notificaciones WhatsApp y carrusel de guardia disponibles."
+      : "Falta lead_carousel_state — aplica 041.",
+  });
+
+  const complianceDigestOk = await probeTable("compliance_digest_log", "desarrollo_id");
+  checks.push({
+    id: "042",
+    label: "Digest cumplimiento CRM",
+    migrationFile: "042_crm_compliance_digest.sql",
+    ok: complianceDigestOk,
+    detail: complianceDigestOk
+      ? "Log de digest de cumplimiento CRM activo."
+      : "Falta compliance_digest_log — aplica 042.",
+  });
+
+  const complianceChannelOk = complianceDigestOk
+    ? await probeTable("compliance_digest_log", "channel")
+    : false;
+  checks.push({
+    id: "043",
+    label: "Playbook Gavia + WhatsApp digest",
+    migrationFile: "043_crm_compliance_gavia.sql",
+    ok: complianceChannelOk && playbookOk,
+    detail:
+      complianceChannelOk && playbookOk
+        ? "Canal whatsapp en digest y playbook Misión La Gavia."
+        : "Aplica 043 para canal WhatsApp en digest y playbook Gavia.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()

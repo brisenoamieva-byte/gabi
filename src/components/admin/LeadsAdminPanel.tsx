@@ -15,6 +15,7 @@ import {
 import type { Desarrollo } from "@/lib/data";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { CapturaLogsPanel } from "@/components/admin/CapturaLogsPanel";
+import { LeadsComplianceBanner } from "@/components/admin/LeadsComplianceBanner";
 import { LeadDetailDrawer } from "@/components/admin/LeadDetailDrawer";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { exportLeadsCsv, LeadsXperienceTable } from "@/components/admin/LeadsXperienceTable";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/comercial/prospecto-etapas";
 import { NIVELES_INTERES, nivelInteresLabel } from "@/lib/comercial/prospecto-interes";
 import { formatLeadsDateRangeLabel } from "@/lib/comercial/xperience-leads";
+import type { DesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
 import { resolveAdminDesarrolloId } from "@/lib/admin/admin-desarrollo-session";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
@@ -112,6 +114,8 @@ export function LeadsAdminPanel({
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [complianceReport, setComplianceReport] = useState<DesarrolloComplianceReport | null>(null);
+  const [complianceLoading, setComplianceLoading] = useState(false);
   const prevDesarrolloId = useRef<string | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
@@ -144,6 +148,30 @@ export function LeadsAdminPanel({
       setCampanas(data.campanas ?? []);
     } catch {
       setCampanas([]);
+    }
+  }, [desarrolloId]);
+
+  const loadCompliance = useCallback(async () => {
+    if (!desarrolloId) {
+      setComplianceReport(null);
+      return;
+    }
+
+    setComplianceLoading(true);
+    try {
+      const response = await fetch(
+        `/api/admin/crm-compliance?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+      );
+      const data = (await response.json()) as { report?: DesarrolloComplianceReport };
+      if (response.ok) {
+        setComplianceReport(data.report ?? null);
+      } else {
+        setComplianceReport(null);
+      }
+    } catch {
+      setComplianceReport(null);
+    } finally {
+      setComplianceLoading(false);
     }
   }, [desarrolloId]);
 
@@ -215,13 +243,14 @@ export function LeadsAdminPanel({
   useEffect(() => {
     void loadAsesores();
     void loadCampanas();
+    void loadCompliance();
 
     if (prevDesarrolloId.current !== null && prevDesarrolloId.current !== desarrolloId) {
       setAsesorFilter("");
       setCampanaFilter("");
     }
     prevDesarrolloId.current = desarrolloId;
-  }, [loadAsesores, loadCampanas, desarrolloId]);
+  }, [loadAsesores, loadCampanas, loadCompliance, desarrolloId]);
 
   useEffect(() => {
     if (leadTab === "captura") {
@@ -439,6 +468,12 @@ export function LeadsAdminPanel({
 
   return (
     <div className="space-y-4">
+      <LeadsComplianceBanner
+        report={complianceReport}
+        loading={complianceLoading}
+        desarrolloId={desarrolloId}
+      />
+
       <div className="rounded-2xl border border-gabi-forest/10 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 md:px-5">
           <div className="flex items-center gap-1">

@@ -160,6 +160,21 @@ export type ReporteSemanalProspectoInteresado = {
   observaciones: string | null;
 };
 
+export type ReporteSemanalSaludCrm = {
+  enabled: boolean;
+  compliancePct: number;
+  confidencePct: number;
+  pipelineReliableCount: number;
+  pipelineExcludedCount: number;
+  overdueCount: number;
+  exceptionCount: number;
+  asesoresEnRiesgo: Array<{
+    asesorNombre: string;
+    compliancePct: number;
+    overdueIssues: number;
+  }>;
+};
+
 export type ReporteComercialSemanal = {
   desarrolloId: string;
   desarrolloNombre?: string;
@@ -180,6 +195,7 @@ export type ReporteComercialSemanal = {
   visitasInmobiliarias: ReporteSemanalVisitaInmobiliaria[];
   prospectosInteresados: ReporteSemanalProspectoInteresado[];
   segmentos: ReporteSemanalSegmento[];
+  saludCrm: ReporteSemanalSaludCrm;
   meta: {
     generadoAt: string;
     fuentes: string[];

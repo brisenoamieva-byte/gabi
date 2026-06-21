@@ -1,12 +1,12 @@
 import type { ProspectoDetail, ProspectoListRow } from "@/lib/admin/prospectos-service";
 import { listProspectos } from "@/lib/admin/prospectos-service";
 import {
+  buildGenericCrmPlaybook,
   canAdvancePlaybookEtapa,
   getAutoCompletedPlaybookStepIds,
   getDefaultCrmPlaybook,
   getNextPlaybookStep,
   getPendingRequiredForEtapa,
-  isCrmPlaybookPilotDesarrollo,
   mergePlaybookProgress,
   scorePlaybookQueueItem,
   sortPlaybookSteps,
@@ -69,14 +69,12 @@ const mapDbConfig = (row: DbPlaybookConfigRow, defaultConfig: CrmPlaybookConfig)
 });
 
 export const getCrmPlaybookConfig = async (desarrolloId: string): Promise<CrmPlaybookConfig | null> => {
-  const defaultConfig = getDefaultCrmPlaybook(desarrolloId);
-  if (!defaultConfig) {
-    return null;
-  }
+  const pilotDefault = getDefaultCrmPlaybook(desarrolloId);
+  const parseFallback = pilotDefault ?? buildGenericCrmPlaybook(desarrolloId);
 
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
-    return defaultConfig;
+    return pilotDefault;
   }
 
   const { data, error } = await supabase
@@ -86,10 +84,10 @@ export const getCrmPlaybookConfig = async (desarrolloId: string): Promise<CrmPla
     .maybeSingle();
 
   if (error || !data) {
-    return defaultConfig;
+    return pilotDefault;
   }
 
-  return mapDbConfig(data as DbPlaybookConfigRow, defaultConfig);
+  return mapDbConfig(data as DbPlaybookConfigRow, parseFallback);
 };
 
 export const upsertCrmPlaybookConfig = async (
@@ -101,16 +99,13 @@ export const upsertCrmPlaybookConfig = async (
   },
   updatedBy?: string | null,
 ): Promise<CrmPlaybookConfig> => {
-  if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
-    throw new Error("Playbook CRM solo disponible para desarrollos piloto.");
-  }
-
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     throw new Error("Supabase no configurado.");
   }
 
-  const defaultConfig = getDefaultCrmPlaybook(desarrolloId)!;
+  const pilotDefault = getDefaultCrmPlaybook(desarrolloId);
+  const defaultConfig = pilotDefault ?? buildGenericCrmPlaybook(desarrolloId);
   const steps = sortPlaybookSteps(parsePlaybookSteps(input.steps, defaultConfig.steps));
 
   const { error } = await supabase.from("crm_playbook_configs").upsert(

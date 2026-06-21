@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Save, ShoppingBag, X } from "lucide-react";
+import { AlertTriangle, Loader2, Save, ShoppingBag, X } from "lucide-react";
+import Link from "next/link";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
+import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import type { CampanaRecord } from "@/lib/admin/campanas-service";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import {
@@ -52,6 +54,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
+  const [compliance, setCompliance] = useState<ProspectoComplianceRow | null>(null);
 
   const puedeRegistrarApartado =
     detail != null && !["apartado", "vendido", "perdido"].includes(detail.etapa);
@@ -89,6 +92,16 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         const campResponse = await fetch(`/api/admin/campanas?${campParams.toString()}`);
         const campData = (await campResponse.json()) as { campanas?: CampanaRecord[] };
         setCampanas(campData.campanas ?? []);
+
+        const complianceResponse = await fetch(`/api/admin/prospectos/${prospectoId}/compliance`);
+        if (complianceResponse.ok) {
+          const complianceData = (await complianceResponse.json()) as {
+            compliance?: ProspectoComplianceRow | null;
+          };
+          setCompliance(complianceData.compliance ?? null);
+        } else {
+          setCompliance(null);
+        }
       }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
@@ -170,6 +183,41 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
 
           {detail ? (
             <div className="space-y-5">
+              {compliance && compliance.issues.length > 0 ? (
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${
+                    compliance.overdueCount > 0
+                      ? "border-red-200 bg-red-50 text-red-900"
+                      : "border-amber-200 bg-amber-50 text-amber-900"
+                  }`}
+                >
+                  <p className="flex items-center gap-2 font-bold">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Playbook {compliance.overdueCount > 0 ? "vencido" : "pendiente"}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    {compliance.issues.map((issue) => (
+                      <li key={issue.stepId}>
+                        {issue.status === "overdue" ? "Vencido" : "Pendiente"}: {issue.stepLabel}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs opacity-80">
+                    Confianza del registro: {compliance.confidencePct}%
+                  </p>
+                  <Link
+                    href={`/admin/crm-compliance?desarrolloId=${encodeURIComponent(detail.desarrollo_id)}`}
+                    className="mt-2 inline-block text-xs font-semibold underline"
+                  >
+                    Ver Salud CRM del desarrollo
+                  </Link>
+                </div>
+              ) : compliance ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                  Playbook al día · confianza {compliance.confidencePct}%
+                </div>
+              ) : null}
+
               <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Email</span>

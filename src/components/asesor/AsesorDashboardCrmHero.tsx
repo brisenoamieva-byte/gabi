@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  AlertTriangle,
   Kanban,
   Loader2,
   Plus,
@@ -12,10 +13,10 @@ import {
 } from "lucide-react";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import {
-  isCrmPlaybookPilotDesarrollo,
   type CrmPlaybookConfig,
   type PlaybookQueueItem,
 } from "@/lib/comercial/crm-playbook";
+import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 
 type AsesorDashboardCrmHeroProps = {
@@ -42,6 +43,10 @@ export function AsesorDashboardCrmHero({
   const [prospectos, setProspectos] = useState<ProspectoListRow[]>([]);
   const [playbookQueue, setPlaybookQueue] = useState<PlaybookQueueItem[]>([]);
   const [playbookConfig, setPlaybookConfig] = useState<CrmPlaybookConfig | null>(null);
+  const [compliancePct, setCompliancePct] = useState<number | null>(null);
+  const [overdueCount, setOverdueCount] = useState(0);
+
+  const playbookEnabledHook = useCrmPlaybookEnabled(asesorId, desarrolloId);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,11 +58,16 @@ export function AsesorDashboardCrmHero({
         resumen: "1",
       });
 
-      const [leadsRes, playbookRes] = await Promise.all([
+      const [leadsRes, playbookRes, complianceRes] = await Promise.all([
         fetch(`/api/asesores/prospectos?${params.toString()}`),
-        isCrmPlaybookPilotDesarrollo(desarrolloId)
+        playbookEnabledHook
           ? fetch(
               `/api/asesores/crm-playbook/queue?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+            )
+          : Promise.resolve(null),
+        playbookEnabledHook
+          ? fetch(
+              `/api/asesores/crm-compliance/summary?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
             )
           : Promise.resolve(null),
       ]);
@@ -82,21 +92,32 @@ export function AsesorDashboardCrmHero({
           setPlaybookConfig(playbookData.config ?? null);
         }
       }
+
+      if (complianceRes) {
+        const complianceData = (await complianceRes.json()) as {
+          summary?: { compliancePct?: number; overdueCount?: number };
+        };
+        if (complianceRes.ok) {
+          setCompliancePct(complianceData.summary?.compliancePct ?? null);
+          setOverdueCount(complianceData.summary?.overdueCount ?? 0);
+        }
+      }
     } catch {
       setResumen(null);
       setProspectos([]);
       setPlaybookQueue([]);
+      setCompliancePct(null);
+      setOverdueCount(0);
     } finally {
       setLoading(false);
     }
-  }, [asesorId, desarrolloId]);
+  }, [asesorId, desarrolloId, playbookEnabledHook]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const playbookEnabled =
-    isCrmPlaybookPilotDesarrollo(desarrolloId) && playbookConfig?.enabled;
+  const playbookEnabled = playbookEnabledHook && playbookConfig?.enabled;
 
   const stats = useMemo(() => {
     const porEtapa = resumen?.porEtapa ?? {};
@@ -156,11 +177,22 @@ export function AsesorDashboardCrmHero({
             <StatChip label="Nuevos" value={stats.nuevos} accent="sky" />
             <StatChip label="En proceso" value={stats.activos} accent="lime" />
             {playbookEnabled ? (
-              <StatChip label="Pendientes" value={stats.pendientesPlaybook} accent="amber" />
+              <StatChip
+                label={overdueCount > 0 ? "Vencidos" : "Cumplimiento"}
+                value={overdueCount > 0 ? overdueCount : compliancePct ?? stats.pendientesPlaybook}
+                accent={overdueCount > 0 ? "amber" : compliancePct !== null && compliancePct >= 85 ? "lime" : "amber"}
+              />
             ) : (
               <StatChip label="Cotizaron" value={resumen?.porEtapa.cotizo ?? 0} accent="amber" />
             )}
           </div>
+
+          {playbookEnabled && overdueCount > 0 ? (
+            <div className="relative mt-4 flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-50">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" />
+              {overdueCount} paso(s) vencido(s) en tu CRM — atiende antes del reporte comercial.
+            </div>
+          ) : null}
 
           {priority ? (
             <div className="relative mt-4 rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">

@@ -1,6 +1,8 @@
 import type { AdminProfile } from "@/lib/admin/types";
 import { assertDesarrolloAccess, filterDesarrollosForAdmin } from "@/lib/admin/permissions";
 import { syncProspectoFromVisita } from "@/lib/admin/prospectos-service";
+import { isComplianceServerEnforced } from "@/lib/comercial/crm-compliance-config";
+import { getRecorridoComplianceGate } from "@/lib/comercial/crm-compliance-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { VisitaInput, VisitaRecord, VisitasResumen } from "@/lib/visitas/types";
 
@@ -89,6 +91,16 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResu
   const validation = await validateAsesorForVisita(input.asesorId, input.desarrolloId);
   if (!validation.ok) {
     throw new Error(validation.reason);
+  }
+
+  if (
+    isComplianceServerEnforced() &&
+    (input.tipo === "recorrido_completado" || input.tipo === "lead_registrado")
+  ) {
+    const gate = await getRecorridoComplianceGate(input.asesorId, input.desarrolloId);
+    if (gate.shouldBlock) {
+      throw new Error(gate.message);
+    }
   }
 
   const { data, error } = await supabase
