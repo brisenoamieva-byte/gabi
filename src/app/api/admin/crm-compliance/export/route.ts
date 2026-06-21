@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { canAccessCrmComplianceApi } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
+import { exportComplianceExceptionsCsv } from "@/lib/comercial/compliance-export";
 import { getDesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
 
 export async function GET(request: Request) {
@@ -22,10 +23,18 @@ export async function GET(request: Request) {
 
   try {
     const report = await getDesarrolloComplianceReport(desarrolloId, session.profile);
-    return NextResponse.json({ report });
+    const csv = exportComplianceExceptionsCsv(report);
+    const filename = `crm-excepciones-${desarrolloId}-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    return new NextResponse("\uFEFF" + csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error al cargar salud CRM." },
+      { error: error instanceof Error ? error.message : "Error al exportar." },
       { status: 400 },
     );
   }

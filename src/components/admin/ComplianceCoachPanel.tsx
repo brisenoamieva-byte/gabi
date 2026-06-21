@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   Loader2,
+  MessageCircle,
   RefreshCw,
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
@@ -14,22 +15,24 @@ import type { DesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-
 import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
-type CrmComplianceAdminPanelProps = {
+type ComplianceCoachPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  canOpenLeads?: boolean;
 };
 
-const pilotDesarrollos = (desarrollos: Desarrollo[]) => desarrollos;
-
-export function CrmComplianceAdminPanel({
+export function ComplianceCoachPanel({
   desarrollos,
   scopeLabel,
-}: CrmComplianceAdminPanelProps) {
-  const options = pilotDesarrollos(desarrollos);
-  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(options);
+  canOpenLeads = false,
+}: ComplianceCoachPanelProps) {
+  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [report, setReport] = useState<DesarrolloComplianceReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [testPhone, setTestPhone] = useState("");
+  const [testStatus, setTestStatus] = useState("");
+  const [testLoading, setTestLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!desarrolloId) {
@@ -50,7 +53,7 @@ export function CrmComplianceAdminPanel({
       };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo cargar salud CRM.");
+        throw new Error(data.error ?? "No se pudo cargar excepciones.");
       }
 
       setReport(data.report ?? null);
@@ -66,55 +69,76 @@ export function CrmComplianceAdminPanel({
     void load();
   }, [load]);
 
-  const healthTone = useMemo(() => {
-    if (!report?.playbookEnabled) {
-      return "neutral";
+  const overdueExceptions = useMemo(
+    () => report?.exceptions.filter((row) => row.overdueCount > 0) ?? [],
+    [report],
+  );
+
+  const exportCsv = () => {
+    if (!desarrolloId) return;
+    window.open(
+      `/api/admin/crm-compliance/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+      "_blank",
+    );
+  };
+
+  const sendWhatsAppTest = async () => {
+    if (!desarrolloId || !testPhone.trim()) {
+      setTestStatus("Indica un teléfono de prueba.");
+      return;
     }
-    if (report.compliancePct >= 85 && report.confidencePct >= 80) {
-      return "good";
+
+    setTestLoading(true);
+    setTestStatus("");
+
+    try {
+      const response = await fetch("/api/admin/whatsapp/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          desarrolloId,
+          telefono: testPhone.trim(),
+          template: "compliance",
+        }),
+      });
+      const data = (await response.json()) as { error?: string; ok?: boolean; messageId?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo enviar la prueba.");
+      }
+
+      setTestStatus(data.messageId ? `Enviado (id: ${data.messageId})` : "Enviado.");
+    } catch (sendError) {
+      setTestStatus(sendError instanceof Error ? sendError.message : "Error al enviar.");
+    } finally {
+      setTestLoading(false);
     }
-    if (report.compliancePct >= 70) {
-      return "warn";
-    }
-    return "bad";
-  }, [report]);
+  };
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-            Cumplimiento
+            Auditoría CRM
           </p>
-          <h1 className="text-2xl font-black tracking-tight text-gabi-ink">Salud CRM</h1>
+          <h1 className="text-2xl font-black tracking-tight text-gabi-ink">Compliance Coach</h1>
           <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
-            Auditoría automática del playbook: pasos vencidos, datos incompletos y leads excluidos
-            del embudo confiable.
+            Lista de excepciones para revisión operativa: pasos vencidos y pendientes antes del
+            reporte comercial. Sin acceso a edición de leads — solo auditoría y exportación.
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              if (!desarrolloId) return;
-              window.open(
-                `/api/admin/crm-compliance/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
-                "_blank",
-              );
-            }}
+            onClick={exportCsv}
             disabled={!desarrolloId || !report?.playbookEnabled}
             className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink transition hover:bg-gabi-cream disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
             Exportar CSV
           </button>
-        <Link
-          href="/admin/compliance-coach"
-          className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-[#201044] transition hover:bg-gabi-cream"
-        >
-          Compliance Coach
-        </Link>
           <button
             type="button"
             onClick={() => void load()}
@@ -127,9 +151,9 @@ export function CrmComplianceAdminPanel({
         </div>
       </header>
 
-      {options.length === 0 ? (
+      {desarrollos.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-600">
-          No hay desarrollos piloto con playbook CRM en tu alcance.
+          No hay desarrollos en tu alcance.
         </div>
       ) : (
         <div className="rounded-2xl border border-gabi-cream-dark bg-white p-4 shadow-sm">
@@ -141,7 +165,7 @@ export function CrmComplianceAdminPanel({
             onChange={(event) => setDesarrolloId(event.target.value)}
             className="mt-2 w-full max-w-md rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#201044] focus:outline-none focus:ring-2 focus:ring-[#201044]/15"
           >
-            {options.map((item) => (
+            {desarrollos.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.nombre}
               </option>
@@ -159,93 +183,47 @@ export function CrmComplianceAdminPanel({
       {loading && !report ? (
         <div className="flex items-center gap-2 text-sm text-gabi-sand">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Calculando cumplimiento…
+          Cargando excepciones…
         </div>
       ) : null}
 
       {report?.playbookEnabled ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              label="Cumplimiento"
-              value={`${report.compliancePct}%`}
-              hint={`${report.compliantLeads}/${report.activeLeads} leads sin vencidos`}
-              tone={healthTone}
-            />
-            <MetricCard
-              label="Confianza de datos"
-              value={`${report.confidencePct}%`}
-              hint="Contacto + playbook al día"
-            />
-            <MetricCard
-              label="Pipeline confiable"
-              value={String(report.pipelineReliableCount)}
-              hint={`${report.pipelineExcludedCount} excluidos del embudo`}
-            />
-            <MetricCard
-              label="Excepciones"
-              value={String(report.exceptionCount)}
-              hint={`${report.overdueCount} paso(s) vencido(s)`}
-              tone={report.overdueCount > 0 ? "bad" : "good"}
+            <CoachMetric label="Cumplimiento" value={`${report.compliancePct}%`} />
+            <CoachMetric label="Vencidos" value={String(report.overdueCount)} tone="bad" />
+            <CoachMetric label="Excepciones" value={String(report.exceptionCount)} />
+            <CoachMetric
+              label="Excluidos embudo"
+              value={String(report.pipelineExcludedCount)}
+              hint={`${report.pipelineReliableCount} confiables`}
             />
           </div>
 
-          <section className="rounded-2xl border border-gabi-cream-dark bg-white shadow-sm">
-            <div className="border-b border-gabi-cream-dark px-5 py-4">
-              <h2 className="text-sm font-bold text-gabi-ink">Por asesor</h2>
-              <p className="text-xs text-gabi-sand">Ordenado por menor cumplimiento</p>
+          {overdueExceptions.length > 0 ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+              <p className="font-semibold">
+                {overdueExceptions.length} lead(s) con pasos vencidos — prioridad de revisión hoy.
+              </p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-gabi-sand">
-                    <th className="px-5 py-3">Asesor</th>
-                    <th className="px-5 py-3">Cumplimiento</th>
-                    <th className="px-5 py-3">Confianza</th>
-                    <th className="px-5 py-3">Activos</th>
-                    <th className="px-5 py-3">Vencidos</th>
-                    <th className="px-5 py-3">Pendientes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.asesores.map((row) => (
-                    <tr key={row.asesorId} className="border-b border-gabi-cream-dark/70">
-                      <td className="px-5 py-3 font-medium">{row.asesorNombre}</td>
-                      <td className="px-5 py-3">
-                        <ComplianceBadge pct={row.compliancePct} />
-                      </td>
-                      <td className="px-5 py-3">{row.confidencePct}%</td>
-                      <td className="px-5 py-3 tabular-nums">{row.activeLeads}</td>
-                      <td className="px-5 py-3 tabular-nums text-red-700">{row.overdueIssues}</td>
-                      <td className="px-5 py-3 tabular-nums text-amber-700">{row.pendingIssues}</td>
-                    </tr>
-                  ))}
-                  {report.asesores.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-6 text-center text-gabi-sand">
-                        Sin leads activos en playbook.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          ) : null}
 
           <section className="rounded-2xl border border-gabi-cream-dark bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gabi-cream-dark px-5 py-4">
               <div>
-                <h2 className="text-sm font-bold text-gabi-ink">Excepciones prioritarias</h2>
+                <h2 className="text-sm font-bold text-gabi-ink">Excepciones ({report.exceptions.length})</h2>
                 <p className="text-xs text-gabi-sand">
-                  Leads con pasos pendientes o vencidos — revisar antes del reporte comercial
+                  Vencidos primero; leads excluidos del embudo confiable marcados
                 </p>
               </div>
-              <Link
-                href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId ?? "")}`}
-                className="text-sm font-semibold text-[#201044] hover:underline"
-              >
-                Abrir leads
-              </Link>
+              {canOpenLeads ? (
+                <Link
+                  href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId ?? "")}`}
+                  className="text-sm font-semibold text-[#201044] hover:underline"
+                >
+                  Abrir leads
+                </Link>
+              ) : null}
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -257,10 +235,11 @@ export function CrmComplianceAdminPanel({
                     <th className="px-5 py-3">Estado</th>
                     <th className="px-5 py-3">Paso</th>
                     <th className="px-5 py-3">Confianza</th>
+                    <th className="px-5 py-3">Embudo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {report.exceptions.slice(0, 50).map((row) => {
+                  {report.exceptions.map((row) => {
                     const issue = row.issues[0];
                     return (
                       <tr key={row.prospectoId} className="border-b border-gabi-cream-dark/70">
@@ -282,12 +261,19 @@ export function CrmComplianceAdminPanel({
                         </td>
                         <td className="px-5 py-3">{issue?.stepLabel ?? "—"}</td>
                         <td className="px-5 py-3">{row.confidencePct}%</td>
+                        <td className="px-5 py-3">
+                          {row.excludedFromPipeline ? (
+                            <span className="text-red-700">Excluido</span>
+                          ) : (
+                            <span className="text-emerald-700">Confiable</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
                   {report.exceptions.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center">
+                      <td colSpan={7} className="px-5 py-8 text-center">
                         <span className="inline-flex items-center gap-2 text-emerald-700">
                           <CheckCircle2 className="h-4 w-4" />
                           Sin excepciones — CRM al día
@@ -300,44 +286,73 @@ export function CrmComplianceAdminPanel({
             </div>
           </section>
 
+          <section className="rounded-2xl border border-gabi-cream-dark bg-white p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <MessageCircle className="mt-0.5 h-5 w-5 text-gabi-sand" />
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-gabi-ink">Probar WhatsApp compliance</h2>
+                <p className="mt-1 text-xs text-gabi-sand">
+                  Envía la plantilla <code className="text-[11px]">gabi_crm_pendiente_asesor</code> a
+                  un teléfono de prueba (asesor o tú).
+                </p>
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <label className="min-w-[12rem] flex-1">
+                    <span className="text-xs font-semibold text-gabi-sand">Teléfono (+52…)</span>
+                    <input
+                      type="tel"
+                      value={testPhone}
+                      onChange={(event) => setTestPhone(event.target.value)}
+                      placeholder="+525512345678"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void sendWhatsAppTest()}
+                    disabled={testLoading || !desarrolloId}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white hover:bg-gabi-forest-light disabled:opacity-50"
+                  >
+                    {testLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Enviar prueba
+                  </button>
+                </div>
+                {testStatus ? (
+                  <p className="mt-2 text-xs text-gabi-sand">{testStatus}</p>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
           <p className="text-xs text-gabi-sand">
-            Actualizado: {new Date(report.generatedAt).toLocaleString("es-MX")}. Los digest diarios
-            se envían vía cron si <code className="text-[11px]">CRON_SECRET</code> y Resend están
-            configurados.
+            Actualizado: {new Date(report.generatedAt).toLocaleString("es-MX")}. Gerentes pueden ver
+            el panel completo en{" "}
+            <Link href="/admin/crm-compliance" className="font-semibold text-[#201044] hover:underline">
+              Salud CRM
+            </Link>
+            .
           </p>
         </>
       ) : report && !report.playbookEnabled ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-600">
-          Playbook CRM no activo para este desarrollo. Actívalo en{" "}
-          <Link href="/admin/crm-playbook" className="font-semibold text-[#201044] hover:underline">
-            Playbook CRM
-          </Link>
-          .
+          Playbook CRM no activo para este desarrollo. Un gerente debe activarlo en Playbook CRM.
         </div>
       ) : null}
     </div>
   );
 }
 
-function MetricCard({
+function CoachMetric({
   label,
   value,
   hint,
-  tone = "neutral",
+  tone,
 }: {
   label: string;
   value: string;
   hint?: string;
-  tone?: "good" | "warn" | "bad" | "neutral";
+  tone?: "bad";
 }) {
-  const border =
-    tone === "good"
-      ? "border-emerald-200"
-      : tone === "warn"
-        ? "border-amber-200"
-        : tone === "bad"
-          ? "border-red-200"
-          : "border-gabi-cream-dark";
+  const border = tone === "bad" ? "border-red-200" : "border-gabi-cream-dark";
 
   return (
     <div className={`rounded-2xl border ${border} bg-white p-4 shadow-sm`}>
@@ -345,16 +360,5 @@ function MetricCard({
       <p className="mt-1 text-3xl font-black tabular-nums tracking-tight text-gabi-ink">{value}</p>
       {hint ? <p className="mt-1 text-xs text-gabi-sand">{hint}</p> : null}
     </div>
-  );
-}
-
-function ComplianceBadge({ pct }: { pct: number }) {
-  const tone =
-    pct >= 85 ? "bg-emerald-100 text-emerald-800" : pct >= 70 ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800";
-
-  return (
-    <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-bold ${tone}`}>
-      {pct}%
-    </span>
   );
 }

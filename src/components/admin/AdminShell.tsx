@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin, CalendarClock, ShieldCheck } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin, CalendarClock, ShieldCheck, ClipboardCheck } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -27,6 +27,7 @@ const navIcons = {
   "/admin/leads": UserRound,
   "/admin/crm-playbook": ClipboardList,
   "/admin/crm-compliance": ShieldCheck,
+  "/admin/compliance-coach": ClipboardCheck,
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
@@ -49,6 +50,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/leads": "leads",
   "/admin/crm-playbook": "leads",
   "/admin/crm-compliance": "leads",
+  "/admin/compliance-coach": "compliance-coach",
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
@@ -89,6 +91,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/guardias", label: "Guardias", ready: true },
     { href: "/admin/crm-playbook", label: "Playbook CRM", ready: true },
     { href: "/admin/crm-compliance", label: "Salud CRM", ready: true },
+    { href: "/admin/compliance-coach", label: "Compliance Coach", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },
     { href: "/admin/expedientes", label: "Expedientes", ready: true },

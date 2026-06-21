@@ -42,6 +42,10 @@ export const canAccessModule = (profile: AdminProfile, module: AdminModule) => {
     return profile.rol === "gerente" || isSuperAdmin(profile);
   }
 
+  if (module === "compliance-coach") {
+    return profile.rol === "gerente" || profile.rol === "operaciones" || isSuperAdmin(profile);
+  }
+
   if (module === "metricas") {
     return profile.rol === "gerente" || isSuperAdmin(profile);
   }
@@ -60,6 +64,9 @@ export const canAccessModule = (profile: AdminProfile, module: AdminModule) => {
 
   return false;
 };
+
+export const canAccessCrmComplianceApi = (profile: AdminProfile) =>
+  canAccessModule(profile, "leads") || canAccessModule(profile, "compliance-coach");
 
 export const assertDesarrolloAccess = (profile: AdminProfile, desarrolloId: string) => {
   if (!canAccessDesarrollo(profile, desarrolloId)) {

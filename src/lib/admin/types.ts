@@ -1,6 +1,18 @@
 export type AdminRol = "superadmin" | "gerente" | "operaciones";
 
-export type AdminModule = "documentos" | "inventario" | "asesores" | "metricas" | "catalogo" | "usuarios" | "guion" | "sembrado" | "leads" | "expedientes" | "guardias";
+export type AdminModule =
+  | "documentos"
+  | "inventario"
+  | "asesores"
+  | "metricas"
+  | "catalogo"
+  | "usuarios"
+  | "guion"
+  | "sembrado"
+  | "leads"
+  | "expedientes"
+  | "guardias"
+  | "compliance-coach";
 
 export type DocumentoTipo =
   | "brochure_desarrollo"

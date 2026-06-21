@@ -449,11 +449,54 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
             </div>
           </header>
 
+          {reporte.saludCrm.enabled ? (
+            <section className="hidden print:block rounded-xl border border-slate-300 bg-white p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                Confianza del CRM (playbook activo)
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiTile label="Cumplimiento playbook" value={`${reporte.saludCrm.compliancePct}%`} />
+                <KpiTile label="Confianza de datos" value={`${reporte.saludCrm.confidencePct}%`} />
+                <KpiTile label="Pipeline confiable" value={reporte.saludCrm.pipelineReliableCount} />
+                <KpiTile
+                  label="Excluidos del embudo"
+                  value={reporte.saludCrm.pipelineExcludedCount}
+                />
+              </div>
+              {reporte.saludCrm.pipelineExcludedCount > 0 ? (
+                <p className="mt-3 text-xs text-slate-600">
+                  {reporte.saludCrm.pipelineExcludedCount} lead(s) activo(s) excluido(s) del embudo
+                  confiable por baja confianza o pasos vencidos. Los embudos siguen reflejando
+                  actividad registrada; usar pipeline confiable para decisiones comerciales.
+                </p>
+              ) : null}
+              {reporte.saludCrm.asesoresEnRiesgo.length > 0 ? (
+                <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
+                  {reporte.saludCrm.asesoresEnRiesgo.map((item) => (
+                    <li
+                      key={item.asesorNombre}
+                      className="flex items-center justify-between gap-3 px-3 py-2"
+                    >
+                      <span className="font-medium text-gabi-forest">{item.asesorNombre}</span>
+                      <span className="text-slate-500">
+                        {item.compliancePct}% · {item.overdueIssues} vencido(s)
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
+
           <div className="space-y-6">
             <SectionHeading
               n={1}
               title="Funnel comercial por segmento"
-              desc="Embudo semanal desglosado por medio publicitario"
+              desc={
+                reporte.saludCrm.enabled && reporte.saludCrm.pipelineExcludedCount > 0
+                  ? `Embudo semanal por medio · ${reporte.saludCrm.pipelineExcludedCount} lead(s) excluido(s) del embudo confiable (ver Confianza del CRM)`
+                  : "Embudo semanal desglosado por medio publicitario"
+              }
             />
             {reporte.funnels.length > 1 ? (
               <div className="no-print flex flex-wrap gap-2">
