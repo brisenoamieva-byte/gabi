@@ -38,6 +38,9 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
   );
   const parseurSecretConfigured = Boolean(process.env.PARSEUR_WEBHOOK_SECRET?.trim());
   const qaWebhookSecretConfigured = Boolean(process.env.QA_WEBHOOK_SECRET?.trim());
+  const cronSecretConfigured = Boolean(process.env.CRON_SECRET?.trim());
+  const resendConfigured = Boolean(process.env.RESEND_API_KEY?.trim());
+  const emailFromConfigured = Boolean(process.env.EMAIL_FROM?.trim());
 
   if (!supabaseConfigured) {
     return {
@@ -45,6 +48,9 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       supabaseConfigured: false,
       parseurSecretConfigured,
       qaWebhookSecretConfigured,
+      cronSecretConfigured,
+      resendConfigured,
+      emailFromConfigured,
       checks: [
         {
           id: "supabase",
@@ -280,6 +286,9 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
     supabaseConfigured: true,
     parseurSecretConfigured,
     qaWebhookSecretConfigured,
+    cronSecretConfigured,
+    resendConfigured,
+    emailFromConfigured,
     checks,
   };
 };

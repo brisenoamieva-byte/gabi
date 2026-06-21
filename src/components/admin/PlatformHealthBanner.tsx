@@ -16,6 +16,26 @@ export function PlatformHealthBanner() {
   const [expanded, setExpanded] = useState(false);
   const [applying, setApplying] = useState(false);
   const [applyMessage, setApplyMessage] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
+
+  const copyMigrationSql = async (id: string) => {
+    setCopyMessage("");
+    try {
+      const query =
+        id === "042-043"
+          ? "bundle=042-043"
+          : `id=${encodeURIComponent(id)}`;
+      const response = await fetch(`/api/admin/db/migration-sql?${query}`);
+      const data = (await response.json()) as { sql?: string; error?: string };
+      if (!response.ok || !data.sql) {
+        throw new Error(data.error ?? "No se pudo cargar el SQL.");
+      }
+      await navigator.clipboard.writeText(data.sql);
+      setCopyMessage(`SQL ${id} copiado — pégalo en Supabase SQL Editor y ejecuta.`);
+    } catch (error) {
+      setCopyMessage(error instanceof Error ? error.message : "Error al copiar SQL.");
+    }
+  };
 
   const loadHealth = useCallback(async () => {
     try {
@@ -51,9 +71,18 @@ export function PlatformHealthBanner() {
   }
 
   const pending = health.checks.filter((item) => !item.ok);
+  const pendingCompliance = pending.filter((item) => item.id === "042" || item.id === "043");
   const showParseurWarning = !health.parseurSecretConfigured;
   const showQaWarning = !health.qaWebhookSecretConfigured;
-  const hasIssues = pending.length > 0 || showParseurWarning || showQaWarning;
+  const showCronWarning = !health.cronSecretConfigured;
+  const showResendWarning = !health.resendConfigured || !health.emailFromConfigured;
+  const complianceDigestReady = health.checks.find((item) => item.id === "042")?.ok;
+  const hasIssues =
+    pending.length > 0 ||
+    showParseurWarning ||
+    showQaWarning ||
+    showCronWarning ||
+    (complianceDigestReady && showResendWarning);
 
   const handleApplyMigrations = async () => {
     setApplying(true);
@@ -123,10 +152,16 @@ export function PlatformHealthBanner() {
             <p className="mt-1 text-xs opacity-90">
               {pending.length ? (
                 <>
-                  Algunas funciones de Leads (spam, iScore, duplicados) o comisiones pueden fallar
-                  hasta aplicar el SQL en el proyecto Supabase.
+                  Algunas funciones pueden fallar hasta aplicar el SQL en Supabase.
+                  {pendingCompliance.length
+                    ? " Digest CRM y Compliance Coach requieren migraciones 042+043."
+                    : null}
                   {showParseurWarning ? " En producción configura PARSEUR_WEBHOOK_SECRET." : null}
                   {showQaWarning ? " Para ADRYO configura QA_WEBHOOK_SECRET." : null}
+                  {showCronWarning ? " Falta CRON_SECRET para el digest automático." : null}
+                  {complianceDigestReady && showResendWarning
+                    ? " Configura RESEND_API_KEY y EMAIL_FROM para emails de cumplimiento."
+                    : null}
                 </>
               ) : (
                 <>
@@ -180,6 +215,20 @@ export function PlatformHealthBanner() {
               </span>
             </li>
           ))}
+          {pendingCompliance.length > 0 ? (
+            <li className="pt-2">
+              <button
+                type="button"
+                onClick={() => void copyMigrationSql("042-043")}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-800/30 bg-white px-3 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100/50"
+              >
+                Copiar SQL 042 + 043 (digest CRM)
+              </button>
+              <p className="mt-1 text-[10px] opacity-80">
+                Supabase → SQL Editor → Run. Luego recarga este panel.
+              </p>
+            </li>
+          ) : null}
           {applyStatus?.canApply ? (
             <li className="pt-2">
               <button
@@ -196,9 +245,38 @@ export function PlatformHealthBanner() {
               </p>
             </li>
           ) : null}
+          {copyMessage ? (
+            <li className="rounded-lg bg-white/60 px-3 py-2 text-xs font-medium">{copyMessage}</li>
+          ) : null}
           {applyMessage ? (
             <li className="rounded-lg bg-white/60 px-3 py-2 text-xs font-medium">{applyMessage}</li>
           ) : null}
+          <li className="flex items-start gap-2">
+            {health.cronSecretConfigured ? (
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 text-sky-700" />
+            )}
+            <span>
+              <strong>Cron digest CRM</strong> —{" "}
+              {health.cronSecretConfigured
+                ? "CRON_SECRET configurado."
+                : "Falta CRON_SECRET en Vercel (digest lun-sáb 8:00 UTC)."}
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            {health.resendConfigured && health.emailFromConfigured ? (
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 text-sky-700" />
+            )}
+            <span>
+              <strong>Email cumplimiento CRM</strong> —{" "}
+              {health.resendConfigured && health.emailFromConfigured
+                ? "Resend configurado."
+                : "Configura RESEND_API_KEY y EMAIL_FROM en Vercel."}
+            </span>
+          </li>
           <li className="flex items-start gap-2">
             {health.parseurSecretConfigured ? (
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />

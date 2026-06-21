@@ -8,6 +8,23 @@ const AUTO_APPLY_MIGRATION_IDS = new Set(["037", "038", "039", "040", "041", "04
 
 export const getAutoApplyableMigrationIds = (): string[] => Array.from(AUTO_APPLY_MIGRATION_IDS);
 
+export const readMigrationSql = (migrationId: string): string | null => {
+  if (!AUTO_APPLY_MIGRATION_IDS.has(migrationId)) {
+    return null;
+  }
+
+  const allFiles = readdirSync(MIGRATIONS_DIR).filter(
+    (name) => name.endsWith(".sql") && !name.includes(".deprecated") && !name.startsWith("_"),
+  );
+
+  const match = allFiles.find((name) => name.startsWith(`${migrationId}_`));
+  if (!match) {
+    return null;
+  }
+
+  return readFileSync(join(MIGRATIONS_DIR, match), "utf8");
+};
+
 export const applySqlMigrations = async (migrationIds: string[]): Promise<string[]> => {
   const dbUrl = resolveSupabaseDbUrl();
   if (!dbUrl) {

@@ -11,5 +11,8 @@ export type PlatformHealth = {
   supabaseConfigured: boolean;
   parseurSecretConfigured: boolean;
   qaWebhookSecretConfigured: boolean;
+  cronSecretConfigured: boolean;
+  resendConfigured: boolean;
+  emailFromConfigured: boolean;
   checks: PlatformHealthCheck[];
 };
