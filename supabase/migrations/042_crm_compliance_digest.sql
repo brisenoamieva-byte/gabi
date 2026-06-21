@@ -22,5 +22,6 @@ comment on table public.compliance_digest_log is
 
 alter table public.compliance_digest_log enable row level security;
 
+drop policy if exists compliance_digest_log_service_all on public.compliance_digest_log;
 create policy compliance_digest_log_service_all
   on public.compliance_digest_log for all to service_role using (true) with check (true);
