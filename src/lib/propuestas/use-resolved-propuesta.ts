@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PropuestaComercialMedia } from "@/lib/propuestas/vita-alta-media";
 import type { PropuestaComercialData } from "@/lib/propuestas/types";
+import type { ConsultoriaMarcaPresentacion } from "@/lib/brand/consultoria-marca";
+import { DEFAULT_CONSULTORIA_MARCA } from "@/lib/brand/consultoria-marca";
 
 type LoadedPropuesta = {
   propuesta: PropuestaComercialData;
   media: PropuestaComercialMedia;
+  presentacionMarca: ConsultoriaMarcaPresentacion;
 };
 
 export function useResolvedPropuesta(slug: string) {
@@ -29,7 +32,14 @@ export function useResolvedPropuesta(slug: string) {
       if (!response.ok) {
         throw new Error(json.error ?? "No se pudo cargar la propuesta.");
       }
-      setState({ status: "ready", data: { propuesta: json.propuesta, media: json.media } });
+      setState({
+        status: "ready",
+        data: {
+          propuesta: json.propuesta,
+          media: json.media,
+          presentacionMarca: json.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA,
+        },
+      });
     } catch (error) {
       setState({
         status: "error",

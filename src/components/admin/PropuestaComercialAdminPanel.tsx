@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Loader2, RotateCcw, Save } from "lucide-react";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
+import { ConsultoriaMarcaSelector } from "@/components/brand/ConsultoriaMarcaSelector";
+import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
 import type { PropuestaEditableOverrides } from "@/lib/propuestas/overrides-types";
 import type { PropuestaEstado } from "@/lib/propuestas/types";
 
@@ -219,6 +221,15 @@ export function PropuestaComercialAdminPanel({ slug, titulo }: Props) {
       ) : null}
 
       <Section title="Estado y portada">
+        <ConsultoriaMarcaSelector
+          value={resolveConsultoriaMarca(editable.presentacionMarca)}
+          onChange={(presentacionMarca) =>
+            patch((prev) => ({
+              ...prev,
+              presentacionMarca,
+            }))
+          }
+        />
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Estado">
             <select

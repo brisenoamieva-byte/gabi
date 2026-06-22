@@ -1,4 +1,10 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import {
+  mergePresentacionMarcaIntoMeta,
+  parseConsultoriaMarca,
+  resolveConsultoriaMarca,
+  splitPresentacionMarcaFromMeta,
+} from "@/lib/brand/consultoria-marca";
 import { mergePropuestaComercialData } from "@/lib/propuestas/merge-propuesta";
 import type {
   PropuestaEditableOverrides,
@@ -6,6 +12,7 @@ import type {
 } from "@/lib/propuestas/overrides-types";
 import { getPropuestaBySlug, isPropuestaSlug } from "@/lib/propuestas/registry";
 import type { PropuestaComercialData, PropuestaEstado } from "@/lib/propuestas/types";
+import type { ConsultoriaMarcaPresentacion } from "@/lib/brand/consultoria-marca";
 
 const VALID_ESTADOS: PropuestaEstado[] = ["borrador", "enviada", "firmada", "archivada"];
 
@@ -31,6 +38,11 @@ function normalizeStringList(raw: unknown): string[] {
 function normalizeOverrides(raw: PropuestaEditableOverrides): PropuestaEditableOverrides {
   const estado =
     raw.estado && VALID_ESTADOS.includes(raw.estado) ? raw.estado : undefined;
+
+  const presentacionMarca =
+    raw.presentacionMarca !== undefined ?
+      parseConsultoriaMarca(raw.presentacionMarca)
+    : undefined;
 
   const meta = raw.meta
     ? Object.fromEntries(
@@ -59,7 +71,7 @@ function normalizeOverrides(raw: PropuestaEditableOverrides): PropuestaEditableO
       }
     : undefined;
 
-  return { estado, meta, narrativa, propuestaBbr };
+  return { estado, presentacionMarca, meta, narrativa, propuestaBbr };
 }
 
 type OverridesRow = {
@@ -94,7 +106,8 @@ async function readRow(slug: string): Promise<OverridesRow | null> {
 function rowToOverrides(row: OverridesRow | null): PropuestaEditableOverrides | null {
   if (!row) return null;
 
-  const meta = parseJsonField<NonNullable<PropuestaEditableOverrides["meta"]>>(row.meta);
+  const parsedMeta = parseJsonField<NonNullable<PropuestaEditableOverrides["meta"]>>(row.meta);
+  const { meta, presentacionMarca: marcaFromMeta } = splitPresentacionMarcaFromMeta(parsedMeta ?? undefined);
   const narrativa = parseJsonField<NonNullable<PropuestaEditableOverrides["narrativa"]>>(
     row.narrativa,
   );
@@ -103,7 +116,11 @@ function rowToOverrides(row: OverridesRow | null): PropuestaEditableOverrides | 
   );
 
   const hasContent =
-    Boolean(row.estado) || meta !== null || narrativa !== null || propuestaBbr !== null;
+    Boolean(row.estado) ||
+    meta !== undefined ||
+    narrativa !== null ||
+    propuestaBbr !== null ||
+    marcaFromMeta !== undefined;
 
   if (!hasContent) {
     return null;
@@ -113,6 +130,7 @@ function rowToOverrides(row: OverridesRow | null): PropuestaEditableOverrides | 
     estado: VALID_ESTADOS.includes(row.estado as PropuestaEstado)
       ? (row.estado as PropuestaEstado)
       : undefined,
+    presentacionMarca: marcaFromMeta,
     meta: meta ?? undefined,
     narrativa: narrativa ?? undefined,
     propuestaBbr: propuestaBbr ?? undefined,
@@ -128,7 +146,11 @@ export async function getPropuestaOverrides(
 
 export async function getResolvedPropuestaComercial(
   slug: string,
-): Promise<{ data: PropuestaComercialData; meta: PropuestaOverridesPublishMeta } | null> {
+): Promise<{
+  data: PropuestaComercialData;
+  meta: PropuestaOverridesPublishMeta;
+  presentacionMarca: ConsultoriaMarcaPresentacion;
+} | null> {
   const base = getPropuestaBySlug(slug);
   if (!base) {
     return null;
@@ -144,6 +166,7 @@ export async function getResolvedPropuestaComercial(
       origin: overrides ? "supabase" : "static",
       published: Boolean(overrides),
     },
+    presentacionMarca: resolveConsultoriaMarca(overrides?.presentacionMarca),
   };
 }
 
@@ -169,7 +192,10 @@ export async function publishPropuestaOverrides(
   const payload = {
     slug,
     estado: overrides.estado ?? null,
-    meta: overrides.meta ?? null,
+    meta: mergePresentacionMarcaIntoMeta(
+      overrides.meta ?? null,
+      overrides.presentacionMarca,
+    ),
     narrativa: overrides.narrativa ?? null,
     propuesta_bbr: overrides.propuestaBbr ?? null,
     updated_at: now,
@@ -214,6 +240,7 @@ export function extractEditableFromPropuesta(
 ): PropuestaEditableOverrides {
   return {
     estado: data.estado,
+    presentacionMarca: resolveConsultoriaMarca(undefined),
     meta: { ...data.meta },
     narrativa: {
       quienesSomos: data.narrativa.quienesSomos,
@@ -225,4 +252,11 @@ export function extractEditableFromPropuesta(
       equipo: [...data.propuestaBbr.equipo],
     },
   };
+}
+
+export async function getPropuestaPresentacionMarca(
+  slug: string,
+): Promise<ConsultoriaMarcaPresentacion> {
+  const overrides = await getPropuestaOverrides(slug);
+  return resolveConsultoriaMarca(overrides?.presentacionMarca);
 }

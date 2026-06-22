@@ -1,3 +1,8 @@
+import {
+  parseConsultoriaMarca,
+  resolveConsultoriaMarca,
+  type ConsultoriaMarcaPresentacion,
+} from "@/lib/brand/consultoria-marca";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { normalizeNuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
 import {
@@ -87,7 +92,14 @@ function normalizeStringList(raw: unknown): string[] {
 function normalizeContenido(raw: Partial<NuboEstudioContenido>): NuboEstudioContenido {
   const base = getDefaultNuboEstudioContenido();
   return {
-    meta: { ...base.meta, ...raw.meta },
+    meta: {
+      ...base.meta,
+      ...raw.meta,
+      presentacionMarca:
+        raw.meta?.presentacionMarca !== undefined ?
+          parseConsultoriaMarca(raw.meta.presentacionMarca)
+        : base.meta.presentacionMarca,
+    },
     diagnostico: { ...base.diagnostico, ...raw.diagnostico },
     condiciones:
       raw.condiciones?.length ?
@@ -359,6 +371,11 @@ export async function getPublishedNuboContenido(): Promise<NuboContenidoPublishe
       mediaPublicado,
     },
   };
+}
+
+export async function getNuboPresentacionMarca(): Promise<ConsultoriaMarcaPresentacion> {
+  const published = await getPublishedNuboContenido();
+  return resolveConsultoriaMarca(published.contenido.meta.presentacionMarca);
 }
 
 export async function publishNuboPublicidadPartidas(

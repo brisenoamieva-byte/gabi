@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { getNuboPresentacionMarca } from "@/lib/estudios/nubo-publicidad-store";
 import { getEstudioShareByToken } from "@/lib/estudios/share-service";
 import { getEstudioShareCookieName, verifyEstudioShareSession } from "@/lib/estudios/share-session";
 
@@ -21,11 +22,14 @@ export async function GET(request: Request) {
     const session = cookieStore.get(getEstudioShareCookieName(token))?.value;
     const authenticated = verifyEstudioShareSession(token, session);
 
+    const presentacionMarca = await getNuboPresentacionMarca();
+
     if (!authenticated) {
       return NextResponse.json({
         authenticated: false,
         tituloCliente: share.titulo_cliente,
         estudioSlug: share.estudio_slug,
+        presentacionMarca,
       });
     }
 
@@ -33,6 +37,7 @@ export async function GET(request: Request) {
       authenticated: true,
       estudioSlug: share.estudio_slug,
       tituloCliente: share.titulo_cliente,
+      presentacionMarca,
     });
   } catch (error) {
     return NextResponse.json(

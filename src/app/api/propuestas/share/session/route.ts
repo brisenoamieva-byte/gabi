@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getShareByToken } from "@/lib/propuestas/share-service";
+import { getPropuestaPresentacionMarca } from "@/lib/propuestas/propuesta-overrides-store";
 import { getShareCookieName, verifyShareSession } from "@/lib/propuestas/share-session";
 
 export async function GET(request: Request) {
@@ -21,11 +22,14 @@ export async function GET(request: Request) {
     const session = cookieStore.get(getShareCookieName(token))?.value;
     const authenticated = verifyShareSession(token, session);
 
+    const presentacionMarca = await getPropuestaPresentacionMarca(share.propuesta_slug);
+
     if (!authenticated) {
       return NextResponse.json({
         authenticated: false,
         tituloCliente: share.titulo_cliente,
         propuestaSlug: share.propuesta_slug,
+        presentacionMarca,
       });
     }
 
@@ -33,6 +37,7 @@ export async function GET(request: Request) {
       authenticated: true,
       propuestaSlug: share.propuesta_slug,
       tituloCliente: share.titulo_cliente,
+      presentacionMarca,
     });
   } catch (error) {
     return NextResponse.json(

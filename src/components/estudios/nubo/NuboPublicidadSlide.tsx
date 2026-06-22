@@ -21,7 +21,7 @@ import {
   NUBO_PUBLICIDAD_TOTAL_COL_PX,
 } from "@/lib/estudios/nubo-publicidad-content";
 import type { NuboPublicidadPartidaMensual } from "@/lib/estudios/nubo-publicidad-partidas";
-import { BbrHabitareaSlideMark } from "@/components/brand/BbrHabitareaLogo";
+import { ConsultoriaSlideMark } from "@/components/brand/ConsultoriaBrandLogo";
 import { SlideCanvas } from "@/components/propuestas/PropuestaSlideDeck";
 
 export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperatorLinks?: boolean }) {
@@ -65,7 +65,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
   const totales = useMemo(() => getNuboPublicidadTotales(partidas), [partidas]);
 
   return (
-    <SlideCanvas className="nubo-publicidad-slide !flex !flex-col !py-3 md:!py-4" brandMark={<BbrHabitareaSlideMark />}>
+    <SlideCanvas className="nubo-publicidad-slide !flex !flex-col !py-3 md:!py-4" brandMark={<ConsultoriaSlideMark />}>
       <div className="nubo-publicidad-slide-header mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 md:mb-4">
         <div className="flex items-start gap-4">
           <div className="nubo-publicidad-num-badge flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">

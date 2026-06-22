@@ -1,5 +1,16 @@
+import { CONSULTORIA_MARCA_META_KEY } from "@/lib/brand/consultoria-marca";
 import type { PropuestaEditableOverrides } from "@/lib/propuestas/overrides-types";
 import type { PropuestaComercialData } from "@/lib/propuestas/types";
+
+function mergeMeta(
+  base: PropuestaComercialData["meta"],
+  patch: PropuestaEditableOverrides["meta"],
+): PropuestaComercialData["meta"] {
+  if (!patch) return base;
+  const rest = { ...(patch as Record<string, string>) };
+  delete rest[CONSULTORIA_MARCA_META_KEY];
+  return { ...base, ...rest };
+}
 
 export function mergePropuestaComercialData(
   base: PropuestaComercialData,
@@ -12,7 +23,7 @@ export function mergePropuestaComercialData(
   return {
     ...base,
     estado: overrides.estado ?? base.estado,
-    meta: { ...base.meta, ...overrides.meta },
+    meta: mergeMeta(base.meta, overrides.meta),
     narrativa: {
       ...base.narrativa,
       ...overrides.narrativa,

@@ -5,11 +5,18 @@ import { useParams } from "next/navigation";
 import { NuboPreventaAnalisisSlides } from "@/components/estudios/nubo/NuboPreventaAnalisisSlides";
 import { EstudioShareGate } from "@/components/estudios/EstudioShareGate";
 import { NUBO_ESTUDIO_SHARE_SLUG } from "@/lib/estudios/share-registry";
+import type { ConsultoriaMarcaPresentacion } from "@/lib/brand/consultoria-marca";
+import { DEFAULT_CONSULTORIA_MARCA } from "@/lib/brand/consultoria-marca";
 
 type SessionState =
   | { status: "loading" }
-  | { status: "gate"; tituloCliente: string | null; estudioSlug: string }
-  | { status: "ready"; estudioSlug: string }
+  | {
+      status: "gate";
+      tituloCliente: string | null;
+      estudioSlug: string;
+      presentacionMarca?: ConsultoriaMarcaPresentacion;
+    }
+  | { status: "ready"; estudioSlug: string; presentacionMarca?: ConsultoriaMarcaPresentacion }
   | { status: "invalid"; message: string };
 
 export default function EstudioShareViewPage() {
@@ -29,6 +36,7 @@ export default function EstudioShareViewPage() {
         authenticated?: boolean;
         estudioSlug?: string;
         tituloCliente?: string | null;
+        presentacionMarca?: ConsultoriaMarcaPresentacion;
         error?: string;
       };
 
@@ -41,7 +49,11 @@ export default function EstudioShareViewPage() {
       }
 
       if (data.authenticated && data.estudioSlug) {
-        setSession({ status: "ready", estudioSlug: data.estudioSlug });
+        setSession({
+          status: "ready",
+          estudioSlug: data.estudioSlug,
+          presentacionMarca: data.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA,
+        });
         return;
       }
 
@@ -49,6 +61,7 @@ export default function EstudioShareViewPage() {
         status: "gate",
         tituloCliente: data.tituloCliente ?? null,
         estudioSlug: data.estudioSlug ?? "",
+        presentacionMarca: data.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA,
       });
     } catch {
       setSession({ status: "invalid", message: "No se pudo verificar el acceso." });
@@ -87,6 +100,7 @@ export default function EstudioShareViewPage() {
         token={token}
         tituloCliente={session.tituloCliente}
         headline="NUBO · Condiciones para preventa"
+        presentacionMarca={session.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA}
         onAuthenticated={(result) => {
           if (result.estudioSlug) {
             setSession({ status: "ready", estudioSlug: result.estudioSlug });

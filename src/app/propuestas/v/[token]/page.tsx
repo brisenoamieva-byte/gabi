@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { PropuestaShareGate } from "@/components/propuestas/PropuestaShareGate";
 import { PropuestaComercialSlides } from "@/components/propuestas/PropuestaComercialSlides";
 import { useResolvedPropuesta } from "@/lib/propuestas/use-resolved-propuesta";
+import type { ConsultoriaMarcaPresentacion } from "@/lib/brand/consultoria-marca";
+import { DEFAULT_CONSULTORIA_MARCA } from "@/lib/brand/consultoria-marca";
 
 type SessionState =
   | { status: "loading" }
-  | { status: "gate"; tituloCliente: string | null; propuestaSlug: string }
-  | { status: "ready"; propuestaSlug: string }
+  | { status: "gate"; tituloCliente: string | null; propuestaSlug: string; presentacionMarca?: ConsultoriaMarcaPresentacion }
+  | { status: "ready"; propuestaSlug: string; presentacionMarca?: ConsultoriaMarcaPresentacion }
   | { status: "invalid"; message: string };
 
 export default function PropuestaShareViewPage() {
@@ -32,6 +34,7 @@ export default function PropuestaShareViewPage() {
         authenticated?: boolean;
         propuestaSlug?: string;
         tituloCliente?: string | null;
+        presentacionMarca?: ConsultoriaMarcaPresentacion;
         error?: string;
       };
 
@@ -44,7 +47,11 @@ export default function PropuestaShareViewPage() {
       }
 
       if (data.authenticated && data.propuestaSlug) {
-        setSession({ status: "ready", propuestaSlug: data.propuestaSlug });
+        setSession({
+          status: "ready",
+          propuestaSlug: data.propuestaSlug,
+          presentacionMarca: data.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA,
+        });
         return;
       }
 
@@ -52,6 +59,7 @@ export default function PropuestaShareViewPage() {
         status: "gate",
         tituloCliente: data.tituloCliente ?? null,
         propuestaSlug: data.propuestaSlug ?? "",
+        presentacionMarca: data.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA,
       });
     } catch {
       setSession({ status: "invalid", message: "No se pudo verificar el acceso." });
@@ -86,9 +94,14 @@ export default function PropuestaShareViewPage() {
       <PropuestaShareGate
         token={token}
         tituloCliente={session.tituloCliente}
+        presentacionMarca={session.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA}
         onAuthenticated={(result) => {
           if (result.propuestaSlug) {
-            setSession({ status: "ready", propuestaSlug: result.propuestaSlug });
+            setSession({
+              status: "ready",
+              propuestaSlug: result.propuestaSlug,
+              presentacionMarca: session.presentacionMarca ?? DEFAULT_CONSULTORIA_MARCA,
+            });
             return;
           }
           void checkSession();
@@ -117,6 +130,11 @@ export default function PropuestaShareViewPage() {
     <PropuestaComercialSlides
       data={propuestaQuery.data.propuesta}
       media={propuestaQuery.data.media}
+      presentacionMarca={
+        propuestaQuery.data.presentacionMarca ??
+        (session.status === "ready" ? session.presentacionMarca : undefined) ??
+        DEFAULT_CONSULTORIA_MARCA
+      }
       viewerMode="developer"
     />
   );

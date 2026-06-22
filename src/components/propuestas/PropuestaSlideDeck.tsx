@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SlideBrandHeader } from "@/components/brand/BbrHabitareaLogo";
+import { ConsultoriaMarcaPreviewControl } from "@/components/brand/ConsultoriaMarcaPreviewControl";
 import { PropuestaSlideFit } from "@/components/propuestas/PropuestaSlideFit";
 import { PropuestaPrintDeck } from "@/components/propuestas/PropuestaPrintDeck";
 import { PropuestaMobilePrintSheet } from "@/components/propuestas/PropuestaMobilePrintSheet";
@@ -283,6 +284,7 @@ export function PropuestaSlideDeck({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {!isDeveloper ? <ConsultoriaMarcaPreviewControl className="hidden lg:flex" /> : null}
           <PrintPdfButton
             compact
             onClick={handlePrintRequest}

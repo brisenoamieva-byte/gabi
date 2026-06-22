@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeNuboEditor } from "@/lib/estudios/nubo-editor-auth";
 import type { PropuestaEditableOverrides } from "@/lib/propuestas/overrides-types";
+import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
 import {
   deletePropuestaOverrides,
   extractEditableFromPropuesta,
@@ -25,7 +26,11 @@ export async function GET(request: Request, context: RouteContext) {
 
   const base = getPropuestaBySlug(slug)!;
   const overrides = await getPropuestaOverrides(slug);
-  const editable = overrides ?? extractEditableFromPropuesta(base);
+  const editable: PropuestaEditableOverrides = {
+    ...extractEditableFromPropuesta(base),
+    ...overrides,
+    presentacionMarca: resolveConsultoriaMarca(overrides?.presentacionMarca),
+  };
 
   return NextResponse.json({
     slug,

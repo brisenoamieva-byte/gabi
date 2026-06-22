@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
+import { ConsultoriaBrandLogo } from "@/components/brand/ConsultoriaBrandLogo";
+import { useConsultoriaMarca } from "@/components/brand/ConsultoriaMarcaProvider";
+import { CONSULTORIA_MARCA_CONTACT } from "@/lib/brand/consultoria-marca";
 import { BBR_INVESTTI_RELACION } from "@/lib/corredor/bbr-investti-relacion";
 
 /** Estilo memo / nota ejecutiva — evita look “dashboard SaaS”. */
@@ -30,15 +32,18 @@ export function InvesttiReportCover({
   date: string;
   children?: ReactNode;
 }) {
+  const { marca } = useConsultoriaMarca();
+  const contact = CONSULTORIA_MARCA_CONTACT[marca];
+
   return (
     <header
       className={`investti-print-cover border-b ${investtiReport.rule} px-8 py-10 md:px-12 md:py-12`}
     >
       <div className="flex flex-wrap items-start justify-between gap-8">
         <div className="space-y-4">
-          <BbrHabitareaLogo height={40} priority />
+          <ConsultoriaBrandLogo height={40} priority />
           <p className={`${investtiReport.sans} text-[12px] text-neutral-600`}>
-            Elaborado por BBR Habitarea
+            Elaborado por {contact.elaboradoDefault}
           </p>
         </div>
         <div className="flex flex-col items-end gap-5">

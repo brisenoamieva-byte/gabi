@@ -5,8 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Printer } from "lucide-react";
 import { GabiPrintBar } from "@/components/gabi/GabiPrintBar";
 import { PropuestaPrintDeck } from "@/components/propuestas/PropuestaPrintDeck";
+import { ConsultoriaMarcaProvider } from "@/components/brand/ConsultoriaMarcaProvider";
 import { buildNuboPreventaSlides } from "@/components/estudios/nubo/NuboPreventaAnalisisSlides";
 import { useNuboEstudioPresentation } from "@/lib/estudios/use-nubo-estudio-presentation";
+import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 import { waitForPropuestaPrintImages } from "@/lib/propuestas/propuesta-print-prep";
 
@@ -15,6 +17,7 @@ export default function NuboEstudioPrintPage() {
   const [ready, setReady] = useState(false);
 
   const titulo = `${contenido.meta.titulo} · ${contenido.meta.subtitulo}`;
+  const presentacionMarca = resolveConsultoriaMarca(contenido.meta.presentacionMarca);
   const slides = useMemo(
     () => buildNuboPreventaSlides(contenido, media, { showOperatorLinks: false }),
     [contenido, media],
@@ -120,7 +123,9 @@ export default function NuboEstudioPrintPage() {
       </div>
 
       <div className="nubo-estudio-print-page__deck px-3 pb-8 md:px-6">
-        <PropuestaPrintDeck titulo={titulo} slides={slides} visible landscape />
+        <ConsultoriaMarcaProvider initialMarca={presentacionMarca}>
+          <PropuestaPrintDeck titulo={titulo} slides={slides} visible landscape />
+        </ConsultoriaMarcaProvider>
       </div>
     </main>
   );

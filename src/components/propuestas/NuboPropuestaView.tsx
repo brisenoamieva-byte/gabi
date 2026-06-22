@@ -1,7 +1,8 @@
 "use client";
 
-import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
-import { DmbDocumentFooter } from "@/components/dmb/DmbDocumentFooter";
+import { ConsultoriaBrandLogo } from "@/components/brand/ConsultoriaBrandLogo";
+import { ConsultoriaDocumentFooter } from "@/components/brand/ConsultoriaDocumentFooter";
+import { useConsultoriaMarca } from "@/components/brand/ConsultoriaMarcaProvider";
 import {
   InvesttiCallout,
   InvesttiCoverStat,
@@ -22,7 +23,7 @@ function PropuestaCover({ data }: { data: PropuestaComercialData }) {
     <header className={`border-b ${investtiReport.rule} px-8 py-10 md:px-12 md:py-12`}>
       <div className="flex flex-wrap items-start justify-between gap-8">
         <div className="space-y-4">
-          <BbrHabitareaLogo height={40} priority />
+          <ConsultoriaBrandLogo height={40} priority />
           <p className={`${investtiReport.sans} text-[12px] text-neutral-600`}>
             Elaborado por {meta.elaboradoPor}
           </p>
@@ -120,6 +121,7 @@ function DataTable({
 }
 
 export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
+  const { marca } = useConsultoriaMarca();
   const { escenario, esquemas, tiposLote, tipoCounts, publicidad, propuestaBbr, narrativa, lotes } =
     data;
 
@@ -312,7 +314,8 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
         </InvesttiSection>
       </div>
 
-      <DmbDocumentFooter
+      <ConsultoriaDocumentFooter
+        marca={marca}
         className={`${investtiReport.sans} mt-14`}
         extra={`Los números provienen del modelo financiero del proyecto (${data.id}). Validar con inventario y listas vigentes antes de firma.`}
         elaboradoPor={`${data.meta.elaboradoPor}`}

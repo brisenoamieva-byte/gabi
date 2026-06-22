@@ -3,8 +3,15 @@
 import { useEffect, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import { LockKeyhole } from "lucide-react";
-import { DmbLogo, DmbTagline } from "@/components/brand/DmbLogo";
-import { DMB_CONTACT } from "@/lib/dmb/ecosystem";
+import {
+  ConsultoriaBrandLogo,
+  ConsultoriaBrandTagline,
+} from "@/components/brand/ConsultoriaBrandLogo";
+import {
+  CONSULTORIA_MARCA_CONTACT,
+  DEFAULT_CONSULTORIA_MARCA,
+  type ConsultoriaMarcaPresentacion,
+} from "@/lib/brand/consultoria-marca";
 
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
@@ -20,6 +27,7 @@ type PropuestaShareGateProps = {
   authPath?: string;
   subjectLabel?: string;
   headline?: string;
+  presentacionMarca?: ConsultoriaMarcaPresentacion;
 };
 
 export function PropuestaShareGate({
@@ -29,8 +37,11 @@ export function PropuestaShareGate({
   authPath = "/api/propuestas/share/auth",
   subjectLabel = "Propuesta comercial · Confidencial",
   headline = "Acceso privado",
+  presentacionMarca = DEFAULT_CONSULTORIA_MARCA,
 }: PropuestaShareGateProps) {
   const controls = useAnimationControls();
+  const contact = CONSULTORIA_MARCA_CONTACT[presentacionMarca];
+  const brandAccent = presentacionMarca === "dmb" ? "#8B7355" : "#201044";
   const [codigo, setCodigo] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -130,8 +141,8 @@ export function PropuestaShareGate({
         className="w-full max-w-md rounded-2xl border border-dmb-line bg-white p-6 shadow-lg sm:p-8"
       >
         <div className="text-center">
-          <DmbLogo variant="header" className="mx-auto" />
-          <DmbTagline className="mx-auto mt-2" />
+          <ConsultoriaBrandLogo marca={presentacionMarca} height={40} className="mx-auto" />
+          <ConsultoriaBrandTagline marca={presentacionMarca} className="mx-auto mt-2" />
           <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-dmb-muted">
             {subjectLabel}
           </p>
@@ -140,7 +151,7 @@ export function PropuestaShareGate({
             <p className="mt-2 text-sm text-dmb-muted">Preparado para {tituloCliente}</p>
           ) : null}
           <p className="mt-4 text-sm text-dmb-muted">
-            Ingresa el código de 6 dígitos que te compartió DMB.
+            Ingresa el código de 6 dígitos que te compartió {contact.elaboradoDefault}.
           </p>
         </div>
 
@@ -151,8 +162,8 @@ export function PropuestaShareGate({
                 key={index}
                 className="h-3 w-3 rounded-full border-2 transition-all"
                 style={{
-                  borderColor: index < codigo.length ? dmbBrandAccent : "#E8E4DF",
-                  backgroundColor: index < codigo.length ? dmbBrandAccent : "#FAFAF8",
+                  borderColor: index < codigo.length ? brandAccent : "#E8E4DF",
+                  backgroundColor: index < codigo.length ? brandAccent : "#FAFAF8",
                 }}
               />
             ))}
@@ -201,11 +212,10 @@ export function PropuestaShareGate({
         </div>
 
         <p className="mt-6 text-center text-[10px] text-dmb-muted">
-          {DMB_CONTACT.email} · Documento confidencial
+          {contact.email} · Documento confidencial
         </p>
       </motion.div>
     </main>
   );
 }
 
-const dmbBrandAccent = "#8B7355";

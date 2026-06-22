@@ -5,7 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { BbrHabitareaLogo, BbrHabitareaSlideMark } from "@/components/brand/BbrHabitareaLogo";
+import { ConsultoriaBrandLogo, ConsultoriaSlideMark } from "@/components/brand/ConsultoriaBrandLogo";
+import {
+  ConsultoriaMarcaProvider,
+} from "@/components/brand/ConsultoriaMarcaProvider";
+import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
 import { NuboPublicidadSlide } from "@/components/estudios/nubo/NuboPublicidadSlide";
 import { NuboUbicacionSitioFigure } from "@/components/estudios/nubo/NuboUbicacionSitioFigure";
 import {
@@ -19,7 +23,7 @@ import { NUBO_PREVENTA_KPIS } from "@/lib/estudios/nubo-preventa-content";
 import { nuboSurface, nuboType } from "@/lib/estudios/nubo-slide-theme";
 import { refitAllPropuestaSlides } from "@/lib/propuestas/propuesta-slide-fit";
 
-const nuboSlideBrand = <BbrHabitareaSlideMark />;
+const nuboSlideBrand = <ConsultoriaSlideMark />;
 
 const fadeUp = {
   initial: { opacity: 0, y: 14 },
@@ -65,7 +69,7 @@ function NuboPortadaSlide({
       <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-28 bg-[#6cc24a] md:w-36" aria-hidden />
       <div className="propuesta-slide-inner relative z-10 mx-auto w-full max-w-5xl">
         <motion.div {...fadeUp} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
-          <BbrHabitareaLogo height={44} priority />
+          <ConsultoriaBrandLogo height={44} priority />
         </motion.div>
         <motion.div
           {...fadeUp}
@@ -509,6 +513,7 @@ export function NuboPreventaAnalisisSlides({
 }) {
   const isDeveloper = viewerMode === "developer";
   const { contenido, media, publishMeta, loading, loadError } = useNuboEstudioPresentation();
+  const presentacionMarca = resolveConsultoriaMarca(contenido.meta.presentacionMarca);
 
   const slides = useMemo(
     () =>
@@ -520,53 +525,60 @@ export function NuboPreventaAnalisisSlides({
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <BbrHabitareaLogo height={36} />
-        <Loader2 className="h-5 w-5 animate-spin text-[#6cc24a]" />
-        <div>
-          <p className="text-sm font-semibold text-slate-800">NUBO · Análisis de preventa</p>
-          <p className="mt-1 text-xs text-slate-500">Cargando presentación…</p>
+      <ConsultoriaMarcaProvider initialMarca={presentacionMarca}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
+          <ConsultoriaBrandLogo height={36} />
+          <Loader2 className="h-5 w-5 animate-spin text-[#6cc24a]" />
+          <div>
+            <p className="text-sm font-semibold text-slate-800">NUBO · Análisis de preventa</p>
+            <p className="mt-1 text-xs text-slate-500">Cargando presentación…</p>
+          </div>
         </div>
-      </div>
+      </ConsultoriaMarcaProvider>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {loadError && !isDeveloper ? (
-        <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">{loadError}</p>
-      ) : null}
-      {publishMeta && !publishMeta.contenidoPublicado && !isDeveloper ? (
-        <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">
-          Mostrando textos del archivo base. Publica desde el editor y verifica Supabase (migración
-          030 + SUPABASE_SERVICE_ROLE_KEY en Vercel).
-        </p>
-      ) : null}
-      <PropuestaSlideDeck
-        key={publishMeta?.updatedAt ?? "static"}
-        titulo={`${contenido.meta.titulo} · ${contenido.meta.subtitulo}`}
-        slides={slides}
-        backHref="/estudios"
-        backLabel="DMB · Estudios"
-        viewerMode={viewerMode}
-        embedded
-        printHref="/estudios/nubo/print"
-      />
-      {!isDeveloper ? (
-        <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">
-          <Link
-            href="/admin/estudios-nubo"
-            className="font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
-          >
-            Editar estudio
-          </Link>
-          {" · "}
-          {contenido.meta.clasificacion} · {contenido.meta.elaboradoPor}
-          {publishMeta?.contenidoPublicado ?
-            ` · Publicado ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
-          : " · Archivo base"}
-        </p>
-      ) : null}
-    </div>
+    <ConsultoriaMarcaProvider
+      initialMarca={presentacionMarca}
+      allowUrlOverride={viewerMode === "operator"}
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
+        {loadError && !isDeveloper ? (
+          <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">{loadError}</p>
+        ) : null}
+        {publishMeta && !publishMeta.contenidoPublicado && !isDeveloper ? (
+          <p className="gabi-no-print shrink-0 px-4 py-2 text-center text-xs text-amber-800">
+            Mostrando textos del archivo base. Publica desde el editor y verifica Supabase (migración
+            030 + SUPABASE_SERVICE_ROLE_KEY en Vercel).
+          </p>
+        ) : null}
+        <PropuestaSlideDeck
+          key={publishMeta?.updatedAt ?? "static"}
+          titulo={`${contenido.meta.titulo} · ${contenido.meta.subtitulo}`}
+          slides={slides}
+          backHref="/estudios"
+          backLabel="DMB · Estudios"
+          viewerMode={viewerMode}
+          embedded
+          printHref="/estudios/nubo/print"
+        />
+        {!isDeveloper ? (
+          <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">
+            <Link
+              href="/admin/estudios-nubo"
+              className="font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
+            >
+              Editar estudio
+            </Link>
+            {" · "}
+            {contenido.meta.clasificacion} · {contenido.meta.elaboradoPor}
+            {publishMeta?.contenidoPublicado ?
+              ` · Publicado ${new Date(publishMeta.updatedAt).toLocaleString("es-MX")}`
+            : " · Archivo base"}
+          </p>
+        ) : null}
+      </div>
+    </ConsultoriaMarcaProvider>
   );
 }

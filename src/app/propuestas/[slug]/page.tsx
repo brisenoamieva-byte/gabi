@@ -69,7 +69,7 @@ export default function PropuestaDetailPage() {
     );
   }
 
-  const { propuesta, media } = propuestaQuery.data;
+  const { propuesta, media, presentacionMarca } = propuestaQuery.data;
 
   return (
     <>
@@ -100,7 +100,11 @@ export default function PropuestaDetailPage() {
         operatorEmail={user?.email}
         titulo={`${propuesta.meta.titulo} · ${propuesta.meta.ubicacion}`}
       />
-      <PropuestaComercialSlides data={propuesta} media={media} />
+      <PropuestaComercialSlides
+        data={propuesta}
+        media={media}
+        presentacionMarca={presentacionMarca}
+      />
     </>
   );
 }

@@ -20,5 +20,6 @@ export async function GET(_request: Request, context: RouteContext) {
     propuesta: resolved.data,
     media: getPropuestaMedia(slug),
     meta: resolved.meta,
+    presentacionMarca: resolved.presentacionMarca,
   });
 }

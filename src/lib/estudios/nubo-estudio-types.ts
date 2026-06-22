@@ -1,3 +1,4 @@
+import type { ConsultoriaMarcaPresentacion } from "@/lib/brand/consultoria-marca";
 import type { NuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
 
 /** Contenido editable del estudio NUBO · preventa. */
@@ -9,6 +10,8 @@ export type NuboEstudioMeta = {
   elaboradoPor: string;
   fecha: string;
   clasificacion: string;
+  /** Logo y pie del estudio: BBR Habitarea o DMB Consultoría. */
+  presentacionMarca?: ConsultoriaMarcaPresentacion;
 };
 
 export type NuboEstudioDiagnostico = {

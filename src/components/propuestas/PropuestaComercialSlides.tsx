@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
+import { ConsultoriaBrandLogo } from "@/components/brand/ConsultoriaBrandLogo";
+import {
+  ConsultoriaMarcaProvider,
+} from "@/components/brand/ConsultoriaMarcaProvider";
 import { NuboOrganigramaSlide } from "@/components/propuestas/NuboOrganigramaSlide";
 import { PropuestaDesarrollosLogos } from "@/components/propuestas/PropuestaDesarrollosLogos";
 import {
@@ -15,8 +18,10 @@ import {
 import { NuboPropuestaView } from "@/components/propuestas/NuboPropuestaView";
 import { NUBO_MEDIA } from "@/lib/propuestas/nubo-media";
 import type { PropuestaComercialMedia } from "@/lib/propuestas/vita-alta-media";
-import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 import type { PropuestaComercialData } from "@/lib/propuestas/types";
+import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
+import type { ConsultoriaMarcaPresentacion } from "@/lib/brand/consultoria-marca";
+import { DEFAULT_CONSULTORIA_MARCA } from "@/lib/brand/consultoria-marca";
 import { formatTicket } from "@/lib/data";
 
 function pct(value: number) {
@@ -305,7 +310,7 @@ function buildPropuestaSlides(
       label: "Portada",
       content: (
         <SlidePortada>
-          <BbrHabitareaLogo height={36} className="mx-auto" />
+          <ConsultoriaBrandLogo height={36} className="mx-auto" />
           <h1 className={`mt-12 text-5xl font-normal tracking-tight md:text-6xl ${t.title}`}>
             {meta.titulo}
           </h1>
@@ -493,7 +498,7 @@ function buildPropuestaSlides(
       label: "Cierre",
       content: (
         <SlidePortada>
-          <BbrHabitareaLogo height={40} className="mx-auto" />
+          <ConsultoriaBrandLogo height={40} className="mx-auto" />
           <p className={`mt-10 text-lg ${t.body}`}>Preparado para {meta.preparadoPara}</p>
           <p className={`mt-2 text-sm ${t.body}`}>{meta.fecha}</p>
         </SlidePortada>
@@ -506,28 +511,35 @@ export function PropuestaComercialSlides({
   data,
   media = NUBO_MEDIA,
   viewerMode = "operator",
+  presentacionMarca = DEFAULT_CONSULTORIA_MARCA,
 }: {
   data: PropuestaComercialData;
   media?: PropuestaComercialMedia;
   viewerMode?: "operator" | "developer";
+  presentacionMarca?: ConsultoriaMarcaPresentacion;
 }) {
   const slides = useMemo(() => buildPropuestaSlides(data, media), [data, media]);
   const isDeveloper = viewerMode === "developer";
 
   return (
-    <PropuestaSlideDeck
-      titulo={`${data.meta.titulo} · ${data.meta.ubicacion}`}
-      slides={slides}
-      backHref="/propuestas"
-      backLabel="DMB · Propuestas"
-      viewerMode={viewerMode}
-      documentView={
-        isDeveloper ? undefined : (
-          <div className="propuesta-document-print mx-auto max-w-[880px] bg-[#FDFCFA] shadow-lg">
-            <NuboPropuestaView data={data} />
-          </div>
-        )
-      }
-    />
+    <ConsultoriaMarcaProvider
+      initialMarca={presentacionMarca}
+      allowUrlOverride={viewerMode === "operator"}
+    >
+      <PropuestaSlideDeck
+        titulo={`${data.meta.titulo} · ${data.meta.ubicacion}`}
+        slides={slides}
+        backHref="/propuestas"
+        backLabel="DMB · Propuestas"
+        viewerMode={viewerMode}
+        documentView={
+          isDeveloper ? undefined : (
+            <div className="propuesta-document-print mx-auto max-w-[880px] bg-[#FDFCFA] shadow-lg">
+              <NuboPropuestaView data={data} />
+            </div>
+          )
+        }
+      />
+    </ConsultoriaMarcaProvider>
   );
 }

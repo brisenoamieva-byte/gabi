@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
+import { ConsultoriaMarcaSelector } from "@/components/brand/ConsultoriaMarcaSelector";
+import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
 import type { NuboEstudioContenido, NuboEstudioPublishMeta } from "@/lib/estudios/nubo-estudio-types";
 
 const inputClass =
@@ -232,6 +234,12 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Section title="Portada">
+          <ConsultoriaMarcaSelector
+            value={resolveConsultoriaMarca(contenido.meta.presentacionMarca)}
+            onChange={(presentacionMarca) =>
+              patch((p) => ({ ...p, meta: { ...p.meta, presentacionMarca } }))
+            }
+          />
           <Field label="Título">
             <input
               className={inputClass}

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { CorredorMetrajeRangeChart } from "@/components/corredor/CorredorMetrajeRangeChart";
-import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
+import { ConsultoriaBrandLogo } from "@/components/brand/ConsultoriaBrandLogo";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
 import { CdvEtapa4LotificacionReview } from "@/components/corredor/investti/CdvEtapa4LotificacionReview";
 import { CdvInventarioDemandaChart } from "@/components/corredor/investti/CdvInventarioDemandaChart";
@@ -143,7 +143,7 @@ export function InvesttiMetrajeDashboard() {
           </p>
           <div className={`mt-8 flex flex-wrap items-end justify-between gap-6 border-t ${investtiReport.rule} pt-6`}>
             <div>
-              <BbrHabitareaLogo height={36} />
+              <ConsultoriaBrandLogo height={36} />
               <p className={`${investtiReport.caption} mt-2`}>Elaborado por BBR Habitarea</p>
             </div>
             <GabiSistemaMark
