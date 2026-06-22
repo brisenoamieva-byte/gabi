@@ -3,7 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { GabiSistemaMark } from "@/components/brand/GabiLogo";
+import {
+  GabiAuthLoading,
+  GabiAuthRedirecting,
+  GabiOperatorDenied,
+} from "@/components/gabi/GabiAuthGate";
+import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
+import { DmbLogo, DmbTagline } from "@/components/brand/DmbLogo";
 import { CorredorDesarrolloCard } from "@/components/corredor/CorredorDesarrolloCard";
 import { CorredorFiltersPanel } from "@/components/corredor/CorredorFiltersPanel";
 import { CorredorInmobiliariaBanner } from "@/components/corredor/CorredorInmobiliariaBanner";
@@ -17,10 +23,13 @@ import {
   filterCorredorDesarrollos,
 } from "@/lib/corredor/filters";
 import { useResolvedCorredorCatalog } from "@/lib/corredor/use-resolved-corredor-catalog";
-import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+import { dmbHubPath } from "@/lib/dmb/routes";
 
 export default function CorredorPage() {
-  const { authReady } = useRequireAsesorSession({ requireDesarrollo: false });
+  const { authReady, hasSession, operatorOk, loginHref } = useRequireGabiSession({
+    nextPath: "/corredor",
+    requireOperator: true,
+  });
   const { desarrollos, loading: catalogLoading } = useResolvedCorredorCatalog();
   const [filters, setFilters] = useState(DEFAULT_CORREDOR_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -37,28 +46,35 @@ export default function CorredorPage() {
   }, [filtered]);
 
   if (!authReady || catalogLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-[#201044]">
-        <p className="text-lg font-semibold">Cargando corredor sur...</p>
-      </main>
-    );
+    return <GabiAuthLoading message="Cargando corredor sur…" />;
+  }
+
+  if (!hasSession) {
+    return <GabiAuthRedirecting loginHref={loginHref} />;
+  }
+
+  if (!operatorOk) {
+    return <GabiOperatorDenied loginHref={loginHref} />;
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] text-[#201044]">
-      <header className="border-b border-black/8 bg-white px-5 py-4 shadow-sm md:px-10">
+    <main className="min-h-screen bg-dmb-surface text-dmb-ink">
+      <header className="border-b border-dmb-line bg-white px-5 py-4 shadow-sm md:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <Link
-              href="/dashboard"
-              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#201044]"
-              aria-label="Volver al dashboard"
+              href={dmbHubPath()}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-dmb-line bg-white text-dmb-ink"
+              aria-label="Volver al centro DMB"
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <GabiSistemaMark size="sm" />
             <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#201044]/50">
+              <DmbLogo variant="header" href={dmbHubPath()} />
+              <DmbTagline className="mt-0.5 hidden sm:block" />
+            </div>
+            <div className="min-w-0 border-l border-dmb-line pl-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-dmb-muted">
                 {CORREDOR_INMOBILIARIA.nombre}
               </p>
               <h1 className="truncate text-lg font-black md:text-xl">Corredor Metropolitano</h1>

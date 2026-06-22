@@ -6,13 +6,16 @@ export default function AdminPropuestasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-          Inteligencia comercial
+        <Link href="/admin/dmb" className="text-xs font-semibold text-dmb-accent hover:underline">
+          ← Admin DMB
+        </Link>
+        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-dmb-muted">
+          DMB · Consultoría
         </p>
-        <h2 className="text-2xl font-black text-gabi-forest">Propuestas comerciales</h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Edita textos y condiciones BBR publicados en <code>/propuestas/*</code>. Los datos
-          financieros (lotes, escenarios) se actualizan vía script de importación.
+        <h2 className="text-2xl font-black text-dmb-ink">Propuestas comerciales</h2>
+        <p className="mt-1 max-w-2xl text-sm text-dmb-muted">
+          Edita textos y condiciones publicados en propuestas. Los datos financieros (lotes,
+          escenarios) se actualizan vía script de importación.
         </p>
       </div>
 

@@ -19,7 +19,7 @@ export const ESTUDIOS_REGISTRY: EstudioListItem[] = [
     cliente: "Grupo Investti / BBR Habitarea",
     fecha: "2026",
     href: "/corredor/investti",
-    clasificacion: "Uso interno · Comercial",
+    clasificacion: "DMB · Análisis de mercado",
   },
   {
     slug: "nubo-preventa",
@@ -29,6 +29,6 @@ export const ESTUDIOS_REGISTRY: EstudioListItem[] = [
     cliente: "Desarrollador NUBO / BBR Habitarea",
     fecha: "2026",
     href: "/estudios/nubo",
-    clasificacion: "Consultoría comercial · Confidencial",
+    clasificacion: "DMB · Consultoría comercial",
   },
 ];

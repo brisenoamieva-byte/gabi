@@ -15,8 +15,6 @@ import { OPERATOR_LOGIN_PATH, requireOperatorMessage } from "@/lib/gabi/operator
 
 const LINEAS: GabiLineaNegocio[] = [
   "plataforma",
-  "inteligencia",
-  "inmobiliaria",
   "comercializadora",
 ];
 
@@ -68,8 +66,12 @@ export default function GabiCentroPage() {
             Cerebro inmobiliario
           </h2>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-600">
-            Vista integral de gabi: inteligencia comercial (propuestas y estudios), gabi Real Estate
-            en el corredor sur, y operación de comercializadoras como BBR Habitarea.
+            Plataforma comercial para comercializadoras: recorrido, CRM, cotizador y expedientes.
+            Consultoría y estudios en{" "}
+            <Link href="/dmb" className="font-semibold text-gabi-navy underline">
+              DMB
+            </Link>
+            .
           </p>
         </div>
 

@@ -257,10 +257,10 @@ export function PropuestaSlideDeck({
         <div className="flex min-w-0 items-center gap-2 md:gap-3">
           {isDeveloper ? (
             <div
-              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border md:h-9 md:w-9 ${t.border} bg-[#6cc24a]/10 text-[#4a9a32]`}
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border md:h-9 md:w-9 ${t.border} bg-dmb-accent/15 text-dmb-ink`}
               aria-hidden
             >
-              <span className="text-[10px] font-bold">BBR</span>
+              <span className="text-[10px] font-bold">DMB</span>
             </div>
           ) : (
             <Link

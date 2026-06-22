@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import { bbrBrand, gabiBrand } from "./src/lib/brand/colors";
+import { dmbBrand } from "./src/lib/brand/dmb-colors";
 
 const config: Config = {
   content: [
@@ -40,6 +41,15 @@ const config: Config = {
           green: bbrBrand.green,
           "green-dark": bbrBrand.greenDark,
           cream: bbrBrand.cream,
+        },
+        dmb: {
+          ink: dmbBrand.ink,
+          charcoal: dmbBrand.charcoal,
+          accent: dmbBrand.accent,
+          "accent-light": dmbBrand["accent-light"],
+          surface: dmbBrand.surface,
+          muted: dmbBrand.muted,
+          line: dmbBrand.line,
         },
       },
     },

@@ -1,19 +1,26 @@
-/** Rutas de inteligencia comercial — solo operador gabi (cookie maestra). */
+/** Rutas de inteligencia comercial — operador (DMB / gabi). */
 export const OPERATOR_INTEL_PREFIXES = [
+  "/dmb",
   "/gabi",
   "/propuestas",
   "/estudios",
 ] as const;
 
-/** Subrutas de corredor reservadas al operador (el hub /corredor es para asesores). */
-export const OPERATOR_CORREDOR_PREFIXES = ["/corredor/investti"] as const;
+/** Corredor completo en DMB (operador). Investti metraje sigue siendo ruta de estudio. */
+export const OPERATOR_CORREDOR_PREFIXES = ["/corredor", "/corredor/investti"] as const;
 
 const OPERATOR_INTEL_PUBLIC_PREFIXES = [
   "/propuestas/v/",
   "/estudios/v/",
 ] as const;
 
+import { isDmbPublicRoute } from "@/lib/dmb/routes";
+
 export function isOperatorIntelRoute(pathname: string): boolean {
+  if (isDmbPublicRoute(pathname)) {
+    return false;
+  }
+
   if (OPERATOR_INTEL_PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return false;
   }

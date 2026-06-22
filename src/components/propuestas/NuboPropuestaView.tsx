@@ -1,6 +1,7 @@
 "use client";
 
 import { BbrHabitareaLogo } from "@/components/brand/BbrHabitareaLogo";
+import { DmbDocumentFooter } from "@/components/dmb/DmbDocumentFooter";
 import {
   InvesttiCallout,
   InvesttiCoverStat,
@@ -311,18 +312,12 @@ export function NuboPropuestaView({ data }: { data: PropuestaComercialData }) {
         </InvesttiSection>
       </div>
 
-      <footer
-        className={`${investtiReport.sans} mt-14 border-t ${investtiReport.rule} pt-6 text-[11px] leading-relaxed text-neutral-500`}
-      >
-        <p>
-          Documento generado en <strong>gabi</strong> · Propuesta comercial confidencial. Los números
-          provienen del modelo financiero del proyecto ({data.id}). Validar con inventario y listas
-          vigentes antes de firma.
-        </p>
-        <p className="mt-2">
-          Operador: Ricardo Briseño · {data.meta.elaboradoPor} · {data.meta.fecha}
-        </p>
-      </footer>
+      <DmbDocumentFooter
+        className={`${investtiReport.sans} mt-14`}
+        extra={`Los números provienen del modelo financiero del proyecto (${data.id}). Validar con inventario y listas vigentes antes de firma.`}
+        elaboradoPor={`${data.meta.elaboradoPor}`}
+        fecha={data.meta.fecha}
+      />
     </div>
   );
 }

@@ -28,6 +28,7 @@ const navIcons = {
   "/admin/crm-playbook": ClipboardList,
   "/admin/crm-compliance": ShieldCheck,
   "/admin/compliance-coach": ClipboardCheck,
+  "/admin/dmb": BriefcaseBusiness,
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
@@ -51,6 +52,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/crm-playbook": "leads",
   "/admin/crm-compliance": "leads",
   "/admin/compliance-coach": "compliance-coach",
+  "/admin/dmb": "catalogo",
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
@@ -92,6 +94,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/crm-playbook", label: "Playbook CRM", ready: true },
     { href: "/admin/crm-compliance", label: "Salud CRM", ready: true },
     { href: "/admin/compliance-coach", label: "Compliance Coach", ready: true },
+    { href: "/admin/dmb", label: "DMB Consultoría", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },
     { href: "/admin/expedientes", label: "Expedientes", ready: true },
@@ -100,9 +103,6 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/guion", label: "Guion", ready: true },
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
     { href: "/admin/investti-simulador", label: "Simulador Investti", ready: true },
-    { href: "/admin/estudios-nubo", label: "Estudio NUBO", ready: true },
-    { href: "/admin/propuestas", label: "Propuestas", ready: true },
-    { href: "/admin/corredor", label: "Corredor sur", ready: true },
   ].filter((item) => canAccessModule(profile, navModules[item.href]));
 
   const handleLogout = async () => {
