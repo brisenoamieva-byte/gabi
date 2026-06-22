@@ -697,11 +697,12 @@ body.propuesta-printing .propuesta-print-page {
   .propuesta-print-page__foot {
     border-top: 1px solid #e2e8f0;
     color: #94a3b8;
+    display: flex;
     flex-shrink: 0;
     font-size: 6.5pt;
+    justify-content: space-between;
     margin-top: 0.08in;
     padding-top: 0.06in;
-    text-align: right;
   }
 
   /* Slides: sin scroll, altura contenida */

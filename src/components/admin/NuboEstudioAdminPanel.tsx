@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { DmbAdminBackLink } from "@/components/dmb/DmbAdminBackLink";
 import { NuboEstudioContenidoAdminPanel } from "@/components/admin/NuboEstudioContenidoAdminPanel";
 import { NuboEstudioMediaAdminPanel } from "@/components/admin/NuboEstudioMediaAdminPanel";
 import { NuboPublicidadAdminPanel } from "@/components/admin/NuboPublicidadAdminPanel";
@@ -22,19 +23,20 @@ export function NuboEstudioAdminPanel() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-            Estudios de mercado
+          <DmbAdminBackLink />
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-dmb-muted">
+            DMB · Estudios
           </p>
-          <h2 className="text-2xl font-black text-gabi-forest">NUBO · Editor del estudio</h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Edita textos, imágenes y presupuesto de publicidad. Los cambios se reflejan en{" "}
-            <code>/estudios/nubo</code> al publicar y recargar.
+          <h2 className="text-2xl font-black text-dmb-ink">NUBO · Editor del estudio</h2>
+          <p className="mt-1 max-w-2xl text-sm text-dmb-muted">
+            Edita textos, imágenes y presupuesto de publicidad. Los cambios se reflejan en el estudio
+            al publicar y recargar.
           </p>
         </div>
         <Link
           href="/estudios/nubo"
           target="_blank"
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gabi-forest/15 bg-white px-4 text-sm font-semibold text-gabi-forest hover:bg-gabi-cream"
+          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-dmb-line bg-white px-4 text-sm font-semibold text-dmb-ink hover:bg-dmb-surface"
         >
           <ExternalLink className="h-4 w-4" />
           Ver estudio

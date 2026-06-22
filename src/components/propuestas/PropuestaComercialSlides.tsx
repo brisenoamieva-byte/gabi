@@ -519,7 +519,7 @@ export function PropuestaComercialSlides({
       titulo={`${data.meta.titulo} · ${data.meta.ubicacion}`}
       slides={slides}
       backHref="/propuestas"
-      backLabel="Propuestas"
+      backLabel="DMB · Propuestas"
       viewerMode={viewerMode}
       documentView={
         isDeveloper ? undefined : (

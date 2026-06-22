@@ -43,7 +43,7 @@ export default function PropuestaDetailPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p className="text-sm text-slate-600">Propuesta no encontrada.</p>
-        <Link href="/propuestas" className="text-sm font-semibold underline">
+        <Link href="/propuestas" className="text-sm font-semibold text-dmb-accent underline">
           Ver todas
         </Link>
       </main>
@@ -78,7 +78,7 @@ export default function PropuestaDetailPage() {
           <p>
             <Link
               href={estudioLink}
-              className="font-semibold text-[#201044] underline-offset-2 hover:underline"
+              className="font-semibold text-dmb-accent underline-offset-2 hover:underline"
             >
               Ver análisis de preventa (restaurante campestre + accesos)
             </Link>
@@ -88,9 +88,9 @@ export default function PropuestaDetailPage() {
           <p>
             <Link
               href={`/admin/propuestas/${slug}`}
-              className="font-semibold text-[#201044] underline-offset-2 hover:underline"
+              className="font-semibold text-dmb-accent underline-offset-2 hover:underline"
             >
-              Editar textos y condiciones BBR
+              Editar propuesta (admin DMB)
             </Link>
           </p>
         ) : null}

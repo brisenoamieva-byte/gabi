@@ -49,7 +49,10 @@ export function PropuestaPrintDeck({
             </PropuestaSlideFit>
           </div>
           <div className="propuesta-print-page__foot">
-            {i + 1} / {total}
+            <span>DMB · {titulo}</span>
+            <span>
+              {i + 1} / {total}
+            </span>
           </div>
         </div>
       ))}

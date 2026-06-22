@@ -547,7 +547,7 @@ export function NuboPreventaAnalisisSlides({
         titulo={`${contenido.meta.titulo} · ${contenido.meta.subtitulo}`}
         slides={slides}
         backHref="/estudios"
-        backLabel="Estudios"
+        backLabel="DMB · Estudios"
         viewerMode={viewerMode}
         embedded
         printHref="/estudios/nubo/print"

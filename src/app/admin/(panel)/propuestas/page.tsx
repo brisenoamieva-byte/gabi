@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, FileText } from "lucide-react";
+import { DmbAdminBackLink } from "@/components/dmb/DmbAdminBackLink";
 import { PROPUESTAS_REGISTRY } from "@/lib/propuestas/registry";
 
 export default function AdminPropuestasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/dmb" className="text-xs font-semibold text-dmb-accent hover:underline">
-          ← Admin DMB
-        </Link>
+        <DmbAdminBackLink />
         <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-dmb-muted">
           DMB · Consultoría
         </p>

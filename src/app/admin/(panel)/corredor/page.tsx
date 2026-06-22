@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
+import { DmbAdminBackLink } from "@/components/dmb/DmbAdminBackLink";
 import { CORREDOR_DESARROLLOS } from "@/lib/corredor/zona-sur-seed";
 
 export default function AdminCorredorPage() {
@@ -10,14 +11,14 @@ export default function AdminCorredorPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-          Inteligencia comercial
+        <DmbAdminBackLink />
+        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-dmb-muted">
+          DMB · Corredor sur
         </p>
-        <h2 className="text-2xl font-black text-gabi-forest">Corredor sur</h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Edita precios, textos de venta y visibilidad publicados en{" "}
-          <code>/corredor/*</code>. Ubicaciones, logos y estructura del catálogo siguen en el seed
-          estático.
+        <h2 className="text-2xl font-black text-dmb-ink">Desarrollos en el mapa</h2>
+        <p className="mt-1 max-w-2xl text-sm text-dmb-muted">
+          Edita precios, textos de venta y visibilidad publicados en el corredor. Ubicaciones y
+          logos siguen en el catálogo base.
         </p>
       </div>
 
