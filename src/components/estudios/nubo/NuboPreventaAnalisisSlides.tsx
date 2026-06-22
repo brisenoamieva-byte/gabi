@@ -10,6 +10,7 @@ import {
   ConsultoriaMarcaProvider,
 } from "@/components/brand/ConsultoriaMarcaProvider";
 import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { NuboPublicidadSlide } from "@/components/estudios/nubo/NuboPublicidadSlide";
 import { NuboUbicacionSitioFigure } from "@/components/estudios/nubo/NuboUbicacionSitioFigure";
 import {
@@ -566,7 +567,7 @@ export function NuboPreventaAnalisisSlides({
         {!isDeveloper ? (
           <p className="gabi-no-print hidden shrink-0 pb-2 text-center text-[11px] text-slate-400 md:block">
             <Link
-              href="/admin/estudios-nubo"
+              href={DMB_ADMIN.estudiosNubo}
               className="font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
             >
               Editar estudio

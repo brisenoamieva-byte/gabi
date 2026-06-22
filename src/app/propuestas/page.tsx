@@ -9,6 +9,7 @@ import {
 } from "@/components/gabi/GabiAuthGate";
 import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
 import { DmbPageShell } from "@/components/dmb/DmbPageShell";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { PROPUESTAS_REGISTRY } from "@/lib/propuestas/registry";
 
 export default function PropuestasPage() {
@@ -59,7 +60,7 @@ export default function PropuestasPage() {
             </Link>
             <div className="flex shrink-0 gap-2">
               <Link
-                href={`/admin/propuestas/${p.slug}`}
+                href={DMB_ADMIN.propuesta(p.slug)}
                 className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-dmb-line px-3 text-sm font-semibold text-dmb-muted hover:bg-dmb-surface"
               >
                 <Pencil className="h-4 w-4" />

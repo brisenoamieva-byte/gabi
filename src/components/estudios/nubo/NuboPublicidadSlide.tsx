@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { formatTicket } from "@/lib/data";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { nuboType } from "@/lib/estudios/nubo-slide-theme";
 import { propuestaSlide as t } from "@/lib/propuestas/slide-theme";
 import {
@@ -244,7 +245,7 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
         </p>
         {showOperatorLinks ? (
           <Link
-            href="/admin/estudios-nubo"
+            href={DMB_ADMIN.estudiosNubo}
             className="gabi-no-print font-medium text-slate-500 underline-offset-2 hover:text-[#201044] hover:underline"
           >
             Editar estudio

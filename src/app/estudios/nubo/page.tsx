@@ -6,6 +6,7 @@ import { EstudioSharePanel } from "@/components/estudios/EstudioSharePanel";
 import { GabiSistemaMark } from "@/components/brand/GabiLogo";
 import { GabiAuthLoading } from "@/components/gabi/GabiAuthGate";
 import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { NUBO_ESTUDIO_SHARE_SLUG } from "@/lib/estudios/share-registry";
 
 export default function EstudioNuboPreventaPage() {
@@ -36,7 +37,7 @@ export default function EstudioNuboPreventaPage() {
             </Link>
             {isOperator ? (
               <Link
-                href="/admin/estudios-nubo"
+                href={DMB_ADMIN.estudiosNubo}
                 className="font-medium text-slate-500 hover:text-[#201044] hover:underline"
               >
                 Editar estudio

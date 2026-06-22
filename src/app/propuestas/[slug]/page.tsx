@@ -10,6 +10,7 @@ import {
   GabiOperatorDenied,
 } from "@/components/gabi/GabiAuthGate";
 import { useRequireGabiSession } from "@/components/gabi/useRequireGabiSession";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { getPropuestaEstudioLink, isPropuestaSlug } from "@/lib/propuestas/registry";
 import { useResolvedPropuesta } from "@/lib/propuestas/use-resolved-propuesta";
 
@@ -87,7 +88,7 @@ export default function PropuestaDetailPage() {
         {isOperator ? (
           <p>
             <Link
-              href={`/admin/propuestas/${slug}`}
+              href={DMB_ADMIN.propuesta(slug)}
               className="font-semibold text-dmb-accent underline-offset-2 hover:underline"
             >
               Editar propuesta (admin DMB)

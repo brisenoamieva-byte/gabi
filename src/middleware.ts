@@ -18,6 +18,7 @@ import {
   isDmbContentRoute,
   isGabiOnlyRoute,
 } from "@/lib/dmb/routes";
+import { resolveLegacyDmbAdminRedirect } from "@/lib/dmb/admin-routes";
 
 const isDevPwaAsset = (pathname: string) =>
   pathname === "/sw.js" ||
@@ -65,6 +66,12 @@ export async function middleware(request: NextRequest) {
   // gabi.mx → contenido consultoría vive en dmb.mx (prod)
   if (!isDmbHost && !isLocal && isDmbContentRoute(pathname) && !pathname.startsWith("/dmb")) {
     return NextResponse.redirect(absoluteDmbUrl(`${pathname}${search}`));
+  }
+
+  // Rutas legacy de consultoría → admin DMB unificado
+  const legacyDmbAdmin = resolveLegacyDmbAdminRedirect(pathname);
+  if (legacyDmbAdmin) {
+    return NextResponse.redirect(new URL(`${legacyDmbAdmin}${search}`, request.url));
   }
 
   // dmb.mx → operación comercial solo en gabi.mx

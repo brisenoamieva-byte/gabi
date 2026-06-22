@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, RotateCcw, Save, Upload } from "lucide-react";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
 import { DEFAULT_NUBO_UBICACION_MARCADORES } from "@/lib/estudios/nubo-ubicacion-markers";
 import type { NuboEstudioMedia } from "@/lib/estudios/nubo-estudio-types";
@@ -247,7 +248,7 @@ export function NuboEstudioMediaAdminPanel() {
             Reintentar
           </button>
           <Link
-            href="/admin/estudios-nubo"
+            href={DMB_ADMIN.estudiosNubo}
             className="rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white"
           >
             Volver a entrar

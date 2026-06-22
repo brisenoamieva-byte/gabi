@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, RotateCcw, Save } from "lucide-react";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { nuboEditorFetch } from "@/lib/estudios/nubo-editor-client";
 import { ConsultoriaMarcaSelector } from "@/components/brand/ConsultoriaMarcaSelector";
 import { resolveConsultoriaMarca } from "@/lib/brand/consultoria-marca";
@@ -178,7 +179,7 @@ export function NuboEstudioContenidoAdminPanel({ onSaved }: Props) {
             Reintentar
           </button>
           <Link
-            href="/admin/estudios-nubo"
+            href={DMB_ADMIN.estudiosNubo}
             className="rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white"
           >
             Volver a entrar

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, Presentation, BriefcaseBusiness, MapPin, CalendarClock, ShieldCheck, ClipboardCheck } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, BriefcaseBusiness, CalendarClock, ShieldCheck, ClipboardCheck } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -32,9 +32,6 @@ const navIcons = {
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
-  "/admin/estudios-nubo": Presentation,
-  "/admin/propuestas": BriefcaseBusiness,
-  "/admin/corredor": MapPin,
   "/admin/guardias": CalendarClock,
 } as const;
 
@@ -56,9 +53,6 @@ const navModules: Record<string, AdminModule> = {
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
-  "/admin/estudios-nubo": "catalogo",
-  "/admin/propuestas": "catalogo",
-  "/admin/corredor": "catalogo",
   "/admin/guardias": "guardias",
 };
 
@@ -155,7 +149,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
               const active =
                 pathname === item.href ||
                 (item.href === "/admin/asesores" && pathname === "/admin/usuarios") ||
-                (item.href === "/admin/propuestas" && pathname.startsWith("/admin/propuestas/"));
+                (item.href === "/admin/dmb" && pathname.startsWith("/admin/dmb/"));
 
               return (
                 <Link

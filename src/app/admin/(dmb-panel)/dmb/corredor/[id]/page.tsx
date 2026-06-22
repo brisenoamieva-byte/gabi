@@ -1,21 +1,14 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { CorredorDesarrolloAdminPanel } from "@/components/admin/CorredorDesarrolloAdminPanel";
-import { requireAdminModule } from "@/lib/admin/guards";
-import { isSuperAdmin } from "@/lib/admin/permissions";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { getCorredorDesarrolloById, isCorredorDesarrolloId } from "@/lib/corredor/zona-sur-seed";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function AdminCorredorEditorPage({ params }: PageProps) {
-  const session = await requireAdminModule("catalogo");
-
-  if (!isSuperAdmin(session.profile)) {
-    redirect("/admin/documentos");
-  }
-
+export default async function AdminDmbCorredorEditorPage({ params }: PageProps) {
   const { id } = await params;
   if (!isCorredorDesarrolloId(id)) {
     notFound();
@@ -26,8 +19,8 @@ export default async function AdminCorredorEditorPage({ params }: PageProps) {
   return (
     <div className="space-y-4">
       <Link
-        href="/admin/corredor"
-        className="inline-flex text-sm font-semibold text-slate-500 hover:text-gabi-forest hover:underline"
+        href={DMB_ADMIN.corredor}
+        className="inline-flex text-sm font-semibold text-dmb-muted hover:text-dmb-accent hover:underline"
       >
         ← Todos los desarrollos
       </Link>

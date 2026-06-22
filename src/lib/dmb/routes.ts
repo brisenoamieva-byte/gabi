@@ -1,3 +1,5 @@
+import { isDmbAdminRoute } from "@/lib/dmb/admin-routes";
+
 export const DMB_PUBLIC_PREFIXES = ["/dmb/landing"] as const;
 
 export function isDmbPublicRoute(pathname: string): boolean {
@@ -49,8 +51,14 @@ export const GABI_ONLY_PREFIXES = [
 ] as const;
 
 export function isGabiOnlyRoute(pathname: string): boolean {
+  if (isDmbAdminRoute(pathname)) {
+    return false;
+  }
+  if (pathname === "/admin/login" || pathname === "/admin/reset-password") {
+    return false;
+  }
   if (pathname.startsWith("/admin")) {
-    return !pathname.startsWith("/admin/dmb");
+    return true;
   }
   return GABI_ONLY_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

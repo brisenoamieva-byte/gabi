@@ -1,21 +1,14 @@
 import { PropuestaComercialAdminPanel } from "@/components/admin/PropuestaComercialAdminPanel";
-import { requireAdminModule } from "@/lib/admin/guards";
-import { isSuperAdmin } from "@/lib/admin/permissions";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { getPropuestaBySlug, isPropuestaSlug } from "@/lib/propuestas/registry";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export default async function AdminPropuestaEditorPage({ params }: PageProps) {
-  const session = await requireAdminModule("catalogo");
-
-  if (!isSuperAdmin(session.profile)) {
-    redirect("/admin/documentos");
-  }
-
+export default async function AdminDmbPropuestaEditorPage({ params }: PageProps) {
   const { slug } = await params;
   if (!isPropuestaSlug(slug)) {
     notFound();
@@ -26,8 +19,8 @@ export default async function AdminPropuestaEditorPage({ params }: PageProps) {
   return (
     <div className="space-y-4">
       <Link
-        href="/admin/propuestas"
-        className="inline-flex text-sm font-semibold text-slate-500 hover:text-gabi-forest hover:underline"
+        href={DMB_ADMIN.propuestas}
+        className="inline-flex text-sm font-semibold text-dmb-muted hover:text-dmb-accent hover:underline"
       >
         ← Todas las propuestas
       </Link>

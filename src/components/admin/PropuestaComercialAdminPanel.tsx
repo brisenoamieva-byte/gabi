@@ -167,11 +167,11 @@ export function PropuestaComercialAdminPanel({ slug, titulo }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-            Propuestas comerciales
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-dmb-muted">
+            DMB · Propuestas comerciales
           </p>
-          <h2 className="text-2xl font-black text-gabi-forest">{titulo}</h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+          <h2 className="text-2xl font-black text-dmb-ink">{titulo}</h2>
+          <p className="mt-1 max-w-2xl text-sm text-dmb-muted">
             Edita portada, narrativa y condiciones BBR. Lotes y escenario financiero siguen en el
             archivo generado (<code>*.generated.ts</code>).
             {hasOverrides ? (
@@ -185,7 +185,7 @@ export function PropuestaComercialAdminPanel({ slug, titulo }: Props) {
           <Link
             href={`/propuestas/${slug}`}
             target="_blank"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gabi-forest/15 bg-white px-4 text-sm font-semibold text-gabi-forest hover:bg-gabi-cream"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-dmb-line bg-white px-4 text-sm font-semibold text-dmb-ink hover:bg-dmb-surface"
           >
             <ExternalLink className="h-4 w-4" />
             Ver propuesta

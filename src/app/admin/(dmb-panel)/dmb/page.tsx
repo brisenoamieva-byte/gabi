@@ -1,26 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, BriefcaseBusiness, MapPin, Presentation } from "lucide-react";
-import { DmbLogo, DmbTagline } from "@/components/brand/DmbLogo";
 import { getAdminSession } from "@/lib/admin/session";
 import { isSuperAdmin } from "@/lib/admin/permissions";
+import { DMB_ADMIN } from "@/lib/dmb/admin-routes";
 import { dmbHubPath } from "@/lib/dmb/routes";
 
 const ADMIN_MODULES = [
   {
-    href: "/admin/propuestas",
+    href: DMB_ADMIN.propuestas,
     label: "Propuestas comerciales",
     description: "Editar slides y overrides de propuestas B2B.",
     icon: BriefcaseBusiness,
   },
   {
-    href: "/admin/estudios-nubo",
+    href: DMB_ADMIN.estudiosNubo,
     label: "Estudio NUBO",
     description: "Contenido, imágenes y presupuesto de publicidad.",
     icon: Presentation,
   },
   {
-    href: "/admin/corredor",
+    href: DMB_ADMIN.corredor,
     label: "Corredor sur",
     description: "Precios, textos y visibilidad de desarrollos en el mapa.",
     icon: MapPin,
@@ -39,24 +39,18 @@ export default async function AdminDmbPage() {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link
-            href={dmbHubPath()}
-            className="text-xs font-semibold text-dmb-accent hover:underline"
-          >
-            ← Centro DMB
-          </Link>
-          <div className="mt-3">
-            <DmbLogo variant="header" />
-            <DmbTagline className="mt-1" />
-          </div>
-          <h1 className="mt-4 text-2xl font-black text-dmb-ink">Admin consultoría</h1>
-          <p className="mt-1 max-w-xl text-sm text-dmb-muted">
-            Contenidos de propuestas, estudios y corredor. Misma base de datos y sesión admin que
-            gabi — sin cuentas adicionales.
-          </p>
-        </div>
+      <header>
+        <Link
+          href={dmbHubPath()}
+          className="text-xs font-semibold text-dmb-accent hover:underline"
+        >
+          ← Centro DMB
+        </Link>
+        <h1 className="mt-4 text-2xl font-black text-dmb-ink">Contenidos de consultoría</h1>
+        <p className="mt-1 max-w-xl text-sm text-dmb-muted">
+          Propuestas, estudios de mercado y corredor sur. Misma sesión admin que gabi; este panel es
+          exclusivo de la marca DMB.
+        </p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
