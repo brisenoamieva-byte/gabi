@@ -6,7 +6,7 @@ import {
   formatMarcajeHora,
   guardiaMarcajeCumplimientoLabel,
   type GuardiaMarcajesDiaPayload,
-} from "@/lib/admin/guardia-marcajes-service";
+} from "@/lib/admin/guardia-marcajes-types";
 import { formatDateYmd, GUARDIAS_PILOT_DESARROLLO_ID } from "@/lib/comercial/guardias";
 
 type Props = {
