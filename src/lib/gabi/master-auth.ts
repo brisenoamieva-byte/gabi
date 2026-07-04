@@ -16,12 +16,17 @@ function secretsEqual(a: string, b: string): boolean {
 
 const DEFAULT_MASTER_PASSWORD = "Pantuflas21";
 
-/** Contraseña maestra del operador/dueño (obligatoria: GABI_MASTER_PASSWORD en producción). */
+/** Contraseña maestra del operador/dueño (/operador, /admin/login). */
 export function resolveMasterPassword(): string | null {
-  const fromEnv = process.env.GABI_MASTER_PASSWORD?.trim();
+  const fromEnv =
+    process.env.GABI_MASTER_PASSWORD?.trim() ||
+    process.env.GABI_OPERATOR_ACCESS_CODE?.trim() ||
+    null;
+
   if (process.env.NODE_ENV === "production") {
-    return fromEnv || null;
+    return fromEnv;
   }
+
   return fromEnv || DEFAULT_MASTER_PASSWORD;
 }
 
