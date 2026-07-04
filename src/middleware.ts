@@ -25,6 +25,10 @@ const isDevPwaAsset = (pathname: string) =>
   pathname.startsWith("/workbox-") ||
   pathname.startsWith("/fallback-");
 
+/** Archivos estáticos en /public — no pasar por lógica de marca/host. */
+const isPublicStaticAsset = (pathname: string) =>
+  /\.(?:png|jpe?g|gif|webp|svg|ico|pdf|woff2?|ttf|otf|mp4|webm)$/i.test(pathname);
+
 async function hasMasterAdminAccess(request: NextRequest): Promise<boolean> {
   const email = await verifyMasterSessionValueEdge(request.cookies.get(GABI_MASTER_COOKIE)?.value);
   return Boolean(email && isGabiOperator({ email }));
@@ -45,6 +49,11 @@ function setBrandCookie(response: NextResponse, brand: "dmb" | "gabi"): void {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (isPublicStaticAsset(pathname)) {
+    return NextResponse.next();
+  }
+
   const host = request.headers.get("host") ?? "";
   const isDmbHost = isDmbHostname(host);
   const isLocal = isLocalDevHost(host);

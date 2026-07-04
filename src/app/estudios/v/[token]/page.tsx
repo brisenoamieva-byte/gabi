@@ -121,7 +121,7 @@ export default function EstudioShareViewPage() {
   }
 
   return (
-    <main className="propuesta-deck-viewport flex h-[100svh] flex-col overflow-hidden bg-[#F8FAFC]">
+    <main className="propuesta-deck-viewport flex h-[100svh] flex-col overflow-hidden bg-nubo-beige">
       <NuboPreventaAnalisisSlides viewerMode="developer" />
     </main>
   );

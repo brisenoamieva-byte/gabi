@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 import { bbrBrand, gabiBrand } from "./src/lib/brand/colors";
 import { dmbBrand } from "./src/lib/brand/dmb-colors";
+import { valleAllendeBrand } from "./src/lib/brand/nubo-valle-allende";
 
 const config: Config = {
   content: [
@@ -51,6 +52,18 @@ const config: Config = {
           muted: dmbBrand.muted,
           line: dmbBrand.line,
         },
+        nubo: {
+          beige: valleAllendeBrand.colors.beige,
+          verde: valleAllendeBrand.colors.verde,
+          arena: valleAllendeBrand.colors.arena,
+          gris: valleAllendeBrand.colors.gris,
+          negro: valleAllendeBrand.colors.negro,
+        },
+      },
+      fontFamily: {
+        "nubo-heading": ["var(--font-nubo-heading)", "Georgia", "serif"],
+        "nubo-subheading": ["var(--font-nubo-subheading)", "Georgia", "serif"],
+        "nubo-body": ["var(--font-nubo-body)", "system-ui", "sans-serif"],
       },
     },
   },

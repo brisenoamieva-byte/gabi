@@ -38,8 +38,8 @@ function NuboKpiStrip() {
         <article key={kpi.label} className={nuboSurface.kpiStrip}>
           <p className={nuboType.labelMuted}>{kpi.label}</p>
           <p
-            className={`mt-1.5 font-[Georgia,'Times_New_Roman',serif] text-2xl tabular-nums text-slate-900 md:text-[1.75rem] ${
-              index === 3 ? "text-[#3f7a24]" : ""
+            className={`mt-1.5 font-nubo-heading text-2xl tabular-nums text-nubo-negro md:text-[1.75rem] ${
+              index === 3 ? "text-nubo-verde" : ""
             }`}
           >
             {kpi.value}
@@ -67,7 +67,7 @@ function NuboPortadaSlide({
 }) {
   return (
     <div className="nubo-portada-shell propuesta-slide-root relative flex h-full min-h-0 w-full flex-1 flex-col justify-center overflow-hidden px-4 py-5 sm:px-6 sm:py-8 md:px-14 md:py-10">
-      <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-28 bg-[#6cc24a] md:w-36" aria-hidden />
+      <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-28 bg-nubo-arena md:w-36" aria-hidden />
       <div className="propuesta-slide-inner relative z-10 mx-auto w-full max-w-5xl">
         <motion.div {...fadeUp} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
           <ConsultoriaBrandLogo height={44} priority />
@@ -141,10 +141,10 @@ function SlideFigure({
 
   return (
     <div
-      className={`relative overflow-hidden bg-slate-950 ${aspectClass} ${
+      className={`relative overflow-hidden bg-nubo-negro ${aspectClass} ${
         variant === "gallery" ?
-          "rounded-xl border border-slate-200/80 shadow-md shadow-slate-900/10"
-        : "rounded-sm border border-slate-200"
+          "rounded-xl border border-nubo-arena/60 shadow-md shadow-nubo-negro/10"
+        : "rounded-sm border border-nubo-arena/50"
       }`}
     >
       <Image
@@ -181,7 +181,7 @@ function ReferenceGallery({
         {items.map((ref) => (
           <figure
             key={ref.src}
-            className="propuesta-print-gallery__card overflow-hidden rounded-xl border border-slate-200/80 shadow-md shadow-slate-900/10 transition-shadow hover:shadow-lg"
+            className="propuesta-print-gallery__card overflow-hidden rounded-xl border border-nubo-arena/60 shadow-md shadow-nubo-negro/10 transition-shadow hover:shadow-lg"
           >
             <div className="propuesta-print-gallery__frame">
               {/* img nativo: Chrome PDF respeta object-fit; Next/Image fill fuerza recorte */}
@@ -254,7 +254,7 @@ function CondicionTextBlocks({
       >
         {paraArrancar.map((item) => (
           <li key={item} className="nubo-panel-dark__item mb-1.5 flex gap-2 break-inside-avoid">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6cc24a]" aria-hidden />
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-nubo-arena" aria-hidden />
             <span>{item}</span>
           </li>
         ))}
@@ -294,7 +294,7 @@ function CondicionSlide({
   return (
     <SlideCanvas align="start" className="!py-5 md:!py-7" brandMark={nuboSlideBrand}>
       <div className="mb-6 flex items-start gap-4 md:mb-7">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-nubo-verde font-nubo-heading text-xl tabular-nums text-white ring-2 ring-nubo-arena/30 md:h-14 md:w-14 md:text-2xl">
           {num}
         </div>
         <div className="min-w-0 pt-0.5">
@@ -340,7 +340,7 @@ function CondicionOverviewCard({
 }) {
   return (
     <article className={`${nuboSurface.cardAccent} px-5 py-5 md:px-6 md:py-6`}>
-      <span className="font-[Georgia,'Times_New_Roman',serif] text-3xl tabular-nums text-[#6cc24a]/35 md:text-4xl">
+      <span className="font-nubo-heading text-3xl tabular-nums text-nubo-arena/50 md:text-4xl">
         {num}
       </span>
       <p className={`mt-3 ${nuboType.cardTitle}`}>{titulo}</p>
@@ -488,7 +488,7 @@ export function buildNuboPreventaSlides(
               />
               {restaurante.referenciasConcepto[1] ? (
                 <p className={`mt-3 ${nuboType.small}`}>
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-nubo-negro">
                     {restaurante.referenciasConcepto[1].nombre}
                   </span>{" "}
                   — {restaurante.referenciasConcepto[1].detalle}
@@ -529,7 +529,7 @@ export function NuboPreventaAnalisisSlides({
       <ConsultoriaMarcaProvider initialMarca={presentacionMarca}>
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
           <ConsultoriaBrandLogo height={36} />
-          <Loader2 className="h-5 w-5 animate-spin text-[#6cc24a]" />
+          <Loader2 className="h-5 w-5 animate-spin text-nubo-verde" />
           <div>
             <p className="text-sm font-semibold text-slate-800">NUBO · Análisis de preventa</p>
             <p className="mt-1 text-xs text-slate-500">Cargando presentación…</p>

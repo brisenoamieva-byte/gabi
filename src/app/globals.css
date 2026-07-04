@@ -62,25 +62,29 @@ body {
     @apply bg-bbr-cream text-bbr-purple;
   }
 
-  /* NUBO · panel oscuro con contraste garantizado */
+  /* NUBO · Valle de Allende — panel oscuro y portada */
   .nubo-panel-dark {
-    @apply rounded-xl bg-slate-900 px-4 py-4 text-white sm:px-5;
-    box-shadow: 0 18px 40px -24px rgb(15 23 42 / 0.45);
+    @apply rounded-xl bg-nubo-verde px-4 py-4 text-white sm:px-5;
+    box-shadow: 0 18px 40px -24px rgb(40 37 30 / 0.35);
   }
 
   .nubo-portada-shell {
     background:
-      radial-gradient(ellipse 80% 60% at 100% 0%, rgb(108 194 74 / 0.09), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 0% 100%, rgb(15 23 42 / 0.03), transparent 50%),
-      #fff;
+      radial-gradient(ellipse 80% 60% at 100% 0%, rgb(202 195 169 / 0.22), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 0% 100%, rgb(61 66 54 / 0.04), transparent 50%),
+      #f9f9e8;
   }
 
   .nubo-panel-dark__label {
-    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-green-300 md:text-xs;
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-nubo-arena md:text-xs;
   }
 
   .nubo-panel-dark__item {
     @apply text-sm leading-snug text-white/90 md:text-[15px];
+  }
+
+  .nubo-brand-root {
+    @apply font-nubo-body text-nubo-verde;
   }
 }
 

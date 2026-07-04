@@ -13,6 +13,7 @@ import type { GuardiaAsignacionRecord, GuardiaConflicto } from "@/lib/admin/guar
 import type { AsesorRecord } from "@/lib/asesores/types";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import { GuardiasMarcajesHoyPanel } from "@/components/admin/GuardiasMarcajesHoyPanel";
 import {
   formatDayHeader,
   formatWeekRangeLabel,
@@ -347,6 +348,8 @@ export function GuardiasAdminPanel({
           {success}
         </div>
       ) : null}
+
+      <GuardiasMarcajesHoyPanel desarrolloId={desarrolloId} />
 
       {conflictos.length > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

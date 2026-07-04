@@ -67,9 +67,9 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
 
   return (
     <SlideCanvas className="nubo-publicidad-slide !flex !flex-col !py-3 md:!py-4" brandMark={<ConsultoriaSlideMark />}>
-      <div className="nubo-publicidad-slide-header mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 md:mb-4">
+      <div className="nubo-publicidad-slide-header mb-3 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-nubo-arena/50 pb-3 md:mb-4">
         <div className="flex items-start gap-4">
-          <div className="nubo-publicidad-num-badge flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-[Georgia,'Times_New_Roman',serif] text-xl tabular-nums text-white ring-2 ring-[#6cc24a]/25 md:h-14 md:w-14 md:text-2xl">
+          <div className="nubo-publicidad-num-badge flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-nubo-verde font-nubo-heading text-xl tabular-nums text-white ring-2 ring-nubo-arena/30 md:h-14 md:w-14 md:text-2xl">
             {NUBO_PUBLICIDAD_META.num}
           </div>
           <div className="min-w-0 pt-0.5">
@@ -89,11 +89,11 @@ export function NuboPublicidadSlide({ showOperatorLinks = true }: { showOperator
               key={item.label}
               className={`inline-flex flex-col rounded-lg border px-3 py-1.5 ${
                 item.accent
-                  ? "border-[#6cc24a]/35 bg-[#6cc24a]/8"
-                  : "border-slate-200 bg-slate-50"
+                  ? "border-nubo-arena/50 bg-nubo-arena/15"
+                  : "border-nubo-arena/40 bg-nubo-beige/60"
               }`}
             >
-              <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-nubo-gris">
                 {item.label}
               </span>
               <span className={`mt-0.5 tabular-nums ${item.accent ? t.bodyStrong : t.body}`}>
