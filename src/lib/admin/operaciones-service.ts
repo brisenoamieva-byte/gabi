@@ -1,9 +1,11 @@
+import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
+import type { DesarrolloSembradoSegment } from "@/lib/catalog/desarrollos-registry";
+import { listAsesores } from "@/lib/admin/asesores-service";
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import { getProspectoById } from "@/lib/admin/prospectos-service";
 import { prospectoEtapaFromSembrado } from "@/lib/comercial/prospecto-etapas";
 import { resolveUnidadEstatus } from "@/lib/comercial/unidad-disponibilidad";
-import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
 import {
   sembradoToInventarioEstatus,
   type OperacionComercialRecord,
@@ -289,10 +291,17 @@ export type ApartadoPrefill = {
   cotizacionReciente: boolean;
 };
 
+export type ApartadoAsesorOption = {
+  id: string;
+  nombre: string;
+};
+
 export type ApartadoContextFromProspecto = {
   desarrolloId: string;
   prefill: ApartadoPrefill;
   unidades: SembradoUnidadRow[];
+  asesores: ApartadoAsesorOption[];
+  segmentos: DesarrolloSembradoSegment[];
 };
 
 export const mergeProspectoIntoPrefill = (
@@ -398,6 +407,11 @@ export const getApartadoContextFromProspecto = async (
     desarrolloId: prospecto.desarrollo_id,
     prefill,
     unidades,
+    asesores: (await listAsesores({ desarrolloId: prospecto.desarrollo_id })).map((row) => ({
+      id: row.id,
+      nombre: row.nombre,
+    })),
+    segmentos: getSembradoSegmentsForDesarrollo(prospecto.desarrollo_id),
   };
 };
 

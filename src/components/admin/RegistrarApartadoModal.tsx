@@ -1,10 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
+import type { ApartadoAsesorOption } from "@/lib/admin/operaciones-service";
 import type { ApartadoPrefill } from "@/lib/admin/operaciones-service";
+import type { DesarrolloSembradoSegment } from "@/lib/catalog/desarrollos-registry";
+import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
+import {
+  EQUIPO_VENTA_OPTIONS,
+  MEDIO_PUBLICITARIO_OPTIONS,
+  PROMOTOR_ASESOR_OTRO,
+  filterUnidadesBySembradoSegment,
+  normalizeEquipoVentaSelect,
+  normalizeMedioPublicitarioSelect,
+  resolveSembradoSegmentIdForUnidad,
+} from "@/lib/comercial/apartado-form-options";
 import type { SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
+import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
 
 type RegistrarApartadoModalProps = {
   desarrolloId: string;
@@ -68,7 +80,7 @@ const prefillToForm = (prefill: ApartadoPrefill): FormState => ({
   unidadId: prefill.unidadId,
   clienteNombre: prefill.clienteNombre,
   origenCiudad: prefill.origenCiudad ?? "",
-  equipoVenta: prefill.equipoVenta ?? "",
+  equipoVenta: normalizeEquipoVentaSelect(prefill.equipoVenta),
   promotorNombre: prefill.promotorNombre ?? "",
   tipoInversion: prefill.tipoInversion ?? "",
   listaPrecios: prefill.listaPrecios ?? "",
@@ -77,7 +89,7 @@ const prefillToForm = (prefill: ApartadoPrefill): FormState => ({
   precioVenta: prefill.precioVenta ? formatAmountInput(prefill.precioVenta) : "",
   esquemaPago: prefill.esquemaPago ?? "",
   fechaApartado: new Date().toISOString().slice(0, 10),
-  medioPublicitario: prefill.medioPublicitario ?? "",
+  medioPublicitario: normalizeMedioPublicitarioSelect(prefill.medioPublicitario),
   observacionesPagos: "",
   observaciones: "",
   primerPago: "",
@@ -86,6 +98,31 @@ const prefillToForm = (prefill: ApartadoPrefill): FormState => ({
   prospectoId: prefill.prospectoId ?? "",
   cotizacionId: prefill.cotizacionId ?? "",
 });
+
+const inferPromotorAsesorId = (
+  equipoVenta: string,
+  promotorNombre: string,
+  asesores: ApartadoAsesorOption[],
+  currentAsesorId?: string,
+): string => {
+  if (equipoVenta !== "Interno (BBR)") {
+    return "";
+  }
+
+  const byNombre = asesores.find(
+    (row) => row.nombre.trim().toLowerCase() === promotorNombre.trim().toLowerCase(),
+  );
+  if (byNombre) {
+    return byNombre.id;
+  }
+  if (currentAsesorId && asesores.some((row) => row.id === currentAsesorId)) {
+    return currentAsesorId;
+  }
+  if (promotorNombre.trim()) {
+    return PROMOTOR_ASESOR_OTRO;
+  }
+  return currentAsesorId ?? "";
+};
 
 function Field({
   label,
@@ -122,11 +159,77 @@ export function RegistrarApartadoModal({
   const esCompletar = modo === "completar";
   const desdeLead = Boolean(prospectoId);
   const [unidadesOpciones, setUnidadesOpciones] = useState(unidadesOpcionesProp);
+  const [segmentos, setSegmentos] = useState<DesarrolloSembradoSegment[]>(() =>
+    getSembradoSegmentsForDesarrollo(desarrolloId),
+  );
+  const [asesores, setAsesores] = useState<ApartadoAsesorOption[]>([]);
+  const [tipoProducto, setTipoProducto] = useState("");
+  const [promotorAsesorId, setPromotorAsesorId] = useState("");
   const [form, setForm] = useState<FormState>(() => emptyForm(initialUnidadId ?? ""));
   const [loadingPrefill, setLoadingPrefill] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [cotizacionHint, setCotizacionHint] = useState(false);
+
+  const applyContextMeta = useCallback(
+    (
+      unidades: SembradoUnidadRow[],
+      prefill: ApartadoPrefill | undefined,
+      nextAsesores: ApartadoAsesorOption[],
+      nextSegmentos?: DesarrolloSembradoSegment[],
+    ) => {
+      setUnidadesOpciones(unidades);
+      if (nextSegmentos?.length) {
+        setSegmentos(nextSegmentos);
+      }
+
+      setAsesores(nextAsesores);
+
+      if (prefill) {
+        const nextForm = prefillToForm(prefill);
+        if (!nextForm.equipoVenta && esAsesor) {
+          nextForm.equipoVenta = "Interno (BBR)";
+        }
+        setForm(nextForm);
+        setCotizacionHint(prefill.cotizacionReciente);
+        setPromotorAsesorId(
+          inferPromotorAsesorId(
+            nextForm.equipoVenta,
+            nextForm.promotorNombre,
+            nextAsesores,
+            esAsesor ? asesorId : undefined,
+          ),
+        );
+
+        if (prefill.unidadId) {
+          const row = unidades.find((item) => item.unidadId === prefill.unidadId);
+          if (row) {
+            setTipoProducto(resolveSembradoSegmentIdForUnidad(desarrolloId, row) ?? "");
+          }
+        } else if (nextSegmentos?.length) {
+          setTipoProducto(nextSegmentos[0]?.id ?? "");
+        }
+      }
+    },
+    [asesorId, desarrolloId, esAsesor],
+  );
+
+  const unidadesFiltradas = useMemo(
+    () => filterUnidadesBySembradoSegment(unidadesOpciones, desarrolloId, tipoProducto),
+    [desarrolloId, tipoProducto, unidadesOpciones],
+  );
+
+  const resolvePromotorNombre = useCallback(() => {
+    if (form.equipoVenta === "Interno (BBR)") {
+      if (promotorAsesorId && promotorAsesorId !== PROMOTOR_ASESOR_OTRO) {
+        const asesor = asesores.find((row) => row.id === promotorAsesorId);
+        if (asesor) {
+          return asesor.nombre;
+        }
+      }
+    }
+    return form.promotorNombre.trim();
+  }, [asesores, form.equipoVenta, form.promotorNombre, promotorAsesorId]);
 
   const loadPrefill = useCallback(
     async (unidadId: string) => {
@@ -155,8 +258,21 @@ export function RegistrarApartadoModal({
           }
 
           if (data.prefill) {
-            setForm(prefillToForm(data.prefill));
+            const nextForm = prefillToForm(data.prefill);
+            setForm(nextForm);
             setCotizacionHint(data.prefill.cotizacionReciente);
+            setPromotorAsesorId(
+              inferPromotorAsesorId(
+                nextForm.equipoVenta,
+                nextForm.promotorNombre,
+                asesores,
+                esAsesor ? asesorId : undefined,
+              ),
+            );
+            const row = unidadesOpciones.find((item) => item.unidadId === unidadId);
+            if (row) {
+              setTipoProducto(resolveSembradoSegmentIdForUnidad(desarrolloId, row) ?? "");
+            }
           }
           return;
         }
@@ -173,8 +289,12 @@ export function RegistrarApartadoModal({
         }
 
         if (data.prefill) {
-          setForm(prefillToForm(data.prefill));
+          const nextForm = prefillToForm(data.prefill);
+          setForm(nextForm);
           setCotizacionHint(data.prefill.cotizacionReciente);
+          setPromotorAsesorId(
+            inferPromotorAsesorId(nextForm.equipoVenta, nextForm.promotorNombre, asesores),
+          );
         }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
@@ -182,7 +302,7 @@ export function RegistrarApartadoModal({
         setLoadingPrefill(false);
       }
     },
-    [desarrolloId, esAsesor, asesorId, prospectoId],
+    [desarrolloId, esAsesor, asesorId, prospectoId, asesores, unidadesOpciones],
   );
 
   useEffect(() => {
@@ -205,6 +325,8 @@ export function RegistrarApartadoModal({
         const data = (await response.json()) as {
           prefill?: ApartadoPrefill;
           unidades?: SembradoUnidadRow[];
+          asesores?: ApartadoAsesorOption[];
+          segmentos?: DesarrolloSembradoSegment[];
           error?: string;
         };
 
@@ -212,11 +334,12 @@ export function RegistrarApartadoModal({
           throw new Error(data.error ?? "No se pudo cargar el prospecto.");
         }
 
-        if (data.prefill) {
-          setForm(prefillToForm(data.prefill));
-          setCotizacionHint(data.prefill.cotizacionReciente);
-        }
-        setUnidadesOpciones(data.unidades ?? []);
+        applyContextMeta(
+          data.unidades ?? [],
+          data.prefill,
+          data.asesores ?? [],
+          data.segmentos,
+        );
         return;
       }
 
@@ -226,6 +349,8 @@ export function RegistrarApartadoModal({
       const data = (await response.json()) as {
         prefill?: ApartadoPrefill;
         unidades?: SembradoUnidadRow[];
+        asesores?: ApartadoAsesorOption[];
+        segmentos?: DesarrolloSembradoSegment[];
         error?: string;
       };
 
@@ -233,17 +358,28 @@ export function RegistrarApartadoModal({
         throw new Error(data.error ?? "No se pudo cargar el prospecto.");
       }
 
-      if (data.prefill) {
-        setForm(prefillToForm(data.prefill));
-        setCotizacionHint(data.prefill.cotizacionReciente);
-      }
-      setUnidadesOpciones(data.unidades ?? []);
+      applyContextMeta(data.unidades ?? [], data.prefill, data.asesores ?? [], data.segmentos);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
     } finally {
       setLoadingPrefill(false);
     }
-  }, [prospectoId, esAsesor, asesorId]);
+  }, [prospectoId, esAsesor, asesorId, applyContextMeta]);
+
+  useEffect(() => {
+    if (!esAsesor && desarrolloId && asesores.length === 0) {
+      void fetch(`/api/admin/asesores?desarrolloId=${encodeURIComponent(desarrolloId)}`)
+        .then((response) => response.json())
+        .then((data: { asesores?: ApartadoAsesorOption[] }) => {
+          if (data.asesores?.length) {
+            setAsesores(data.asesores.map((row) => ({ id: row.id, nombre: row.nombre })));
+          }
+        })
+        .catch(() => {
+          // opcional en modal admin sin sesión de asesores
+        });
+    }
+  }, [asesores.length, desarrolloId, esAsesor]);
 
   useEffect(() => {
     if (prospectoId) {
@@ -258,6 +394,34 @@ export function RegistrarApartadoModal({
 
   const patch = (partial: Partial<FormState>) => {
     setForm((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleTipoProductoChange = (nextTipo: string) => {
+    setTipoProducto(nextTipo);
+    if (form.unidadId) {
+      const stillVisible = filterUnidadesBySembradoSegment(
+        unidadesOpciones,
+        desarrolloId,
+        nextTipo,
+      ).some((row) => row.unidadId === form.unidadId);
+      if (!stillVisible) {
+        patch({ unidadId: "" });
+      }
+    }
+  };
+
+  const handleEquipoVentaChange = (equipoVenta: string) => {
+    patch({ equipoVenta });
+    if (equipoVenta === "Interno (BBR)") {
+      setPromotorAsesorId(
+        esAsesor && asesorId && asesores.some((row) => row.id === asesorId)
+          ? asesorId
+          : promotorAsesorId,
+      );
+      patch({ promotorNombre: "" });
+    } else {
+      setPromotorAsesorId("");
+    }
   };
 
   const handleUnidadChange = (unidadId: string) => {
@@ -285,7 +449,7 @@ export function RegistrarApartadoModal({
             estatusSembrado: "Apartado",
             origenCiudad: form.origenCiudad || undefined,
             equipoVenta: form.equipoVenta || undefined,
-            promotorNombre: form.promotorNombre || undefined,
+            promotorNombre: resolvePromotorNombre() || undefined,
             tipoInversion: form.tipoInversion || null,
             listaPrecios: form.listaPrecios || undefined,
             precioLista: parseMoneyInput(form.precioLista),
@@ -325,7 +489,7 @@ export function RegistrarApartadoModal({
           estatusSembrado: "Apartado",
           origenCiudad: form.origenCiudad || undefined,
           equipoVenta: form.equipoVenta || undefined,
-          promotorNombre: form.promotorNombre || undefined,
+          promotorNombre: resolvePromotorNombre() || undefined,
           tipoInversion: form.tipoInversion || null,
           listaPrecios: form.listaPrecios || undefined,
           precioLista: parseMoneyInput(form.precioLista),
@@ -419,28 +583,56 @@ export function RegistrarApartadoModal({
             </div>
           ) : null}
 
+          {segmentos.length > 0 ? (
+            <Field label="Tipo de producto *">
+              <select
+                required
+                value={tipoProducto}
+                onChange={(event) => handleTipoProductoChange(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">Selecciona departamento u oficina</option>
+                {segmentos.map((segment) => (
+                  <option key={segment.id} value={segment.id}>
+                    {segment.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+
           <Field label="Unidad *">
             <select
               required
               value={form.unidadId}
               onChange={(event) => handleUnidadChange(event.target.value)}
               className={inputClass}
+              disabled={segmentos.length > 0 && !tipoProducto}
             >
               <option value="">
-                {desdeLead
-                  ? "Selecciona unidad"
-                  : esCompletar
-                    ? "Selecciona unidad pendiente"
-                    : "Selecciona unidad disponible"}
+                {segmentos.length > 0 && !tipoProducto
+                  ? "Primero elige departamento u oficina"
+                  : desdeLead
+                    ? "Selecciona unidad disponible"
+                    : esCompletar
+                      ? "Selecciona unidad pendiente"
+                      : "Selecciona unidad disponible"}
               </option>
-              {unidadesOpciones.map((row) => (
+              {unidadesFiltradas.map((row) => (
                 <option key={row.unidadId} value={row.unidadId}>
-                  {row.unidad} · {row.listaPrecios ?? "sin lista"}
+                  {row.unidad}
+                  {row.listaPrecios ? ` · ${row.listaPrecios}` : ""}
+                  {row.precio != null ? ` · ${formatAmountInput(row.precio)}` : ""}
                   {esCompletar ? " · pendiente" : ""}
                   {row.estatusInventario === "apartado" && !esCompletar ? " · apartada" : ""}
                 </option>
               ))}
             </select>
+            {segmentos.length > 0 && tipoProducto ? (
+              <p className="mt-1 text-xs text-slate-500">
+                {unidadesFiltradas.length} unidad(es) disponible(s) en sembrado
+              </p>
+            ) : null}
           </Field>
 
           {loadingPrefill ? (
@@ -477,27 +669,85 @@ export function RegistrarApartadoModal({
               />
             </Field>
             <Field label="Medio publicitario">
-              <input
+              <select
                 value={form.medioPublicitario}
                 onChange={(event) => patch({ medioPublicitario: event.target.value })}
                 className={inputClass}
-                placeholder="Facebook, contacto directo…"
-              />
+              >
+                <option value="">Selecciona medio</option>
+                {MEDIO_PUBLICITARIO_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+                {form.medioPublicitario &&
+                !MEDIO_PUBLICITARIO_OPTIONS.includes(
+                  form.medioPublicitario as (typeof MEDIO_PUBLICITARIO_OPTIONS)[number],
+                ) ? (
+                  <option value={form.medioPublicitario}>{form.medioPublicitario}</option>
+                ) : null}
+              </select>
             </Field>
             <Field label="Equipo de venta">
-              <input
+              <select
                 value={form.equipoVenta}
-                onChange={(event) => patch({ equipoVenta: event.target.value })}
+                onChange={(event) => handleEquipoVentaChange(event.target.value)}
                 className={inputClass}
-                placeholder="Equipo interno, BBR, Inmobiliaria…"
-              />
+              >
+                <option value="">Selecciona equipo</option>
+                {EQUIPO_VENTA_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Promotor">
-              <input
-                value={form.promotorNombre}
-                onChange={(event) => patch({ promotorNombre: event.target.value })}
-                className={inputClass}
-              />
+              {form.equipoVenta === "Interno (BBR)" ? (
+                <div className="space-y-2">
+                  <select
+                    value={promotorAsesorId}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setPromotorAsesorId(value);
+                      if (value !== PROMOTOR_ASESOR_OTRO) {
+                        patch({ promotorNombre: "" });
+                      }
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">Selecciona asesor</option>
+                    {asesores.map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.nombre}
+                      </option>
+                    ))}
+                    <option value={PROMOTOR_ASESOR_OTRO}>Otro (capturar nombre)</option>
+                  </select>
+                  {promotorAsesorId === PROMOTOR_ASESOR_OTRO ? (
+                    <input
+                      value={form.promotorNombre}
+                      onChange={(event) => patch({ promotorNombre: event.target.value })}
+                      className={inputClass}
+                      placeholder="Nombre del promotor"
+                    />
+                  ) : null}
+                </div>
+              ) : form.equipoVenta === "Externo" ? (
+                <input
+                  value={form.promotorNombre}
+                  onChange={(event) => patch({ promotorNombre: event.target.value })}
+                  className={inputClass}
+                  placeholder="Inmobiliaria, asesor externo u otro"
+                />
+              ) : (
+                <input
+                  disabled
+                  value=""
+                  className={`${inputClass} bg-slate-50 text-slate-400`}
+                  placeholder="Elige equipo de venta primero"
+                />
+              )}
             </Field>
             <Field label="Tipo inversión">
               <select
@@ -608,7 +858,7 @@ export function RegistrarApartadoModal({
             </button>
             <button
               type="submit"
-              disabled={submitting || loadingPrefill || !form.unidadId}
+              disabled={submitting || loadingPrefill || !form.unidadId || (segmentos.length > 0 && !tipoProducto)}
               className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
