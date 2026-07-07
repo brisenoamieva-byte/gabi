@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listCadenciaHoyForAsesor } from "@/lib/comercial/cadencia-service";
+import { getProspectoForAsesor } from "@/lib/asesores/prospectos-service";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 export async function GET(request: Request) {
@@ -21,24 +22,9 @@ export async function GET(request: Request) {
       });
     }
 
-    const { createSupabaseServiceClient } = await import("@/lib/supabase/server");
-    const supabase = createSupabaseServiceClient();
-    if (!supabase) {
-      return NextResponse.json({ items: [] });
-    }
-
-    const { data: prospecto } = await supabase
-      .from("prospectos")
-      .select("desarrollo_id")
-      .eq("id", prospectoId)
-      .eq("asesor_id", asesorId)
-      .maybeSingle();
-
-    if (!prospecto?.desarrollo_id) {
-      return NextResponse.json({ items: [] });
-    }
-
-    const all = await listCadenciaHoyForAsesor(asesorId, prospecto.desarrollo_id as string);
+    const prospecto = await getProspectoForAsesor(asesorId, prospectoId);
+    const cadenciaAsesorId = prospecto.asesor_id ?? asesorId;
+    const all = await listCadenciaHoyForAsesor(cadenciaAsesorId, prospecto.desarrollo_id);
     return NextResponse.json({
       items: all.filter((item) => item.prospectoId === prospectoId),
     });

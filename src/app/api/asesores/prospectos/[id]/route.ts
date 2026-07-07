@@ -39,12 +39,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const body = (await request.json()) as AsesorUpdateProspectoInput & { asesorId?: string };
+    const body = (await request.json()) as AsesorUpdateProspectoInput & {
+      asesorId?: string;
+      assignedAsesorId?: string | null;
+    };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
 
     const prospecto = await updateProspectoForAsesor(asesorId, id, {
       etapa: body.etapa,
       notas: body.notas,
+      assignedAsesorId: body.assignedAsesorId,
     });
 
     const playbook = await getProspectoPlaybookState(prospecto);

@@ -30,6 +30,11 @@ import {
   prospectoEtapaEditableByAsesor,
 } from "@/lib/asesores/prospectos-client";
 import {
+  asesorRolLabel,
+  isLeadershipAsesorRol,
+  type AsesorRol,
+} from "@/lib/asesores/types";
+import {
   formatLeadActivity,
   formatLeadDate,
   formatLeadDateOnly,
@@ -63,6 +68,7 @@ import {
 type AsesorLeadsPanelProps = {
   asesorId: string;
   asesorNombre: string;
+  asesorRol: AsesorRol;
   desarrolloId: string;
   desarrolloNombre: string;
   initialProspectoId?: string;
@@ -93,14 +99,18 @@ const inputClass =
 function AsesorLeadDrawer({
   asesorId,
   asesorNombre,
+  desarrolloId,
   desarrolloNombre,
+  canReassignProspectos,
   prospectoId,
   onClose,
   onUpdated,
 }: {
   asesorId: string;
   asesorNombre: string;
+  desarrolloId: string;
   desarrolloNombre: string;
+  canReassignProspectos: boolean;
   prospectoId: string;
   onClose: () => void;
   onUpdated: () => void;
@@ -114,6 +124,10 @@ function AsesorLeadDrawer({
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
+  const [assignedAsesorId, setAssignedAsesorId] = useState("");
+  const [equipoAsesores, setEquipoAsesores] = useState<Array<{ id: string; nombre: string; rol: AsesorRol }>>(
+    [],
+  );
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
   const [solicitudPendiente, setSolicitudPendiente] = useState(false);
   const [tieneOperacionActiva, setTieneOperacionActiva] = useState(false);
@@ -143,6 +157,7 @@ function AsesorLeadDrawer({
         setCadenciaStatus(data.cadencia?.status ?? null);
         setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
         setNotas(data.prospecto.notas ?? "");
+        setAssignedAsesorId(data.prospecto.asesor_id ?? "");
       }
 
       const solicitudRes = await fetch(
@@ -170,6 +185,28 @@ function AsesorLeadDrawer({
       setLoading(false);
     }
   }, [asesorId, prospectoId]);
+
+  useEffect(() => {
+    if (!canReassignProspectos) {
+      setEquipoAsesores([]);
+      return;
+    }
+
+    void (async () => {
+      try {
+        const params = new URLSearchParams({ asesorId, desarrolloId });
+        const response = await fetch(`/api/asesores/equipo?${params.toString()}`);
+        const data = (await response.json()) as {
+          asesores?: Array<{ id: string; nombre: string; rol: AsesorRol }>;
+        };
+        if (response.ok) {
+          setEquipoAsesores(data.asesores ?? []);
+        }
+      } catch {
+        setEquipoAsesores([]);
+      }
+    })();
+  }, [asesorId, canReassignProspectos, desarrolloId]);
 
   useEffect(() => {
     void loadDetail();
@@ -240,6 +277,7 @@ function AsesorLeadDrawer({
           asesorId,
           etapa: etapaEditable ? etapa : undefined,
           notas,
+          assignedAsesorId: canReassignProspectos ? assignedAsesorId || null : undefined,
         }),
       });
 
@@ -329,6 +367,38 @@ function AsesorLeadDrawer({
                   <div className="flex justify-between gap-4">
                     <span className="text-slate-500">Visita realizada</span>
                     <span className="font-medium">{formatLeadDateOnly(detail.visita_realizada_on)}</span>
+                  </div>
+                ) : null}
+                {canReassignProspectos ? (
+                  <div className="border-t border-slate-200 pt-3">
+                    <label className="block text-xs font-semibold text-slate-600">
+                      Asesor asignado
+                      <select
+                        value={assignedAsesorId}
+                        onChange={(event) => setAssignedAsesorId(event.target.value)}
+                        className={`${inputClass} mt-1`}
+                      >
+                        <option value="">Sin asesor</option>
+                        {equipoAsesores.map((asesor) => (
+                          <option key={asesor.id} value={asesor.id}>
+                            {asesor.nombre} · {asesorRolLabel[asesor.rol]}
+                          </option>
+                        ))}
+                        {assignedAsesorId &&
+                        !equipoAsesores.some((asesor) => asesor.id === assignedAsesorId) &&
+                        detail.asesorNombre ? (
+                          <option value={assignedAsesorId}>{detail.asesorNombre}</option>
+                        ) : null}
+                      </select>
+                    </label>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Como gerencia puedes reasignar este prospecto a otro miembro del equipo.
+                    </p>
+                  </div>
+                ) : detail.asesorNombre ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Asesor</span>
+                    <span className="font-medium">{detail.asesorNombre}</span>
                   </div>
                 ) : null}
               </div>
@@ -518,10 +588,12 @@ function AsesorLeadDrawer({
 export function AsesorLeadsPanel({
   asesorId,
   asesorNombre,
+  asesorRol,
   desarrolloId,
   desarrolloNombre,
   initialProspectoId,
 }: AsesorLeadsPanelProps) {
+  const canManageAllProspectos = isLeadershipAsesorRol(asesorRol);
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
   const [periodFilter, setPeriodFilter] = useState<LeadPeriodFilter>("");
   const [etapaFilter, setEtapaFilter] = useState("");
@@ -808,11 +880,13 @@ export function AsesorLeadsPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
-              Mis prospectos
+              {canManageAllProspectos ? "Prospectos del desarrollo" : "Mis prospectos"}
             </p>
             <h2 className="text-xl font-black text-[#201044]">{desarrolloNombre}</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {resumen?.total ?? 0} leads asignados a ti
+              {canManageAllProspectos
+                ? `${resumen?.total ?? 0} leads en ${desarrolloNombre}`
+                : `${resumen?.total ?? 0} leads asignados a ti`}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -930,9 +1004,15 @@ export function AsesorLeadsPanel({
           </div>
         ) : !prospectos.length ? (
           <p className="px-6 py-16 text-center text-sm text-slate-500">
-            Aún no tienes prospectos registrados. Crea uno con{" "}
-            <strong className="font-semibold text-[#201044]">Nuevo lead</strong>, haz un recorrido o
-            cotiza para que aparezcan aquí.
+            {canManageAllProspectos
+              ? "Aún no hay prospectos registrados en este desarrollo."
+              : "Aún no tienes prospectos registrados. Crea uno con "}
+            {!canManageAllProspectos ? (
+              <>
+                <strong className="font-semibold text-[#201044]">Nuevo lead</strong>, haz un recorrido o
+                cotiza para que aparezcan aquí.
+              </>
+            ) : null}
           </p>
         ) : viewMode === "tablero" ? (
           <LeadsKanbanBoard
@@ -963,6 +1043,9 @@ export function AsesorLeadsPanel({
                     </p>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {formatLeadActivity(row.updated_at)}
+                      {canManageAllProspectos && row.asesorNombre
+                        ? ` · ${row.asesorNombre}`
+                        : ""}
                     </p>
                   </div>
                   <span
@@ -984,7 +1067,9 @@ export function AsesorLeadsPanel({
         <AsesorLeadDrawer
           asesorId={asesorId}
           asesorNombre={asesorNombre}
+          desarrolloId={desarrolloId}
           desarrolloNombre={desarrolloNombre}
+          canReassignProspectos={canManageAllProspectos}
           prospectoId={selectedId}
           onClose={() => setSelectedId(null)}
           onUpdated={() => {

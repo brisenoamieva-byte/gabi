@@ -1,5 +1,6 @@
 import type { AdminProfile } from "@/lib/admin/types";
 import { listProspectos } from "@/lib/admin/prospectos-service";
+import { resolveProspectoAsesorFilter } from "@/lib/asesores/leadership-access";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
 import {
   classifyPlaybookComplianceIssue,
@@ -296,7 +297,11 @@ export const getAsesorComplianceSummary = async (
     };
   }
 
-  const prospectos = await listProspectos({ desarrolloId, asesorId });
+  const asesorFilter = await resolveProspectoAsesorFilter(asesorId);
+  const prospectos = await listProspectos({
+    desarrolloId,
+    ...(asesorFilter ? { asesorId: asesorFilter } : {}),
+  });
   const active = prospectos.filter(
     (row) => isProspectoEtapa(row.etapa) && COMPLIANCE_ACTIVE_ETAPAS.has(row.etapa),
   );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, BriefcaseBusiness, CalendarClock, ShieldCheck, ClipboardCheck, Clock } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck, ClipboardCheck, Clock } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -29,7 +29,6 @@ const navIcons = {
   "/admin/crm-compliance": ShieldCheck,
   "/admin/cadencia": Clock,
   "/admin/compliance-coach": ClipboardCheck,
-  "/admin/dmb": BriefcaseBusiness,
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
@@ -51,7 +50,6 @@ const navModules: Record<string, AdminModule> = {
   "/admin/crm-compliance": "leads",
   "/admin/cadencia": "leads",
   "/admin/compliance-coach": "compliance-coach",
-  "/admin/dmb": "catalogo",
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
@@ -90,7 +88,6 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/crm-compliance", label: "Salud CRM", ready: true },
     { href: "/admin/cadencia", label: "Cadencia", ready: true },
     { href: "/admin/compliance-coach", label: "Compliance Coach", ready: true },
-    { href: "/admin/dmb", label: "DMB Consultoría", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },
     { href: "/admin/expedientes", label: "Expedientes", ready: true },
@@ -151,8 +148,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
               const active =
                 pathname === item.href ||
                 (item.href === "/admin/sembrado" && pathname === "/admin/inventario") ||
-                (item.href === "/admin/asesores" && pathname === "/admin/usuarios") ||
-                (item.href === "/admin/dmb" && pathname.startsWith("/admin/dmb/"));
+                (item.href === "/admin/asesores" && pathname === "/admin/usuarios");
 
               return (
                 <Link

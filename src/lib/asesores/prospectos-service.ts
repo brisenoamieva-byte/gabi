@@ -23,6 +23,10 @@ import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import {
+  isLeadershipAsesorId,
+  resolveProspectoAsesorFilter,
+} from "@/lib/asesores/leadership-access";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 
 export const assertAsesorDesarrollo = async (asesorId: string, desarrolloId: string) => {
@@ -32,15 +36,13 @@ export const assertAsesorDesarrollo = async (asesorId: string, desarrolloId: str
   }
 };
 
-const assertProspectoOwnership = (
-  prospecto: ProspectoDetail,
-  asesorId: string,
-  desarrolloId: string,
-) => {
-  if (prospecto.desarrollo_id !== desarrolloId) {
-    throw new Error("Prospecto fuera de tu desarrollo.");
+const assertProspectoAccess = async (prospecto: ProspectoDetail, asesorId: string) => {
+  if (prospecto.desarrollo_id) {
+    await assertAsesorDesarrollo(asesorId, prospecto.desarrollo_id);
   }
-  if (prospecto.asesor_id !== asesorId) {
+
+  const isLeadership = await isLeadershipAsesorId(asesorId);
+  if (!isLeadership && prospecto.asesor_id !== asesorId) {
     throw new Error("Este prospecto no está asignado a ti.");
   }
 };
@@ -56,7 +58,10 @@ export const listProspectosForAsesor = async (
   },
 ): Promise<ProspectoListRow[]> => {
   await assertAsesorDesarrollo(asesorId, filters.desarrolloId);
-  return listProspectos({ ...filters, asesorId, fechaEn: "updated" });
+  const asesorFilter = await resolveProspectoAsesorFilter(asesorId);
+  return listProspectos(
+    { ...filters, ...(asesorFilter ? { asesorId: asesorFilter } : {}), fechaEn: "updated" },
+  );
 };
 
 export const getProspectosResumenForAsesor = async (
@@ -65,8 +70,9 @@ export const getProspectosResumenForAsesor = async (
   filters?: { search?: string; desde?: string; hasta?: string },
 ): Promise<ProspectosResumen> => {
   await assertAsesorDesarrollo(asesorId, desarrolloId);
+  const asesorFilter = await resolveProspectoAsesorFilter(asesorId);
   return getProspectosResumen(desarrolloId, undefined, {
-    asesorId,
+    ...(asesorFilter ? { asesorId: asesorFilter } : {}),
     ...filters,
     fechaEn: "updated",
   });
@@ -81,7 +87,7 @@ export const getProspectoForAsesor = async (
     throw new Error("Prospecto no encontrado.");
   }
 
-  assertProspectoOwnership(prospecto, asesorId, prospecto.desarrollo_id);
+  await assertProspectoAccess(prospecto, asesorId);
   return prospecto;
 };
 
@@ -97,6 +103,7 @@ export type AsesorCreateProspectoInput = {
 export type AsesorUpdateProspectoInput = {
   etapa?: string;
   notas?: string;
+  assignedAsesorId?: string | null;
 };
 
 export const checkProspectoTelefonoForAsesor = async (
@@ -234,6 +241,20 @@ export const updateProspectoForAsesor = async (
   }
   if (input.notas !== undefined) {
     patch.notas = input.notas.trim() || null;
+  }
+  if (input.assignedAsesorId !== undefined) {
+    const canReassign = await isLeadershipAsesorId(asesorId);
+    if (!canReassign) {
+      throw new Error("No tienes permiso para reasignar prospectos.");
+    }
+
+    const nextAsesorId = input.assignedAsesorId?.trim() || null;
+    if (nextAsesorId) {
+      await assertAsesorDesarrollo(nextAsesorId, existing.desarrollo_id);
+    }
+
+    patch.asesor_id = nextAsesorId;
+    patch.asignado_por = "manual-gerente";
   }
 
   const { error } = await supabase.from("prospectos").update(patch).eq("id", prospectoId);

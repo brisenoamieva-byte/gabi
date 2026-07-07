@@ -1,5 +1,6 @@
 import type { ProspectoDetail, ProspectoListRow } from "@/lib/admin/prospectos-service";
 import { listProspectos } from "@/lib/admin/prospectos-service";
+import { isLeadershipAsesorId, resolveProspectoAsesorFilter } from "@/lib/asesores/leadership-access";
 import {
   buildGenericCrmPlaybook,
   canAdvancePlaybookEtapa,
@@ -365,7 +366,8 @@ export const completePlaybookStepForProspecto = async (
     throw new Error("Prospecto no encontrado.");
   }
 
-  if (prospectoRow.asesor_id !== asesorId) {
+  const isLeadership = await isLeadershipAsesorId(asesorId);
+  if (!isLeadership && prospectoRow.asesor_id !== asesorId) {
     throw new Error("Este prospecto no está asignado a ti.");
   }
 
@@ -520,7 +522,12 @@ export const getPlaybookQueueForAsesor = async (
     return [];
   }
 
-  const prospectos = await listProspectos({ desarrolloId, asesorId, fechaEn: "updated" });
+  const asesorFilter = await resolveProspectoAsesorFilter(asesorId);
+  const prospectos = await listProspectos({
+    desarrolloId,
+    ...(asesorFilter ? { asesorId: asesorFilter } : {}),
+    fechaEn: "updated",
+  });
   const active = prospectos.filter(
     (row) => isProspectoEtapa(row.etapa) && PLAYBOOK_ACTIVE_ETAPAS.has(row.etapa),
   );

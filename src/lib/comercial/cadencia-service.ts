@@ -20,6 +20,8 @@ import {
 } from "@/lib/comercial/cadencia-perfilamiento";
 import { isCrmPlaybookPilotDesarrollo } from "@/lib/comercial/crm-playbook";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { isLeadershipAsesorId } from "@/lib/asesores/leadership-access";
+import { validateAsesorForVisita } from "@/lib/visitas/service";
 
 export type CadenciaTouchRow = {
   id: string;
@@ -405,7 +407,14 @@ const completeCadenciaTouchInternal = async (
   }
 
   if (!skipAuth && asesorId && cadencia.asesor_id !== asesorId) {
-    throw new Error("Este toque no está asignado a ti.");
+    const isLeadership = await isLeadershipAsesorId(asesorId);
+    if (!isLeadership) {
+      throw new Error("Este toque no está asignado a ti.");
+    }
+    const validation = await validateAsesorForVisita(asesorId, cadencia.desarrollo_id);
+    if (!validation.ok) {
+      throw new Error(validation.reason);
+    }
   }
 
   if (touch.status !== "pending") {
