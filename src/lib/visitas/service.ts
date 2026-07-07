@@ -154,6 +154,19 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResu
       } catch {
         // no bloquear registro de visita
       }
+      try {
+        await supabase.from("prospecto_playbook_progress").upsert(
+          {
+            prospecto_id: prospectoId,
+            step_id: "recorrido",
+            completed_at: new Date().toISOString(),
+            completed_by: input.asesorId,
+          },
+          { onConflict: "prospecto_id,step_id" },
+        );
+      } catch {
+        // no bloquear registro de visita
+      }
     }
   } catch (syncError) {
     console.error("No se pudo sincronizar prospecto desde visita:", syncError);

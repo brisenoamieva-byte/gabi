@@ -87,8 +87,8 @@ const basePasos = (): PlaybookStep[] => [
     id: "recorrido",
     etapa: "contactado",
     label: "Recorrido guiado realizado",
-    hint: "Presenta desarrollo y producto en GABI.",
-    kind: "recorrido",
+    hint: "Marca cuando el cliente completó la visita al desarrollo (en GABI o fuera de la app). Agendar y cancelar no cuenta como recorrido.",
+    kind: "manual",
     required: true,
     order: 50,
   },
@@ -182,7 +182,7 @@ export const mergePlaybookConfigWithDefaults = (
   });
 
   for (const step of stored) {
-    if (!defaultIds.has(step.id)) {
+    if (!defaultIds.has(step.id) && !Object.keys(LEGACY_STEP_ALIASES).includes(step.id)) {
       merged.push(step);
     }
   }
@@ -217,7 +217,7 @@ export type PlaybookProspectoSignals = {
   email: string | null;
   telefono: string | null;
   notas: string | null;
-  visitaId: string | null;
+  recorridoCompletado: boolean;
   cotizacionesCount: number;
 };
 
@@ -234,10 +234,7 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
   if (signals.email?.trim() && signals.telefono?.trim()) {
     done.add("datos-completos");
   }
-  if (signals.visitaId) {
-    done.add("visita-agendada");
-  }
-  if (signals.visitaId || etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("contactado")) {
+  if (signals.recorridoCompletado) {
     done.add("recorrido");
   }
   if (signals.cotizacionesCount > 0 || etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("cotizo")) {

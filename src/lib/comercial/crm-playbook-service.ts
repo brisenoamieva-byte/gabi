@@ -204,20 +204,75 @@ export type ProspectoPlaybookState = {
 const buildPlaybookSignals = (
   prospecto: ProspectoListRow | ProspectoDetail,
   cotizacionesCount = 0,
+  recorridoCompletado = false,
 ) => ({
   etapa: prospecto.etapa,
   email: prospecto.email,
   telefono: prospecto.telefono,
   notas: prospecto.notas,
-  visitaId: prospecto.visita_id,
+  recorridoCompletado,
   cotizacionesCount,
 });
+
+const resolveRecorridoCompletadoForProspecto = async (
+  prospecto: Pick<ProspectoListRow, "visita_id">,
+): Promise<boolean> => {
+  if (!prospecto.visita_id) {
+    return false;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return false;
+  }
+
+  const { data } = await supabase
+    .from("visitas_comerciales")
+    .select("tipo")
+    .eq("id", prospecto.visita_id)
+    .maybeSingle();
+
+  return data?.tipo === "recorrido_completado";
+};
+
+const resolveRecorridoCompletadoMap = async (
+  prospectos: Pick<ProspectoListRow, "id" | "visita_id">[],
+): Promise<Map<string, boolean>> => {
+  const map = new Map<string, boolean>();
+  const visitaIds = Array.from(
+    new Set(prospectos.map((row) => row.visita_id).filter((id): id is string => Boolean(id))),
+  );
+
+  if (!visitaIds.length) {
+    return map;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return map;
+  }
+
+  const { data } = await supabase.from("visitas_comerciales").select("id, tipo").in("id", visitaIds);
+
+  const completedIds = new Set(
+    (data ?? []).filter((row) => row.tipo === "recorrido_completado").map((row) => row.id as string),
+  );
+
+  for (const prospecto of prospectos) {
+    if (prospecto.visita_id && completedIds.has(prospecto.visita_id)) {
+      map.set(prospecto.id, true);
+    }
+  }
+
+  return map;
+};
 
 export const computeProspectoPlaybookState = (
   prospecto: ProspectoListRow | ProspectoDetail,
   config: CrmPlaybookConfig | null,
   manualStepIds: string[],
   cotizacionesCount = 0,
+  recorridoCompletado = false,
 ): ProspectoPlaybookState => {
   if (!config?.enabled) {
     return {
@@ -231,7 +286,9 @@ export const computeProspectoPlaybookState = (
   }
 
   const etapa = isProspectoEtapa(prospecto.etapa) ? prospecto.etapa : "nuevo";
-  const autoIds = getAutoCompletedPlaybookStepIds(buildPlaybookSignals(prospecto, cotizacionesCount));
+  const autoIds = getAutoCompletedPlaybookStepIds(
+    buildPlaybookSignals(prospecto, cotizacionesCount, recorridoCompletado),
+  );
   const completedIds = mergePlaybookProgress(manualStepIds, autoIds);
   const nextStep = getNextPlaybookStep(config, etapa, completedIds);
   const pendingRequired = getPendingRequiredForEtapa(config, etapa, completedIds);
@@ -260,12 +317,14 @@ export const getProspectoPlaybookState = async (
   const config = await getCrmPlaybookConfig(prospecto.desarrollo_id);
   const progressMap = await getPlaybookProgressMap([prospecto.id]);
   const manualStepIds = progressMap.get(prospecto.id) ?? [];
+  const recorridoCompletado = await resolveRecorridoCompletadoForProspecto(prospecto);
 
   return computeProspectoPlaybookState(
     prospecto,
     config,
     manualStepIds,
     prospecto.cotizaciones.length,
+    recorridoCompletado,
   );
 };
 
@@ -343,12 +402,16 @@ export const completePlaybookStepForProspecto = async (
 
   const progressMap = await getPlaybookProgressMap([prospectoId]);
   const manualStepIds = progressMap.get(prospectoId) ?? [];
+  const recorridoCompletado = await resolveRecorridoCompletadoForProspecto(
+    fullProspecto as ProspectoListRow,
+  );
 
   return computeProspectoPlaybookState(
     fullProspecto as ProspectoListRow,
     config,
     manualStepIds,
     cotizaciones?.length ?? 0,
+    recorridoCompletado,
   );
 };
 
@@ -364,8 +427,9 @@ export const validatePlaybookEtapaChange = async (
   const currentEtapa = isProspectoEtapa(prospecto.etapa) ? prospecto.etapa : "nuevo";
   const progressMap = await getPlaybookProgressMap([prospecto.id]);
   const manualStepIds = progressMap.get(prospecto.id) ?? [];
+  const recorridoCompletado = await resolveRecorridoCompletadoForProspecto(prospecto);
   const autoIds = getAutoCompletedPlaybookStepIds(
-    buildPlaybookSignals(prospecto, prospecto.cotizaciones.length),
+    buildPlaybookSignals(prospecto, prospecto.cotizaciones.length, recorridoCompletado),
   );
   const completedIds = mergePlaybookProgress(manualStepIds, autoIds);
 
@@ -403,6 +467,7 @@ export const getPlaybookQueueForAsesor = async (
   const ids = active.map((row) => row.id);
   const progressMap = await getPlaybookProgressMap(ids);
   const cotizacionMap = await getCotizacionCountMap(ids);
+  const recorridoMap = await resolveRecorridoCompletadoMap(active);
 
   const queue: PlaybookQueueItem[] = [];
 
@@ -410,7 +475,7 @@ export const getPlaybookQueueForAsesor = async (
     const etapa = isProspectoEtapa(row.etapa) ? row.etapa : "nuevo";
     const manualStepIds = progressMap.get(row.id) ?? [];
     const autoIds = getAutoCompletedPlaybookStepIds(
-      buildPlaybookSignals(row, cotizacionMap.get(row.id) ?? 0),
+      buildPlaybookSignals(row, cotizacionMap.get(row.id) ?? 0, recorridoMap.get(row.id) ?? false),
     );
     const completedIds = mergePlaybookProgress(manualStepIds, autoIds);
     const nextStep = getNextPlaybookStep(config, etapa, completedIds);

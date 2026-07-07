@@ -74,7 +74,7 @@ const buildPlaybookSignals = (prospecto: ProspectoListRow, cotizacionesCount = 0
   email: prospecto.email,
   telefono: prospecto.telefono,
   notas: prospecto.notas,
-  visitaId: prospecto.visita_id,
+  recorridoCompletado: false,
   cotizacionesCount,
 });
 
