@@ -253,8 +253,8 @@ export function OperacionDetailDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
-      <div className="flex h-full w-full max-w-4xl flex-col bg-white shadow-xl">
-        <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+      <div className="flex h-full min-h-0 w-full max-w-4xl flex-col bg-white shadow-xl">
+        <div className="flex shrink-0 items-start justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
               Operación
@@ -275,8 +275,11 @@ export function OperacionDetailDrawer({
           </button>
         </div>
 
-        <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto p-5">
+        <form
+          onSubmit={(event) => void handleSubmit(event)}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
             {loading ? (
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -439,7 +442,7 @@ export function OperacionDetailDrawer({
           </div>
 
           {form ? (
-            <div className="space-y-2 border-t border-slate-100 p-5">
+            <div className="shrink-0 space-y-2 border-t border-slate-100 bg-white p-5">
               {puedeCancelar ? (
                 <div className="rounded-xl border border-red-100 bg-red-50/60 p-4">
                   {!confirmCancel ? (
