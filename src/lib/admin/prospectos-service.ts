@@ -5,6 +5,7 @@ import {
   isProspectoEtapa,
   mergeProspectoEtapa,
   mergeProspectoEtapaFromVisita,
+  normalizeProspectoEtapaValue,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import type { CotizacionRecord, ProspectoRecord } from "@/lib/comercial/sembrado-status";
@@ -82,6 +83,7 @@ const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
   delete prospecto.campana;
   return {
     ...prospecto,
+    etapa: normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa,
     asesorNombre: asesor?.nombre ?? null,
     campanaNombre: campana?.nombre ?? null,
     campanaCanal: campana?.canal ?? null,
@@ -746,19 +748,9 @@ export const saveCotizacion = async (input: CotizacionInput) => {
   }
 
   if (input.prospectoId) {
-    const { data: prospecto } = await supabase
-      .from("prospectos")
-      .select("etapa")
-      .eq("id", input.prospectoId)
-      .maybeSingle();
-
-    const etapa = prospecto?.etapa
-      ? mergeProspectoEtapa(prospecto.etapa, "cotizo")
-      : "cotizo";
-
     await supabase
       .from("prospectos")
-      .update({ etapa, updated_at: new Date().toISOString() })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", input.prospectoId);
   }
 

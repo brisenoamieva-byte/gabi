@@ -153,9 +153,9 @@ Si NO responde en ~8 días → último intento día 7 → marcar Perdido
 | WhatsApp de bienvenida | Simular o enviar mensaje | Manual (clic en el paso) |
 | Primera llamada (mismo día) | Simular llamada | Manual |
 | Email y teléfono registrados | Ya los pusiste al crear | **Automático** |
-| Visita al desarrollo agendada | Simular que el cliente aceptó | Manual **+ fecha de visita** |
+| Visita al desarrollo agendada | _(movido a etapa Contactado)_ | — |
 
-Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sistema pide la **fecha de visita** — es obligatoria para el seguimiento.
+Al marcar **Cita agendada** (etapa Contactado) o **Visita realizada** (etapa Cita), el sistema pide la **fecha** — es obligatoria para el seguimiento.
 
 **Qué comprobar:**
 
@@ -169,16 +169,27 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 
 ---
 
-## PRUEBA 4b — Playbook en etapa Contactado (10 min)
+## PRUEBA 4b — Contactado: agendar cita (5 min)
 
-**Dónde:** Mismo lead en etapa **Contactado** (tras completar contacto inicial en Nuevo).
+**Dónde:** Lead en etapa **Contactado**.
+
+| Paso | Tu acción |
+|------|-----------|
+| Cita agendada en el desarrollo | Indica **fecha de visita** programada y marca completado |
+
+---
+
+## PRUEBA 4c — Etapa Cita: visita y perfilamiento (10 min)
+
+**Dónde:** Lead en etapa **Cita** (tras la visita al desarrollo; el sistema puede avanzar la etapa al marcar la visita realizada).
 
 **Pasos relevantes:**
 
 | Paso | Tu acción |
 |------|-----------|
-| Recorrido guiado | Marca completado **+ fecha de visita** |
-| Necesidades y perfil documentados | Responde el **cuestionario post-visita** (4 preguntas sí/no) y pulsa **Guardar perfilamiento** |
+| Visita al desarrollo realizada | Marca completado **+ fecha de visita** |
+| Necesidades y perfil documentados | Responde el **cuestionario post-visita** (4 preguntas sí/no) |
+| Cotización enviada | Marca al enviar cotización (o al usar el cotizador) |
 
 **Preguntas del cuestionario:**
 
@@ -192,6 +203,7 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 | Comprobación | Sí | No |
 |--------------|:--:|:--:|
 | Recorrido pide y guarda **fecha de visita** | ☐ | ☐ |
+| La columna del kanban dice **Cita** (no Cotizó) | ☐ | ☐ |
 | El paso de perfilamiento muestra las 4 preguntas (no solo “Marcar completado”) | ☐ | ☐ |
 | No deja guardar sin responder las 4 | ☐ | ☐ |
 | Tras guardar, el paso queda marcado y se ven las respuestas | ☐ | ☐ |

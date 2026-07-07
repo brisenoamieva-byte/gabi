@@ -3,7 +3,7 @@ import type { ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 export const ETAPAS_ASESOR: ProspectoEtapa[] = [
   "nuevo",
   "contactado",
-  "cotizo",
+  "cita",
   "negociacion",
   "perdido",
 ];

@@ -76,25 +76,25 @@ const basePasos = (): PlaybookStep[] => [
   },
   {
     id: "visita-agendada",
-    etapa: "nuevo",
-    label: "Visita al desarrollo agendada",
-    hint: "Meta de perfilamiento: confirma fecha de visita al marcar (detiene la cadencia). No es obligatoria para pasar a Contactado.",
+    etapa: "contactado",
+    label: "Cita agendada en el desarrollo",
+    hint: "Programa la visita con el prospecto e indica la fecha. Próximamente: horarios según disponibilidad del asesor.",
     kind: "manual",
-    required: false,
+    required: true,
     order: 40,
   },
   {
     id: "recorrido",
-    etapa: "contactado",
-    label: "Recorrido guiado realizado",
-    hint: "Registra la visita presencial cuando el cliente recorrió el desarrollo e indica la fecha. No es obligatorio usar el módulo de recorrido de GABI.",
+    etapa: "cita",
+    label: "Visita al desarrollo realizada",
+    hint: "Confirma que el prospecto recorrió el desarrollo e indica la fecha de la visita.",
     kind: "manual",
     required: true,
     order: 50,
   },
   {
     id: "necesidades-perfiladas",
-    etapa: "contactado",
+    etapa: "cita",
     label: "Necesidades y perfil documentados",
     hint: "Completa el cuestionario post-visita (presupuesto, apartado, decisor y publicidad en redes).",
     kind: "manual",
@@ -103,9 +103,9 @@ const basePasos = (): PlaybookStep[] => [
   },
   {
     id: "cotizacion",
-    etapa: "cotizo",
+    etapa: "cita",
     label: "Cotización enviada al cliente",
-    hint: "Marca cuando el cliente recibió la cotización (PDF, email o WhatsApp). Usar el cotizador no cuenta por sí solo.",
+    hint: "Acción obligatoria del playbook (no es una etapa). Marca cuando el cliente recibió la cotización o al usar el cotizador.",
     kind: "manual",
     required: true,
     order: 70,
@@ -234,7 +234,6 @@ const PERFILAMIENTO_STEP_IDS = new Set([
   "whatsapp-inicial",
   "llamada-d0",
   "datos-completos",
-  "visita-agendada",
   "contacto-24h",
 ]);
 
@@ -248,6 +247,9 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
   }
   if (signals.recorridoCompletado) {
     done.add("recorrido");
+  }
+  if (signals.cotizacionesCount > 0) {
+    done.add("cotizacion");
   }
   if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("negociacion")) {
     done.add("seguimiento-post-cotizacion");

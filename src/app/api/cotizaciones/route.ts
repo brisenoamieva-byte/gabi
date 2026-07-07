@@ -21,7 +21,6 @@ export async function POST(request: Request) {
         telefono: body.clienteTelefono,
         medioContacto: body.medioContacto,
         asesorId,
-        etapa: "cotizo",
       });
       prospectoId = prospecto.id;
     }

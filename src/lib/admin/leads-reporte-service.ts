@@ -362,7 +362,7 @@ export const getLeadsReporte = async (
   const embudoEtapas: ProspectoEtapa[] = [
     "nuevo",
     "contactado",
-    "cotizo",
+    "cita",
     "negociacion",
     "apartado",
     "vendido",

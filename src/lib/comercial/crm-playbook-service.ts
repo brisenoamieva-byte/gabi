@@ -16,7 +16,12 @@ import {
   type PlaybookQueueItem,
   type PlaybookStep,
 } from "@/lib/comercial/crm-playbook";
-import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import {
+  isProspectoEtapa,
+  mergeProspectoEtapa,
+  normalizeProspectoEtapaValue,
+  type ProspectoEtapa,
+} from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import {
@@ -34,7 +39,7 @@ import {
 const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
   "contactado",
-  "cotizo",
+  "cita",
   "negociacion",
 ]);
 
@@ -428,6 +433,18 @@ export const completePlaybookStepForProspecto = async (
 
   if (stepId === "visita-agendada") {
     await completeCadenciaForProspecto(prospectoId, "Visita agendada — cadencia detenida");
+  }
+
+  if (stepId === "recorrido") {
+    const currentEtapa =
+      normalizeProspectoEtapaValue(prospectoRow.etapa as string) ?? ("nuevo" as ProspectoEtapa);
+    const nextEtapa = mergeProspectoEtapa(currentEtapa, "cita");
+    if (nextEtapa !== currentEtapa) {
+      await supabase
+        .from("prospectos")
+        .update({ etapa: nextEtapa, updated_at: new Date().toISOString() })
+        .eq("id", prospectoId);
+    }
   }
 
   const { data: fullProspecto, error: fullError } = await supabase

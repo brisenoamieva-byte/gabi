@@ -28,7 +28,7 @@ export const leadContactKeys = (
 
 const ETAPA_ISCORE: Record<string, number> = {
   contactado: 5,
-  cotizo: 8,
+  cita: 8,
   negociacion: 12,
   apartado: 15,
   vendido: 18,

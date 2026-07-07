@@ -31,7 +31,7 @@ type AsesorDashboardCrmHeroProps = {
 const ETAPA_ACCENT: Partial<Record<ProspectoEtapa, string>> = {
   nuevo: "bg-sky-500/20 text-sky-100",
   contactado: "bg-violet-500/20 text-violet-100",
-  cotizo: "bg-amber-500/20 text-amber-100",
+  cita: "bg-violet-500/20 text-violet-100",
   apartado: "bg-emerald-500/20 text-emerald-100",
   vendido: "bg-white/15 text-white/90",
 };
@@ -151,9 +151,9 @@ export function AsesorDashboardCrmHero({
     const porEtapa = resumen?.porEtapa ?? {};
     const nuevos = porEtapa.nuevo ?? 0;
     const contactados = porEtapa.contactado ?? 0;
-    const cotizo = porEtapa.cotizo ?? 0;
+    const cita = porEtapa.cita ?? 0;
     const apartado = porEtapa.apartado ?? 0;
-    const activos = nuevos + contactados + cotizo + apartado;
+    const activos = nuevos + contactados + cita + apartado;
 
     return {
       total: resumen?.total ?? 0,
@@ -229,7 +229,7 @@ export function AsesorDashboardCrmHero({
                 title={overdueCount > 0 ? "Abrir lead con paso vencido" : undefined}
               />
             ) : (
-              <StatChip label="Cotizaron" value={resumen?.porEtapa.cotizo ?? 0} accent="amber" />
+              <StatChip label="Con cita" value={resumen?.porEtapa.cita ?? 0} accent="amber" />
             )}
           </div>
 

@@ -1,7 +1,7 @@
 export const PROSPECTO_ETAPAS = [
   "nuevo",
   "contactado",
-  "cotizo",
+  "cita",
   "negociacion",
   "apartado",
   "vendido",
@@ -13,7 +13,7 @@ export type ProspectoEtapa = (typeof PROSPECTO_ETAPAS)[number];
 export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
   nuevo: "Nuevo",
   contactado: "Contactado",
-  cotizo: "Cotizó",
+  cita: "Cita",
   negociacion: "Negociación",
   apartado: "Apartado",
   vendido: "Vendido",
@@ -23,7 +23,7 @@ export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
 export const prospectoEtapaColor: Record<ProspectoEtapa, string> = {
   nuevo: "bg-slate-100 text-slate-700",
   contactado: "bg-sky-100 text-sky-800",
-  cotizo: "bg-violet-100 text-violet-800",
+  cita: "bg-violet-100 text-violet-800",
   negociacion: "bg-amber-100 text-amber-800",
   apartado: "bg-emerald-100 text-emerald-800",
   vendido: "bg-gabi-forest/10 text-gabi-forest",
@@ -33,7 +33,7 @@ export const prospectoEtapaColor: Record<ProspectoEtapa, string> = {
 export const prospectoEtapaDot: Record<ProspectoEtapa, string> = {
   nuevo: "bg-slate-400",
   contactado: "bg-sky-500",
-  cotizo: "bg-violet-500",
+  cita: "bg-violet-500",
   negociacion: "bg-amber-500",
   apartado: "bg-emerald-500",
   vendido: "bg-gabi-forest",
@@ -43,22 +43,29 @@ export const prospectoEtapaDot: Record<ProspectoEtapa, string> = {
 export const isProspectoEtapa = (value: string): value is ProspectoEtapa =>
   PROSPECTO_ETAPAS.includes(value as ProspectoEtapa);
 
+/** Compatibilidad con registros legacy antes de migración 049. */
+export const normalizeProspectoEtapaValue = (value: string): ProspectoEtapa | null => {
+  const normalized = value === "cotizo" ? "cita" : value;
+  return isProspectoEtapa(normalized) ? normalized : null;
+};
+
 const ETAPAS_BLOQUEADAS_VISITA = new Set<ProspectoEtapa>(["apartado", "vendido", "perdido"]);
 
 export const prospectoEtapaFromVisita = (
   tipo: "lead_registrado" | "recorrido_completado",
-): ProspectoEtapa => (tipo === "recorrido_completado" ? "contactado" : "nuevo");
+): ProspectoEtapa => (tipo === "recorrido_completado" ? "cita" : "nuevo");
 
 /** Avanza etapa sin retroceder ni mover apartado/vendido/perdido. */
 export const mergeProspectoEtapa = (
   current: string,
   target: ProspectoEtapa,
 ): ProspectoEtapa => {
-  if (isProspectoEtapa(current) && ETAPAS_BLOQUEADAS_VISITA.has(current)) {
-    return current;
+  const currentEtapa = normalizeProspectoEtapaValue(current);
+  if (currentEtapa && ETAPAS_BLOQUEADAS_VISITA.has(currentEtapa)) {
+    return currentEtapa;
   }
 
-  const currentIndex = isProspectoEtapa(current) ? PROSPECTO_ETAPAS.indexOf(current) : -1;
+  const currentIndex = currentEtapa ? PROSPECTO_ETAPAS.indexOf(currentEtapa) : -1;
   const targetIndex = PROSPECTO_ETAPAS.indexOf(target);
 
   if (currentIndex < 0) {

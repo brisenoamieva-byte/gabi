@@ -22,7 +22,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 const COMPLIANCE_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
   "contactado",
-  "cotizo",
+  "cita",
   "negociacion",
 ]);
 
