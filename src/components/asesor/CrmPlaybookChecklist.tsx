@@ -148,6 +148,14 @@ function PlaybookStepRow({
 
   const isContactAction = PLAYBOOK_CONTACT_ACTION_STEP_IDS.has(step.id);
   const telefono = contactContext?.telefono?.trim() || null;
+  const [editingVisitDate, setEditingVisitDate] = useState(false);
+  const visitDateInputValue =
+    visitDate?.slice(0, 10) || stepDate;
+
+  const submitVisitDate = (date: string) => {
+    onComplete(date);
+    setEditingVisitDate(false);
+  };
 
   const scriptCtx = contactContext
     ? {
@@ -183,10 +191,62 @@ function PlaybookStepRow({
           {step.required ? <span className="text-rose-500"> *</span> : null}
         </p>
         {step.hint ? <p className="text-xs text-slate-500">{step.hint}</p> : null}
-        {done && visitDate ? (
-          <p className="mt-1 text-xs font-medium text-emerald-800">
-            Fecha: {formatLeadDateOnly(visitDate)}
-          </p>
+        {done && visitDate && !editingVisitDate ? (
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-xs font-medium text-emerald-800">
+              Fecha: {formatLeadDateOnly(visitDate)}
+            </p>
+            {needsVisitDate ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setStepDate(visitDate.slice(0, 10));
+                  setEditingVisitDate(true);
+                }}
+                className="text-xs font-bold text-[#201044] underline-offset-2 hover:underline"
+              >
+                Cambiar fecha
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {done && needsVisitDate && editingVisitDate ? (
+          <div className="mt-2 space-y-2">
+            <label className="block text-xs text-slate-600">
+              <span className="font-semibold text-[#201044]">Nueva fecha de visita</span>
+              <input
+                type="date"
+                value={visitDateInputValue}
+                onChange={(event) => setStepDate(event.target.value)}
+                className="mt-1 block w-full max-w-[11rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
+              />
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled={loading || !stepDate}
+                onClick={() => submitVisitDate(stepDate)}
+                className="text-xs font-bold text-[#201044] underline-offset-2 hover:underline disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Guardando…
+                  </span>
+                ) : (
+                  "Guardar fecha"
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => setEditingVisitDate(false)}
+                className="text-xs font-semibold text-slate-500 underline-offset-2 hover:underline"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         ) : null}
         {done && isPerfilamientoForm && perfilamientoVisita ? (
           <dl className="mt-2 space-y-2 rounded-lg bg-slate-50 p-2">
