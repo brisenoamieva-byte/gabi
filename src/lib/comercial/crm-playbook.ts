@@ -292,6 +292,10 @@ export const canAdvancePlaybookEtapa = (
     return { ok: true };
   }
 
+  if (targetEtapa === "perdido") {
+    return { ok: true };
+  }
+
   for (let idx = currentIdx; idx < targetIdx; idx += 1) {
     const etapa = PROSPECTO_ETAPAS[idx];
     const pending = getPendingRequiredForEtapa(config, etapa, completedIds);

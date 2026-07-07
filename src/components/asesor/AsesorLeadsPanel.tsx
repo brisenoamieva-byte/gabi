@@ -324,7 +324,6 @@ function AsesorLeadDrawer({
                   {ETAPAS_ASESOR.map((item) => (
                     <option key={item} value={item} disabled={!isEtapaOptionAllowed(item)}>
                       {prospectoEtapaLabel[item]}
-                      {!isEtapaOptionAllowed(item) ? " (playbook)" : ""}
                     </option>
                   ))}
                 </select>
