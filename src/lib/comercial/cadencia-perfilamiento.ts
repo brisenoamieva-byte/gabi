@@ -211,9 +211,39 @@ export const buildCadenciaWhatsAppScript = (ctx: CadenciaScriptContext): string 
     return [
       `Hola ${firstName}, soy ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
       "",
-      "Vi tu interés en nuestro desarrollo. ¿Te gustaría agendar una visita para conocerlo en persona?",
+      "Gracias por tu interés. Lo mejor es conocer el desarrollo en persona: en una visita guiada de unos 20 minutos ves ubicación, producto y resolvemos dudas — sin compromiso.",
       "",
-      "Con gusto te comparto horarios disponibles.",
+      "¿Te acomoda agendar esta semana? ¿Prefieres entre semana por la mañana (9–11 h) o un horario de tarde (17–19 h)?",
+    ].join("\n");
+  }
+
+  if (ctx.dayOffset === 1) {
+    return [
+      `Hola ${firstName}, te escribe ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
+      "",
+      "Seguimos en contacto. Si te interesa, agendamos una visita guiada breve para que conozcas el desarrollo con calma.",
+      "",
+      "¿Qué día y horario te funcionaría esta semana?",
+    ].join("\n");
+  }
+
+  if (ctx.dayOffset === 3) {
+    return [
+      `Hola ${firstName}, soy ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
+      "",
+      "Retomo tu solicitud por si aún te interesa. En sitio se entiende mucho mejor el proyecto que por mensaje o fotos.",
+      "",
+      "¿Te va bien un recorrido de unos 20 min? Dime qué día te queda mejor.",
+    ].join("\n");
+  }
+
+  if (ctx.dayOffset === 4) {
+    return [
+      `Hola ${firstName}, ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
+      "",
+      "Quería confirmar si sigues con interés en conocer el desarrollo. Con gusto te recibo para una visita sin compromiso.",
+      "",
+      "¿Hay algún día esta semana que te acomode?",
     ].join("\n");
   }
 
@@ -221,7 +251,7 @@ export const buildCadenciaWhatsAppScript = (ctx: CadenciaScriptContext): string 
     return [
       `Hola ${firstName}, ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
       "",
-      "Este es mi último mensaje por ahora. Si aún te interesa conocer el desarrollo, con gusto agendamos una visita cuando te quede bien.",
+      "Este es mi último mensaje por ahora para no insistir. Si más adelante quieres agendar una visita, escríbeme con gusto.",
       "",
       "¡Que tengas excelente día!",
     ].join("\n");
@@ -230,7 +260,7 @@ export const buildCadenciaWhatsAppScript = (ctx: CadenciaScriptContext): string 
   return [
     `Hola ${firstName}, te escribe ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
     "",
-    "¿Seguimos en contacto? Me encantaría invitarte a conocer el desarrollo en una visita guiada.",
+    "¿Seguimos en contacto? Me encantaría invitarte a una visita guiada al desarrollo.",
     "",
     "¿Qué día y horario te funcionaría?",
   ].join("\n");
@@ -245,8 +275,8 @@ export const buildCadenciaLlamadaGuion = (ctx: CadenciaScriptContext): string =>
     "",
     `«Hola ${firstName}, soy ${ctx.asesorNombre} de ${ctx.desarrolloNombre}.`,
     "Te llamo porque recibimos tu solicitud de información.",
-    "¿Tienes un momento? Me gustaría invitarte a visitar el desarrollo — es la mejor forma de conocerlo.",
-    "¿Qué día te funcionaría?»",
+    "¿Tienes 2 minutos? Lo ideal es agendar una visita guiada de unos 20 minutos — ahí conoces el desarrollo sin compromiso.",
+    "¿Qué día esta semana te va mejor, en la mañana o en la tarde?»",
     "",
     "Si no contesta: dejar buzón breve con nombre, desarrollo e invitación a visita.",
   ].join("\n");
