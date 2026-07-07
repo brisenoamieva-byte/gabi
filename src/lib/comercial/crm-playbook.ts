@@ -96,7 +96,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "necesidades-perfiladas",
     etapa: "contactado",
     label: "Necesidades y perfil documentados",
-    hint: "Presupuesto, producto, plazo y motivación en notas.",
+    hint: "Completa el cuestionario post-visita (presupuesto, apartado, decisor y publicidad en redes).",
     kind: "manual",
     required: true,
     order: 60,

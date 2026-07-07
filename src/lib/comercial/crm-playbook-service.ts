@@ -24,6 +24,12 @@ import {
   completeCadenciaTouchForPlaybookStep,
 } from "@/lib/comercial/cadencia-service";
 import { normalizePlaybookVisitDate } from "@/lib/comercial/cadencia-perfilamiento";
+import {
+  perfilamientoVisitaToRow,
+  PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
+  validatePerfilamientoVisitaInput,
+  type PerfilamientoVisitaAnswers,
+} from "@/lib/comercial/perfilamiento-post-visita";
 
 const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
@@ -337,6 +343,7 @@ export const completePlaybookStepForProspecto = async (
   prospectoId: string,
   stepId: string,
   stepDate?: string,
+  perfilamientoVisita?: PerfilamientoVisitaAnswers,
 ): Promise<{ playbook: ProspectoPlaybookState; prospecto: ProspectoListRow }> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -370,6 +377,21 @@ export const completePlaybookStepForProspecto = async (
   const step = config.steps.find((item) => item.id === stepId);
   if (!step) {
     throw new Error("Paso de playbook no válido.");
+  }
+
+  if (PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(stepId)) {
+    const answers = validatePerfilamientoVisitaInput(perfilamientoVisita);
+    const { error: perfilError } = await supabase
+      .from("prospectos")
+      .update({
+        ...perfilamientoVisitaToRow(answers),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", prospectoId);
+
+    if (perfilError) {
+      throw new Error(perfilError.message);
+    }
   }
 
   const visitDate = normalizePlaybookVisitDate(stepId, stepDate);

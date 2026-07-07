@@ -19,6 +19,13 @@ import {
   formatLeadDateOnly,
   getMexicoCityDateInput,
 } from "@/lib/comercial/format-lead-date";
+import {
+  formatPerfilamientoSiNo,
+  PERFILAMIENTO_VISITA_QUESTIONS,
+  PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
+  type PerfilamientoVisitaAnswers,
+  type PerfilamientoVisitaRecord,
+} from "@/lib/comercial/perfilamiento-post-visita";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 
 type PlaybookContactContext = {
@@ -35,7 +42,12 @@ type CrmPlaybookChecklistProps = {
   contactContext?: PlaybookContactContext;
   visitaAgendadaOn?: string | null;
   visitaRealizadaOn?: string | null;
-  onCompleteStep: (stepId: string, stepDate?: string) => void;
+  perfilamientoVisita?: PerfilamientoVisitaRecord;
+  onCompleteStep: (
+    stepId: string,
+    stepDate?: string,
+    perfilamientoVisita?: PerfilamientoVisitaAnswers,
+  ) => void;
 };
 
 export function CrmPlaybookChecklist({
@@ -45,6 +57,7 @@ export function CrmPlaybookChecklist({
   contactContext,
   visitaAgendadaOn,
   visitaRealizadaOn,
+  perfilamientoVisita,
   onCompleteStep,
 }: CrmPlaybookChecklistProps) {
   if (!playbook?.config?.enabled) {
@@ -98,7 +111,8 @@ export function CrmPlaybookChecklist({
               visitDate={visitDate}
               loading={completingStepId === step.id}
               contactContext={contactContext}
-              onComplete={(stepDate) => onCompleteStep(step.id, stepDate)}
+              perfilamientoVisita={perfilamientoVisita}
+              onComplete={(stepDate, answers) => onCompleteStep(step.id, stepDate, answers)}
             />
           );
         })}
@@ -113,6 +127,7 @@ function PlaybookStepRow({
   visitDate,
   loading,
   contactContext,
+  perfilamientoVisita,
   onComplete,
 }: {
   step: PlaybookStep;
@@ -120,10 +135,14 @@ function PlaybookStepRow({
   visitDate?: string | null;
   loading: boolean;
   contactContext?: PlaybookContactContext;
-  onComplete: (stepDate?: string) => void;
+  perfilamientoVisita?: PerfilamientoVisitaRecord;
+  onComplete: (stepDate?: string, perfilamientoVisita?: PerfilamientoVisitaAnswers) => void;
 }) {
   const needsVisitDate = PLAYBOOK_STEPS_WITH_VISIT_DATE.has(step.id);
-  const isManualCompletable = step.kind === "manual" || step.id === "recorrido" || step.id === "visita-agendada";
+  const isPerfilamientoForm = PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(step.id);
+  const isManualCompletable =
+    (step.kind === "manual" || step.id === "recorrido" || step.id === "visita-agendada") &&
+    !isPerfilamientoForm;
   const [stepDate, setStepDate] = useState(() => getMexicoCityDateInput());
   const [showGuion, setShowGuion] = useState(false);
 
@@ -168,6 +187,26 @@ function PlaybookStepRow({
           <p className="mt-1 text-xs font-medium text-emerald-800">
             Fecha: {formatLeadDateOnly(visitDate)}
           </p>
+        ) : null}
+        {done && isPerfilamientoForm && perfilamientoVisita ? (
+          <dl className="mt-2 space-y-2 rounded-lg bg-slate-50 p-2">
+            {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
+              <div key={question.key}>
+                <dt className="text-[11px] leading-snug text-slate-500">{question.label}</dt>
+                <dd className="text-xs font-bold text-[#201044]">
+                  {formatPerfilamientoSiNo(perfilamientoVisita[question.key])}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+
+        {!done && isPerfilamientoForm ? (
+          <PerfilamientoVisitaForm
+            loading={loading}
+            initial={perfilamientoVisita}
+            onSubmit={(answers) => onComplete(undefined, answers)}
+          />
         ) : null}
 
         {!done && isContactAction ? (
@@ -275,5 +314,77 @@ function PlaybookStepRow({
         ) : null}
       </div>
     </li>
+  );
+}
+
+function PerfilamientoVisitaForm({
+  loading,
+  initial,
+  onSubmit,
+}: {
+  loading: boolean;
+  initial?: PerfilamientoVisitaRecord;
+  onSubmit: (answers: PerfilamientoVisitaAnswers) => void;
+}) {
+  const [answers, setAnswers] = useState<Partial<PerfilamientoVisitaAnswers>>(() => ({
+    presupuestoDisponible: initial?.presupuestoDisponible ?? undefined,
+    intencionApartarInmediato: initial?.intencionApartarInmediato ?? undefined,
+    decisorVisita: initial?.decisorVisita ?? undefined,
+    vioPublicidadRedes: initial?.vioPublicidadRedes ?? undefined,
+  }));
+
+  const allAnswered = PERFILAMIENTO_VISITA_QUESTIONS.every(
+    (question) => typeof answers[question.key] === "boolean",
+  );
+
+  return (
+    <div className="mt-2 space-y-3">
+      {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
+        <fieldset key={question.key} className="rounded-lg border border-slate-200 bg-slate-50/80 p-2">
+          <legend className="px-1 text-xs leading-snug text-slate-700">{question.label}</legend>
+          <div className="mt-1 flex gap-4">
+            <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#201044]">
+              <input
+                type="radio"
+                name={question.key}
+                checked={answers[question.key] === true}
+                onChange={() =>
+                  setAnswers((current) => ({ ...current, [question.key]: true }))
+                }
+                className="accent-[#201044]"
+              />
+              Sí
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#201044]">
+              <input
+                type="radio"
+                name={question.key}
+                checked={answers[question.key] === false}
+                onChange={() =>
+                  setAnswers((current) => ({ ...current, [question.key]: false }))
+                }
+                className="accent-[#201044]"
+              />
+              No
+            </label>
+          </div>
+        </fieldset>
+      ))}
+      <button
+        type="button"
+        disabled={loading || !allAnswered}
+        onClick={() => onSubmit(answers as PerfilamientoVisitaAnswers)}
+        className="inline-flex items-center gap-1 rounded-lg bg-[#201044] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Guardando…
+          </>
+        ) : (
+          "Guardar perfilamiento"
+        )}
+      </button>
+    </div>
   );
 }

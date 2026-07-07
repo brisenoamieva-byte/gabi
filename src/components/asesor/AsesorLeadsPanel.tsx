@@ -44,6 +44,14 @@ import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled"
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import type { CadenciaStatus } from "@/lib/comercial/cadencia-perfilamiento";
 import {
+  readPerfilamientoVisitaFromProspecto,
+  type PerfilamientoVisitaAnswers,
+} from "@/lib/comercial/perfilamiento-post-visita";
+import {
+  validateProspectoTelefono,
+  formatProspectoTelefonoDisplay,
+} from "@/lib/comercial/prospecto-telefono";
+import {
   isProspectoEtapa,
   PROSPECTO_ETAPAS,
   prospectoEtapaColor,
@@ -157,7 +165,11 @@ function AsesorLeadDrawer({
     return canAdvancePlaybookEtapa(playbook.config, current, target, completedIds).ok;
   };
 
-  const handleCompleteStep = async (stepId: string, stepDate?: string) => {
+  const handleCompleteStep = async (
+    stepId: string,
+    stepDate?: string,
+    perfilamientoVisita?: PerfilamientoVisitaAnswers,
+  ) => {
     setCompletingStepId(stepId);
     setError("");
 
@@ -165,7 +177,7 @@ function AsesorLeadDrawer({
       const response = await fetch(`/api/asesores/prospectos/${prospectoId}/playbook`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asesorId, stepId, stepDate }),
+        body: JSON.stringify({ asesorId, stepId, stepDate, perfilamientoVisita }),
       });
 
       const data = (await response.json()) as {
@@ -339,7 +351,10 @@ function AsesorLeadDrawer({
                   }}
                   visitaAgendadaOn={detail.visita_agendada_on}
                   visitaRealizadaOn={detail.visita_realizada_on}
-                  onCompleteStep={(stepId, stepDate) => void handleCompleteStep(stepId, stepDate)}
+                  perfilamientoVisita={readPerfilamientoVisitaFromProspecto(detail)}
+                  onCompleteStep={(stepId, stepDate, perfilamientoVisita) =>
+                    void handleCompleteStep(stepId, stepDate, perfilamientoVisita)
+                  }
                 />
               ) : null}
 
@@ -491,6 +506,8 @@ export function AsesorLeadsPanel({
   const [newNombre, setNewNombre] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newTelefono, setNewTelefono] = useState("");
+  const [newTelefonoError, setNewTelefonoError] = useState("");
+  const [checkingTelefono, setCheckingTelefono] = useState(false);
   const [newMedioContacto, setNewMedioContacto] = useState("contacto-directo");
   const [newNotas, setNewNotas] = useState("");
   const [playbookQueue, setPlaybookQueue] = useState<PlaybookQueueItem[]>([]);
@@ -500,6 +517,7 @@ export function AsesorLeadsPanel({
   const playbookEnabled = playbookEnabledApi && playbookConfig?.enabled;
 
   const periodRange = useMemo(() => leadPeriodToRange(periodFilter), [periodFilter]);
+  const newTelefonoValidation = useMemo(() => validateProspectoTelefono(newTelefono), [newTelefono]);
 
   const loadPlaybookQueue = useCallback(async () => {
     if (!playbookEnabledApi) {
@@ -607,6 +625,49 @@ export function AsesorLeadsPanel({
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
+  useEffect(() => {
+    if (!showNewLead) {
+      setNewTelefonoError("");
+      setCheckingTelefono(false);
+      return;
+    }
+
+    const validation = validateProspectoTelefono(newTelefono);
+    if (!validation.ok) {
+      setNewTelefonoError(newTelefono.trim() ? validation.error : "");
+      setCheckingTelefono(false);
+      return;
+    }
+
+    setCheckingTelefono(true);
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const params = new URLSearchParams({
+            asesorId,
+            desarrolloId,
+            telefono: validation.telefono,
+          });
+          const response = await fetch(`/api/asesores/prospectos/check-telefono?${params}`);
+          const data = (await response.json()) as { valid?: boolean; error?: string };
+
+          if (!response.ok) {
+            setNewTelefonoError(data.error ?? "No se pudo validar el teléfono.");
+            return;
+          }
+
+          setNewTelefonoError(data.valid ? "" : data.error ?? "Teléfono no disponible.");
+        } catch {
+          setNewTelefonoError("");
+        } finally {
+          setCheckingTelefono(false);
+        }
+      })();
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [asesorId, desarrolloId, newTelefono, showNewLead]);
+
   const handleMoveEtapa = async (prospectoId: string, etapa: ProspectoEtapa) => {
     const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
       method: "PATCH",
@@ -631,6 +692,7 @@ export function AsesorLeadsPanel({
     setNewNombre("");
     setNewEmail("");
     setNewTelefono("");
+    setNewTelefonoError("");
     setNewMedioContacto("contacto-directo");
     setNewNotas("");
   };
@@ -638,6 +700,16 @@ export function AsesorLeadsPanel({
   const handleCreateLead = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newNombre.trim()) {
+      return;
+    }
+
+    const telefonoValidation = validateProspectoTelefono(newTelefono);
+    if (!telefonoValidation.ok) {
+      setNewTelefonoError(telefonoValidation.error);
+      return;
+    }
+
+    if (newTelefonoError) {
       return;
     }
 
@@ -653,7 +725,7 @@ export function AsesorLeadsPanel({
           desarrolloId,
           nombre: newNombre.trim(),
           email: newEmail.trim() || undefined,
-          telefono: newTelefono.trim() || undefined,
+          telefono: telefonoValidation.telefono,
           medioContacto: newMedioContacto,
           notas: newNotas.trim() || undefined,
         }),
@@ -672,7 +744,11 @@ export function AsesorLeadsPanel({
       }
       void loadLeads();
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Error al crear.");
+      const message = createError instanceof Error ? createError.message : "Error al crear.";
+      if (message.includes("teléfono") || message.includes("registrado") || message.includes("bandeja")) {
+        setNewTelefonoError(message);
+      }
+      setError(message);
     } finally {
       setCreating(false);
     }
@@ -931,13 +1007,30 @@ export function AsesorLeadsPanel({
               />
             </label>
             <label className="mt-3 block text-sm">
-              <span className="mb-1 block font-semibold text-slate-600">Teléfono</span>
+              <span className="mb-1 block font-semibold text-slate-600">Teléfono *</span>
               <input
                 type="tel"
+                required
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={14}
                 value={newTelefono}
                 onChange={(event) => setNewTelefono(event.target.value)}
-                className={inputClass}
+                placeholder="10 dígitos"
+                className={`${inputClass} ${newTelefonoError ? "border-rose-300 ring-1 ring-rose-200" : ""}`}
               />
+              {checkingTelefono ? (
+                <p className="mt-1 text-xs text-slate-500">Verificando teléfono…</p>
+              ) : null}
+              {newTelefonoError ? (
+                <p className="mt-1 text-xs font-medium text-rose-700">{newTelefonoError}</p>
+              ) : newTelefonoValidation.ok && !checkingTelefono ? (
+                <p className="mt-1 text-xs text-emerald-700">
+                  Teléfono válido: {formatProspectoTelefonoDisplay(newTelefonoValidation.telefono)}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">Obligatorio: 10 dígitos sin repetir en el desarrollo.</p>
+              )}
             </label>
             <label className="mt-3 block text-sm">
               <span className="mb-1 block font-semibold text-slate-600">Medio de contacto</span>
@@ -972,7 +1065,7 @@ export function AsesorLeadsPanel({
               </button>
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || checkingTelefono || Boolean(newTelefonoError)}
                 className="rounded-xl bg-[#201044] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
               >
                 {creating ? "Guardando…" : "Crear lead"}

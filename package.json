@@ -44,6 +44,8 @@
     "db:apply:044": "node scripts/apply-migration-044.mjs",
     "db:apply:045": "node scripts/apply-migration-045.mjs",
     "db:apply:046": "node scripts/apply-migration-046.mjs",
+    "db:apply:047": "node scripts/apply-migration-047.mjs",
+    "db:apply:048": "node scripts/apply-migration-048.mjs",
     "db:print:040": "node scripts/print-apply-sql.mjs 040",
     "templates:gavia:placeholders": "node scripts/prepare-gavia-docx-placeholders.mjs",
     "db:apply:037-038": "node scripts/apply-migrations-037-038.mjs",

@@ -169,6 +169,35 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 
 ---
 
+## PRUEBA 4b — Playbook en etapa Contactado (10 min)
+
+**Dónde:** Mismo lead en etapa **Contactado** (tras completar contacto inicial en Nuevo).
+
+**Pasos relevantes:**
+
+| Paso | Tu acción |
+|------|-----------|
+| Recorrido guiado | Marca completado **+ fecha de visita** |
+| Necesidades y perfil documentados | Responde el **cuestionario post-visita** (4 preguntas sí/no) y pulsa **Guardar perfilamiento** |
+
+**Preguntas del cuestionario:**
+
+1. ¿El prospecto tiene el presupuesto necesario y disponible para comprar en el desarrollo?
+2. ¿El prospecto tiene intención de apartar de inmediato?
+3. ¿El prospecto que atendió la visita es quien tomará la decisión final de comprar?
+4. Independientemente del medio de contacto, ¿el prospecto ha visto publicidad del desarrollo en redes sociales?
+
+**Qué comprobar:**
+
+| Comprobación | Sí | No |
+|--------------|:--:|:--:|
+| Recorrido pide y guarda **fecha de visita** | ☐ | ☐ |
+| El paso de perfilamiento muestra las 4 preguntas (no solo “Marcar completado”) | ☐ | ☐ |
+| No deja guardar sin responder las 4 | ☐ | ☐ |
+| Tras guardar, el paso queda marcado y se ven las respuestas | ☐ | ☐ |
+
+---
+
 ## PRUEBA 5 — Reportar apartado (10 min)
 
 **Dónde:** Un lead en **Negociación** (o cuando el cliente ya depositó).

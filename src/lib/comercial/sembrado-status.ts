@@ -133,6 +133,10 @@ export type ProspectoRecord = {
   activo: boolean;
   visita_agendada_on: string | null;
   visita_realizada_on: string | null;
+  perfil_presupuesto_disponible: boolean | null;
+  perfil_intencion_apartar: boolean | null;
+  perfil_decisor_visita: boolean | null;
+  perfil_vio_publicidad_redes: boolean | null;
   created_at: string;
   updated_at: string;
 };

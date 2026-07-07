@@ -312,6 +312,22 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Faltan visita_agendada_on / visita_realizada_on — aplica 046.",
   });
 
+  const perfilamientoVisitaOk = await probeColumn("prospectos", "perfil_presupuesto_disponible", {
+    desarrollo_id: desarrolloId,
+    nombre: "__gabi_health_probe__",
+    etapa: "nuevo",
+    perfil_presupuesto_disponible: true,
+  });
+  checks.push({
+    id: "048",
+    label: "Perfilamiento post-visita en prospectos",
+    migrationFile: "048_prospecto_perfilamiento_visita.sql",
+    ok: perfilamientoVisitaOk,
+    detail: perfilamientoVisitaOk
+      ? "Cuestionario post-visita (4 preguntas) disponible."
+      : "Faltan columnas perfil_* — aplica 048.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()

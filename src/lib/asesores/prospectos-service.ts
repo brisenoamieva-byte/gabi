@@ -1,6 +1,7 @@
 import {
   createProspecto,
   findProspectoByContact,
+  findProspectoByTelefonoInDesarrollo,
   getProspectoById,
   getProspectosResumen,
   listProspectos,
@@ -10,6 +11,10 @@ import {
   type ProspectoListRow,
 } from "@/lib/admin/prospectos-service";
 import { isProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import {
+  buildProspectoTelefonoDuplicadoMessage,
+  validateProspectoTelefono,
+} from "@/lib/comercial/prospecto-telefono";
 import { bootstrapCadenciaForProspecto, pauseCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
@@ -90,6 +95,39 @@ export type AsesorUpdateProspectoInput = {
   notas?: string;
 };
 
+export const checkProspectoTelefonoForAsesor = async (
+  asesorId: string,
+  desarrolloId: string,
+  telefono: string,
+) => {
+  await assertAsesorDesarrollo(asesorId, desarrolloId);
+
+  const validation = validateProspectoTelefono(telefono);
+  if (!validation.ok) {
+    return { valid: false as const, error: validation.error };
+  }
+
+  const duplicate = await findProspectoByTelefonoInDesarrollo(desarrolloId, validation.telefono);
+  if (!duplicate) {
+    return { valid: true as const, telefono: validation.telefono };
+  }
+
+  const mismoAsesor = duplicate.prospecto.asesor_id === asesorId;
+  return {
+    valid: false as const,
+    duplicate: true as const,
+    telefono: validation.telefono,
+    prospectoId: duplicate.prospecto.id,
+    prospectoNombre: duplicate.prospecto.nombre,
+    asesorNombre: duplicate.asesorNombre,
+    error: buildProspectoTelefonoDuplicadoMessage({
+      prospectoNombre: duplicate.prospecto.nombre,
+      asesorNombre: duplicate.asesorNombre,
+      mismoAsesor,
+    }),
+  };
+};
+
 export const createProspectoForAsesor = async (
   asesorId: string,
   input: AsesorCreateProspectoInput,
@@ -101,13 +139,30 @@ export const createProspectoForAsesor = async (
     throw new Error("Nombre requerido.");
   }
 
-  const email = input.email?.trim();
-  const telefono = input.telefono?.trim();
+  const telefonoValidation = validateProspectoTelefono(input.telefono);
+  if (!telefonoValidation.ok) {
+    throw new Error(telefonoValidation.error);
+  }
 
-  if (email || telefono) {
-    const existing = await findProspectoByContact(input.desarrolloId, email, telefono);
-    if (existing?.asesor_id && existing.asesor_id !== asesorId) {
-      throw new Error("Ya existe un prospecto con ese contacto asignado a otro asesor.");
+  const telefono = telefonoValidation.telefono;
+  const email = input.email?.trim();
+
+  const duplicate = await findProspectoByTelefonoInDesarrollo(input.desarrolloId, telefono);
+  if (duplicate) {
+    throw new Error(
+      buildProspectoTelefonoDuplicadoMessage({
+        prospectoNombre: duplicate.prospecto.nombre,
+        asesorNombre: duplicate.asesorNombre,
+        mismoAsesor: duplicate.prospecto.asesor_id === asesorId,
+      }),
+    );
+  }
+
+  let existingByEmail = null;
+  if (email) {
+    existingByEmail = await findProspectoByContact(input.desarrolloId, email);
+    if (existingByEmail?.asesor_id && existingByEmail.asesor_id !== asesorId) {
+      throw new Error("Ya existe un prospecto con ese email asignado a otro asesor.");
     }
   }
 
@@ -123,7 +178,7 @@ export const createProspectoForAsesor = async (
   };
 
   const record =
-    email || telefono
+    email && existingByEmail
       ? await upsertProspectoFromVisita(prospectoInput)
       : await createProspecto(prospectoInput);
 

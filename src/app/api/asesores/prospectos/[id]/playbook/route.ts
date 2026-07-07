@@ -3,6 +3,7 @@ import {
   completePlaybookStepForProspecto,
   getProspectoPlaybookState,
 } from "@/lib/comercial/crm-playbook-service";
+import type { PerfilamientoVisitaAnswers } from "@/lib/comercial/perfilamiento-post-visita";
 import { getProspectoForAsesor } from "@/lib/asesores/prospectos-service";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
@@ -34,7 +35,12 @@ export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const body = (await request.json()) as { asesorId?: string; stepId?: string; stepDate?: string };
+    const body = (await request.json()) as {
+      asesorId?: string;
+      stepId?: string;
+      stepDate?: string;
+      perfilamientoVisita?: PerfilamientoVisitaAnswers;
+    };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
     const stepId = body.stepId?.trim();
     const stepDate = body.stepDate?.trim();
@@ -48,6 +54,7 @@ export async function POST(request: Request, context: RouteContext) {
       id,
       stepId,
       stepDate,
+      body.perfilamientoVisita,
     );
     return NextResponse.json({ playbook, prospecto });
   } catch (error) {

@@ -16,6 +16,7 @@ import {
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import type { VisitaTipo } from "@/lib/visitas/types";
+import { normalizeProspectoTelefono } from "@/lib/comercial/prospecto-telefono";
 
 export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
@@ -91,7 +92,7 @@ const toRow = (input: ProspectoInput) => ({
   desarrollo_id: input.desarrolloId,
   nombre: input.nombre.trim(),
   email: input.email?.trim() || null,
-  telefono: input.telefono?.trim() || null,
+  telefono: normalizeProspectoTelefono(input.telefono?.trim()) || null,
   origen_ciudad: input.origenCiudad?.trim() || null,
   medio_contacto: input.medioContacto?.trim() || null,
   medio_publicitario: input.medioPublicitario?.trim() || null,
@@ -316,7 +317,7 @@ export const updateProspecto = async (
     patch.email = input.email.trim() || null;
   }
   if (input.telefono !== undefined) {
-    patch.telefono = input.telefono.trim() || null;
+    patch.telefono = normalizeProspectoTelefono(input.telefono.trim()) || null;
   }
   if (input.origenCiudad !== undefined) {
     patch.origen_ciudad = input.origenCiudad.trim() || null;
@@ -477,7 +478,49 @@ export const bulkReassignProspectos = async (
 };
 
 const normalizeEmail = (value?: string) => value?.trim().toLowerCase() || null;
-const normalizePhoneDigits = (value?: string) => value?.replace(/\D/g, "") || null;
+
+export type ProspectoTelefonoMatch = {
+  prospecto: ProspectoListRow;
+  asesorNombre: string | null;
+};
+
+export const findProspectoByTelefonoInDesarrollo = async (
+  desarrolloId: string,
+  telefono: string,
+): Promise<ProspectoTelefonoMatch | null> => {
+  const phoneDigits = normalizeProspectoTelefono(telefono);
+  if (!phoneDigits || phoneDigits.length !== 10) {
+    return null;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data: candidates } = await supabase
+    .from("prospectos")
+    .select("*, asesor:asesores(nombre)")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("activo", true)
+    .not("telefono", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(100);
+
+  const match = (candidates ?? []).find(
+    (row) => normalizeProspectoTelefono(row.telefono as string) === phoneDigits,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const mapped = mapProspectoRow(match as Record<string, unknown>);
+  return {
+    prospecto: mapped,
+    asesorNombre: mapped.asesorNombre,
+  };
+};
 
 export const findProspectoByContact = async (
   desarrolloId: string,
@@ -504,23 +547,11 @@ export const findProspectoByContact = async (
     }
   }
 
-  const phoneDigits = normalizePhoneDigits(telefono);
-  if (phoneDigits && phoneDigits.length >= 10) {
-    const { data: candidates } = await supabase
-      .from("prospectos")
-      .select("*")
-      .eq("desarrollo_id", desarrolloId)
-      .eq("activo", true)
-      .not("telefono", "is", null)
-      .order("updated_at", { ascending: false })
-      .limit(50);
-
-    const match = (candidates ?? []).find(
-      (row) => normalizePhoneDigits(row.telefono as string) === phoneDigits,
-    );
-
+  const phoneDigits = normalizeProspectoTelefono(telefono);
+  if (phoneDigits && phoneDigits.length === 10) {
+    const match = await findProspectoByTelefonoInDesarrollo(desarrolloId, phoneDigits);
     if (match) {
-      return match as ProspectoRecord;
+      return match.prospecto;
     }
   }
 
