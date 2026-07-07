@@ -175,14 +175,17 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 
 **Qué hacer:**
 1. Pulsa **Reportar apartado** (botón verde, abajo del detalle).
-2. Selecciona la **unidad**, confirma precio, fecha de apartado y primer pago si aplica.
-3. Guarda → el lead pasa a **Apartado** y la unidad queda registrada en **sembrado**.
-4. En **Expediente de apartado**, sube al menos un documento del checklist (INE, etc.).
+2. Elige **Departamentos** u **Oficinas**, luego la **unidad disponible** del sembrado.
+3. Confirma **medio publicitario**, **equipo de venta** (Interno BBR / Externo) y **promotor**.
+4. Revisa precio, fecha de apartado y primer pago si aplica → **Guardar apartado**.
+5. El lead pasa a **Apartado**; en **Expediente de apartado** sube al menos un documento (INE, etc.).
 
 **Qué comprobar:**
 
 | Comprobación | Sí | No |
 |--------------|:--:|:--:|
+| Primero pide tipo (depto/oficina) y luego lista unidades del sembrado | ☐ | ☐ |
+| Medio, equipo y promotor son listas desplegables | ☐ | ☐ |
 | El formulario trae datos del prospecto y cotización | ☐ | ☐ |
 | Tras guardar, el lead aparece en pestaña **Apartado** | ☐ | ☐ |
 | Aparece el checklist de **Expediente de apartado** | ☐ | ☐ |
