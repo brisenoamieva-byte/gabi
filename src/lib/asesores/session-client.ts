@@ -33,12 +33,27 @@ const fetchAsesorSessionFromServer = async (): Promise<AsesorSession | null> => 
   return data.asesor;
 };
 
+const fetchOperatorSessionFromServer = async (): Promise<AsesorSession | null> => {
+  const response = await fetch("/api/gabi/operator/session", { credentials: "same-origin" });
+  const data = (await response.json()) as { asesor?: AsesorSession; error?: string };
+  if (!response.ok || !data.asesor) {
+    return null;
+  }
+  return data.asesor;
+};
+
 export const refreshStoredAsesorSession = async (): Promise<AsesorSession | null> => {
   try {
-    const fromCookie = await fetchAsesorSessionFromServer();
-    if (fromCookie) {
-      writeStoredAsesorSession(fromCookie);
-      return fromCookie;
+    const fromPin = await fetchAsesorSessionFromServer();
+    if (fromPin) {
+      writeStoredAsesorSession(fromPin);
+      return fromPin;
+    }
+
+    const fromOperator = await fetchOperatorSessionFromServer();
+    if (fromOperator) {
+      writeStoredAsesorSession(fromOperator);
+      return fromOperator;
     }
 
     return null;

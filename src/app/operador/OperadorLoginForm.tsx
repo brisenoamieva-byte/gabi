@@ -1,13 +1,19 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Shield } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { writeStoredAsesorSession } from "@/lib/asesores/session-client";
+import { isDmbHostname } from "@/lib/dmb/host";
 import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
+import {
+  operatorLoginHref,
+  operatorPostLoginUrl,
+  shouldUseDmbOperatorLogin,
+} from "@/lib/gabi/operator-login-url";
 import type { AsesorSession } from "@/lib/asesores/types";
 
 import { GABI_PORTAL_KEY, GABI_DESARROLLO_KEY } from "@/lib/session/keys";
@@ -18,6 +24,22 @@ export function OperadorLoginForm() {
   const [codigo, setCodigo] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [onDmb, setOnDmb] = useState(false);
+
+  const nextParam = searchParams.get("next");
+
+  useEffect(() => {
+    setOnDmb(isDmbHostname(window.location.host));
+  }, []);
+
+  useEffect(() => {
+    if (!shouldUseDmbOperatorLogin(nextParam)) {
+      return;
+    }
+    setRedirecting(true);
+    window.location.replace(operatorLoginHref(nextParam ?? undefined));
+  }, [nextParam]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -41,10 +63,7 @@ export function OperadorLoginForm() {
       localStorage.removeItem(GABI_DESARROLLO_KEY);
       localStorage.removeItem(GABI_PORTAL_KEY);
       writeStoredAsesorSession(data.asesor);
-      const next = searchParams.get("next");
-      const safeNext =
-        next?.startsWith("/") && !next.startsWith("//") ? next : "/gabi";
-      window.location.assign(safeNext);
+      window.location.assign(operatorPostLoginUrl(nextParam));
     } catch {
       setError("No se pudo validar el acceso. Revisa tu conexión.");
     } finally {
@@ -52,15 +71,23 @@ export function OperadorLoginForm() {
     }
   };
 
+  if (redirecting) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center gabi-surface text-gabi-navy">
+        <p className="text-sm text-slate-500">Redirigiendo a dmb.mx…</p>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-dvh flex-col gabi-surface text-gabi-navy">
       <header className="flex shrink-0 items-center justify-between px-5 py-4 md:px-8">
         <Link
-          href="/"
+          href={onDmb ? "/dmb" : "/"}
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#13315C]/70 transition hover:text-[#13315C]"
         >
           <ArrowLeft className="h-4 w-4" />
-          gabi.mx
+          {onDmb ? "dmb.mx" : "gabi.mx"}
         </Link>
         <GabiLogo variant="header" />
       </header>

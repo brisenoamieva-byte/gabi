@@ -83,8 +83,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${legacyDmbAdmin}${search}`, request.url));
   }
 
-  // dmb.mx → operación comercial solo en gabi.mx
-  if (isDmbHost && isGabiOnlyRoute(pathname)) {
+  // dmb.mx → operación comercial en gabi.mx (login operador permitido en dmb.mx)
+  if (
+    isDmbHost &&
+    isGabiOnlyRoute(pathname) &&
+    pathname !== "/operador" &&
+    !pathname.startsWith("/operador/")
+  ) {
     return NextResponse.redirect(absoluteGabiUrl(`${pathname}${search}`));
   }
 

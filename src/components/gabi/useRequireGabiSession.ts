@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { readStoredAsesorSession } from "@/lib/asesores/session-client";
+import {
+  readStoredAsesorSession,
+  refreshStoredAsesorSession,
+} from "@/lib/asesores/session-client";
 import {
   GABI_CENTRO_PATH,
-  OPERATOR_LOGIN_PATH,
 } from "@/lib/gabi/operator";
+import { operatorLoginHref } from "@/lib/gabi/operator-login-url";
 import { useGabiOperator } from "@/components/gabi/useGabiOperator";
 
 type Options = {
@@ -22,21 +25,40 @@ export function useRequireGabiSession(options: Options = {}) {
   const [authReady, setAuthReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
 
-  const loginHref = useMemo(() => {
-    const next = options.nextPath;
-    if (next) {
-      return `${OPERATOR_LOGIN_PATH}?next=${encodeURIComponent(next)}`;
-    }
-    return OPERATOR_LOGIN_PATH;
-  }, [options.nextPath]);
+  const loginHref = useMemo(
+    () => operatorLoginHref(options.nextPath),
+    [options.nextPath],
+  );
 
   useEffect(() => {
-    const session = readStoredAsesorSession();
-    setHasSession(Boolean(session));
-    setAuthReady(true);
-    if (!session) {
-      router.replace(loginHref);
-    }
+    let cancelled = false;
+
+    void (async () => {
+      let session = readStoredAsesorSession();
+
+      if (!session) {
+        session = await refreshStoredAsesorSession();
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setHasSession(Boolean(session));
+      setAuthReady(true);
+
+      if (!session) {
+        if (loginHref.startsWith("http")) {
+          window.location.assign(loginHref);
+          return;
+        }
+        router.replace(loginHref);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, loginHref]);
 
   const operatorOk = !options.requireOperator || isOperator;
