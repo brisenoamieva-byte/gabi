@@ -50,7 +50,7 @@ El CRM **no replica los 10 toques como 10 checkboxes** (genera fricción y no re
 | WhatsApp de bienvenida | Día 0, acción 1 | 1 h desde alta del lead |
 | Primera llamada (mismo día) | Día 0, acción 2 | 5 h desde alta |
 | Email y teléfono registrados | Datos para multicanal | 48 h (auto) |
-| Visita agendada | Meta del perfilamiento | 7 días desde alta |
+| Visita agendada | Meta del perfilamiento (opcional para etapa) | 7 días desde alta |
 | Recorrido guiado | Post-visita | 72 h en etapa Contactado |
 | Necesidades perfiladas | Presupuesto, producto, plazo | 72 h |
 | Cotización enviada | Post-recorrido | 96 h |

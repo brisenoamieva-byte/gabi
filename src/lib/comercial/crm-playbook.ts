@@ -78,9 +78,9 @@ const basePasos = (): PlaybookStep[] => [
     id: "visita-agendada",
     etapa: "nuevo",
     label: "Visita al desarrollo agendada",
-    hint: "Cuando el prospecto responde, agenda la visita y deja de insistir en la cadencia. Sin respuesta en 8 días → marcar Perdido.",
+    hint: "Meta de perfilamiento: márcala cuando confirmes fecha de visita (detiene la cadencia). No es obligatoria para pasar a Contactado.",
     kind: "manual",
-    required: true,
+    required: false,
     order: 40,
   },
   {
@@ -176,7 +176,9 @@ export const mergePlaybookConfigWithDefaults = (
 
   const merged = defaults.map((def) => {
     const storedStep = storedById.get(def.id);
-    return storedStep ? { ...def, ...storedStep, id: def.id, etapa: def.etapa } : def;
+    return storedStep
+      ? { ...def, ...storedStep, id: def.id, etapa: def.etapa, required: def.required }
+      : def;
   });
 
   for (const step of stored) {
