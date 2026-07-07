@@ -144,10 +144,14 @@ function Field({
 const inputClass =
   "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20";
 
+const isFailedFetchError = (message: string) =>
+  message.toLowerCase().includes("failed to fetch") ||
+  message.toLowerCase().includes("networkerror");
+
 export function RegistrarApartadoModal({
   desarrolloId,
   modo = "registrar",
-  unidadesOpciones: unidadesOpcionesProp = [],
+  unidadesOpciones: unidadesOpcionesProp,
   prospectoId,
   initialUnidadId,
   channel = "admin",
@@ -158,7 +162,9 @@ export function RegistrarApartadoModal({
   const esAsesor = channel === "asesor";
   const esCompletar = modo === "completar";
   const desdeLead = Boolean(prospectoId);
-  const [unidadesOpciones, setUnidadesOpciones] = useState(unidadesOpcionesProp);
+  const [unidadesOpciones, setUnidadesOpciones] = useState<SembradoUnidadRow[]>(
+    () => unidadesOpcionesProp ?? [],
+  );
   const [segmentos, setSegmentos] = useState<DesarrolloSembradoSegment[]>(() =>
     getSembradoSegmentsForDesarrollo(desarrolloId),
   );
@@ -297,7 +303,12 @@ export function RegistrarApartadoModal({
           );
         }
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
+        const message = loadError instanceof Error ? loadError.message : "Error al cargar.";
+        setError(
+          isFailedFetchError(message)
+            ? "No se pudo conectar con el servidor. Revisa tu red y pulsa «Reintentar»."
+            : message,
+        );
       } finally {
         setLoadingPrefill(false);
       }
@@ -306,7 +317,9 @@ export function RegistrarApartadoModal({
   );
 
   useEffect(() => {
-    setUnidadesOpciones(unidadesOpcionesProp);
+    if (unidadesOpcionesProp !== undefined) {
+      setUnidadesOpciones(unidadesOpcionesProp);
+    }
   }, [unidadesOpcionesProp]);
 
   const loadFromProspecto = useCallback(async () => {
@@ -360,7 +373,12 @@ export function RegistrarApartadoModal({
 
       applyContextMeta(data.unidades ?? [], data.prefill, data.asesores ?? [], data.segmentos);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
+      const message = loadError instanceof Error ? loadError.message : "Error al cargar.";
+      setError(
+        isFailedFetchError(message)
+          ? "No se pudo conectar con el servidor. Revisa tu red y pulsa «Reintentar»."
+          : message,
+      );
     } finally {
       setLoadingPrefill(false);
     }
@@ -579,7 +597,16 @@ export function RegistrarApartadoModal({
 
           {error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
+              <p>{error}</p>
+              {prospectoId ? (
+                <button
+                  type="button"
+                  onClick={() => void loadFromProspecto()}
+                  className="mt-2 font-bold text-red-900 underline-offset-2 hover:underline"
+                >
+                  Reintentar
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -631,6 +658,21 @@ export function RegistrarApartadoModal({
             {segmentos.length > 0 && tipoProducto ? (
               <p className="mt-1 text-xs text-slate-500">
                 {unidadesFiltradas.length} unidad(es) disponible(s) en sembrado
+                {unidadesFiltradas.length === 0 && unidadesOpciones.length > 0 ? (
+                  <span className="text-amber-700">
+                    {" "}
+                    — prueba el otro tipo de producto
+                  </span>
+                ) : null}
+                {unidadesFiltradas.length === 0 && unidadesOpciones.length === 0 && prospectoId ? (
+                  <button
+                    type="button"
+                    onClick={() => void loadFromProspecto()}
+                    className="ml-2 font-bold text-[#201044] underline-offset-2 hover:underline"
+                  >
+                    Recargar unidades
+                  </button>
+                ) : null}
               </p>
             ) : null}
           </Field>
