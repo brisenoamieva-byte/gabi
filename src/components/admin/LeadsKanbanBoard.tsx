@@ -15,6 +15,8 @@ type LeadsKanbanBoardProps = {
   prospectos: ProspectoListRow[];
   etapas?: readonly ProspectoEtapa[];
   movableEtapas?: readonly ProspectoEtapa[];
+  /** Al soltar en Apartado, abre flujo de registro (no cambia etapa solo con PATCH). */
+  onReportApartado?: (prospectoId: string) => void;
   onSelect: (id: string) => void;
   onMoveEtapa: (prospectoId: string, etapa: ProspectoEtapa) => Promise<void>;
   formatActivity?: (iso: string) => string;
@@ -24,6 +26,7 @@ export function LeadsKanbanBoard({
   prospectos,
   etapas = PROSPECTO_ETAPAS,
   movableEtapas = PROSPECTO_ETAPAS,
+  onReportApartado,
   onSelect,
   onMoveEtapa,
   formatActivity,
@@ -53,7 +56,17 @@ export function LeadsKanbanBoard({
     return movableSet.has(etapa);
   };
 
-  const canDrop = (etapa: ProspectoEtapa) => movableSet.has(etapa);
+  const canDrop = (etapa: ProspectoEtapa) => {
+    if (etapa === "apartado" && onReportApartado) {
+      return true;
+    }
+    return movableSet.has(etapa);
+  };
+
+  const canDragToApartado = (row: ProspectoListRow) => {
+    const etapa = isProspectoEtapa(row.etapa) ? row.etapa : "nuevo";
+    return etapa !== "apartado" && etapa !== "vendido" && etapa !== "perdido";
+  };
 
   const handleDrop = async (etapa: ProspectoEtapa, prospectoId: string) => {
     if (!canDrop(etapa)) {
@@ -61,7 +74,21 @@ export function LeadsKanbanBoard({
     }
 
     const row = prospectos.find((item) => item.id === prospectoId);
-    if (!row || !canDrag(row) || row.etapa === etapa) {
+    if (!row) {
+      return;
+    }
+
+    if (etapa === "apartado" && onReportApartado) {
+      if (!canDragToApartado(row)) {
+        return;
+      }
+      onReportApartado(prospectoId);
+      setDraggingId(null);
+      setDropTarget(null);
+      return;
+    }
+
+    if (!canDrag(row) || row.etapa === etapa) {
       return;
     }
 
@@ -80,6 +107,7 @@ export function LeadsKanbanBoard({
       <div className="flex min-w-max gap-4 p-4">
         {etapas.map((etapa) => {
           const cards = byEtapa.get(etapa) ?? [];
+          const isApartadoDrop = etapa === "apartado" && Boolean(onReportApartado);
           const isTarget = dropTarget === etapa && canDrop(etapa);
           const acceptsDrop = canDrop(etapa);
 
@@ -114,6 +142,12 @@ export function LeadsKanbanBoard({
                   {cards.length}
                 </span>
               </div>
+              {isApartadoDrop ? (
+                <p className="border-b border-emerald-100 bg-emerald-50/80 px-3 py-2 text-[10px] leading-snug text-emerald-900">
+                  Arrastra un lead en negociación y suéltalo aquí para{" "}
+                  <strong>reportar apartado</strong> (unidad + sembrado).
+                </p>
+              ) : null}
 
               <div className="flex max-h-[32rem] flex-col gap-2 overflow-y-auto p-3">
                 {cards.length ? (
@@ -176,7 +210,9 @@ export function LeadsKanbanBoard({
                   ))
                 ) : (
                   <p className="px-2 py-6 text-center text-xs text-slate-400">
-                    Arrastra leads aquí
+                    {isApartadoDrop
+                      ? "Suelta aquí para abrir el formulario de apartado"
+                      : "Arrastra leads aquí"}
                   </p>
                 )}
               </div>

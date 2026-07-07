@@ -473,6 +473,7 @@ export function AsesorLeadsPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [kanbanApartadoProspectoId, setKanbanApartadoProspectoId] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newNombre, setNewNombre] = useState("");
@@ -821,6 +822,7 @@ export function AsesorLeadsPanel({
             formatActivity={formatLeadActivity}
             onSelect={setSelectedId}
             onMoveEtapa={handleMoveEtapa}
+            onReportApartado={(prospectoId) => setKanbanApartadoProspectoId(prospectoId)}
           />
         ) : (
           <ul className="divide-y divide-slate-100">
@@ -864,6 +866,21 @@ export function AsesorLeadsPanel({
           prospectoId={selectedId}
           onClose={() => setSelectedId(null)}
           onUpdated={() => {
+            void loadLeads();
+            void loadPlaybookQueue();
+          }}
+        />
+      ) : null}
+
+      {kanbanApartadoProspectoId ? (
+        <RegistrarApartadoModal
+          channel="asesor"
+          asesorId={asesorId}
+          desarrolloId={desarrolloId}
+          prospectoId={kanbanApartadoProspectoId}
+          onClose={() => setKanbanApartadoProspectoId(null)}
+          onSuccess={() => {
+            setKanbanApartadoProspectoId(null);
             void loadLeads();
             void loadPlaybookQueue();
           }}
