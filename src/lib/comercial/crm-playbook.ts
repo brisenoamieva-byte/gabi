@@ -105,7 +105,8 @@ const basePasos = (): PlaybookStep[] => [
     id: "cotizacion",
     etapa: "cotizo",
     label: "Cotización enviada al cliente",
-    kind: "cotizacion",
+    hint: "Marca cuando el cliente recibió la cotización (PDF, email o WhatsApp). Usar el cotizador no cuenta por sí solo.",
+    kind: "manual",
     required: true,
     order: 70,
   },
@@ -236,9 +237,6 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
   }
   if (signals.recorridoCompletado) {
     done.add("recorrido");
-  }
-  if (signals.cotizacionesCount > 0 || etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("cotizo")) {
-    done.add("cotizacion");
   }
   if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("negociacion")) {
     done.add("seguimiento-post-cotizacion");
