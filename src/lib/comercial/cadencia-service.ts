@@ -518,6 +518,56 @@ export const completeCadenciaTouch = async (
   return result;
 };
 
+export const completeCadenciaTouchForPlaybookStep = async (
+  prospectoId: string,
+  playbookStepId: string,
+  asesorId: string,
+): Promise<void> => {
+  const template = CADENCIA_TOUCH_TEMPLATES.find((item) => item.playbookStepId === playbookStepId);
+  if (!template) {
+    return;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return;
+  }
+
+  const { data: cadencia } = await supabase
+    .from("prospecto_cadencia")
+    .select("id, status")
+    .eq("prospecto_id", prospectoId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!cadencia) {
+    await bootstrapCadenciaForProspecto(prospectoId);
+  }
+
+  const { data: activeCadencia } = await supabase
+    .from("prospecto_cadencia")
+    .select("id")
+    .eq("prospecto_id", prospectoId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!activeCadencia) {
+    return;
+  }
+
+  const { data: touch } = await supabase
+    .from("prospecto_cadencia_touches")
+    .select("id")
+    .eq("cadencia_id", activeCadencia.id)
+    .eq("touch_key", template.touchKey)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (touch?.id) {
+    await completeCadenciaTouchInternal(touch.id as string, asesorId, "playbook_step");
+  }
+};
+
 export const ensureCadenciasForAsesor = async (
   asesorId: string,
   desarrolloId: string,
@@ -817,6 +867,20 @@ export const getCadenciaSummaryForProspecto = async (
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return null;
+  }
+
+  const { data: prospectoRow } = await supabase
+    .from("prospectos")
+    .select("etapa, activo, email, nombre")
+    .eq("id", prospectoId)
+    .maybeSingle();
+
+  if (
+    prospectoRow?.etapa === "nuevo" &&
+    prospectoRow.activo &&
+    !isPlaybookDemoLead(prospectoRow)
+  ) {
+    await bootstrapCadenciaForProspecto(prospectoId);
   }
 
   const { data: cadencia } = await supabase

@@ -53,7 +53,7 @@ const basePasos = (): PlaybookStep[] => [
     etapa: "nuevo",
     label: "WhatsApp de bienvenida",
     hint: `Inmediato al recibir el lead. Presenta el desarrollo e invita a visita. Horarios: ${PERFILAMIENTO_VENTANAS_HORARIAS.join(", ")}.`,
-    kind: "manual",
+    kind: "contacto",
     required: true,
     order: 10,
   },
@@ -62,7 +62,7 @@ const basePasos = (): PlaybookStep[] => [
     etapa: "nuevo",
     label: "Primera llamada (mismo día)",
     hint: `2–5 h después del WhatsApp. Si no contesta, deja buzón breve. ${CADENCIA_HINT}`,
-    kind: "manual",
+    kind: "contacto",
     required: true,
     order: 20,
   },
@@ -229,6 +229,9 @@ const PERFILAMIENTO_STEP_IDS = new Set([
   "visita-agendada",
   "contacto-24h",
 ]);
+
+/** Pasos de contacto inicial con botones WA / llamada en el checklist del asesor. */
+export const PLAYBOOK_CONTACT_ACTION_STEP_IDS = new Set(["whatsapp-inicial", "llamada-d0"]);
 
 export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignals): Set<string> => {
   const done = new Set<string>();

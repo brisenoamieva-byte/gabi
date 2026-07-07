@@ -1,24 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, MessageCircle, Phone } from "lucide-react";
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import {
   getPlaybookStepsForEtapa,
+  PLAYBOOK_CONTACT_ACTION_STEP_IDS,
   PLAYBOOK_PERFILAMIENTO_OBJETIVO,
   type PlaybookStep,
 } from "@/lib/comercial/crm-playbook";
 import { PLAYBOOK_STEPS_WITH_VISIT_DATE } from "@/lib/comercial/cadencia-perfilamiento";
+import {
+  buildCadenciaLlamadaGuion,
+  buildCadenciaTelUrl,
+  buildCadenciaWhatsAppUrl,
+} from "@/lib/comercial/cadencia-perfilamiento";
 import {
   formatLeadDateOnly,
   getMexicoCityDateInput,
 } from "@/lib/comercial/format-lead-date";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 
+type PlaybookContactContext = {
+  prospectoNombre: string;
+  telefono: string | null;
+  desarrolloNombre: string;
+  asesorNombre: string;
+};
+
 type CrmPlaybookChecklistProps = {
   etapa: ProspectoEtapa;
   playbook: ProspectoPlaybookState | null;
   completingStepId: string | null;
+  contactContext?: PlaybookContactContext;
   visitaAgendadaOn?: string | null;
   visitaRealizadaOn?: string | null;
   onCompleteStep: (stepId: string, stepDate?: string) => void;
@@ -28,6 +42,7 @@ export function CrmPlaybookChecklist({
   etapa,
   playbook,
   completingStepId,
+  contactContext,
   visitaAgendadaOn,
   visitaRealizadaOn,
   onCompleteStep,
@@ -42,6 +57,9 @@ export function CrmPlaybookChecklist({
   }
 
   const completedSet = new Set(playbook.completedStepIds);
+  const canAdvanceToContactado =
+    etapa === "nuevo" &&
+    ["whatsapp-inicial", "llamada-d0", "datos-completos"].every((id) => completedSet.has(id));
 
   return (
     <div className="rounded-xl border border-[#6cc24a]/25 bg-[#6cc24a]/5 p-4">
@@ -54,6 +72,11 @@ export function CrmPlaybookChecklist({
         ) : null}
         {playbook.blockReason && !playbook.canAdvanceEtapa ? (
           <p className="mt-1 text-xs text-amber-800">{playbook.blockReason}</p>
+        ) : null}
+        {canAdvanceToContactado ? (
+          <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            Contacto inicial listo. Ya puedes cambiar la etapa a <strong>Contactado</strong> abajo.
+          </p>
         ) : null}
       </div>
 
@@ -74,6 +97,7 @@ export function CrmPlaybookChecklist({
               done={done}
               visitDate={visitDate}
               loading={completingStepId === step.id}
+              contactContext={contactContext}
               onComplete={(stepDate) => onCompleteStep(step.id, stepDate)}
             />
           );
@@ -88,16 +112,43 @@ function PlaybookStepRow({
   done,
   visitDate,
   loading,
+  contactContext,
   onComplete,
 }: {
   step: PlaybookStep;
   done: boolean;
   visitDate?: string | null;
   loading: boolean;
+  contactContext?: PlaybookContactContext;
   onComplete: (stepDate?: string) => void;
 }) {
   const needsVisitDate = PLAYBOOK_STEPS_WITH_VISIT_DATE.has(step.id);
   const [stepDate, setStepDate] = useState(() => getMexicoCityDateInput());
+  const [showGuion, setShowGuion] = useState(false);
+
+  const isContactAction = PLAYBOOK_CONTACT_ACTION_STEP_IDS.has(step.id);
+  const telefono = contactContext?.telefono?.trim() || null;
+
+  const scriptCtx = contactContext
+    ? {
+        prospectNombre: contactContext.prospectoNombre,
+        desarrolloNombre: contactContext.desarrolloNombre,
+        asesorNombre: contactContext.asesorNombre,
+        touchLabel: step.label,
+        dayOffset: 0,
+      }
+    : null;
+
+  const whatsappUrl =
+    step.id === "whatsapp-inicial" && telefono && scriptCtx
+      ? buildCadenciaWhatsAppUrl(telefono, scriptCtx)
+      : null;
+
+  const telUrl =
+    step.id === "llamada-d0" && telefono ? buildCadenciaTelUrl(telefono) : null;
+
+  const llamadaGuion =
+    step.id === "llamada-d0" && scriptCtx ? buildCadenciaLlamadaGuion(scriptCtx) : null;
 
   return (
     <li className="flex items-start gap-3 rounded-lg bg-white/70 px-3 py-2">
@@ -117,6 +168,74 @@ function PlaybookStepRow({
             Fecha: {formatLeadDateOnly(visitDate)}
           </p>
         ) : null}
+
+        {!done && isContactAction ? (
+          <div className="mt-2 space-y-2">
+            {!telefono ? (
+              <p className="text-xs text-amber-800">
+                Agrega el teléfono del prospecto para habilitar WhatsApp y llamada.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {step.id === "whatsapp-inicial" && whatsappUrl ? (
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    WhatsApp
+                  </a>
+                ) : null}
+                {step.id === "llamada-d0" && telUrl ? (
+                  <a
+                    href={telUrl}
+                    className="inline-flex items-center gap-1 rounded-lg bg-[#201044] px-3 py-1.5 text-xs font-bold text-white"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    Llamar
+                  </a>
+                ) : null}
+              </div>
+            )}
+            {step.id === "llamada-d0" && llamadaGuion ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowGuion((value) => !value)}
+                  className="text-xs font-semibold text-[#201044] underline-offset-2 hover:underline"
+                >
+                  {showGuion ? "Ocultar guion" : "Ver guion de llamada"}
+                </button>
+                {showGuion ? (
+                  <pre className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-[11px] text-slate-700">
+                    {llamadaGuion}
+                  </pre>
+                ) : null}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => onComplete()}
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#201044] underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Guardando…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-3 w-3" />
+                  Marcar hecho
+                </>
+              )}
+            </button>
+          </div>
+        ) : null}
+
         {!done && step.kind === "manual" ? (
           <div className="mt-2 space-y-2">
             {needsVisitDate ? (
@@ -147,9 +266,10 @@ function PlaybookStepRow({
             </button>
           </div>
         ) : null}
-        {!done && step.kind !== "manual" ? (
+
+        {!done && step.kind === "contacto" && !isContactAction ? (
           <p className="mt-1 text-[11px] text-slate-400">
-            Se completa automáticamente al registrar la acción en GABI.
+            Se completa automáticamente al registrar email y teléfono del prospecto.
           </p>
         ) : null}
       </div>

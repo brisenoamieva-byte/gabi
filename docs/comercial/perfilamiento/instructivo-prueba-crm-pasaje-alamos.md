@@ -196,6 +196,8 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 | Comprobación | Sí | No |
 |--------------|:--:|:--:|
 | Arrastrar a **Apartado** en kanban abre el formulario (no mueve la tarjeta sin guardar) | ☐ | ☐ |
+| En prospecto **Nuevo**, playbook muestra botones **WhatsApp** y **Llamar** | ☐ | ☐ |
+| Tras marcar WA + llamada, permite cambiar etapa a **Contactado** | ☐ | ☐ |
 | Primero pide tipo (depto/oficina) y luego lista unidades del sembrado | ☐ | ☐ |
 | Medio, equipo y promotor son listas desplegables | ☐ | ☐ |
 | El formulario trae datos del prospecto y cotización | ☐ | ☐ |

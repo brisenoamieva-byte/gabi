@@ -53,6 +53,7 @@ import {
 
 type AsesorLeadsPanelProps = {
   asesorId: string;
+  asesorNombre: string;
   desarrolloId: string;
   desarrolloNombre: string;
   initialProspectoId?: string;
@@ -82,11 +83,15 @@ const inputClass =
 
 function AsesorLeadDrawer({
   asesorId,
+  asesorNombre,
+  desarrolloNombre,
   prospectoId,
   onClose,
   onUpdated,
 }: {
   asesorId: string;
+  asesorNombre: string;
+  desarrolloNombre: string;
   prospectoId: string;
   onClose: () => void;
   onUpdated: () => void;
@@ -326,13 +331,19 @@ function AsesorLeadDrawer({
                   etapa={isProspectoEtapa(detail.etapa) ? detail.etapa : "nuevo"}
                   playbook={playbook}
                   completingStepId={completingStepId}
+                  contactContext={{
+                    prospectoNombre: detail.nombre,
+                    telefono: detail.telefono,
+                    desarrolloNombre,
+                    asesorNombre,
+                  }}
                   visitaAgendadaOn={detail.visita_agendada_on}
                   visitaRealizadaOn={detail.visita_realizada_on}
                   onCompleteStep={(stepId, stepDate) => void handleCompleteStep(stepId, stepDate)}
                 />
               ) : null}
 
-              {playbook?.config?.enabled ? (
+              {playbook?.config?.enabled && detail.etapa !== "nuevo" ? (
                 <AsesorCadenciaLeadPanel
                   asesorId={asesorId}
                   prospectoId={detail.id}
@@ -459,6 +470,7 @@ function AsesorLeadDrawer({
 
 export function AsesorLeadsPanel({
   asesorId,
+  asesorNombre,
   desarrolloId,
   desarrolloNombre,
   initialProspectoId,
@@ -863,6 +875,8 @@ export function AsesorLeadsPanel({
       {selectedId ? (
         <AsesorLeadDrawer
           asesorId={asesorId}
+          asesorNombre={asesorNombre}
+          desarrolloNombre={desarrolloNombre}
           prospectoId={selectedId}
           onClose={() => setSelectedId(null)}
           onUpdated={() => {

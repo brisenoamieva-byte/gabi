@@ -65,6 +65,7 @@ function MisLeadsContent() {
 
         <AsesorLeadsPanel
           asesorId={user.id}
+          asesorNombre={user.nombre}
           desarrolloId={desarrollo.id}
           desarrolloNombre={desarrollo.nombre}
           initialProspectoId={initialProspectoId}

@@ -19,7 +19,10 @@ import {
 import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
-import { completeCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import {
+  completeCadenciaForProspecto,
+  completeCadenciaTouchForPlaybookStep,
+} from "@/lib/comercial/cadencia-service";
 import { normalizePlaybookVisitDate } from "@/lib/comercial/cadencia-perfilamiento";
 
 const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
@@ -398,6 +401,8 @@ export const completePlaybookStepForProspecto = async (
   if (error) {
     throw new Error(error.message);
   }
+
+  await completeCadenciaTouchForPlaybookStep(prospectoId, stepId, asesorId);
 
   if (stepId === "visita-agendada") {
     await completeCadenciaForProspecto(prospectoId, "Visita agendada — cadencia detenida");
