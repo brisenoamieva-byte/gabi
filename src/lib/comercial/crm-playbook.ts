@@ -87,7 +87,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "recorrido",
     etapa: "contactado",
     label: "Recorrido guiado realizado",
-    hint: "Marca cuando el cliente completó la visita presencial e indica la fecha. También se registra al completar recorrido en GABI.",
+    hint: "Registra la visita presencial cuando el cliente recorrió el desarrollo e indica la fecha. No es obligatorio usar el módulo de recorrido de GABI.",
     kind: "manual",
     required: true,
     order: 50,
@@ -178,7 +178,15 @@ export const mergePlaybookConfigWithDefaults = (
   const merged = defaults.map((def) => {
     const storedStep = storedById.get(def.id);
     return storedStep
-      ? { ...def, ...storedStep, id: def.id, etapa: def.etapa, required: def.required }
+      ? {
+          ...def,
+          ...storedStep,
+          id: def.id,
+          etapa: def.etapa,
+          required: def.required,
+          kind: def.kind,
+          hint: def.hint ?? storedStep.hint,
+        }
       : def;
   });
 

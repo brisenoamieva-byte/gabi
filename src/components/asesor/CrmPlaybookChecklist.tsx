@@ -123,6 +123,7 @@ function PlaybookStepRow({
   onComplete: (stepDate?: string) => void;
 }) {
   const needsVisitDate = PLAYBOOK_STEPS_WITH_VISIT_DATE.has(step.id);
+  const isManualCompletable = step.kind === "manual" || step.id === "recorrido" || step.id === "visita-agendada";
   const [stepDate, setStepDate] = useState(() => getMexicoCityDateInput());
   const [showGuion, setShowGuion] = useState(false);
 
@@ -236,7 +237,7 @@ function PlaybookStepRow({
           </div>
         ) : null}
 
-        {!done && step.kind === "manual" ? (
+        {!done && isManualCompletable ? (
           <div className="mt-2 space-y-2">
             {needsVisitDate ? (
               <label className="block text-xs text-slate-600">
