@@ -527,23 +527,20 @@ export function LeadsAdminPanel({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <LeadsComplianceBanner
-        report={complianceReport}
-        loading={complianceLoading}
-        desarrolloId={desarrolloId}
-      />
+  const filterInputClass =
+    "w-full rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-gabi-forest";
 
-      <div className="rounded-2xl border border-gabi-forest/10 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 md:px-5">
-          <div className="flex items-center gap-1">
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="shrink-0 overflow-hidden rounded-2xl border border-gabi-forest/10 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-1">
             {(["leads", "spam", "duplicados", "captura"] as LeadTab[]).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setLeadTab(tab)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-bold capitalize transition ${
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold capitalize transition ${
                   leadTab === tab
                     ? "bg-gabi-forest text-white"
                     : "text-slate-600 hover:bg-slate-50"
@@ -555,7 +552,14 @@ export function LeadsAdminPanel({
           </div>
 
           {leadTab !== "captura" ? (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <LeadsComplianceBanner
+                compact
+                report={complianceReport}
+                loading={complianceLoading}
+                desarrolloId={desarrolloId}
+              />
+
               {leadTab === "leads" ? (
                 <div className="flex rounded-lg border border-slate-200 p-0.5">
                   <button
@@ -564,29 +568,29 @@ export function LeadsAdminPanel({
                       setViewMode("lista");
                       setEtapaFilter("");
                     }}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold ${
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold ${
                       viewMode === "lista" ? "bg-gabi-forest text-white" : "text-slate-600"
                     }`}
                   >
-                    <LayoutList className="h-3.5 w-3.5" />
+                    <LayoutList className="h-3 w-3" />
                     Tabla
                   </button>
                   <Link
                     href={chartsHref}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50"
                     title="Gráficas de leads"
                   >
-                    <BarChart3 className="h-3.5 w-3.5" />
+                    <BarChart3 className="h-3 w-3" />
                     Gráficas
                   </Link>
                   <button
                     type="button"
                     onClick={() => setViewMode("tablero")}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold ${
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold ${
                       viewMode === "tablero" ? "bg-gabi-forest text-white" : "text-slate-600"
                     }`}
                   >
-                    <Kanban className="h-3.5 w-3.5" />
+                    <Kanban className="h-3 w-3" />
                     Tablero
                   </button>
                 </div>
@@ -597,10 +601,10 @@ export function LeadsAdminPanel({
                   type="button"
                   onClick={() => setShowExportMenu((value) => !value)}
                   disabled={!prospectos.length}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 disabled:opacity-50"
                 >
                   Exportar…
-                  <ChevronDown className="h-3.5 w-3.5" />
+                  <ChevronDown className="h-3 w-3" />
                 </button>
                 {showExportMenu ? (
                   <div className="absolute right-0 z-20 mt-1 min-w-[180px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
@@ -613,7 +617,13 @@ export function LeadsAdminPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => downloadCsv(selectedIds.size ? prospectos.filter((r) => selectedIds.has(r.id)) : prospectos)}
+                      onClick={() =>
+                        downloadCsv(
+                          selectedIds.size
+                            ? prospectos.filter((r) => selectedIds.has(r.id))
+                            : prospectos,
+                        )
+                      }
                       disabled={!selectedIds.size}
                       className="block w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                     >
@@ -629,7 +639,7 @@ export function LeadsAdminPanel({
                     value={bulkReassignAsesorId}
                     onChange={(event) => setBulkReassignAsesorId(event.target.value)}
                     disabled={!selectedIds.size || reassigning}
-                    className="max-w-[9rem] rounded-md border-0 bg-transparent px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none disabled:opacity-50"
+                    className="max-w-[8rem] rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 focus:outline-none disabled:opacity-50"
                   >
                     <option value="">Reasignar a…</option>
                     {asesores.map((asesor) => (
@@ -642,10 +652,10 @@ export function LeadsAdminPanel({
                     type="button"
                     onClick={() => void handleBulkReassign()}
                     disabled={!selectedIds.size || !bulkReassignAsesorId || reassigning}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold text-gabi-forest disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-gabi-forest disabled:opacity-50"
                   >
-                    <UserRoundCog className="h-3.5 w-3.5" />
-                    {reassigning ? "Reasignando…" : "Aplicar"}
+                    <UserRoundCog className="h-3 w-3" />
+                    {reassigning ? "…" : "Aplicar"}
                   </button>
                 </div>
               ) : null}
@@ -655,19 +665,19 @@ export function LeadsAdminPanel({
                   type="button"
                   onClick={() => void handleBulkDelete()}
                   disabled={!selectedIds.size || deleting}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 disabled:opacity-50"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {deleting ? "Eliminando…" : "Eliminar leads"}
+                  <Trash2 className="h-3 w-3" />
+                  {deleting ? "…" : "Eliminar"}
                 </button>
               ) : null}
 
               <button
                 type="button"
                 onClick={() => setShowNewLead(true)}
-                className="inline-flex items-center gap-1 rounded-lg bg-gabi-forest px-3 py-1.5 text-xs font-bold text-white"
+                className="inline-flex items-center gap-1 rounded-lg bg-gabi-forest px-2 py-1 text-[10px] font-bold text-white"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-3 w-3" />
                 Lead
               </button>
             </div>
@@ -675,54 +685,42 @@ export function LeadsAdminPanel({
         </div>
 
         {leadTab !== "captura" ? (
-          <div className="space-y-3 px-4 py-4 md:px-5">
-            <p className="text-xs text-slate-500">
-              Vista al estilo Xperience — filtros por desarrollo, campaña y asesor.
-              {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
-            </p>
-
-            <div
-              className="flex flex-wrap items-end gap-3"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  applyFilters();
-                }
-              }}
-            >
-              <label className="block min-w-[160px] text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Rango</span>
-                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-medium text-gabi-forest">
-                  {dateRangeLabel}
-                </p>
-              </label>
-
-              <label className="block text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Desde</span>
+          <div
+            className="border-b border-slate-100 px-3 py-2"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applyFilters();
+              }
+            }}
+          >
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 xl:items-end">
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Desde</span>
                 <input
                   type="date"
                   value={desde}
                   onChange={(event) => setDesde(event.target.value)}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5"
+                  className={filterInputClass}
                 />
               </label>
 
-              <label className="block text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Hasta</span>
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Hasta</span>
                 <input
                   type="date"
                   value={hasta}
                   onChange={(event) => setHasta(event.target.value)}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5"
+                  className={filterInputClass}
                 />
               </label>
 
-              <label className="block min-w-[160px] text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Desarrollo</span>
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Desarrollo</span>
                 <select
                   value={desarrolloId}
                   onChange={(event) => setDesarrolloId(event.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5"
+                  className={filterInputClass}
                 >
                   {desarrollos.map((item) => (
                     <option key={item.id} value={item.id}>
@@ -732,12 +730,12 @@ export function LeadsAdminPanel({
                 </select>
               </label>
 
-              <label className="block min-w-[160px] text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Campaña</span>
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Campaña</span>
                 <select
                   value={campanaFilter}
                   onChange={(event) => setCampanaFilter(event.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5"
+                  className={filterInputClass}
                 >
                   <option value="">Todas</option>
                   {campanas.map((campana) => (
@@ -748,12 +746,12 @@ export function LeadsAdminPanel({
                 </select>
               </label>
 
-              <label className="block min-w-[160px] text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Asesor</span>
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Asesor</span>
                 <select
                   value={asesorFilter}
                   onChange={(event) => setAsesorFilter(event.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5"
+                  className={filterInputClass}
                 >
                   <option value="">Todos</option>
                   {asesores.map((asesor) => (
@@ -765,12 +763,12 @@ export function LeadsAdminPanel({
               </label>
 
               {viewMode === "lista" ? (
-                <label className="block min-w-[140px] text-xs">
-                  <span className="mb-1 block font-semibold text-slate-500">Etapa</span>
+                <label className="block text-[10px]">
+                  <span className="mb-0.5 block font-semibold text-slate-500">Etapa</span>
                   <select
                     value={etapaFilter}
                     onChange={(event) => setEtapaFilter(event.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5"
+                    className={filterInputClass}
                   >
                     <option value="">Todas</option>
                     {etapaOptions.map((etapa) => (
@@ -780,14 +778,16 @@ export function LeadsAdminPanel({
                     ))}
                   </select>
                 </label>
-              ) : null}
+              ) : (
+                <div className="hidden xl:block" />
+              )}
 
-              <label className="block min-w-[120px] text-xs">
-                <span className="mb-1 block font-semibold text-slate-500">Interés</span>
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Interés</span>
                 <select
                   value={interesFilter}
                   onChange={(event) => setInteresFilter(event.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5"
+                  className={filterInputClass}
                 >
                   <option value="">Todos</option>
                   {NIVELES_INTERES.map((nivel) => (
@@ -798,33 +798,42 @@ export function LeadsAdminPanel({
                 </select>
               </label>
 
-              <button
-                type="button"
-                onClick={applyFilters}
-                className="rounded-lg bg-gabi-forest px-4 py-2 text-xs font-bold text-white"
-              >
-                Aplicar
-              </button>
+              <div className="col-span-2 flex flex-wrap items-end gap-1.5 xl:col-span-1 xl:flex-col xl:items-stretch">
+                <button
+                  type="button"
+                  onClick={applyFilters}
+                  className="w-full rounded-lg bg-gabi-forest px-2 py-1 text-[10px] font-bold text-white"
+                >
+                  Aplicar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const range = currentMonthRange();
+                    setDesde(range.desde);
+                    setHasta(range.hasta);
+                  }}
+                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600"
+                >
+                  Este mes
+                </button>
+              </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const range = currentMonthRange();
-                  setDesde(range.desde);
-                  setHasta(range.hasta);
-                }}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
-              >
-                Este mes
-              </button>
-
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] text-slate-500">
+                <span className="font-semibold text-gabi-forest">{dateRangeLabel}</span>
+                {" · "}
+                {resumen?.total ?? 0} en desarrollo · {prospectos.length} en vista
+                {scopeLabel ? ` · ${scopeLabel}` : ""}
+              </p>
               <button
                 type="button"
                 onClick={() => void handleSyncInteligencia()}
                 disabled={syncing}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
                 iScore
               </button>
             </div>
@@ -843,61 +852,45 @@ export function LeadsAdminPanel({
         />
       ) : null}
 
-      {leadTab !== "captura" && resumen && viewMode === "tablero" ? (
-        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          {PROSPECTO_ETAPAS.filter((etapa) => (resumen.porEtapa[etapa] ?? 0) > 0).map((etapa) => (
-            <div
-              key={etapa}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2"
-            >
-              <p className="text-lg font-black text-gabi-forest">{resumen.porEtapa[etapa]}</p>
-              <p className="text-[10px] font-semibold text-slate-500">{prospectoEtapaLabel[etapa]}</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
       {leadTab !== "captura" && error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="shrink-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           {error}
         </div>
       ) : null}
 
       {leadTab !== "captura" ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-            <div>
-              <h3 className="text-base font-black text-gabi-forest">
-                {viewMode === "tablero" ? "Tablero por etapa" : "Leads"}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {resumen?.total ?? 0} en desarrollo · {prospectos.length} en vista
-              </p>
+        <div className="flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {resumen && viewMode === "tablero" ? (
+            <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-slate-100 px-3 py-2">
+              {PROSPECTO_ETAPAS.filter((etapa) => (resumen.porEtapa[etapa] ?? 0) > 0).map((etapa) => (
+                <div
+                  key={etapa}
+                  className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1"
+                >
+                  <p className="text-sm font-black text-gabi-forest">{resumen.porEtapa[etapa]}</p>
+                  <p className="text-[9px] font-semibold text-slate-500">{prospectoEtapaLabel[etapa]}</p>
+                </div>
+              ))}
             </div>
-            <Link
-              href={chartsHref}
-              className="inline-flex items-center gap-1 text-xs font-bold text-gabi-forest hover:underline"
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              Gráficas
-            </Link>
-          </div>
+          ) : null}
 
           {loading ? (
-            <div className="flex items-center justify-center gap-2 px-6 py-16 text-slate-500">
+            <div className="flex flex-1 items-center justify-center gap-2 text-sm text-slate-500">
               <Loader2 className="h-5 w-5 animate-spin" />
               Cargando leads…
             </div>
           ) : !prospectos.length ? (
-            <p className="px-6 py-12 text-center text-sm text-slate-500">
+            <p className="flex flex-1 items-center justify-center px-6 text-center text-sm text-slate-500">
               No hay leads con el filtro actual. Ajusta fechas o pulsa Aplicar.
             </p>
           ) : leadTab === "leads" && viewMode === "tablero" ? (
-            <LeadsKanbanBoard
-              prospectos={prospectos}
-              onSelect={setSelectedId}
-              onMoveEtapa={handleMoveEtapa}
-            />
+            <div className="min-h-0 flex-1 overflow-auto p-3">
+              <LeadsKanbanBoard
+                prospectos={prospectos}
+                onSelect={setSelectedId}
+                onMoveEtapa={handleMoveEtapa}
+              />
+            </div>
           ) : (
             <LeadsXperienceTable
               prospectos={prospectos}
@@ -906,6 +899,7 @@ export function LeadsAdminPanel({
               onToggleSelect={toggleSelect}
               onToggleSelectAll={toggleSelectAll}
               onSelect={setSelectedId}
+              scrollable
             />
           )}
         </div>

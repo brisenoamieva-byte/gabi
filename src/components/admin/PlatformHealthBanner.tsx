@@ -130,26 +130,27 @@ export function PlatformHealthBanner() {
 
   return (
     <div
-      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
+      className={`mb-3 shrink-0 rounded-xl border px-3 py-2 text-sm ${
         pending.length
           ? "border-amber-300 bg-amber-50 text-amber-950"
           : "border-sky-200 bg-sky-50 text-sky-950"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex gap-2">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p className="font-bold">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <div className="min-w-0">
+            <p className="truncate text-xs font-bold">
               {pending.length
                 ? `${pending.length} migración${pending.length === 1 ? "" : "es"} pendiente${pending.length === 1 ? "" : "s"} en Supabase`
                 : showParseurWarning && showQaWarning
-                  ? "Webhooks Parseur y QA sin secreto en el servidor"
+                  ? "Webhooks Parseur y QA sin secreto"
                   : showQaWarning
-                    ? "Webhook QA sin secreto en el servidor"
+                    ? "Webhook QA sin secreto"
                     : "Parseur sin secreto en el servidor"}
             </p>
-            <p className="mt-1 text-xs opacity-90">
+            {expanded ? (
+              <p className="mt-1 text-xs opacity-90">
               {pending.length ? (
                 <>
                   Algunas funciones pueden fallar hasta aplicar el SQL en Supabase.
@@ -173,7 +174,8 @@ export function PlatformHealthBanner() {
                   <code className="rounded bg-white/70 px-1">Authorization: Bearer …</code>).
                 </>
               )}
-            </p>
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex shrink-0 gap-1">

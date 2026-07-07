@@ -108,8 +108,8 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
   };
 
   return (
-    <div className="min-h-screen gabi-surface text-gabi-ink">
-      <header className="border-b border-gabi-forest/10 bg-white px-5 py-4 shadow-sm md:px-8">
+    <div className="flex min-h-screen flex-col gabi-surface text-gabi-ink">
+      <header className="shrink-0 border-b border-gabi-forest/10 bg-white px-5 py-4 shadow-sm md:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
             <GabiLogo variant="header" href="/admin/documentos" />
@@ -140,8 +140,8 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[15rem_1fr] md:px-8 md:py-8">
-        <aside className="h-fit rounded-2xl border border-gabi-forest/8 bg-white p-3 shadow-sm">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 min-h-0 gap-4 px-5 py-4 md:grid-cols-[15rem_1fr] md:px-8">
+        <aside className="h-fit shrink-0 rounded-2xl border border-gabi-forest/8 bg-white p-3 shadow-sm">
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = navIcons[item.href as keyof typeof navIcons] ?? FileText;
@@ -168,9 +168,9 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
           </nav>
         </aside>
 
-        <main>
+        <main className="flex min-h-0 min-w-0 flex-col gap-2">
           <PlatformHealthBanner />
-          {children}
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </main>
       </div>
     </div>

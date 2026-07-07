@@ -29,6 +29,7 @@ type LeadsXperienceTableProps = {
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: (ids: string[]) => void;
   onSelect: (id: string) => void;
+  scrollable?: boolean;
 };
 
 const formatLeadDateTime = (iso: string) => {
@@ -73,6 +74,7 @@ export function LeadsXperienceTable({
   onToggleSelect,
   onToggleSelectAll,
   onSelect,
+  scrollable = false,
 }: LeadsXperienceTableProps) {
   const allIds = useMemo(() => prospectos.map((row) => row.id), [prospectos]);
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
@@ -106,9 +108,9 @@ export function LeadsXperienceTable({
   }, [prospectos, tableSearch]);
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5">
-        <p className="text-xs font-semibold text-slate-500">
+    <div className={scrollable ? "flex min-h-0 flex-1 flex-col overflow-hidden" : undefined}>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
+        <p className="text-[10px] font-semibold text-slate-500">
           {visibleRows.length} fila{visibleRows.length === 1 ? "" : "s"}
           {selectedIds.size ? ` · ${selectedIds.size} seleccionado(s)` : ""}
         </p>
@@ -117,13 +119,17 @@ export function LeadsXperienceTable({
           value={tableSearch}
           onChange={(event) => setTableSearch(event.target.value)}
           placeholder="Buscar en tabla…"
-          className="w-full max-w-xs rounded-lg border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-gabi-forest focus:ring-1 focus:ring-gabi-forest/20"
+          className="w-full max-w-[200px] rounded-lg border border-slate-200 px-2 py-1 text-[10px] outline-none focus:border-gabi-forest focus:ring-1 focus:ring-gabi-forest/20"
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className={scrollable ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
         <table className="min-w-[1180px] w-full text-left text-xs">
-          <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+          <thead
+            className={`bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500 ${
+              scrollable ? "sticky top-0 z-10 shadow-sm" : ""
+            }`}
+          >
             <tr>
               <th className="px-3 py-2.5">
                 <span className="sr-only">Acciones</span>
