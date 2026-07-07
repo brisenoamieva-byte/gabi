@@ -14,6 +14,7 @@ import {
   buildProspectFallbackMessage,
 } from "@/lib/whatsapp/templates";
 import { buildWhatsAppUrl } from "@/lib/visitas/follow-up";
+import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 
 export type LeadContactEventInput = {
   prospectoId: string;
@@ -255,5 +256,11 @@ export const dispatchLeadInboundNotifications = async (
       status: "skipped",
       errorMessage: "Asesor sin teléfono ni email.",
     });
+  }
+
+  try {
+    await bootstrapCadenciaForProspecto(prospectoId);
+  } catch (cadenciaError) {
+    console.error("[dispatchLeadInboundNotifications] cadencia bootstrap failed", cadenciaError);
   }
 };

@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/crm-compliance-digest",
       "schedule": "0 8 * * 1-6"
+    },
+    {
+      "path": "/api/cron/cadencia-reminders",
+      "schedule": "0 15,18,23 * * 1-6"
     }
   ]
 }

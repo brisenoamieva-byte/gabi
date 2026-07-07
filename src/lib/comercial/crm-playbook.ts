@@ -37,15 +37,34 @@ export type CrmPlaybookPilotDesarrolloId = (typeof CRM_PLAYBOOK_PILOT_DESARROLLO
 export const isCrmPlaybookPilotDesarrollo = (desarrolloId: string): boolean =>
   (CRM_PLAYBOOK_PILOT_DESARROLLO_IDS as readonly string[]).includes(desarrolloId);
 
+/** Objetivo de la fase Nuevo — alineado a secuencia BBR de perfilamiento. */
+export const PLAYBOOK_PERFILAMIENTO_OBJETIVO =
+  "Meta: agendar visita al desarrollo. No vender por teléfono; usa WhatsApp y llamada para invitar al recorrido.";
+
+/** Ventanas horarias recomendadas (hora local del prospecto). */
+export const PERFILAMIENTO_VENTANAS_HORARIAS = ["9–11 h", "12–14 h", "17–19 h"] as const;
+
+const CADENCIA_HINT =
+  "Si no responde: día 1 (llamada + WA), pausa día 2, día 3 (WA + llamada), día 4 (llamada + WA), pausa 5–6, día 7 último intento → Perdido.";
+
 const basePasos = (): PlaybookStep[] => [
   {
-    id: "contacto-24h",
+    id: "whatsapp-inicial",
     etapa: "nuevo",
-    label: "Contactar en 24 h",
-    hint: "Llamada, WhatsApp o mensaje de bienvenida.",
+    label: "WhatsApp de bienvenida",
+    hint: `Inmediato al recibir el lead. Presenta el desarrollo e invita a visita. Horarios: ${PERFILAMIENTO_VENTANAS_HORARIAS.join(", ")}.`,
     kind: "manual",
     required: true,
     order: 10,
+  },
+  {
+    id: "llamada-d0",
+    etapa: "nuevo",
+    label: "Primera llamada (mismo día)",
+    hint: `2–5 h después del WhatsApp. Si no contesta, deja buzón breve. ${CADENCIA_HINT}`,
+    kind: "manual",
+    required: true,
+    order: 20,
   },
   {
     id: "datos-completos",
@@ -53,7 +72,16 @@ const basePasos = (): PlaybookStep[] => [
     label: "Email y teléfono registrados",
     kind: "contacto",
     required: true,
-    order: 20,
+    order: 30,
+  },
+  {
+    id: "visita-agendada",
+    etapa: "nuevo",
+    label: "Visita al desarrollo agendada",
+    hint: "Cuando el prospecto responde, agenda la visita y deja de insistir en la cadencia. Sin respuesta en 8 días → marcar Perdido.",
+    kind: "manual",
+    required: true,
+    order: 40,
   },
   {
     id: "recorrido",
@@ -62,15 +90,16 @@ const basePasos = (): PlaybookStep[] => [
     hint: "Presenta desarrollo y producto en GABI.",
     kind: "recorrido",
     required: true,
-    order: 30,
+    order: 50,
   },
   {
-    id: "necesidades",
+    id: "necesidades-perfiladas",
     etapa: "contactado",
-    label: "Necesidades y producto identificado",
+    label: "Necesidades y perfil documentados",
+    hint: "Presupuesto, producto, plazo y motivación en notas.",
     kind: "manual",
     required: true,
-    order: 40,
+    order: 60,
   },
   {
     id: "cotizacion",
@@ -78,59 +107,85 @@ const basePasos = (): PlaybookStep[] => [
     label: "Cotización enviada al cliente",
     kind: "cotizacion",
     required: true,
-    order: 50,
+    order: 70,
   },
   {
-    id: "seguimiento",
+    id: "seguimiento-post-cotizacion",
     etapa: "negociacion",
     label: "Seguimiento documentado en notas",
     hint: "Próximo contacto, objeciones y decisión.",
     kind: "manual",
     required: true,
-    order: 60,
+    order: 80,
   },
 ];
 
+const desarrolloNecesidadesHint: Partial<Record<CrmPlaybookPilotDesarrolloId, string>> = {
+  [PASAJE_ALAMOS_ID]: "Deptos u oficinas según perfil del cliente.",
+  [LA_VISTA_RESIDENCIAL_ID]: "Cluster y tipología (Oliveto, Benevento, Volterra).",
+  [MISION_LA_GAVIA_DESARROLLO_ID]: "Torre, modelo (2R/3R) y nivel según perfil del cliente.",
+};
+
+const buildPilotPlaybook = (desarrolloId: CrmPlaybookPilotDesarrolloId): CrmPlaybookConfig => ({
+  desarrolloId,
+  enabled: true,
+  blockEtapa: true,
+  steps: basePasos().map((step) => {
+    if (step.id === "necesidades-perfiladas" && desarrolloNecesidadesHint[desarrolloId]) {
+      return {
+        ...step,
+        hint: `${step.hint} ${desarrolloNecesidadesHint[desarrolloId]}`,
+      };
+    }
+    return step;
+  }),
+});
+
 export const DEFAULT_CRM_PLAYBOOKS: Record<CrmPlaybookPilotDesarrolloId, CrmPlaybookConfig> = {
-  [PASAJE_ALAMOS_ID]: {
-    desarrolloId: PASAJE_ALAMOS_ID,
-    enabled: true,
-    blockEtapa: true,
-    steps: basePasos().map((step) =>
-      step.id === "necesidades"
-        ? {
-            ...step,
-            hint: "Deptos u oficinas según perfil del cliente.",
-          }
-        : step,
-    ),
-  },
-  [LA_VISTA_RESIDENCIAL_ID]: {
-    desarrolloId: LA_VISTA_RESIDENCIAL_ID,
-    enabled: true,
-    blockEtapa: true,
-    steps: basePasos().map((step) =>
-      step.id === "necesidades"
-        ? {
-            ...step,
-            hint: "Cluster y tipología (Oliveto, Benevento, Volterra).",
-          }
-        : step,
-    ),
-  },
-  [MISION_LA_GAVIA_DESARROLLO_ID]: {
-    desarrolloId: MISION_LA_GAVIA_DESARROLLO_ID,
-    enabled: true,
-    blockEtapa: true,
-    steps: basePasos().map((step) =>
-      step.id === "necesidades"
-        ? {
-            ...step,
-            hint: "Torre, modelo (2R/3R) y nivel según perfil del cliente.",
-          }
-        : step,
-    ),
-  },
+  [PASAJE_ALAMOS_ID]: buildPilotPlaybook(PASAJE_ALAMOS_ID),
+  [LA_VISTA_RESIDENCIAL_ID]: buildPilotPlaybook(LA_VISTA_RESIDENCIAL_ID),
+  [MISION_LA_GAVIA_DESARROLLO_ID]: buildPilotPlaybook(MISION_LA_GAVIA_DESARROLLO_ID),
+};
+
+/** IDs de pasos reemplazados por la secuencia de perfilamiento (compatibilidad). */
+const LEGACY_STEP_ALIASES: Record<string, string[]> = {
+  "contacto-24h": ["whatsapp-inicial", "llamada-d0"],
+  necesidades: ["necesidades-perfiladas"],
+  seguimiento: ["seguimiento-post-cotizacion"],
+};
+
+export const normalizeLegacyPlaybookStepIds = (stepIds: string[]): string[] => {
+  const set = new Set(stepIds);
+  for (const [legacyId, modernIds] of Object.entries(LEGACY_STEP_ALIASES)) {
+    if (set.has(legacyId)) {
+      for (const id of modernIds) {
+        set.add(id);
+      }
+    }
+  }
+  return Array.from(set);
+};
+
+/** Fusiona pasos guardados en BD con defaults del código (nuevos pasos sin perder personalización). */
+export const mergePlaybookConfigWithDefaults = (
+  stored: PlaybookStep[],
+  defaults: PlaybookStep[],
+): PlaybookStep[] => {
+  const storedById = new Map(stored.map((step) => [step.id, step]));
+  const defaultIds = new Set(defaults.map((step) => step.id));
+
+  const merged = defaults.map((def) => {
+    const storedStep = storedById.get(def.id);
+    return storedStep ? { ...def, ...storedStep, id: def.id, etapa: def.etapa } : def;
+  });
+
+  for (const step of stored) {
+    if (!defaultIds.has(step.id)) {
+      merged.push(step);
+    }
+  }
+
+  return sortPlaybookSteps(merged);
 };
 
 export const getDefaultCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig | null => {
@@ -164,10 +219,21 @@ export type PlaybookProspectoSignals = {
   cotizacionesCount: number;
 };
 
+const PERFILAMIENTO_STEP_IDS = new Set([
+  "whatsapp-inicial",
+  "llamada-d0",
+  "datos-completos",
+  "visita-agendada",
+  "contacto-24h",
+]);
+
 export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignals): Set<string> => {
   const done = new Set<string>();
   if (signals.email?.trim() && signals.telefono?.trim()) {
     done.add("datos-completos");
+  }
+  if (signals.visitaId) {
+    done.add("visita-agendada");
   }
   if (signals.visitaId || etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("contactado")) {
     done.add("recorrido");
@@ -176,6 +242,7 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
     done.add("cotizacion");
   }
   if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("negociacion")) {
+    done.add("seguimiento-post-cotizacion");
     done.add("seguimiento");
   }
   return done;
@@ -185,7 +252,7 @@ export const mergePlaybookProgress = (
   manualStepIds: string[],
   autoStepIds: Set<string>,
 ): Set<string> => {
-  const merged = new Set(manualStepIds);
+  const merged = new Set(normalizeLegacyPlaybookStepIds(manualStepIds));
   for (const id of Array.from(autoStepIds)) {
     merged.add(id);
   }
@@ -259,11 +326,16 @@ export const scorePlaybookQueueItem = (
 
 /** Plazos SLA por paso (horas desde la fecha base del prospecto). */
 export const PLAYBOOK_STEP_SLA_HOURS: Record<string, number> = {
-  "contacto-24h": 24,
+  "whatsapp-inicial": 1,
+  "llamada-d0": 5,
   "datos-completos": 48,
+  "visita-agendada": 168,
+  "contacto-24h": 24,
   recorrido: 72,
+  "necesidades-perfiladas": 72,
   necesidades: 72,
   cotizacion: 96,
+  "seguimiento-post-cotizacion": 168,
   seguimiento: 168,
 };
 
@@ -287,7 +359,7 @@ export const getPlaybookStepBaseTimestamp = (
   step: PlaybookStep,
   prospecto: { created_at: string; updated_at: string },
 ): string =>
-  step.id === "contacto-24h" || step.etapa === "nuevo"
+  PERFILAMIENTO_STEP_IDS.has(step.id) || step.etapa === "nuevo"
     ? prospecto.created_at
     : prospecto.updated_at;
 

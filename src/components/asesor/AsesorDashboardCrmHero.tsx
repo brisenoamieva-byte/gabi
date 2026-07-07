@@ -12,12 +12,15 @@ import {
   UserRound,
 } from "lucide-react";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
+import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import {
   type CrmPlaybookConfig,
   type PlaybookQueueItem,
 } from "@/lib/comercial/crm-playbook";
 import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import type { CadenciaHoyItem } from "@/lib/comercial/cadencia-service";
+import { AsesorCadenciaHoyPanel } from "@/components/asesor/AsesorCadenciaHoyPanel";
 
 type AsesorDashboardCrmHeroProps = {
   asesorId: string;
@@ -45,6 +48,8 @@ export function AsesorDashboardCrmHero({
   const [playbookConfig, setPlaybookConfig] = useState<CrmPlaybookConfig | null>(null);
   const [compliancePct, setCompliancePct] = useState<number | null>(null);
   const [overdueCount, setOverdueCount] = useState(0);
+  const [topExceptions, setTopExceptions] = useState<ProspectoComplianceRow[]>([]);
+  const [cadenciaHoy, setCadenciaHoy] = useState<CadenciaHoyItem[]>([]);
 
   const playbookEnabledHook = useCrmPlaybookEnabled(asesorId, desarrolloId);
 
@@ -58,7 +63,7 @@ export function AsesorDashboardCrmHero({
         resumen: "1",
       });
 
-      const [leadsRes, playbookRes, complianceRes] = await Promise.all([
+      const [leadsRes, playbookRes, complianceRes, cadenciaRes] = await Promise.all([
         fetch(`/api/asesores/prospectos?${params.toString()}`),
         playbookEnabledHook
           ? fetch(
@@ -68,6 +73,11 @@ export function AsesorDashboardCrmHero({
         playbookEnabledHook
           ? fetch(
               `/api/asesores/crm-compliance/summary?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+            )
+          : Promise.resolve(null),
+        playbookEnabledHook
+          ? fetch(
+              `/api/asesores/cadencia/hoy?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
             )
           : Promise.resolve(null),
       ]);
@@ -95,11 +105,23 @@ export function AsesorDashboardCrmHero({
 
       if (complianceRes) {
         const complianceData = (await complianceRes.json()) as {
-          summary?: { compliancePct?: number; overdueCount?: number };
+          summary?: {
+            compliancePct?: number;
+            overdueCount?: number;
+            topExceptions?: ProspectoComplianceRow[];
+          };
         };
         if (complianceRes.ok) {
           setCompliancePct(complianceData.summary?.compliancePct ?? null);
           setOverdueCount(complianceData.summary?.overdueCount ?? 0);
+          setTopExceptions(complianceData.summary?.topExceptions ?? []);
+        }
+      }
+
+      if (cadenciaRes) {
+        const cadenciaData = (await cadenciaRes.json()) as { items?: CadenciaHoyItem[] };
+        if (cadenciaRes.ok) {
+          setCadenciaHoy(cadenciaData.items ?? []);
         }
       }
     } catch {
@@ -108,6 +130,8 @@ export function AsesorDashboardCrmHero({
       setPlaybookQueue([]);
       setCompliancePct(null);
       setOverdueCount(0);
+      setTopExceptions([]);
+      setCadenciaHoy([]);
     } finally {
       setLoading(false);
     }
@@ -137,6 +161,13 @@ export function AsesorDashboardCrmHero({
 
   const priority = playbookEnabled ? playbookQueue[0] : null;
   const recentLeads = prospectos.slice(0, 4);
+
+  const firstOverdue = topExceptions.find((row) => row.overdueCount > 0);
+  const overdueLeadHref = firstOverdue
+    ? `/mis-leads?prospecto=${encodeURIComponent(firstOverdue.prospectoId)}`
+    : priority
+      ? `/mis-leads?prospecto=${encodeURIComponent(priority.prospectoId)}`
+      : "/mis-leads";
 
   return (
     <section
@@ -172,15 +203,26 @@ export function AsesorDashboardCrmHero({
         </div>
       ) : (
         <>
-          <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
             <StatChip label="Total" value={stats.total} />
             <StatChip label="Nuevos" value={stats.nuevos} accent="sky" />
             <StatChip label="En proceso" value={stats.activos} accent="lime" />
             {playbookEnabled ? (
               <StatChip
+                label="Hoy toca"
+                value={cadenciaHoy.length}
+                accent={cadenciaHoy.length > 0 ? "sky" : undefined}
+                href={cadenciaHoy.length > 0 ? "/mis-leads" : undefined}
+                title={cadenciaHoy.length > 0 ? "Contactos de perfilamiento pendientes hoy" : undefined}
+              />
+            ) : null}
+            {playbookEnabled ? (
+              <StatChip
                 label={overdueCount > 0 ? "Vencidos" : "Cumplimiento"}
                 value={overdueCount > 0 ? overdueCount : compliancePct ?? stats.pendientesPlaybook}
                 accent={overdueCount > 0 ? "amber" : compliancePct !== null && compliancePct >= 85 ? "lime" : "amber"}
+                href={overdueCount > 0 ? overdueLeadHref : "/mis-leads"}
+                title={overdueCount > 0 ? "Abrir lead con paso vencido" : undefined}
               />
             ) : (
               <StatChip label="Cotizaron" value={resumen?.porEtapa.cotizo ?? 0} accent="amber" />
@@ -188,10 +230,26 @@ export function AsesorDashboardCrmHero({
           </div>
 
           {playbookEnabled && overdueCount > 0 ? (
-            <div className="relative mt-4 flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-50">
+            <Link
+              href={overdueLeadHref}
+              className="relative mt-4 flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-50 transition hover:bg-amber-500/25"
+            >
               <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" />
-              {overdueCount} paso(s) vencido(s) en tu CRM — atiende antes del reporte comercial.
-            </div>
+              <span className="flex-1">
+                {overdueCount} paso(s) vencido(s) en tu CRM — toca para atender antes del reporte
+                comercial.
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-amber-200" />
+            </Link>
+          ) : null}
+
+          {playbookEnabled ? (
+            <AsesorCadenciaHoyPanel
+              asesorId={asesorId}
+              desarrolloId={desarrolloId}
+              items={cadenciaHoy}
+              onRefresh={() => void load()}
+            />
           ) : null}
 
           {priority ? (
@@ -200,7 +258,7 @@ export function AsesorDashboardCrmHero({
                 <div className="min-w-0">
                   <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6cc24a]">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Siguiente paso
+                    Siguiente paso del playbook
                   </p>
                   <p className="mt-1 truncate text-lg font-black">{priority.nombre}</p>
                   <p className="mt-1 text-sm text-white/80">
@@ -292,10 +350,14 @@ function StatChip({
   label,
   value,
   accent,
+  href,
+  title,
 }: {
   label: string;
   value: number;
   accent?: "sky" | "lime" | "amber";
+  href?: string;
+  title?: string;
 }) {
   const accentBorder =
     accent === "sky"
@@ -306,10 +368,24 @@ function StatChip({
           ? "border-amber-400/30"
           : "border-white/12";
 
-  return (
-    <div className={`rounded-xl border ${accentBorder} bg-white/6 px-3 py-2.5 backdrop-blur-sm`}>
+  const className = `rounded-xl border ${accentBorder} bg-white/6 px-3 py-2.5 backdrop-blur-sm ${
+    href ? "transition hover:bg-white/12 hover:ring-1 hover:ring-white/20" : ""
+  }`;
+
+  const content = (
+    <>
       <p className="text-[10px] font-bold uppercase tracking-wide text-white/50">{label}</p>
       <p className="mt-0.5 text-2xl font-black tabular-nums tracking-tight">{value}</p>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className={className} title={title}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }

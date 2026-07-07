@@ -10,6 +10,7 @@ import {
   type ProspectoListRow,
 } from "@/lib/admin/prospectos-service";
 import { isProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import { bootstrapCadenciaForProspecto, pauseCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -126,6 +127,14 @@ export const createProspectoForAsesor = async (
       ? await upsertProspectoFromVisita(prospectoInput)
       : await createProspecto(prospectoInput);
 
+  if (record.etapa === "nuevo") {
+    try {
+      await bootstrapCadenciaForProspecto(record.id);
+    } catch {
+      // no bloquear alta manual
+    }
+  }
+
   return getProspectoForAsesor(asesorId, record.id);
 };
 
@@ -166,6 +175,14 @@ export const updateProspectoForAsesor = async (
   const { error } = await supabase.from("prospectos").update(patch).eq("id", prospectoId);
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (input.etapa !== undefined && input.etapa !== existing.etapa) {
+    if (input.etapa === "perdido") {
+      await pauseCadenciaForProspecto(prospectoId, `Etapa cambiada a ${input.etapa}`);
+    } else if (existing.etapa === "nuevo" && input.etapa !== "nuevo") {
+      await pauseCadenciaForProspecto(prospectoId, `Prospecto avanzó a ${input.etapa}`);
+    }
   }
 
   return getProspectoForAsesor(asesorId, prospectoId);

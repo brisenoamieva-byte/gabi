@@ -1,6 +1,7 @@
 import type { AdminProfile } from "@/lib/admin/types";
 import { assertDesarrolloAccess, filterDesarrollosForAdmin } from "@/lib/admin/permissions";
 import { syncProspectoFromVisita } from "@/lib/admin/prospectos-service";
+import { completeCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 import { isComplianceServerEnforced } from "@/lib/comercial/crm-compliance-config";
 import { getRecorridoComplianceGate } from "@/lib/comercial/crm-compliance-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -147,6 +148,13 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResu
       medioContacto: input.medioContacto,
     });
     prospectoId = prospecto?.id ?? null;
+    if (prospectoId && input.tipo === "recorrido_completado") {
+      try {
+        await completeCadenciaForProspecto(prospectoId, "Recorrido completado en GABI");
+      } catch {
+        // no bloquear registro de visita
+      }
+    }
   } catch (syncError) {
     console.error("No se pudo sincronizar prospecto desde visita:", syncError);
   }

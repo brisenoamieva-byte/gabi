@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import {
   getPlaybookStepsForEtapa,
+  PLAYBOOK_PERFILAMIENTO_OBJETIVO,
   type PlaybookStep,
 } from "@/lib/comercial/crm-playbook";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
@@ -38,6 +39,9 @@ export function CrmPlaybookChecklist({
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
           Playbook · {prospectoEtapaLabel[etapa]}
         </p>
+        {etapa === "nuevo" ? (
+          <p className="mt-1 text-xs text-slate-600">{PLAYBOOK_PERFILAMIENTO_OBJETIVO}</p>
+        ) : null}
         {playbook.blockReason && !playbook.canAdvanceEtapa ? (
           <p className="mt-1 text-xs text-amber-800">{playbook.blockReason}</p>
         ) : null}

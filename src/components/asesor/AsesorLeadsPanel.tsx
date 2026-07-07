@@ -18,6 +18,7 @@ import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedienteApartadoPanel";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
+import { AsesorCadenciaLeadPanel } from "@/components/asesor/AsesorCadenciaLeadPanel";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail, ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { prefillCotizadorFromProspecto } from "@/lib/asesores/prefill-cotizador-client";
@@ -280,6 +281,14 @@ function AsesorLeadDrawer({
                   playbook={playbook}
                   completingStepId={completingStepId}
                   onCompleteStep={(stepId) => void handleCompleteStep(stepId)}
+                />
+              ) : null}
+
+              {playbook?.config?.enabled ? (
+                <AsesorCadenciaLeadPanel
+                  asesorId={asesorId}
+                  prospectoId={detail.id}
+                  etapa={detail.etapa}
                 />
               ) : null}
 

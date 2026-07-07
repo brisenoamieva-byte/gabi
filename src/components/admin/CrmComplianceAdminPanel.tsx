@@ -110,6 +110,12 @@ export function CrmComplianceAdminPanel({
             Exportar CSV
           </button>
         <Link
+          href="/admin/cadencia"
+          className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-[#201044] transition hover:bg-gabi-cream"
+        >
+          Cadencia
+        </Link>
+        <Link
           href="/admin/compliance-coach"
           className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-[#201044] transition hover:bg-gabi-cream"
         >

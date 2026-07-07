@@ -7,7 +7,9 @@ import {
   getDefaultCrmPlaybook,
   getNextPlaybookStep,
   getPendingRequiredForEtapa,
+  mergePlaybookConfigWithDefaults,
   mergePlaybookProgress,
+  normalizeLegacyPlaybookStepIds,
   scorePlaybookQueueItem,
   sortPlaybookSteps,
   type CrmPlaybookConfig,
@@ -17,6 +19,7 @@ import {
 import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
+import { completeCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 
 const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
@@ -60,13 +63,16 @@ const parsePlaybookSteps = (raw: unknown, fallback: PlaybookStep[]): PlaybookSte
   return parsed.length ? sortPlaybookSteps(parsed) : fallback;
 };
 
-const mapDbConfig = (row: DbPlaybookConfigRow, defaultConfig: CrmPlaybookConfig): CrmPlaybookConfig => ({
-  desarrolloId: row.desarrollo_id,
-  enabled: row.enabled,
-  blockEtapa: row.block_etapa,
-  steps: parsePlaybookSteps(row.steps, defaultConfig.steps),
-  updatedAt: row.updated_at,
-});
+const mapDbConfig = (row: DbPlaybookConfigRow, defaultConfig: CrmPlaybookConfig): CrmPlaybookConfig => {
+  const storedSteps = parsePlaybookSteps(row.steps, defaultConfig.steps);
+  return {
+    desarrolloId: row.desarrollo_id,
+    enabled: row.enabled,
+    blockEtapa: row.block_etapa,
+    steps: mergePlaybookConfigWithDefaults(storedSteps, defaultConfig.steps),
+    updatedAt: row.updated_at,
+  };
+};
 
 export const getCrmPlaybookConfig = async (desarrolloId: string): Promise<CrmPlaybookConfig | null> => {
   const pilotDefault = getDefaultCrmPlaybook(desarrolloId);
@@ -151,7 +157,7 @@ export const getPlaybookProgressMap = async (prospectoIds: string[]): Promise<Ma
     const id = row.prospecto_id as string;
     const stepId = row.step_id as string;
     const existing = map.get(id) ?? [];
-    existing.push(stepId);
+    existing.push(...normalizeLegacyPlaybookStepIds([stepId]));
     map.set(id, existing);
   }
 
@@ -314,6 +320,10 @@ export const completePlaybookStepForProspecto = async (
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (stepId === "visita-agendada") {
+    await completeCadenciaForProspecto(prospectoId, "Visita agendada — cadencia detenida");
   }
 
   const { data: fullProspecto, error: fullError } = await supabase
