@@ -19,7 +19,7 @@ import {
 } from "@/lib/comercial/crm-playbook";
 import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
-import type { CadenciaHoyItem } from "@/lib/comercial/cadencia-service";
+import type { CadenciaHoyItem, AsesorCadenciaBrief } from "@/lib/comercial/cadencia-service";
 import { AsesorCadenciaHoyPanel } from "@/components/asesor/AsesorCadenciaHoyPanel";
 
 type AsesorDashboardCrmHeroProps = {
@@ -50,6 +50,7 @@ export function AsesorDashboardCrmHero({
   const [overdueCount, setOverdueCount] = useState(0);
   const [topExceptions, setTopExceptions] = useState<ProspectoComplianceRow[]>([]);
   const [cadenciaHoy, setCadenciaHoy] = useState<CadenciaHoyItem[]>([]);
+  const [cadenciaBrief, setCadenciaBrief] = useState<AsesorCadenciaBrief | null>(null);
 
   const playbookEnabledHook = useCrmPlaybookEnabled(asesorId, desarrolloId);
 
@@ -110,11 +111,13 @@ export function AsesorDashboardCrmHero({
             overdueCount?: number;
             topExceptions?: ProspectoComplianceRow[];
           };
+          cadencia?: AsesorCadenciaBrief;
         };
         if (complianceRes.ok) {
           setCompliancePct(complianceData.summary?.compliancePct ?? null);
           setOverdueCount(complianceData.summary?.overdueCount ?? 0);
           setTopExceptions(complianceData.summary?.topExceptions ?? []);
+          setCadenciaBrief(complianceData.cadencia ?? null);
         }
       }
 
@@ -132,6 +135,7 @@ export function AsesorDashboardCrmHero({
       setOverdueCount(0);
       setTopExceptions([]);
       setCadenciaHoy([]);
+      setCadenciaBrief(null);
     } finally {
       setLoading(false);
     }
@@ -228,6 +232,20 @@ export function AsesorDashboardCrmHero({
               <StatChip label="Cotizaron" value={resumen?.porEtapa.cotizo ?? 0} accent="amber" />
             )}
           </div>
+
+          {playbookEnabled && (cadenciaBrief?.expiredCount ?? 0) > 0 ? (
+            <Link
+              href="/mis-leads"
+              className="relative mt-4 flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-50 transition hover:bg-amber-500/25"
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" />
+              <span className="flex-1">
+                {cadenciaBrief?.expiredCount} cadencia(s) expirada(s) sin respuesta — revisa si deben
+                pasar a Perdido.
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-amber-200" />
+            </Link>
+          ) : null}
 
           {playbookEnabled && overdueCount > 0 ? (
             <Link

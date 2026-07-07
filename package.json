@@ -29,6 +29,7 @@
     "leads:assign-pilot": "node scripts/assign-pilot-leads-to-asesor.mjs",
     "leads:seed-playbook-demo": "node scripts/seed-playbook-demo-lead.mjs",
     "cron:cadencia-reminders": "node scripts/cron-cadencia-reminders.mjs",
+    "cadencia:backfill": "node scripts/cadencia-backfill.mjs",
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",
     "db:verify:migrations": "node scripts/verify-migrations-033-035.mjs",

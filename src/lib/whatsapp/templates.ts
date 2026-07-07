@@ -3,6 +3,9 @@ export const WHATSAPP_TEMPLATE_PROSPECT = "gabi_lead_confirmacion_prospecto";
 export const WHATSAPP_TEMPLATE_ASESOR = "gabi_lead_alerta_asesor";
 export const WHATSAPP_TEMPLATE_COMPLIANCE = "gabi_crm_pendiente_asesor";
 
+/** Misma plantilla que compliance hasta registrar gabi_cadencia_asesor en Meta. */
+export const WHATSAPP_TEMPLATE_CADENCIA = WHATSAPP_TEMPLATE_COMPLIANCE;
+
 export const WHATSAPP_TEMPLATE_LANGUAGE = "es_MX";
 
 export type WhatsAppTemplateTexts = {
@@ -20,6 +23,10 @@ export const DEFAULT_WHATSAPP_TEMPLATE_TEXTS: WhatsAppTemplateTexts = {
   complianceBody:
     "Hola {{1}}, tienes {{2}} paso(s) vencido(s) en {{3}}.\n\nPrioridad: {{4}}.\n\nActualiza tu CRM en GABI hoy.",
 };
+
+/** Texto sugerido para gabi_cadencia_asesor en Meta (variables {{1}}–{{4}}). */
+export const CADENCIA_WHATSAPP_TEMPLATE_TEXT =
+  "Hola {{1}}, tienes {{2}} contacto(s) de perfilamiento hoy en {{3}}.\n\nPrioridad: {{4}}.\n\nAbre GABI para enviar WhatsApp o registrar la llamada.";
 
 export const buildProspectFallbackMessage = (
   prospectNombre: string,

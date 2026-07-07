@@ -843,11 +843,52 @@ export type DesarrolloCadenciaReport = {
   activeCount: number;
   pausedCount: number;
   expiredCount: number;
+  completedCount: number;
+  responseRatePct: number;
   overdueTouchesTotal: number;
   dueTodayTotal: number;
   asesores: AsesorCadenciaSummary[];
   prospectos: CadenciaProspectoRow[];
   generatedAt: string;
+};
+
+export type AsesorCadenciaBrief = {
+  hoyCount: number;
+  expiredCount: number;
+  activeCount: number;
+};
+
+export const getAsesorCadenciaBrief = async (
+  asesorId: string,
+  desarrolloId: string,
+): Promise<AsesorCadenciaBrief> => {
+  if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+    return { hoyCount: 0, expiredCount: 0, activeCount: 0 };
+  }
+
+  await ensureCadenciasForAsesor(asesorId, desarrolloId);
+
+  const [hoy, supabase] = await Promise.all([
+    listCadenciaHoyForAsesor(asesorId, desarrolloId),
+    Promise.resolve(createSupabaseServiceClient()),
+  ]);
+
+  if (!supabase) {
+    return { hoyCount: hoy.length, expiredCount: 0, activeCount: 0 };
+  }
+
+  const { data } = await supabase
+    .from("prospecto_cadencia")
+    .select("status")
+    .eq("asesor_id", asesorId)
+    .eq("desarrollo_id", desarrolloId);
+
+  const rows = data ?? [];
+  return {
+    hoyCount: hoy.length,
+    expiredCount: rows.filter((row) => row.status === "expired").length,
+    activeCount: rows.filter((row) => row.status === "active").length,
+  };
 };
 
 export const getDesarrolloCadenciaReport = async (
@@ -862,6 +903,8 @@ export const getDesarrolloCadenciaReport = async (
     activeCount: 0,
     pausedCount: 0,
     expiredCount: 0,
+    completedCount: 0,
+    responseRatePct: 0,
     overdueTouchesTotal: 0,
     dueTodayTotal: 0,
     asesores: [],
@@ -919,6 +962,7 @@ export const getDesarrolloCadenciaReport = async (
   let activeCount = 0;
   let pausedCount = 0;
   let expiredCount = 0;
+  let completedCount = 0;
   let overdueTouchesTotal = 0;
   let dueTodayTotal = 0;
 
@@ -933,6 +977,8 @@ export const getDesarrolloCadenciaReport = async (
       pausedCount += 1;
     } else if (status === "expired") {
       expiredCount += 1;
+    } else if (status === "completed") {
+      completedCount += 1;
     }
 
     const cadenciaTouches = touchesByCadencia.get(cadencia.id as string) ?? [];
@@ -995,11 +1041,18 @@ export const getDesarrolloCadenciaReport = async (
     (a, b) => b.overdueToday - a.overdueToday || b.dueToday - a.dueToday,
   );
 
+  const closedCount = pausedCount + completedCount + expiredCount;
+  const respondedCount = pausedCount + completedCount;
+  const responseRatePct =
+    closedCount > 0 ? Math.round((respondedCount / closedCount) * 100) : 0;
+
   return {
     desarrolloId,
     activeCount,
     pausedCount,
     expiredCount,
+    completedCount,
+    responseRatePct,
     overdueTouchesTotal,
     dueTodayTotal,
     asesores,

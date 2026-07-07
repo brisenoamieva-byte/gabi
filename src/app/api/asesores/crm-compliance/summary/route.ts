@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAsesorComplianceSummary } from "@/lib/comercial/crm-compliance-service";
+import { getAsesorCadenciaBrief } from "@/lib/comercial/cadencia-service";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 export async function GET(request: Request) {
@@ -12,8 +13,11 @@ export async function GET(request: Request) {
 
   try {
     const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
-    const summary = await getAsesorComplianceSummary(asesorId, desarrolloId);
-    return NextResponse.json({ summary });
+    const [summary, cadencia] = await Promise.all([
+      getAsesorComplianceSummary(asesorId, desarrolloId),
+      getAsesorCadenciaBrief(asesorId, desarrolloId),
+    ]);
+    return NextResponse.json({ summary, cadencia });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {

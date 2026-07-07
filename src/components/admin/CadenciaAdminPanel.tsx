@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, Loader2, RefreshCw, Users } from "lucide-react";
+import { AlertTriangle, Clock, Download, Loader2, RefreshCw, Users } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { DesarrolloCadenciaReport } from "@/lib/comercial/cadencia-service";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
@@ -30,6 +30,7 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [report, setReport] = useState<DesarrolloCadenciaReport | null>(null);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -66,6 +67,28 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleBackfill = async () => {
+    if (!desarrolloId) return;
+    setSyncing(true);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/cadencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ desarrolloId, action: "backfill" }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo sincronizar.");
+      }
+      await load();
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : "Error al sincronizar.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const activeProspectos = useMemo(
     () => report?.prospectos.filter((row) => row.cadenciaStatus === "active") ?? [],
@@ -107,6 +130,30 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Actualizar
           </button>
+          <button
+            type="button"
+            onClick={() => void handleBackfill()}
+            disabled={syncing || !desarrolloId}
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
+          >
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Sincronizar leads
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!desarrolloId) return;
+              window.open(
+                `/api/admin/cadencia/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+                "_blank",
+              );
+            }}
+            disabled={!desarrolloId}
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </button>
           <Link
             href="/admin/crm-compliance"
             className="rounded-xl bg-gabi-forest/10 px-3 py-2 text-sm font-bold text-gabi-forest"
@@ -129,8 +176,9 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
         </div>
       ) : report ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <MetricCard label="Activas" value={report.activeCount} />
+            <MetricCard label="Tasa respuesta" value={report.responseRatePct} suffix="%" />
             <MetricCard label="Vencidos hoy" value={report.overdueTouchesTotal} tone="warn" />
             <MetricCard label="Pendientes hoy" value={report.dueTodayTotal} />
             <MetricCard label="Pausadas" value={report.pausedCount} />
@@ -254,10 +302,12 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
 function MetricCard({
   label,
   value,
+  suffix,
   tone,
 }: {
   label: string;
   value: number;
+  suffix?: string;
   tone?: "warn";
 }) {
   return (
@@ -269,6 +319,7 @@ function MetricCard({
       <p className="text-[10px] font-bold uppercase tracking-wide text-gabi-sand">{label}</p>
       <p className={`mt-1 text-2xl font-black tabular-nums ${tone === "warn" ? "text-amber-800" : "text-gabi-ink"}`}>
         {value}
+        {suffix ?? ""}
       </p>
     </div>
   );
