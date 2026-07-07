@@ -675,6 +675,54 @@ export type CadenciaReminderTarget = {
   touches: CadenciaHoyItem[];
 };
 
+export const listCadenciaDailyReminderTargets = async (
+  desarrolloId: string,
+): Promise<CadenciaReminderTarget[]> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return [];
+  }
+
+  const { data: asesores } = await supabase
+    .from("prospecto_cadencia")
+    .select("asesor_id")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("status", "active");
+
+  const asesorIds = Array.from(
+    new Set((asesores ?? []).map((row) => row.asesor_id as string).filter(Boolean)),
+  );
+
+  const targets: CadenciaReminderTarget[] = [];
+
+  for (const asesorId of asesorIds) {
+    const touches = await listCadenciaHoyForAsesor(asesorId, desarrolloId);
+    if (!touches.length) {
+      continue;
+    }
+
+    const asesor = await getAsesorById(asesorId);
+    if (!asesor) {
+      continue;
+    }
+
+    const priority = touches[0];
+    targets.push({
+      asesorId,
+      asesorNombre: asesor.nombre,
+      asesorTelefono: asesor.telefono ?? null,
+      asesorEmail: asesor.email ?? null,
+      desarrolloId,
+      desarrolloNombre: getDesarrolloNombre(desarrolloId),
+      touchCount: touches.length,
+      priorityLabel: `${priority.prospectoNombre}: ${priority.touch.label}`,
+      touches,
+    });
+  }
+
+  return targets;
+};
+
 export const listCadenciaReminderTargets = async (
   desarrolloId: string,
   reminderHour: number,

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { CRM_PLAYBOOK_PILOT_DESARROLLO_IDS } from "@/lib/comercial/crm-playbook";
 import { sendCadenciaReminderToAsesor } from "@/lib/comercial/cadencia-notifications";
 import {
-  listCadenciaReminderTargets,
+  listCadenciaDailyReminderTargets,
   markCadenciaRemindersSent,
 } from "@/lib/comercial/cadencia-service";
 import { getMexicoCityParts } from "@/lib/comercial/cadencia-perfilamiento";
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const targets = await listCadenciaReminderTargets(desarrolloId, hour);
+    const targets = await listCadenciaDailyReminderTargets(desarrolloId);
     targetsChecked += targets.length;
 
     for (const target of targets) {

@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/cadencia-reminders",
-      "schedule": "0 15,18,23 * * 1-6"
+      "schedule": "0 15 * * 1-6"
     }
   ]
 }

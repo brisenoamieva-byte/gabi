@@ -68,6 +68,6 @@ Tras el recorrido: perfilar necesidades, enviar cotización y documentar seguimi
 |------|----------------|
 | Lead nuevo | Se crea cadencia de 10 toques + WA automático al prospecto (si está configurado) |
 | Dashboard asesor | Panel **Hoy toca** con WhatsApp 1-clic y guiones |
-| Recordatorios | Cron 9/12/17 h (México) → WA o email al **asesor** |
+| Recordatorios | Cron 9 h México (lun–sáb) → WA o email al **asesor** con todos los contactos del día |
 | Recorrido / cambio etapa | Cadencia se pausa o completa automáticamente |
 | Día 7 sin respuesta | Cadencia expira → revisar marcar **Perdido** |
