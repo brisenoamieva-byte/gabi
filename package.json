@@ -31,6 +31,7 @@
     "leads:cleanup-playbook-demo": "node scripts/cleanup-playbook-demo-lead.mjs",
     "cron:cadencia-reminders": "node scripts/cron-cadencia-reminders.mjs",
     "cadencia:backfill": "node scripts/cadencia-backfill.mjs",
+    "cadencia:pilot-status": "node scripts/cadencia-pilot-status.mjs",
     "sync": "npm run catalog:sync",
     "db:migrate:hint": "node scripts/db-migrate-hint.mjs",
     "db:verify:migrations": "node scripts/verify-migrations-033-035.mjs",

@@ -1,6 +1,6 @@
 /**
- * Crea cadencias para todos los prospectos en etapa "nuevo" de un desarrollo piloto.
- *   npm run cadencia:backfill
+ * Crea cadencias para prospectos en etapa "nuevo" de desarrollos piloto.
+ *   npm run cadencia:backfill              → los 3 pilotos
  *   npm run cadencia:backfill -- pasaje-alamos
  */
 import { createClient } from "@supabase/supabase-js";
@@ -23,10 +23,16 @@ const TOUCHES = [
   { touch_key: "d7-call", day_offset: 7, sequence_in_day: 2, canal: "llamada", label: "Última llamada — cierre de cadencia", window_start: 12, window_end: 14 },
 ];
 
-const desarrolloId = process.argv[2]?.trim() || "pasaje-alamos";
+const arg = process.argv[2]?.trim();
+const targets =
+  !arg || arg === "all"
+    ? PILOT_DESARROLLOS
+    : PILOT_DESARROLLOS.includes(arg)
+      ? [arg]
+      : null;
 
-if (!PILOT_DESARROLLOS.includes(desarrolloId)) {
-  console.error(`Desarrollo no piloto: ${desarrolloId}`);
+if (!targets) {
+  console.error(`Desarrollo no piloto: ${arg}`);
   process.exit(1);
 }
 
@@ -35,6 +41,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
+
+const DEMO_EMAIL = "demo.playbook@gabi.mx";
+const DEMO_NOMBRE = "Demo Playbook GABI";
 
 const mexicoParts = (date) => {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -73,87 +82,90 @@ const computeDueAt = (startedAt, touch) => {
   return mexicoLocalToUtc(tp.year, tp.month, tp.day, touch.window_start ?? 9);
 };
 
-const { data: prospectos, error } = await supabase
-  .from("prospectos")
-  .select("id, asesor_id, created_at, email, nombre")
-  .eq("desarrollo_id", desarrolloId)
-  .eq("etapa", "nuevo")
-  .eq("activo", true);
+const backfillDesarrollo = async (desarrolloId) => {
+  const { data: prospectos, error } = await supabase
+    .from("prospectos")
+    .select("id, asesor_id, created_at, email, nombre")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("etapa", "nuevo")
+    .eq("activo", true);
 
-if (error) {
-  console.error(error.message);
-  process.exit(1);
-}
-
-const DEMO_EMAIL = "demo.playbook@gabi.mx";
-const DEMO_NOMBRE = "Demo Playbook GABI";
-
-let created = 0;
-let skipped = 0;
-
-for (const prospecto of prospectos ?? []) {
-  if (prospecto.email === DEMO_EMAIL || prospecto.nombre === DEMO_NOMBRE) {
-    skipped += 1;
-    continue;
-  }
-  if (!prospecto.asesor_id) {
-    skipped += 1;
-    continue;
+  if (error) {
+    console.error(desarrolloId, error.message);
+    return;
   }
 
-  const { data: existing } = await supabase
-    .from("prospecto_cadencia")
-    .select("id")
-    .eq("prospecto_id", prospecto.id)
-    .maybeSingle();
+  let created = 0;
+  let skipped = 0;
 
-  if (existing) {
-    skipped += 1;
-    continue;
-  }
+  for (const prospecto of prospectos ?? []) {
+    if (prospecto.email === DEMO_EMAIL || prospecto.nombre === DEMO_NOMBRE) {
+      skipped += 1;
+      continue;
+    }
+    if (!prospecto.asesor_id) {
+      skipped += 1;
+      continue;
+    }
 
-  const startedAt = new Date(prospecto.created_at);
+    const { data: existing } = await supabase
+      .from("prospecto_cadencia")
+      .select("id")
+      .eq("prospecto_id", prospecto.id)
+      .maybeSingle();
 
-  const { data: cadencia, error: cadenciaError } = await supabase
-    .from("prospecto_cadencia")
-    .insert({
+    if (existing) {
+      skipped += 1;
+      continue;
+    }
+
+    const startedAt = new Date(prospecto.created_at);
+
+    const { data: cadencia, error: cadenciaError } = await supabase
+      .from("prospecto_cadencia")
+      .insert({
+        prospecto_id: prospecto.id,
+        desarrollo_id: desarrolloId,
+        asesor_id: prospecto.asesor_id,
+        started_at: prospecto.created_at,
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    if (cadenciaError || !cadencia) {
+      console.error(prospecto.id, cadenciaError?.message);
+      continue;
+    }
+
+    const touches = TOUCHES.map((touch) => ({
+      cadencia_id: cadencia.id,
       prospecto_id: prospecto.id,
-      desarrollo_id: desarrolloId,
-      asesor_id: prospecto.asesor_id,
-      started_at: prospecto.created_at,
-      status: "active",
-    })
-    .select("id")
-    .single();
+      touch_key: touch.touch_key,
+      day_offset: touch.day_offset,
+      sequence_in_day: touch.sequence_in_day,
+      canal: touch.canal,
+      label: touch.label,
+      window_start_hour: touch.window_start ?? null,
+      window_end_hour: touch.window_end ?? null,
+      due_at: computeDueAt(startedAt, touch).toISOString(),
+      status: "pending",
+    }));
 
-  if (cadenciaError || !cadencia) {
-    console.error(prospecto.id, cadenciaError?.message);
-    continue;
+    const { error: touchesError } = await supabase.from("prospecto_cadencia_touches").insert(touches);
+
+    if (touchesError) {
+      console.error(prospecto.id, touchesError.message);
+      await supabase.from("prospecto_cadencia").delete().eq("id", cadencia.id);
+      continue;
+    }
+
+    created += 1;
   }
 
-  const touches = TOUCHES.map((touch) => ({
-    cadencia_id: cadencia.id,
-    prospecto_id: prospecto.id,
-    touch_key: touch.touch_key,
-    day_offset: touch.day_offset,
-    sequence_in_day: touch.sequence_in_day,
-    canal: touch.canal,
-    label: touch.label,
-    window_start_hour: touch.window_start ?? null,
-    window_end_hour: touch.window_end ?? null,
-    due_at: computeDueAt(startedAt, touch).toISOString(),
-    status: "pending",
-  }));
+  console.log(`${desarrolloId}: ${created} cadencia(s) creada(s), ${skipped} omitida(s).`);
+};
 
-  const { error: touchesError } = await supabase.from("prospecto_cadencia_touches").insert(touches);
-
-  if (touchesError) {
-    console.error(prospecto.id, touchesError.message);
-    await supabase.from("prospecto_cadencia").delete().eq("id", cadencia.id);
-    continue;
-  }
-
-  created += 1;
+for (const desarrolloId of targets) {
+  await backfillDesarrollo(desarrolloId);
 }
-
-console.log(`${desarrolloId}: ${created} cadencia(s) creada(s), ${skipped} omitida(s).`);
