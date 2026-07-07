@@ -7,7 +7,7 @@ import {
   guardiaMarcajeCumplimientoLabel,
   type GuardiaMarcajesDiaPayload,
 } from "@/lib/admin/guardia-marcajes-types";
-import { formatDateYmd, GUARDIAS_PILOT_DESARROLLO_ID } from "@/lib/comercial/guardias";
+import { formatDateYmd, isGuardiasMarcajesEnabled } from "@/lib/comercial/guardias";
 
 type Props = {
   desarrolloId: string;
@@ -18,7 +18,7 @@ export function GuardiasMarcajesHoyPanel({ desarrolloId }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const isPilot = desarrolloId === GUARDIAS_PILOT_DESARROLLO_ID;
+  const isPilot = isGuardiasMarcajesEnabled(desarrolloId);
   const fecha = formatDateYmd(new Date());
 
   const load = useCallback(async () => {

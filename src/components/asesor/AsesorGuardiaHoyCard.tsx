@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, Loader2, LogIn, LogOut, MapPin } from "lucide-react";
 import type { AsesorGuardiaHoy } from "@/lib/asesores/guardias-service";
-import { GUARDIAS_PILOT_DESARROLLO_ID } from "@/lib/comercial/guardias";
+import { isGuardiasMarcajesEnabled } from "@/lib/comercial/guardias";
 import { guardiaMarcajeTipoLabel } from "@/lib/comercial/guardia-marcaje-types";
 
 type AsesorGuardiaHoyCardProps = {
@@ -52,7 +52,7 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const isPilot = desarrolloId === GUARDIAS_PILOT_DESARROLLO_ID;
+  const isPilot = isGuardiasMarcajesEnabled(desarrolloId);
 
   const load = useCallback(async () => {
     if (!isPilot) {

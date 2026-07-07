@@ -1,3 +1,4 @@
+import { PASAJE_ALAMOS_ID } from "@/lib/catalog/desarrollos-registry";
 import { MISION_LA_GAVIA_DESARROLLO_ID } from "@/lib/catalog/mision-la-gavia";
 
 export const GUARDIA_RADIO_METROS_DEFAULT = 100;
@@ -10,8 +11,15 @@ export type GuardiaCasetaConfig = {
   etiqueta: string | null;
 };
 
-/** Fallback si aún no hay fila en Supabase (piloto La Gavia). */
+/** Fallback si aún no hay fila en Supabase. */
 export const GUARDIA_CASETA_FALLBACK: Record<string, GuardiaCasetaConfig> = {
+  [PASAJE_ALAMOS_ID]: {
+    desarrolloId: PASAJE_ALAMOS_ID,
+    lat: 20.6046377,
+    lng: -100.3799446,
+    radioMetros: GUARDIA_RADIO_METROS_DEFAULT,
+    etiqueta: "Caseta ventas · Pasaje Álamos (Av. Industrialización #09, Álamos 2ª Secc.)",
+  },
   [MISION_LA_GAVIA_DESARROLLO_ID]: {
     desarrolloId: MISION_LA_GAVIA_DESARROLLO_ID,
     lat: 20.5547,

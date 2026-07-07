@@ -285,6 +285,28 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta guardia_marcajes — aplica 044.",
   });
 
+  const pasajeCasetaOk = await (async () => {
+    const supabase = createSupabaseServiceClient();
+    if (!supabase) {
+      return false;
+    }
+    const { data, error } = await supabase
+      .from("guardia_caseta_config")
+      .select("desarrollo_id")
+      .eq("desarrollo_id", "pasaje-alamos")
+      .maybeSingle();
+    return !error && Boolean(data);
+  })();
+  checks.push({
+    id: "051",
+    label: "Caseta GPS Pasaje Álamos",
+    migrationFile: "051_guardia_caseta_pasaje_alamos.sql",
+    ok: pasajeCasetaOk,
+    detail: pasajeCasetaOk
+      ? "Caseta Pasaje Álamos configurada para marcajes."
+      : "Falta guardia_caseta_config pasaje-alamos — aplica 051.",
+  });
+
   const cadenciaOk = await probeTable("prospecto_cadencia", "prospecto_id");
   checks.push({
     id: "045",

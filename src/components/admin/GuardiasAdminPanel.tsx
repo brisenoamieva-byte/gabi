@@ -23,6 +23,7 @@ import {
   guardiaTurnoLabel,
   guardiaTurnoShortLabel,
   GUARDIA_TURNOS,
+  GUARDIAS_MARCAJES_DESARROLLO_IDS,
   GUARDIAS_PILOT_DESARROLLO_ID,
   shiftWeekStart,
   type GuardiaTurno,
@@ -488,8 +489,8 @@ export function GuardiasAdminPanel({
           </div>
 
           <p className="mt-3 text-xs text-slate-500">
-            Piloto: {GUARDIAS_PILOT_DESARROLLO_ID}. Guardias 365 días · matutino 10–15 h · vespertino
-            15–20 h. Estado{" "}
+            Marcajes GPS: {GUARDIAS_MARCAJES_DESARROLLO_IDS.join(", ")}. Guardias 365 días ·
+            matutino 10–15 h · vespertino 15–20 h. Estado{" "}
             <strong>{guardiaEstadoLabel.borrador}</strong> hasta publicar la semana.
           </p>
         </div>

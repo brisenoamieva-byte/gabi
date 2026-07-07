@@ -11,8 +11,8 @@ import {
   formatDateYmd,
   guardiaTurnoLabel,
   guardiaTurnoShortLabel,
-  GUARDIAS_PILOT_DESARROLLO_ID,
   isGuardiaTurno,
+  isGuardiasMarcajesEnabled,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -165,7 +165,7 @@ export const getGuardiasHoyForAsesor = async (
 ): Promise<AsesorGuardiaHoy[]> => {
   await assertAsesorDesarrollo(asesorId, desarrolloId);
 
-  if (desarrolloId !== GUARDIAS_PILOT_DESARROLLO_ID) {
+  if (!isGuardiasMarcajesEnabled(desarrolloId)) {
     return [];
   }
 
@@ -233,8 +233,8 @@ export async function registerGuardiaMarcaje(input: {
 }): Promise<GuardiaMarcajeResumen> {
   await assertAsesorDesarrollo(input.asesorId, input.desarrolloId);
 
-  if (input.desarrolloId !== GUARDIAS_PILOT_DESARROLLO_ID) {
-    throw new Error("Marcajes de guardia solo están activos en Misión La Gavia.");
+  if (!isGuardiasMarcajesEnabled(input.desarrolloId)) {
+    throw new Error("Marcajes de guardia no están activos para este desarrollo.");
   }
 
   if (!isGuardiaTurno(input.turno)) {
