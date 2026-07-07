@@ -146,6 +146,8 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResu
       clienteEmail: input.clienteEmail,
       clienteTelefono: input.clienteTelefono,
       medioContacto: input.medioContacto,
+      visitaRealizadaOn:
+        input.tipo === "recorrido_completado" ? visita.occurredAt.slice(0, 10) : undefined,
     });
     prospectoId = prospecto?.id ?? null;
     if (prospectoId && input.tipo === "recorrido_completado") {

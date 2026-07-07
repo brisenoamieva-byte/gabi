@@ -131,6 +131,8 @@ export type ProspectoRecord = {
   es_duplicado: boolean;
   adryo_url: string | null;
   activo: boolean;
+  visita_agendada_on: string | null;
+  visita_realizada_on: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -324,6 +324,25 @@ export const getCadenciaDayIndex = (startedAt: Date, now = new Date()): number =
   return Math.floor((currentUtc - startUtc) / (24 * 60 * 60 * 1000));
 };
 
+export const PLAYBOOK_STEPS_WITH_VISIT_DATE = new Set(["visita-agendada", "recorrido"]);
+
+export const normalizePlaybookVisitDate = (stepId: string, stepDate?: string | null): string | null => {
+  if (!PLAYBOOK_STEPS_WITH_VISIT_DATE.has(stepId)) {
+    return null;
+  }
+
+  const trimmed = stepDate?.trim();
+  if (!trimmed) {
+    throw new Error("Indica la fecha de la visita.");
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    throw new Error("Fecha inválida. Usa el formato AAAA-MM-DD.");
+  }
+
+  return trimmed;
+};
+
 export const PLAYBOOK_DEMO_LEAD_EMAIL = "demo.playbook@gabi.mx";
 export const PLAYBOOK_DEMO_LEAD_NOMBRE = "Demo Playbook GABI";
 

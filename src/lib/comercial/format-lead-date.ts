@@ -7,6 +7,24 @@ export const formatLeadDate = (iso: string) =>
     minute: "2-digit",
   });
 
+/** Fecha calendario AAAA-MM-DD en zona Ciudad de México (para inputs type="date"). */
+export const getMexicoCityDateInput = (date = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(date);
+
+/** Muestra una fecha guardada como date (sin hora). */
+export const formatLeadDateOnly = (isoDate: string) => {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) {
+    return isoDate;
+  }
+
+  return new Date(year, month - 1, day).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 export const formatLeadActivity = (iso: string) => {
   const date = new Date(iso);
   const diffMs = Date.now() - date.getTime();

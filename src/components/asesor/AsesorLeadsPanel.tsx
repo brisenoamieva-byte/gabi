@@ -29,6 +29,7 @@ import {
 import {
   formatLeadActivity,
   formatLeadDate,
+  formatLeadDateOnly,
   leadPeriodToRange,
   type LeadPeriodFilter,
 } from "@/lib/comercial/format-lead-date";
@@ -146,7 +147,7 @@ function AsesorLeadDrawer({
     return canAdvancePlaybookEtapa(playbook.config, current, target, completedIds).ok;
   };
 
-  const handleCompleteStep = async (stepId: string) => {
+  const handleCompleteStep = async (stepId: string, stepDate?: string) => {
     setCompletingStepId(stepId);
     setError("");
 
@@ -154,16 +155,23 @@ function AsesorLeadDrawer({
       const response = await fetch(`/api/asesores/prospectos/${prospectoId}/playbook`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asesorId, stepId }),
+        body: JSON.stringify({ asesorId, stepId, stepDate }),
       });
 
-      const data = (await response.json()) as { playbook?: ProspectoPlaybookState; error?: string };
+      const data = (await response.json()) as {
+        playbook?: ProspectoPlaybookState;
+        prospecto?: ProspectoDetail;
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo completar el paso.");
       }
 
       setPlaybook(data.playbook ?? null);
+      if (data.prospecto && detail) {
+        setDetail({ ...detail, ...data.prospecto });
+      }
       onUpdated();
     } catch (completeError) {
       setError(completeError instanceof Error ? completeError.message : "Error al completar paso.");
@@ -263,6 +271,18 @@ function AsesorLeadDrawer({
                   <span className="text-slate-500">Última actividad</span>
                   <span>{formatLeadDate(detail.updated_at)}</span>
                 </div>
+                {detail.visita_agendada_on ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Visita agendada</span>
+                    <span className="font-medium">{formatLeadDateOnly(detail.visita_agendada_on)}</span>
+                  </div>
+                ) : null}
+                {detail.visita_realizada_on ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Visita realizada</span>
+                    <span className="font-medium">{formatLeadDateOnly(detail.visita_realizada_on)}</span>
+                  </div>
+                ) : null}
               </div>
 
               {!etapaEditable ? (
@@ -301,7 +321,9 @@ function AsesorLeadDrawer({
                   etapa={isProspectoEtapa(detail.etapa) ? detail.etapa : "nuevo"}
                   playbook={playbook}
                   completingStepId={completingStepId}
-                  onCompleteStep={(stepId) => void handleCompleteStep(stepId)}
+                  visitaAgendadaOn={detail.visita_agendada_on}
+                  visitaRealizadaOn={detail.visita_realizada_on}
+                  onCompleteStep={(stepId, stepDate) => void handleCompleteStep(stepId, stepDate)}
                 />
               ) : null}
 

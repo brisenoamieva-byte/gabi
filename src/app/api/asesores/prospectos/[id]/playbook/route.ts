@@ -34,16 +34,22 @@ export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const body = (await request.json()) as { asesorId?: string; stepId?: string };
+    const body = (await request.json()) as { asesorId?: string; stepId?: string; stepDate?: string };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
     const stepId = body.stepId?.trim();
+    const stepDate = body.stepDate?.trim();
 
     if (!stepId) {
       return NextResponse.json({ error: "stepId requerido." }, { status: 400 });
     }
 
-    const playbook = await completePlaybookStepForProspecto(asesorId, id, stepId);
-    return NextResponse.json({ playbook });
+    const { playbook, prospecto } = await completePlaybookStepForProspecto(
+      asesorId,
+      id,
+      stepId,
+      stepDate,
+    );
+    return NextResponse.json({ playbook, prospecto });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {

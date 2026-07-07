@@ -446,6 +446,7 @@ export type VisitaProspectoSyncInput = {
   clienteEmail?: string;
   clienteTelefono?: string;
   medioContacto?: string;
+  visitaRealizadaOn?: string;
 };
 
 /** Crea o actualiza prospecto al registrar una visita comercial (recorrido). */
@@ -481,6 +482,9 @@ export const syncProspectoFromVisita = async (
     visita_id: input.visitaId,
     etapa,
     updated_at: new Date().toISOString(),
+    ...(input.tipo === "recorrido_completado" && input.visitaRealizadaOn
+      ? { visita_realizada_on: input.visitaRealizadaOn }
+      : {}),
   };
 
   if (existing) {

@@ -296,6 +296,22 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta prospecto_cadencia — aplica 045.",
   });
 
+  const visitaFechasOk = await probeColumn("prospectos", "visita_agendada_on", {
+    desarrollo_id: desarrolloId,
+    nombre: "__gabi_health_probe__",
+    etapa: "nuevo",
+    visita_agendada_on: "2026-01-01",
+  });
+  checks.push({
+    id: "046",
+    label: "Fechas de visita en prospectos",
+    migrationFile: "046_prospecto_fechas_visita.sql",
+    ok: visitaFechasOk,
+    detail: visitaFechasOk
+      ? "Fechas de visita agendada y realizada disponibles."
+      : "Faltan visita_agendada_on / visita_realizada_on — aplica 046.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()

@@ -20,6 +20,7 @@ import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import { completeCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import { normalizePlaybookVisitDate } from "@/lib/comercial/cadencia-perfilamiento";
 
 const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
@@ -332,7 +333,8 @@ export const completePlaybookStepForProspecto = async (
   asesorId: string,
   prospectoId: string,
   stepId: string,
-): Promise<ProspectoPlaybookState> => {
+  stepDate?: string,
+): Promise<{ playbook: ProspectoPlaybookState; prospecto: ProspectoListRow }> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     throw new Error("Supabase no configurado.");
@@ -365,6 +367,22 @@ export const completePlaybookStepForProspecto = async (
   const step = config.steps.find((item) => item.id === stepId);
   if (!step) {
     throw new Error("Paso de playbook no válido.");
+  }
+
+  const visitDate = normalizePlaybookVisitDate(stepId, stepDate);
+  if (visitDate) {
+    const dateField = stepId === "visita-agendada" ? "visita_agendada_on" : "visita_realizada_on";
+    const { error: dateError } = await supabase
+      .from("prospectos")
+      .update({
+        [dateField]: visitDate,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", prospectoId);
+
+    if (dateError) {
+      throw new Error(dateError.message);
+    }
   }
 
   const { error } = await supabase.from("prospecto_playbook_progress").upsert(
@@ -406,13 +424,16 @@ export const completePlaybookStepForProspecto = async (
     fullProspecto as ProspectoListRow,
   );
 
-  return computeProspectoPlaybookState(
-    fullProspecto as ProspectoListRow,
-    config,
-    manualStepIds,
-    cotizaciones?.length ?? 0,
-    recorridoCompletado,
-  );
+  return {
+    playbook: computeProspectoPlaybookState(
+      fullProspecto as ProspectoListRow,
+      config,
+      manualStepIds,
+      cotizaciones?.length ?? 0,
+      recorridoCompletado,
+    ),
+    prospecto: fullProspecto as ProspectoListRow,
+  };
 };
 
 export const validatePlaybookEtapaChange = async (

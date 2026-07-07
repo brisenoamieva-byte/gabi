@@ -65,7 +65,7 @@ Prospecto NUEVO
     └─► Playbook: ¿qué hitos debo cumplir?
             Marcar cada paso al completarlo
 
-Si el cliente ACEPTA visita → marcar “Visita agendada” → cadencia se detiene
+Si el cliente ACEPTA visita → marcar “Visita agendada” **e indicar la fecha** → cadencia se detiene  
 Si NO responde en ~8 días → último intento día 7 → marcar Perdido
 ```
 
@@ -153,13 +153,17 @@ Si NO responde en ~8 días → último intento día 7 → marcar Perdido
 | WhatsApp de bienvenida | Simular o enviar mensaje | Manual (clic en el paso) |
 | Primera llamada (mismo día) | Simular llamada | Manual |
 | Email y teléfono registrados | Ya los pusiste al crear | **Automático** |
-| Visita al desarrollo agendada | Simular que el cliente aceptó | Manual |
+| Visita al desarrollo agendada | Simular que el cliente aceptó | Manual **+ fecha de visita** |
+
+Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sistema pide la **fecha de visita** — es obligatoria para el seguimiento.
 
 **Qué comprobar:**
 
 | Comprobación | Sí | No |
 |--------------|:--:|:--:|
 | “Datos completos” se marcó solo | ☐ | ☐ |
+| Al marcar “Visita agendada” pide y guarda la **fecha** | ☐ | ☐ |
+| La fecha aparece en el detalle del lead | ☐ | ☐ |
 | Al marcar “Visita agendada” la cadencia se detiene | ☐ | ☐ |
 | Ya no aparece en “Hoy toca” | ☐ | ☐ |
 
