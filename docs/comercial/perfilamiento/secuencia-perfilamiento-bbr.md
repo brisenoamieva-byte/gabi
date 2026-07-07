@@ -64,6 +64,8 @@ Tras el recorrido: perfilar necesidades, enviar cotización y documentar seguimi
 
 ## Automatización en GABI
 
+Guía de prueba con asesores (Pasaje Álamos): [instructivo-prueba-crm-pasaje-alamos.md](./instructivo-prueba-crm-pasaje-alamos.md)
+
 | Capa | Comportamiento |
 |------|----------------|
 | Lead nuevo | Se crea cadencia de 10 toques + WA automático al prospecto (si está configurado) |
