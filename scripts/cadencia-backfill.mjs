@@ -75,7 +75,7 @@ const computeDueAt = (startedAt, touch) => {
 
 const { data: prospectos, error } = await supabase
   .from("prospectos")
-  .select("id, asesor_id, created_at")
+  .select("id, asesor_id, created_at, email, nombre")
   .eq("desarrollo_id", desarrolloId)
   .eq("etapa", "nuevo")
   .eq("activo", true);
@@ -85,10 +85,17 @@ if (error) {
   process.exit(1);
 }
 
+const DEMO_EMAIL = "demo.playbook@gabi.mx";
+const DEMO_NOMBRE = "Demo Playbook GABI";
+
 let created = 0;
 let skipped = 0;
 
 for (const prospecto of prospectos ?? []) {
+  if (prospecto.email === DEMO_EMAIL || prospecto.nombre === DEMO_NOMBRE) {
+    skipped += 1;
+    continue;
+  }
   if (!prospecto.asesor_id) {
     skipped += 1;
     continue;

@@ -1,5 +1,7 @@
 /**
  * Crea un lead demo en etapa nuevo para probar playbook en /mis-leads.
+ * No usar en producción: ensucia la bandeja "Hoy toca". Limpiar con:
+ *   npm run leads:cleanup-playbook-demo
  *   npm run leads:seed-playbook-demo
  */
 import { createClient } from "@supabase/supabase-js";

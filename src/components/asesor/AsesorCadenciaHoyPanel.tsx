@@ -136,9 +136,6 @@ function CadenciaHoyRow({
               href={item.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => {
-                setTimeout(onComplete, 800);
-              }}
               className="inline-flex items-center gap-1 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-xs font-bold text-white"
             >
               <MessageCircle className="h-3.5 w-3.5" />
@@ -148,9 +145,6 @@ function CadenciaHoyRow({
           {!isWa && item.telUrl ? (
             <a
               href={item.telUrl}
-              onClick={() => {
-                setTimeout(onComplete, 800);
-              }}
               className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white"
             >
               <Phone className="h-3.5 w-3.5" />

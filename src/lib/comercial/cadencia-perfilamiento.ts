@@ -293,3 +293,12 @@ export const getCadenciaDayIndex = (startedAt: Date, now = new Date()): number =
   const currentUtc = Date.UTC(current.year, current.month - 1, current.day);
   return Math.floor((currentUtc - startUtc) / (24 * 60 * 60 * 1000));
 };
+
+export const PLAYBOOK_DEMO_LEAD_EMAIL = "demo.playbook@gabi.mx";
+export const PLAYBOOK_DEMO_LEAD_NOMBRE = "Demo Playbook GABI";
+
+export const isPlaybookDemoLead = (lead: {
+  email?: string | null;
+  nombre?: string | null;
+}): boolean =>
+  lead.email === PLAYBOOK_DEMO_LEAD_EMAIL || lead.nombre === PLAYBOOK_DEMO_LEAD_NOMBRE;

@@ -11,6 +11,7 @@ import {
   getCadenciaDayIndex,
   getMexicoCityParts,
   isInReminderWindow,
+  isPlaybookDemoLead,
   isTouchDueToday,
   isTouchOverdue,
   type CadenciaCanal,
@@ -528,13 +529,16 @@ export const ensureCadenciasForAsesor = async (
 
   const { data: prospectos } = await supabase
     .from("prospectos")
-    .select("id")
+    .select("id, email, nombre")
     .eq("asesor_id", asesorId)
     .eq("desarrollo_id", desarrolloId)
     .eq("etapa", "nuevo")
     .eq("activo", true);
 
   for (const row of prospectos ?? []) {
+    if (isPlaybookDemoLead(row)) {
+      continue;
+    }
     await bootstrapCadenciaForProspecto(row.id as string);
   }
 };
@@ -618,7 +622,7 @@ export const listCadenciaHoyForAsesor = async (
       .in("cadencia_id", cadenciaIds)
       .eq("status", "pending")
       .order("due_at", { ascending: true }),
-    supabase.from("prospectos").select("id, nombre, telefono").in("id", prospectoIds),
+    supabase.from("prospectos").select("id, nombre, telefono, email").in("id", prospectoIds),
   ]);
 
   if (!touches?.length) {
@@ -627,10 +631,12 @@ export const listCadenciaHoyForAsesor = async (
 
   const cadenciaMap = new Map(cadencias.map((row) => [row.id as string, row as DbCadenciaRow]));
   const prospectoMap = new Map(
-    (prospectos ?? []).map((row) => [
-      row.id as string,
-      { nombre: row.nombre as string, telefono: row.telefono as string | null },
-    ]),
+    (prospectos ?? [])
+      .filter((row) => !isPlaybookDemoLead(row))
+      .map((row) => [
+        row.id as string,
+        { nombre: row.nombre as string, telefono: row.telefono as string | null },
+      ]),
   );
 
   const items: CadenciaHoyItem[] = [];
@@ -853,12 +859,15 @@ export const ensureCadenciasForDesarrollo = async (desarrolloId: string): Promis
 
   const { data: prospectos } = await supabase
     .from("prospectos")
-    .select("id")
+    .select("id, email, nombre")
     .eq("desarrollo_id", desarrolloId)
     .eq("etapa", "nuevo")
     .eq("activo", true);
 
   for (const row of prospectos ?? []) {
+    if (isPlaybookDemoLead(row)) {
+      continue;
+    }
     await bootstrapCadenciaForProspecto(row.id as string);
   }
 };

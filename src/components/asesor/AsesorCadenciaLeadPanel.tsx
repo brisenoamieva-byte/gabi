@@ -88,7 +88,6 @@ export function AsesorCadenciaLeadPanel({
                 href={next.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setTimeout(() => void handleComplete(next.touch.id), 800)}
                 className="inline-flex items-center gap-1 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
@@ -98,7 +97,6 @@ export function AsesorCadenciaLeadPanel({
             {next.telUrl ? (
               <a
                 href={next.telUrl}
-                onClick={() => setTimeout(() => void handleComplete(next.touch.id), 800)}
                 className="inline-flex items-center gap-1 rounded-lg bg-[#201044] px-3 py-1.5 text-xs font-bold text-white"
               >
                 <Phone className="h-3.5 w-3.5" />
