@@ -388,7 +388,8 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
               {tieneSegmentos
                 ? `Inventario completo por segmento — ${segmentoConfig?.label ?? "selecciona segmento"}.`
                 : "Todas las unidades del desarrollo: estatus comercial, precios, cobranza y curación para recorrido."}
-              {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
+              {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}{" "}
+              Los apartados reportados desde CRM aparecen aquí al pulsar <strong>Actualizar</strong>.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

@@ -175,6 +175,7 @@ export function RegistrarApartadoModal({
   const [loadingContext, setLoadingContext] = useState(false);
   const [loadingUnidadPrefill, setLoadingUnidadPrefill] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
   const [cotizacionHint, setCotizacionHint] = useState(false);
   const asesoresRef = useRef(asesores);
@@ -469,6 +470,14 @@ export function RegistrarApartadoModal({
     void loadPrefill(unidadId);
   };
 
+  const finishApartadoSave = () => {
+    setSaveSuccess(true);
+    window.setTimeout(() => {
+      onSuccess();
+      onClose();
+    }, 1800);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
@@ -512,8 +521,7 @@ export function RegistrarApartadoModal({
           throw new Error(data.error ?? "No se pudo registrar el apartado.");
         }
 
-        onSuccess();
-        onClose();
+        finishApartadoSave();
         return;
       }
 
@@ -552,8 +560,7 @@ export function RegistrarApartadoModal({
         throw new Error(data.error ?? "No se pudo registrar el apartado.");
       }
 
-      onSuccess();
-      onClose();
+      finishApartadoSave();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Error al guardar.");
     } finally {
@@ -598,26 +605,41 @@ export function RegistrarApartadoModal({
         </div>
 
         <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5 p-5">
-          {desdeLead && cotizacionHint ? (
+          {saveSuccess ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-900">
+              <p className="text-base font-black text-emerald-950">Apartado registrado</p>
+              <p className="mt-2">
+                La unidad ya está en <strong>sembrado</strong> con estatus Apartado. El gerente la
+                verá en Admin → Sembrado al actualizar la vista.
+              </p>
+              {esAsesor ? (
+                <p className="mt-2 text-xs text-emerald-800">
+                  Sube los documentos del cliente en el expediente de apartado del prospecto.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {!saveSuccess && desdeLead && cotizacionHint ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               Cotización del prospecto cargada. Confirma unidad, precio y medio antes de guardar.
             </div>
           ) : null}
 
-          {esCompletar ? (
+          {!saveSuccess && esCompletar ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               Este apartado viene del Excel o inventario. Completa nombre del cliente, medio y precio
               para activar la operación en sembrado.
             </div>
           ) : null}
 
-          {cotizacionHint ? (
+          {!saveSuccess && cotizacionHint ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               Se encontró una cotización reciente para esta unidad. Revisa y completa lo que falte.
             </div>
           ) : null}
 
-          {error ? (
+          {!saveSuccess && error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <p>{error}</p>
               {prospectoId ? (
@@ -632,7 +654,7 @@ export function RegistrarApartadoModal({
             </div>
           ) : null}
 
-          {segmentos.length > 0 ? (
+          {!saveSuccess && segmentos.length > 0 ? (
             <Field label="Tipo de producto *">
               <select
                 required
@@ -650,6 +672,8 @@ export function RegistrarApartadoModal({
             </Field>
           ) : null}
 
+          {!saveSuccess ? (
+            <>
           <Field label="Unidad *">
             <select
               required
@@ -942,6 +966,8 @@ export function RegistrarApartadoModal({
               Guardar apartado
             </button>
           </div>
+            </>
+          ) : null}
         </form>
       </div>
     </div>

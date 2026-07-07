@@ -186,6 +186,11 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 3. Revisa precio, fecha de apartado y primer pago si aplica → **Guardar apartado**.
 4. El lead pasa a **Apartado**; en **Expediente de apartado** sube al menos un documento (INE, etc.).
 
+**Verificación gerencia (facilitador o gerente):**
+1. Entra a **Admin → Sembrado** → Pasaje Álamos → **Actualizar**.
+2. La unidad debe aparecer con estatus **Apartado** y el nombre del cliente.
+3. En **Admin → Expedientes** debe listarse la operación (documentos en 0% hasta subir archivos).
+
 **Qué comprobar:**
 
 | Comprobación | Sí | No |
@@ -195,6 +200,7 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 | Medio, equipo y promotor son listas desplegables | ☐ | ☐ |
 | El formulario trae datos del prospecto y cotización | ☐ | ☐ |
 | Tras guardar, el lead aparece en pestaña **Apartado** | ☐ | ☐ |
+| En Admin → Sembrado la unidad aparece como **Apartado** (tras Actualizar) | ☐ | ☐ |
 | Aparece el checklist de **Expediente de apartado** | ☐ | ☐ |
 | No se puede arrastrar leads a **Vendido** ni mover leads ya en Apartado/Vendido | ☐ | ☐ |
 
@@ -266,6 +272,7 @@ _________________________________________________________________________
 - **URL correcta:** https://gabi.mx/portal → BBR Habitarea → PIN → Pasaje Álamos  
 - **No usar:** dmb.mx ni La Vista Residencial  
 - **Diagnóstico previo:** `npm run cadencia:pilot-status`  
+- **Apartado → sembrado:** al guardar en CRM se crea la operación en BD; gerencia la ve en Admin → Sembrado (Actualizar). No hay sync con Excel externo.  
 - **Limpiar leads demo viejos:** `npm run leads:cleanup-playbook-demo`  
 - Al cerrar: marcar leads **PRUEBA CRM** como **Perdido** o desactivar  
 - Recordatorio automático a asesores: cron 9:00 CDMX (lun–sáb), si está configurado en servidor
