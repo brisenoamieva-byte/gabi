@@ -12,6 +12,8 @@ type RegistrarApartadoModalProps = {
   unidadesOpciones?: SembradoUnidadRow[];
   prospectoId?: string;
   initialUnidadId?: string;
+  channel?: "admin" | "asesor";
+  asesorId?: string;
   onClose: () => void;
   onSuccess: () => void;
 };
@@ -111,9 +113,12 @@ export function RegistrarApartadoModal({
   unidadesOpciones: unidadesOpcionesProp = [],
   prospectoId,
   initialUnidadId,
+  channel = "admin",
+  asesorId,
   onClose,
   onSuccess,
 }: RegistrarApartadoModalProps) {
+  const esAsesor = channel === "asesor";
   const esCompletar = modo === "completar";
   const desdeLead = Boolean(prospectoId);
   const [unidadesOpciones, setUnidadesOpciones] = useState(unidadesOpcionesProp);
@@ -135,6 +140,27 @@ export function RegistrarApartadoModal({
       setError("");
 
       try {
+        if (esAsesor && prospectoId && asesorId) {
+          const params = new URLSearchParams({ asesorId, unidadId });
+          const response = await fetch(
+            `/api/asesores/prospectos/${prospectoId}/apartado?${params.toString()}`,
+          );
+          const data = (await response.json()) as {
+            prefill?: ApartadoPrefill;
+            error?: string;
+          };
+
+          if (!response.ok) {
+            throw new Error(data.error ?? "No se pudo cargar la unidad.");
+          }
+
+          if (data.prefill) {
+            setForm(prefillToForm(data.prefill));
+            setCotizacionHint(data.prefill.cotizacionReciente);
+          }
+          return;
+        }
+
         const params = new URLSearchParams({ desarrolloId, unidadId });
         const response = await fetch(`/api/admin/operaciones?${params.toString()}`);
         const data = (await response.json()) as {
@@ -156,7 +182,7 @@ export function RegistrarApartadoModal({
         setLoadingPrefill(false);
       }
     },
-    [desarrolloId],
+    [desarrolloId, esAsesor, asesorId, prospectoId],
   );
 
   useEffect(() => {
@@ -172,6 +198,28 @@ export function RegistrarApartadoModal({
     setError("");
 
     try {
+      if (esAsesor && prospectoId && asesorId) {
+        const response = await fetch(
+          `/api/asesores/prospectos/${prospectoId}/apartado?asesorId=${encodeURIComponent(asesorId)}`,
+        );
+        const data = (await response.json()) as {
+          prefill?: ApartadoPrefill;
+          unidades?: SembradoUnidadRow[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo cargar el prospecto.");
+        }
+
+        if (data.prefill) {
+          setForm(prefillToForm(data.prefill));
+          setCotizacionHint(data.prefill.cotizacionReciente);
+        }
+        setUnidadesOpciones(data.unidades ?? []);
+        return;
+      }
+
       const response = await fetch(
         `/api/admin/operaciones?prospectoId=${encodeURIComponent(prospectoId)}`,
       );
@@ -195,7 +243,7 @@ export function RegistrarApartadoModal({
     } finally {
       setLoadingPrefill(false);
     }
-  }, [prospectoId]);
+  }, [prospectoId, esAsesor, asesorId]);
 
   useEffect(() => {
     if (prospectoId) {
@@ -223,6 +271,48 @@ export function RegistrarApartadoModal({
     setError("");
 
     try {
+      if (esAsesor && prospectoId && asesorId) {
+        const response = await fetch(`/api/asesores/prospectos/${prospectoId}/apartado`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            asesorId,
+            desarrolloId,
+            unidadId: form.unidadId,
+            prospectoId: form.prospectoId || prospectoId,
+            cotizacionId: form.cotizacionId || undefined,
+            clienteNombre: form.clienteNombre,
+            estatusSembrado: "Apartado",
+            origenCiudad: form.origenCiudad || undefined,
+            equipoVenta: form.equipoVenta || undefined,
+            promotorNombre: form.promotorNombre || undefined,
+            tipoInversion: form.tipoInversion || null,
+            listaPrecios: form.listaPrecios || undefined,
+            precioLista: parseMoneyInput(form.precioLista),
+            descuentoPct: form.descuentoPct ? Number(form.descuentoPct) : null,
+            precioVenta: parseMoneyInput(form.precioVenta),
+            esquemaPago: form.esquemaPago || undefined,
+            fechaApartado: form.fechaApartado,
+            medioPublicitario: form.medioPublicitario || undefined,
+            observacionesPagos: form.observacionesPagos || undefined,
+            observaciones: form.observaciones || undefined,
+            primerPago: parseMoneyInput(form.primerPago),
+            prospectoEmail: form.prospectoEmail || undefined,
+            prospectoTelefono: form.prospectoTelefono || undefined,
+          }),
+        });
+
+        const data = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo registrar el apartado.");
+        }
+
+        onSuccess();
+        onClose();
+        return;
+      }
+
       const response = await fetch("/api/admin/operaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -273,21 +363,25 @@ export function RegistrarApartadoModal({
         <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-100 bg-white px-5 py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-              Gerencia
+              {esAsesor ? "Apartado" : "Gerencia"}
             </p>
             <h3 className="text-xl font-black text-gabi-forest">
-              {desdeLead
-                ? "Registrar apartado desde lead"
-                : esCompletar
-                  ? "Completar apartado"
-                  : "Registrar apartado"}
+              {esAsesor
+                ? "Reportar apartado"
+                : desdeLead
+                  ? "Registrar apartado desde lead"
+                  : esCompletar
+                    ? "Completar apartado"
+                    : "Registrar apartado"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              {desdeLead
-                ? "Datos del prospecto y su última cotización. Revisa la unidad y completa la operación."
-                : esCompletar
-                  ? "La unidad ya está apartada en inventario. Captura al cliente y los datos de la operación."
-                  : "Integra la operación al sembrado. Si hay cotización reciente del asesor, se pre-llena."}
+              {esAsesor
+                ? "Registra la unidad en sembrado e inicia el expediente del cliente. Revisa unidad, precio y fecha de apartado."
+                : desdeLead
+                  ? "Datos del prospecto y su última cotización. Revisa la unidad y completa la operación."
+                  : esCompletar
+                    ? "La unidad ya está apartada en inventario. Captura al cliente y los datos de la operación."
+                    : "Integra la operación al sembrado. Si hay cotización reciente del asesor, se pre-llena."}
             </p>
           </div>
           <button

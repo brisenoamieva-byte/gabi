@@ -169,7 +169,27 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 
 ---
 
-## PRUEBA 5 — Bloqueo de etapa (10 min)
+## PRUEBA 5 — Reportar apartado (10 min)
+
+**Dónde:** Detalle de un lead en **Negociación** (o cuando el cliente ya depositó).
+
+**Qué hacer:**
+1. Pulsa **Reportar apartado** (botón verde, abajo del detalle).
+2. Selecciona la **unidad**, confirma precio, fecha de apartado y primer pago si aplica.
+3. Guarda → el lead pasa a **Apartado** y la unidad queda registrada en **sembrado**.
+4. En **Expediente de apartado**, sube al menos un documento del checklist (INE, etc.).
+
+**Qué comprobar:**
+
+| Comprobación | Sí | No |
+|--------------|:--:|:--:|
+| El formulario trae datos del prospecto y cotización | ☐ | ☐ |
+| Tras guardar, el lead aparece en pestaña **Apartado** | ☐ | ☐ |
+| Aparece el checklist de **Expediente de apartado** | ☐ | ☐ |
+
+---
+
+## PRUEBA 6 — Bloqueo de etapa (10 min)
 
 **Usa otro lead PRUEBA CRM** (créalo si hace falta) **sin completar el playbook.**
 
@@ -187,7 +207,7 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 
 ---
 
-## PRUEBA 6 — Cola “Siguiente paso” (10 min)
+## PRUEBA 7 — Cola “Siguiente paso” (10 min)
 
 **Dónde:** Lista **Mis prospectos**.
 
@@ -216,8 +236,9 @@ Al marcar **Visita agendada** o **Recorrido guiado** (etapa Contactado), el sist
 | 3 | Crear lead PRUEBA CRM | ☐ | |
 | 4 | Cadencia: WA/Llamar no quitan · Hecho sí | ☐ | |
 | 5 | Playbook y visita agendada detiene cadencia | ☐ | |
-| 6 | Bloqueo de etapa sin playbook | ☐ | |
-| 7 | Siguiente paso abre lead correcto | ☐ | |
+| 6 | Reportar apartado → sembrado y expediente | ☐ | |
+| 7 | Bloqueo de etapa sin playbook | ☐ | |
+| 8 | Siguiente paso abre lead correcto | ☐ | |
 
 **¿Qué fue confuso?**  
 _________________________________________________________________________

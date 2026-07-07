@@ -141,7 +141,7 @@ export const uploadExpedienteDocumentoAsesor = async (input: {
   const summary = await getExpedienteSummaryForProspecto(input.asesorId, input.prospectoId);
   if (!summary) {
     throw new Error(
-      "Aún no hay operación de apartado. El gerente debe confirmar el apartado en sembrado.",
+      "Aún no hay operación de apartado. Usa «Reportar apartado» en el prospecto para registrar la unidad en sembrado.",
     );
   }
 

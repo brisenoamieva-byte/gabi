@@ -295,7 +295,7 @@ export type ApartadoContextFromProspecto = {
   unidades: SembradoUnidadRow[];
 };
 
-const mergeProspectoIntoPrefill = (
+export const mergeProspectoIntoPrefill = (
   prefill: ApartadoPrefill,
   prospecto: NonNullable<Awaited<ReturnType<typeof getProspectoById>>>,
   cotizacionId: string | null,

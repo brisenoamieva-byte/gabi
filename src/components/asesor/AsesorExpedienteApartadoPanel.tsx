@@ -123,8 +123,9 @@ export function AsesorExpedienteApartadoPanel({
 
       {!loading && !expediente ? (
         <p className="mt-3 text-sm text-emerald-900">
-          El gerente aún no confirma el apartado en sembrado. Cuando lo haga, aquí podrás subir
-          INE, CURP, comprobante de domicilio, etc.
+          {etapa === "apartado"
+            ? "Aún no hay operación en sembrado para este apartado. Si acabas de reportarlo, recarga en un momento."
+            : "Cuando el cliente aparte, usa «Reportar apartado» en el prospecto para registrar la unidad en sembrado e iniciar el expediente."}
         </p>
       ) : null}
 

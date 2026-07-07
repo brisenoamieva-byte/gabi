@@ -11,10 +11,12 @@ import {
   RefreshCw,
   Save,
   Search,
+  ShoppingBag,
   UserRound,
   X,
 } from "lucide-react";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
+import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedienteApartadoPanel";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
@@ -98,6 +100,7 @@ function AsesorLeadDrawer({
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
+  const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -137,6 +140,8 @@ function AsesorLeadDrawer({
   }, [loadDetail]);
 
   const etapaEditable = detail ? prospectoEtapaEditableByAsesor(detail.etapa) : false;
+  const puedeReportarApartado =
+    detail != null && detail.etapa !== "vendido" && detail.etapa !== "perdido";
 
   const isEtapaOptionAllowed = (target: ProspectoEtapa) => {
     if (!detail || !playbook?.config?.enabled || !playbook.config.blockEtapa) {
@@ -403,6 +408,16 @@ function AsesorLeadDrawer({
 
         {detail ? (
           <div className="space-y-2 border-t border-slate-100 p-5">
+            {puedeReportarApartado ? (
+              <button
+                type="button"
+                onClick={() => setApartadoModalOpen(true)}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                Reportar apartado
+              </button>
+            ) : null}
             <Link
               href="/cotizador"
               onClick={() => prefillCotizadorFromProspecto(detail)}
@@ -423,6 +438,21 @@ function AsesorLeadDrawer({
           </div>
         ) : null}
       </div>
+
+      {apartadoModalOpen && detail ? (
+        <RegistrarApartadoModal
+          channel="asesor"
+          asesorId={asesorId}
+          desarrolloId={detail.desarrollo_id}
+          prospectoId={prospectoId}
+          onClose={() => setApartadoModalOpen(false)}
+          onSuccess={() => {
+            setApartadoModalOpen(false);
+            void loadDetail();
+            onUpdated();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
