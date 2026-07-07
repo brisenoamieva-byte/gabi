@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Save, ShoppingBag, X } from "lucide-react";
+import { AlertTriangle, Loader2, Save, ShoppingBag, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
@@ -42,16 +42,30 @@ function Field({
   );
 }
 
+type AsesorOption = {
+  id: string;
+  nombre: string;
+};
+
+type AdminMe = {
+  canDeleteProspectos?: boolean;
+  canReassignProspectos?: boolean;
+};
+
 export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetailDrawerProps) {
   const [detail, setDetail] = useState<ProspectoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
   const [campanaId, setCampanaId] = useState("");
   const [calificacion, setCalificacion] = useState("Sin Calificar");
   const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
+  const [asesorId, setAsesorId] = useState("");
+  const [asesores, setAsesores] = useState<AsesorOption[]>([]);
+  const [adminMe, setAdminMe] = useState<AdminMe>({});
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
   const [compliance, setCompliance] = useState<ProspectoComplianceRow | null>(null);
@@ -64,6 +78,12 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
     setError("");
 
     try {
+      const meResponse = await fetch("/api/admin/me");
+      if (meResponse.ok) {
+        const meData = (await meResponse.json()) as AdminMe;
+        setAdminMe(meData);
+      }
+
       const response = await fetch(`/api/admin/prospectos/${prospectoId}`);
       const data = (await response.json()) as { prospecto?: ProspectoDetail; error?: string };
 
@@ -84,6 +104,14 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
             ? data.prospecto.nivel_interes
             : "",
         );
+        setAsesorId(data.prospecto.asesor_id ?? "");
+
+        const asesorParams = new URLSearchParams({
+          desarrolloId: data.prospecto.desarrollo_id,
+        });
+        const asesorResponse = await fetch(`/api/admin/asesores?${asesorParams.toString()}`);
+        const asesorData = (await asesorResponse.json()) as { asesores?: AsesorOption[] };
+        setAsesores(asesorData.asesores ?? []);
 
         const campParams = new URLSearchParams({
           desarrolloId: data.prospecto.desarrollo_id,
@@ -128,6 +156,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
           campanaId: campanaId || null,
           calificacion,
           nivelInteres: nivelInteres || null,
+          ...(adminMe.canReassignProspectos ? { asesorId: asesorId || null } : {}),
         }),
       });
 
@@ -145,6 +174,40 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
       setError(saveError instanceof Error ? saveError.message : "Error al guardar.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!adminMe.canDeleteProspectos || !detail) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `¿Eliminar el prospecto "${detail.nombre}"? Se archivará del listado y no aparecerá en reportes activos.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/prospectos/${prospectoId}`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo eliminar el prospecto.");
+      }
+
+      onUpdated();
+      onClose();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Error al eliminar.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -280,10 +343,6 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   <span>{detail.asignado_por ?? "—"}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Asesor</span>
-                  <span>{detail.asesorNombre ?? "—"}</span>
-                </div>
-                <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Actualizado</span>
                   <span>
                     {new Date(detail.updated_at).toLocaleDateString("es-MX", {
@@ -294,6 +353,36 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   </span>
                 </div>
               </div>
+
+              {adminMe.canReassignProspectos ? (
+                <Field label="Asesor asignado">
+                  <select
+                    value={asesorId}
+                    onChange={(event) => setAsesorId(event.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Sin asesor</option>
+                    {asesores.map((asesor) => (
+                      <option key={asesor.id} value={asesor.id}>
+                        {asesor.nombre}
+                      </option>
+                    ))}
+                    {asesorId &&
+                    !asesores.some((asesor) => asesor.id === asesorId) &&
+                    detail.asesorNombre ? (
+                      <option value={asesorId}>{detail.asesorNombre}</option>
+                    ) : null}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Gerencia y administradores pueden reasignar el lead a otro asesor del desarrollo.
+                  </p>
+                </Field>
+              ) : (
+                <div className="flex justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3 text-sm">
+                  <span className="text-slate-500">Asesor</span>
+                  <span className="font-medium">{detail.asesorNombre ?? "—"}</span>
+                </div>
+              )}
 
               <Field label="Calificación (Xperience)">
                 <select
@@ -426,12 +515,27 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
             <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={saving}
+              disabled={saving || deleting}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar cambios
             </button>
+            {adminMe.canDeleteProspectos ? (
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting || saving}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-3 text-sm font-bold text-red-700 disabled:opacity-50"
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Eliminar prospecto
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>

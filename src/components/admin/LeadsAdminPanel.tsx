@@ -11,6 +11,7 @@ import {
   Plus,
   RefreshCw,
   Trash2,
+  UserRoundCog,
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
@@ -114,6 +115,10 @@ export function LeadsAdminPanel({
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reassigning, setReassigning] = useState(false);
+  const [bulkReassignAsesorId, setBulkReassignAsesorId] = useState("");
+  const [canDeleteProspectos, setCanDeleteProspectos] = useState(false);
+  const [canReassignProspectos, setCanReassignProspectos] = useState(false);
   const [complianceReport, setComplianceReport] = useState<DesarrolloComplianceReport | null>(null);
   const [complianceLoading, setComplianceLoading] = useState(false);
   const prevDesarrolloId = useRef<string | null>(null);
@@ -239,6 +244,22 @@ export function LeadsAdminPanel({
       setLoading(false);
     }
   }, [applied, viewMode]);
+
+  useEffect(() => {
+    void fetch("/api/admin/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { canDeleteProspectos?: boolean; canReassignProspectos?: boolean } | null) => {
+        if (!data) {
+          return;
+        }
+        setCanDeleteProspectos(Boolean(data.canDeleteProspectos));
+        setCanReassignProspectos(Boolean(data.canReassignProspectos));
+      })
+      .catch(() => {
+        setCanDeleteProspectos(false);
+        setCanReassignProspectos(false);
+      });
+  }, []);
 
   useEffect(() => {
     void loadAsesores();
@@ -404,7 +425,7 @@ export function LeadsAdminPanel({
   };
 
   const handleBulkDelete = async () => {
-    if (!selectedIds.size) {
+    if (!selectedIds.size || !canDeleteProspectos) {
       return;
     }
 
@@ -422,7 +443,7 @@ export function LeadsAdminPanel({
       const response = await fetch("/api/admin/prospectos/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+        body: JSON.stringify({ action: "delete", ids: Array.from(selectedIds) }),
       });
       const data = (await response.json()) as { deleted?: number; error?: string };
       if (!response.ok) {
@@ -434,6 +455,46 @@ export function LeadsAdminPanel({
       setError(deleteError instanceof Error ? deleteError.message : "Error al eliminar.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleBulkReassign = async () => {
+    if (!selectedIds.size || !canReassignProspectos || !bulkReassignAsesorId) {
+      return;
+    }
+
+    const asesorNombre =
+      asesores.find((asesor) => asesor.id === bulkReassignAsesorId)?.nombre ?? "el asesor elegido";
+    const confirmed = window.confirm(
+      `¿Reasignar ${selectedIds.size} lead(s) a ${asesorNombre}?`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setReassigning(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/prospectos/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reassign",
+          ids: Array.from(selectedIds),
+          asesorId: bulkReassignAsesorId,
+        }),
+      });
+      const data = (await response.json()) as { reassigned?: number; error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron reasignar los leads.");
+      }
+      setSelectedIds(new Set());
+      void loadLeads();
+    } catch (reassignError) {
+      setError(reassignError instanceof Error ? reassignError.message : "Error al reasignar.");
+    } finally {
+      setReassigning(false);
     }
   };
 
@@ -562,15 +623,44 @@ export function LeadsAdminPanel({
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                onClick={() => void handleBulkDelete()}
-                disabled={!selectedIds.size || deleting}
-                className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 disabled:opacity-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {deleting ? "Eliminando…" : "Eliminar leads"}
-              </button>
+              {canReassignProspectos ? (
+                <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-1 py-0.5">
+                  <select
+                    value={bulkReassignAsesorId}
+                    onChange={(event) => setBulkReassignAsesorId(event.target.value)}
+                    disabled={!selectedIds.size || reassigning}
+                    className="max-w-[9rem] rounded-md border-0 bg-transparent px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none disabled:opacity-50"
+                  >
+                    <option value="">Reasignar a…</option>
+                    {asesores.map((asesor) => (
+                      <option key={asesor.id} value={asesor.id}>
+                        {asesor.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => void handleBulkReassign()}
+                    disabled={!selectedIds.size || !bulkReassignAsesorId || reassigning}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold text-gabi-forest disabled:opacity-50"
+                  >
+                    <UserRoundCog className="h-3.5 w-3.5" />
+                    {reassigning ? "Reasignando…" : "Aplicar"}
+                  </button>
+                </div>
+              ) : null}
+
+              {canDeleteProspectos ? (
+                <button
+                  type="button"
+                  onClick={() => void handleBulkDelete()}
+                  disabled={!selectedIds.size || deleting}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {deleting ? "Eliminando…" : "Eliminar leads"}
+                </button>
+              ) : null}
 
               <button
                 type="button"

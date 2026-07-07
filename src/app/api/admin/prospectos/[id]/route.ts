@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { getProspectoById, updateProspecto, type UpdateProspectoInput } from "@/lib/admin/prospectos-service";
-import { canAccessModule } from "@/lib/admin/permissions";
+import {
+  deactivateProspecto,
+  getProspectoById,
+  updateProspecto,
+  type UpdateProspectoInput,
+} from "@/lib/admin/prospectos-service";
+import { canAccessModule, canDeleteProspectos } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -50,6 +55,32 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al actualizar prospecto." },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (!canDeleteProspectos(session.profile)) {
+    return NextResponse.json(
+      { error: "Solo el administrador universal puede eliminar prospectos." },
+      { status: 403 },
+    );
+  }
+
+  const { id } = await context.params;
+
+  try {
+    await deactivateProspecto(id, session.profile);
+    return NextResponse.json({ deleted: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Error al eliminar prospecto." },
       { status: 400 },
     );
   }

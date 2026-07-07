@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canAccessModule } from "@/lib/admin/permissions";
+import { canAccessModule, canDeleteProspectos, canReassignProspectos } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
 export async function GET() {
@@ -14,5 +14,7 @@ export async function GET() {
     rol: session.profile.rol,
     desarrollosIds: session.profile.desarrollosIds,
     canEditSembrado: canAccessModule(session.profile, "sembrado"),
+    canDeleteProspectos: canDeleteProspectos(session.profile),
+    canReassignProspectos: canReassignProspectos(session.profile),
   });
 }

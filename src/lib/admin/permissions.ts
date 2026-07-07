@@ -65,6 +65,11 @@ export const canAccessModule = (profile: AdminProfile, module: AdminModule) => {
   return false;
 };
 
+export const canDeleteProspectos = (profile: AdminProfile) => isSuperAdmin(profile);
+
+export const canReassignProspectos = (profile: AdminProfile) =>
+  canAccessModule(profile, "leads");
+
 export const canAccessCrmComplianceApi = (profile: AdminProfile) =>
   canAccessModule(profile, "leads") || canAccessModule(profile, "compliance-coach");
 

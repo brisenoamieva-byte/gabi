@@ -1,5 +1,6 @@
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
+import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 import {
   isProspectoEtapa,
   mergeProspectoEtapa,
@@ -13,6 +14,7 @@ import {
   pickDuplicateIds,
 } from "@/lib/comercial/lead-scoring";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { validateAsesorForVisita } from "@/lib/visitas/service";
 import type { VisitaTipo } from "@/lib/visitas/types";
 
 export type ProspectoListRow = ProspectoRecord & {
@@ -326,7 +328,19 @@ export const updateProspecto = async (
     patch.medio_publicitario = input.medioPublicitario.trim() || null;
   }
   if (input.asesorId !== undefined) {
-    patch.asesor_id = input.asesorId;
+    const nextAsesorId = input.asesorId;
+    const currentAsesorId = existing.asesor_id ?? null;
+
+    if (nextAsesorId !== currentAsesorId) {
+      if (nextAsesorId) {
+        const validation = await validateAsesorForVisita(nextAsesorId, existing.desarrollo_id);
+        if (!validation.ok) {
+          throw new Error(validation.reason);
+        }
+      }
+      patch.asesor_id = nextAsesorId;
+      patch.asignado_por = input.asignadoPor?.trim() || "manual-gerente";
+    }
   }
   if (input.promotorNombre !== undefined) {
     patch.promotor_nombre = input.promotorNombre.trim() || null;
@@ -378,12 +392,88 @@ export const updateProspecto = async (
     throw new Error(error.message);
   }
 
+  if (input.asesorId !== undefined && input.asesorId !== (existing.asesor_id ?? null)) {
+    await syncCadenciaAsesorOnReassign(id, input.asesorId);
+  }
+
   const updated = await getProspectoById(id, profile);
   if (!updated) {
     throw new Error("No se pudo cargar el prospecto actualizado.");
   }
 
   return updated;
+};
+
+const syncCadenciaAsesorOnReassign = async (
+  prospectoId: string,
+  asesorId: string | null,
+): Promise<void> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return;
+  }
+
+  if (asesorId) {
+    const { error } = await supabase
+      .from("prospecto_cadencia")
+      .update({ asesor_id: asesorId })
+      .eq("prospecto_id", prospectoId)
+      .eq("status", "active");
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  await bootstrapCadenciaForProspecto(prospectoId);
+};
+
+export const deactivateProspecto = async (
+  id: string,
+  profile?: AdminProfile,
+): Promise<void> => {
+  const deleted = await bulkDeactivateProspectos([id], profile);
+  if (!deleted) {
+    throw new Error("No se pudo eliminar el prospecto.");
+  }
+};
+
+export const bulkReassignProspectos = async (
+  ids: string[],
+  asesorId: string,
+  profile?: AdminProfile,
+): Promise<number> => {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (!uniqueIds.length) {
+    return 0;
+  }
+
+  const trimmedAsesorId = asesorId.trim();
+  if (!trimmedAsesorId) {
+    throw new Error("Selecciona un asesor para reasignar.");
+  }
+
+  let reassigned = 0;
+
+  for (const id of uniqueIds) {
+    const existing = await getProspectoById(id, profile);
+    if (!existing) {
+      continue;
+    }
+
+    if (existing.asesor_id === trimmedAsesorId) {
+      continue;
+    }
+
+    await updateProspecto(
+      id,
+      { asesorId: trimmedAsesorId, asignadoPor: "manual-gerente" },
+      profile,
+    );
+    reassigned += 1;
+  }
+
+  return reassigned;
 };
 
 const normalizeEmail = (value?: string) => value?.trim().toLowerCase() || null;
