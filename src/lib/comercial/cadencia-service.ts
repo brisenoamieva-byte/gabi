@@ -460,17 +460,50 @@ const expireCadenciaIfNoResponse = async (cadenciaId: string) => {
   }
 
   const now = new Date().toISOString();
+  const pauseReason = "Cadencia completada sin respuesta — revisar si marcar Perdido.";
 
-  await supabase
+  const { data: cadencia } = await supabase
     .from("prospecto_cadencia")
     .update({
       status: "expired",
       completed_at: now,
-      pause_reason: "Cadencia completada sin respuesta — revisar si marcar Perdido.",
+      pause_reason: pauseReason,
       updated_at: now,
     })
     .eq("id", cadenciaId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .select("prospecto_id")
+    .maybeSingle();
+
+  if (!cadencia?.prospecto_id) {
+    return;
+  }
+
+  const cadenciaNote =
+    "[GABI · Cadencia] Secuencia de 8 días completada sin respuesta. Mover a Perdido si no hay interés.";
+
+  const { data: prospecto } = await supabase
+    .from("prospectos")
+    .select("notas, etapa")
+    .eq("id", cadencia.prospecto_id)
+    .maybeSingle();
+
+  if (!prospecto || prospecto.etapa === "perdido") {
+    return;
+  }
+
+  const prev = (prospecto.notas as string | null)?.trim();
+  if (prev?.includes(cadenciaNote)) {
+    return;
+  }
+
+  await supabase
+    .from("prospectos")
+    .update({
+      notas: prev ? `${prev}\n---\n${cadenciaNote}` : cadenciaNote,
+      updated_at: now,
+    })
+    .eq("id", cadencia.prospecto_id);
 };
 
 export const completeCadenciaTouch = async (
@@ -725,6 +758,7 @@ export const getCadenciaSummaryForProspecto = async (
   dayIndex: number;
   pendingCount: number;
   nextTouch: CadenciaTouchRow | null;
+  pauseReason: string | null;
 } | null> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -733,7 +767,7 @@ export const getCadenciaSummaryForProspecto = async (
 
   const { data: cadencia } = await supabase
     .from("prospecto_cadencia")
-    .select("id, started_at, status")
+    .select("id, started_at, status, pause_reason")
     .eq("prospecto_id", prospectoId)
     .maybeSingle();
 
@@ -755,6 +789,7 @@ export const getCadenciaSummaryForProspecto = async (
     dayIndex: getCadenciaDayIndex(new Date(cadencia.started_at as string)),
     pendingCount: pending.length,
     nextTouch: next,
+    pauseReason: (cadencia.pause_reason as string | null) ?? null,
   };
 };
 

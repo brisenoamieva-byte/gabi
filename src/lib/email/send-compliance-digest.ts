@@ -51,6 +51,7 @@ const formatExceptionLines = (target: ComplianceDigestTarget, siteUrl: string): 
 export const sendAsesorComplianceDigestEmail = async (
   target: ComplianceDigestTarget,
   desarrolloNombre: string,
+  cadenciaHoyCount = 0,
 ): Promise<{ sent: boolean; error?: string }> => {
   if (!isEmailConfigured()) {
     return { sent: false, error: "email_not_configured" };
@@ -69,6 +70,9 @@ export const sendAsesorComplianceDigestEmail = async (
     `Resumen de cumplimiento CRM — ${desarrolloNombre}:`,
     `• Vencidos: ${target.overdueCount}`,
     `• Pendientes: ${target.pendingCount}`,
+    ...(cadenciaHoyCount > 0
+      ? [`• Perfilamiento hoy: ${cadenciaHoyCount} contacto(s) en tu bandeja`]
+      : []),
     "",
     "Atender primero:",
     ...lines,
@@ -94,6 +98,7 @@ export const sendAsesorComplianceDigestEmail = async (
     <ul>
       <li>Vencidos: <strong>${target.overdueCount}</strong></li>
       <li>Pendientes: <strong>${target.pendingCount}</strong></li>
+      ${cadenciaHoyCount > 0 ? `<li>Perfilamiento hoy: <strong>${cadenciaHoyCount}</strong> contacto(s)</li>` : ""}
     </ul>
     <p><strong>Atender primero:</strong></p>
     <ul>${htmlItems}</ul>
@@ -117,6 +122,11 @@ export const sendGerenteComplianceDigestEmail = async (
   desarrolloNombre: string,
   gerenteEmail: string,
   gerenteNombre: string,
+  cadencia?: {
+    expiredCount: number;
+    overdueTouchesTotal: number;
+    dueTodayTotal: number;
+  },
 ): Promise<{ sent: boolean; error?: string }> => {
   if (!isEmailConfigured()) {
     return { sent: false, error: "email_not_configured" };
@@ -148,6 +158,15 @@ export const sendGerenteComplianceDigestEmail = async (
     `• Confianza de datos: ${report.confidencePct}%`,
     `• Pipeline confiable: ${report.pipelineReliableCount} leads`,
     `• Excluidos del embudo (datos incompletos/vencidos): ${report.pipelineExcludedCount}`,
+    ...(cadencia
+      ? [
+          "",
+          "Cadencia de perfilamiento:",
+          `• Expiradas sin respuesta (revisar Perdido): ${cadencia.expiredCount}`,
+          `• Toques vencidos hoy: ${cadencia.overdueTouchesTotal}`,
+          `• Toques pendientes hoy: ${cadencia.dueTodayTotal}`,
+        ]
+      : []),
     "",
     "Por asesor:",
     ...asesorLines,
@@ -156,6 +175,7 @@ export const sendGerenteComplianceDigestEmail = async (
     ...exceptionLines,
     "",
     `Panel: ${siteUrl}/admin/crm-compliance?desarrolloId=${encodeURIComponent(report.desarrolloId)}`,
+    cadencia ? `Cadencia: ${siteUrl}/admin/cadencia?desarrolloId=${encodeURIComponent(report.desarrolloId)}` : "",
     "",
     "— gabi",
   ].join("\n");
@@ -168,8 +188,18 @@ export const sendGerenteComplianceDigestEmail = async (
       <li>Confianza de datos: <strong>${report.confidencePct}%</strong></li>
       <li>Pipeline confiable: <strong>${report.pipelineReliableCount}</strong> leads</li>
       <li>Excluidos del embudo: <strong>${report.pipelineExcludedCount}</strong></li>
+      ${
+        cadencia
+          ? `<li>Cadencias expiradas: <strong>${cadencia.expiredCount}</strong></li>
+      <li>Toques vencidos hoy: <strong>${cadencia.overdueTouchesTotal}</strong></li>`
+          : ""
+      }
     </ul>
-    <p><a href="${siteUrl}/admin/crm-compliance?desarrolloId=${encodeURIComponent(report.desarrolloId)}">Abrir panel Salud CRM</a></p>
+    <p><a href="${siteUrl}/admin/crm-compliance?desarrolloId=${encodeURIComponent(report.desarrolloId)}">Abrir panel Salud CRM</a>${
+      cadencia
+        ? ` · <a href="${siteUrl}/admin/cadencia?desarrolloId=${encodeURIComponent(report.desarrolloId)}">Cadencia</a>`
+        : ""
+    }</p>
     <p>— gabi</p>
   `;
 

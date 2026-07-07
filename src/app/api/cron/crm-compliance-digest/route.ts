@@ -15,6 +15,7 @@ import {
 import {
   sendComplianceWhatsAppNudge,
 } from "@/lib/comercial/compliance-notifications";
+import { getDesarrolloCadenciaReport, listCadenciaHoyForAsesor } from "@/lib/comercial/cadencia-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const authorizeCron = (request: Request): boolean => {
@@ -72,7 +73,11 @@ async function runComplianceDigest(): Promise<{
         continue;
       }
 
-      const result = await sendAsesorComplianceDigestEmail(target, desarrolloNombre);
+      const result = await sendAsesorComplianceDigestEmail(
+        target,
+        desarrolloNombre,
+        (await listCadenciaHoyForAsesor(target.asesorId, desarrolloId)).length,
+      );
 
       await logComplianceDigestSent({
         desarrolloId,
@@ -126,8 +131,13 @@ async function runComplianceDigest(): Promise<{
     }
 
     const report = await getDesarrolloComplianceReport(desarrolloId);
+    const cadenciaReport = config?.enabled ? await getDesarrolloCadenciaReport(desarrolloId) : null;
 
-    if (report.exceptionCount === 0 || !supabase) {
+    const cadenciaNeedsAttention =
+      cadenciaReport &&
+      (cadenciaReport.expiredCount > 0 || cadenciaReport.overdueTouchesTotal > 0);
+
+    if ((report.exceptionCount === 0 && !cadenciaNeedsAttention) || !supabase) {
       continue;
     }
 
@@ -163,6 +173,13 @@ async function runComplianceDigest(): Promise<{
         desarrolloNombre,
         gerenteEmail,
         (gerente.nombre as string) ?? "Gerente",
+        cadenciaReport
+          ? {
+              expiredCount: cadenciaReport.expiredCount,
+              overdueTouchesTotal: cadenciaReport.overdueTouchesTotal,
+              dueTodayTotal: cadenciaReport.dueTodayTotal,
+            }
+          : undefined,
       );
 
       await logComplianceDigestSent({

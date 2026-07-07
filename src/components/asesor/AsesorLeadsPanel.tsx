@@ -39,6 +39,7 @@ import {
 } from "@/lib/comercial/crm-playbook";
 import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
+import type { CadenciaStatus } from "@/lib/comercial/cadencia-perfilamiento";
 import {
   isProspectoEtapa,
   PROSPECTO_ETAPAS,
@@ -89,6 +90,7 @@ function AsesorLeadDrawer({
 }) {
   const [detail, setDetail] = useState<ProspectoDetail | null>(null);
   const [playbook, setPlaybook] = useState<ProspectoPlaybookState | null>(null);
+  const [cadenciaStatus, setCadenciaStatus] = useState<CadenciaStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [completingStepId, setCompletingStepId] = useState<string | null>(null);
@@ -107,6 +109,7 @@ function AsesorLeadDrawer({
       const data = (await response.json()) as {
         prospecto?: ProspectoDetail;
         playbook?: ProspectoPlaybookState;
+        cadencia?: { status: CadenciaStatus | null } | null;
         error?: string;
       };
 
@@ -117,6 +120,7 @@ function AsesorLeadDrawer({
       if (data.prospecto) {
         setDetail(data.prospecto);
         setPlaybook(data.playbook ?? null);
+        setCadenciaStatus(data.cadencia?.status ?? null);
         setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
         setNotas(data.prospecto.notas ?? "");
       }
@@ -274,6 +278,23 @@ function AsesorLeadDrawer({
                 prospectoId={detail.id}
                 etapa={detail.etapa}
               />
+
+              {cadenciaStatus === "expired" && detail.etapa === "nuevo" ? (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  <p className="font-bold">Cadencia agotada (8 días sin respuesta)</p>
+                  <p className="mt-1 text-xs text-amber-900">
+                    Si el prospecto no mostró interés, cambia la etapa a{" "}
+                    <strong>Perdido</strong> para liberar tu bandeja.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setEtapa("perdido")}
+                    className="mt-2 text-xs font-bold text-[#201044] underline-offset-2 hover:underline"
+                  >
+                    Marcar como Perdido
+                  </button>
+                </div>
+              ) : null}
 
               {playbook?.config?.enabled ? (
                 <CrmPlaybookChecklist

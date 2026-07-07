@@ -6,6 +6,7 @@ import {
 } from "@/lib/asesores/prospectos-service";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 import { getProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
+import { getCadenciaSummaryForProspecto } from "@/lib/comercial/cadencia-service";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -16,8 +17,11 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
     const prospecto = await getProspectoForAsesor(asesorId, id);
-    const playbook = await getProspectoPlaybookState(prospecto);
-    return NextResponse.json({ prospecto, playbook });
+    const [playbook, cadencia] = await Promise.all([
+      getProspectoPlaybookState(prospecto),
+      getCadenciaSummaryForProspecto(id),
+    ]);
+    return NextResponse.json({ prospecto, playbook, cadencia });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {

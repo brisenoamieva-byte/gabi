@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/prospectos-service";
 import { canAccessDesarrollo, canAccessModule } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
+import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 
 export async function GET(request: Request) {
   const session = await getAdminSession();
@@ -84,6 +85,15 @@ export async function POST(request: Request) {
     }
 
     const prospecto = await createProspecto(body);
+
+    if (prospecto.etapa === "nuevo" && prospecto.asesor_id) {
+      try {
+        await bootstrapCadenciaForProspecto(prospecto.id);
+      } catch {
+        // no bloquear alta admin
+      }
+    }
+
     return NextResponse.json({ prospecto }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
