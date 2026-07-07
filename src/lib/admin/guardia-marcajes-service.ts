@@ -5,6 +5,7 @@ import type {
 } from "@/lib/admin/guardia-marcajes-types";
 import type { AdminProfile } from "@/lib/admin/types";
 import { getCasetaConfig } from "@/lib/asesores/guardias-service";
+import { formatCasetaEtiquetaResumen } from "@/lib/comercial/guardia-caseta";
 import type { GuardiaMarcajeTipo } from "@/lib/comercial/guardia-marcaje-types";
 import {
   formatDateYmd,
@@ -127,7 +128,7 @@ export async function listGuardiaMarcajesDia(
     fecha,
     desarrolloId,
     caseta: {
-      etiqueta: caseta.etiqueta,
+      etiqueta: formatCasetaEtiquetaResumen(caseta),
       radioMetros: caseta.radioMetros,
       lat: caseta.lat,
       lng: caseta.lng,

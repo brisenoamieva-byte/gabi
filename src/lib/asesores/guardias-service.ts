@@ -2,9 +2,11 @@ import { assertAsesorDesarrollo } from "@/lib/asesores/prospectos-service";
 import {
   GUARDIA_CASETA_FALLBACK,
   GUARDIA_RADIO_METROS_DEFAULT,
-  haversineMetros,
+  evaluarMarcajeCaseta,
+  formatCasetaEtiquetaResumen,
   isValidGeoCoordinate,
   type GuardiaCasetaConfig,
+  type GuardiaCasetaPunto,
 } from "@/lib/comercial/guardia-caseta";
 import type { GuardiaMarcajeResumen, GuardiaMarcajeTipo } from "@/lib/comercial/guardia-marcaje-types";
 import {
@@ -42,7 +44,59 @@ type CasetaRow = {
   lng: number;
   radio_metros: number;
   etiqueta: string | null;
+  puntos_extra?: unknown;
 };
+
+type CasetaPuntoExtraRow = {
+  lat?: unknown;
+  lng?: unknown;
+  radio_metros?: unknown;
+  radioMetros?: unknown;
+  etiqueta?: unknown;
+};
+
+const parseCasetaPuntosExtra = (value: unknown): GuardiaCasetaPunto[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const row = item as CasetaPuntoExtraRow;
+    const lat = row.lat;
+    const lng = row.lng;
+    const radioRaw = row.radio_metros ?? row.radioMetros;
+    const radioMetros =
+      typeof radioRaw === "number" && Number.isFinite(radioRaw) && radioRaw > 0
+        ? radioRaw
+        : GUARDIA_RADIO_METROS_DEFAULT;
+
+    if (typeof lat !== "number" || typeof lng !== "number" || !isValidGeoCoordinate(lat, lng)) {
+      return [];
+    }
+
+    return [
+      {
+        lat,
+        lng,
+        radioMetros,
+        etiqueta: typeof row.etiqueta === "string" ? row.etiqueta : null,
+      },
+    ];
+  });
+};
+
+const mapCasetaRow = (row: CasetaRow): GuardiaCasetaConfig => ({
+  desarrolloId: row.desarrollo_id,
+  lat: row.lat,
+  lng: row.lng,
+  radioMetros: row.radio_metros,
+  etiqueta: row.etiqueta,
+  puntosExtra: parseCasetaPuntosExtra(row.puntos_extra),
+});
 
 type MarcajeRow = {
   id: string;
@@ -87,7 +141,7 @@ export async function getCasetaConfig(desarrolloId: string): Promise<GuardiaCase
 
   const { data, error } = await supabase
     .from("guardia_caseta_config")
-    .select("desarrollo_id, lat, lng, radio_metros, etiqueta")
+    .select("desarrollo_id, lat, lng, radio_metros, etiqueta, puntos_extra")
     .eq("desarrollo_id", desarrolloId)
     .maybeSingle();
 
@@ -97,14 +151,7 @@ export async function getCasetaConfig(desarrolloId: string): Promise<GuardiaCase
   }
 
   if (data) {
-    const row = data as CasetaRow;
-    return {
-      desarrolloId: row.desarrollo_id,
-      lat: row.lat,
-      lng: row.lng,
-      radioMetros: row.radio_metros,
-      etiqueta: row.etiqueta,
-    };
+    return mapCasetaRow(data as CasetaRow);
   }
 
   const fallback = GUARDIA_CASETA_FALLBACK[desarrolloId];
@@ -214,7 +261,7 @@ export const getGuardiasHoyForAsesor = async (
       notas: (row.notas as string | null) ?? null,
       marcajes: { entrada, salida },
       caseta: {
-        etiqueta: caseta.etiqueta,
+        etiqueta: formatCasetaEtiquetaResumen(caseta),
         radioMetros: caseta.radioMetros,
       },
       pendiente: resolvePendiente(entrada, salida),
@@ -301,12 +348,15 @@ export async function registerGuardiaMarcaje(input: {
   }
 
   const caseta = await getCasetaConfig(input.desarrolloId);
-  const distanciaMetros = haversineMetros(input.lat, input.lng, caseta.lat, caseta.lng);
-  const dentroRadio = distanciaMetros <= caseta.radioMetros;
+  const evaluacion = evaluarMarcajeCaseta(input.lat, input.lng, caseta);
+  const distanciaMetros = evaluacion.distanciaMetros;
+  const dentroRadio = evaluacion.dentroRadio;
 
   if (!dentroRadio) {
+    const ubicaciones =
+      formatCasetaEtiquetaResumen(caseta) ?? "oficina comercial o caseta de ventas";
     throw new Error(
-      `Estás a ${Math.round(distanciaMetros)} m de la caseta. Debes estar a ${caseta.radioMetros} m o menos (${caseta.etiqueta ?? "caseta de ventas"}).`,
+      `Estás a ${Math.round(distanciaMetros)} m del punto más cercano. Debes estar a ${evaluacion.radioMetros} m o menos (${ubicaciones}).`,
     );
   }
 
