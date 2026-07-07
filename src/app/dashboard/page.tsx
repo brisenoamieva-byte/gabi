@@ -15,6 +15,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AsesorDashboardCrmHero } from "@/components/asesor/AsesorDashboardCrmHero";
+import { AsesorBackofficeLink } from "@/components/asesor/AsesorBackofficeLink";
 import { AsesorGuardiaHoyCard } from "@/components/asesor/AsesorGuardiaHoyCard";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
@@ -94,6 +95,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <AsesorBackofficeLink rol={user.rol} desarrolloId={desarrollo.id} />
             <button
               type="button"
               onClick={handleChangeDevelopment}
@@ -215,6 +217,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
           className="grid gap-2 sm:grid-cols-2"
         >
+          <AsesorBackofficeLink rol={user.rol} desarrolloId={desarrollo.id} variant="card" />
           <Link
             href="/mis-leads"
             className="group flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-[#201044]/12 hover:shadow-md active:scale-[0.99]"

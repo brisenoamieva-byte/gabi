@@ -16,17 +16,13 @@ export function AsesorExpedienteApartadoPanel({
   etapa,
 }: AsesorExpedienteApartadoPanelProps) {
   const [expediente, setExpediente] = useState<AsesorExpedienteSummary | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [uploadingCodigo, setUploadingCodigo] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const showPanel = etapa === "apartado" || etapa === "vendido";
+  const etapaApartadoOVendido = etapa === "apartado" || etapa === "vendido";
 
   const load = useCallback(async () => {
-    if (!showPanel) {
-      return;
-    }
-
     setLoading(true);
     setError("");
 
@@ -49,7 +45,7 @@ export function AsesorExpedienteApartadoPanel({
     } finally {
       setLoading(false);
     }
-  }, [asesorId, prospectoId, showPanel]);
+  }, [asesorId, prospectoId]);
 
   useEffect(() => {
     void load();
@@ -83,6 +79,8 @@ export function AsesorExpedienteApartadoPanel({
       setUploadingCodigo(null);
     }
   };
+
+  const showPanel = etapaApartadoOVendido || Boolean(expediente) || loading;
 
   if (!showPanel) {
     return null;
@@ -121,11 +119,11 @@ export function AsesorExpedienteApartadoPanel({
         <p className="mt-3 text-sm text-red-700">{error}</p>
       ) : null}
 
-      {!loading && !expediente ? (
+      {!loading && !expediente && etapaApartadoOVendido ? (
         <p className="mt-3 text-sm text-emerald-900">
           {etapa === "apartado"
-            ? "Aún no hay operación en sembrado para este apartado. Si acabas de reportarlo, recarga en un momento."
-            : "Cuando el cliente aparte, usa «Reportar apartado» en el prospecto para registrar la unidad en sembrado e iniciar el expediente."}
+            ? "Aún no hay operación en sembrado para este apartado. Si acabas de solicitarlo, recarga en un momento."
+            : "Expediente en preparación. Si falta información, contacta a gerencia."}
         </p>
       ) : null}
 

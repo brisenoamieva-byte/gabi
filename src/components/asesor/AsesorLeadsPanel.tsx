@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
-import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
+import { SolicitarApartadoModal } from "@/components/asesor/SolicitarApartadoModal";
 import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedienteApartadoPanel";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
@@ -26,6 +26,7 @@ import type { ProspectoDetail, ProspectoListRow, ProspectosResumen } from "@/lib
 import { prefillCotizadorFromProspecto } from "@/lib/asesores/prefill-cotizador-client";
 import {
   ETAPAS_ASESOR,
+  prospectoAsesorPuedeCotizarOSolicitarApartado,
   prospectoEtapaEditableByAsesor,
 } from "@/lib/asesores/prospectos-client";
 import {
@@ -114,6 +115,8 @@ function AsesorLeadDrawer({
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
+  const [solicitudPendiente, setSolicitudPendiente] = useState(false);
+  const [tieneOperacionActiva, setTieneOperacionActiva] = useState(false);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -141,6 +144,26 @@ function AsesorLeadDrawer({
         setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
         setNotas(data.prospecto.notas ?? "");
       }
+
+      const solicitudRes = await fetch(
+        `/api/asesores/prospectos/${prospectoId}/solicitud-apartado?asesorId=${encodeURIComponent(asesorId)}`,
+      );
+      if (solicitudRes.ok) {
+        const solicitudData = (await solicitudRes.json()) as { solicitud?: { id: string } | null };
+        setSolicitudPendiente(Boolean(solicitudData.solicitud));
+      }
+
+      const expedienteRes = await fetch(
+        `/api/asesores/expedientes?asesorId=${encodeURIComponent(asesorId)}&prospectoId=${encodeURIComponent(prospectoId)}`,
+      );
+      if (expedienteRes.ok) {
+        const expedienteData = (await expedienteRes.json()) as {
+          expediente?: { operacionId: string } | null;
+        };
+        setTieneOperacionActiva(Boolean(expedienteData.expediente));
+      } else {
+        setTieneOperacionActiva(false);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
     } finally {
@@ -153,8 +176,11 @@ function AsesorLeadDrawer({
   }, [loadDetail]);
 
   const etapaEditable = detail ? prospectoEtapaEditableByAsesor(detail.etapa) : false;
-  const puedeReportarApartado =
-    detail != null && detail.etapa !== "vendido" && detail.etapa !== "perdido";
+  const puedeAccionesComerciales =
+    detail != null &&
+    prospectoAsesorPuedeCotizarOSolicitarApartado(detail.etapa) &&
+    !tieneOperacionActiva;
+  const puedeSolicitarApartado = puedeAccionesComerciales && !solicitudPendiente;
 
   const isEtapaOptionAllowed = (target: ProspectoEtapa) => {
     if (!detail || !playbook?.config?.enabled || !playbook.config.blockEtapa) {
@@ -326,14 +352,14 @@ function AsesorLeadDrawer({
                   <p className="font-bold">Cadencia agotada (8 días sin respuesta)</p>
                   <p className="mt-1 text-xs text-amber-900">
                     Si el prospecto no mostró interés, cambia la etapa a{" "}
-                    <strong>Perdido</strong> para liberar tu bandeja.
+                    <strong>{prospectoEtapaLabel.perdido}</strong> para liberar tu bandeja.
                   </p>
                   <button
                     type="button"
                     onClick={() => setEtapa("perdido")}
                     className="mt-2 text-xs font-bold text-[#201044] underline-offset-2 hover:underline"
                   >
-                    Marcar como Perdido
+                    Marcar como {prospectoEtapaLabel.perdido}
                   </button>
                 </div>
               ) : null}
@@ -434,24 +460,30 @@ function AsesorLeadDrawer({
 
         {detail ? (
           <div className="space-y-2 border-t border-slate-100 p-5">
-            {puedeReportarApartado ? (
+            {puedeSolicitarApartado ? (
               <button
                 type="button"
                 onClick={() => setApartadoModalOpen(true)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900"
               >
                 <ShoppingBag className="h-4 w-4" />
-                Reportar apartado
+                Solicitar apartado a gerencia
               </button>
+            ) : solicitudPendiente && puedeAccionesComerciales ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900">
+                Solicitud de apartado pendiente — gerencia la registrará en sembrado.
+              </p>
             ) : null}
-            <Link
-              href="/cotizador"
-              onClick={() => prefillCotizadorFromProspecto(detail)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 py-3 text-sm font-bold text-[#201044]"
-            >
-              <Calculator className="h-4 w-4" />
-              Cotizar
-            </Link>
+            {puedeAccionesComerciales ? (
+              <Link
+                href="/cotizador"
+                onClick={() => prefillCotizadorFromProspecto(detail)}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 py-3 text-sm font-bold text-[#201044]"
+              >
+                <Calculator className="h-4 w-4" />
+                Cotizar
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={() => void handleSave()}
@@ -466,14 +498,14 @@ function AsesorLeadDrawer({
       </div>
 
       {apartadoModalOpen && detail ? (
-        <RegistrarApartadoModal
-          channel="asesor"
+        <SolicitarApartadoModal
           asesorId={asesorId}
-          desarrolloId={detail.desarrollo_id}
+          desarrolloNombre={desarrolloNombre}
           prospectoId={prospectoId}
           onClose={() => setApartadoModalOpen(false)}
           onSuccess={() => {
             setApartadoModalOpen(false);
+            setSolicitudPendiente(true);
             void loadDetail();
             onUpdated();
           }}
@@ -963,10 +995,9 @@ export function AsesorLeadsPanel({
       ) : null}
 
       {kanbanApartadoProspectoId ? (
-        <RegistrarApartadoModal
-          channel="asesor"
+        <SolicitarApartadoModal
           asesorId={asesorId}
-          desarrolloId={desarrolloId}
+          desarrolloNombre={desarrolloNombre}
           prospectoId={kanbanApartadoProspectoId}
           onClose={() => setKanbanApartadoProspectoId(null)}
           onSuccess={() => {

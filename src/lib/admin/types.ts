@@ -72,9 +72,9 @@ export const adminNavItems: AdminNavItem[] = [
     ready: true,
   },
   {
-    href: "/admin/inventario",
-    label: "Productos",
-    description: "Unidades curadas para mostrar en visita",
+    href: "/admin/sembrado",
+    label: "Sembrado",
+    description: "Inventario, apartados, operaciones y curación para recorrido",
     paso: 2,
     ready: true,
   },

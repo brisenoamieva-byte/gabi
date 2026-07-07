@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { AsesorLeadsPanel } from "@/components/asesor/AsesorLeadsPanel";
+import { AsesorBackofficeLink } from "@/components/asesor/AsesorBackofficeLink";
 import { formatPrice } from "@/lib/data";
 import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
@@ -35,7 +36,9 @@ function MisLeadsContent() {
             <ArrowLeft className="h-4 w-4" />
             Dashboard
           </Link>
-          <button
+          <div className="flex items-center gap-2">
+            <AsesorBackofficeLink rol={user.rol} desarrolloId={desarrollo.id} />
+            <button
             type="button"
             onClick={() => logoutAsesorSession(router)}
             aria-label="Cerrar sesión"
@@ -43,6 +46,7 @@ function MisLeadsContent() {
           >
             <LogOut className="h-4 w-4" />
           </button>
+          </div>
         </div>
       </header>
 

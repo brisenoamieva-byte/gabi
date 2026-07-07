@@ -57,6 +57,14 @@ export const normalizeMedioPublicitarioSelect = (raw: string | null | undefined)
   return match ?? trimmed;
 };
 
+export const resolveMedioPublicitarioFromProspecto = (prospecto: {
+  medio_publicitario?: string | null;
+  medio_contacto?: string | null;
+}): string =>
+  normalizeMedioPublicitarioSelect(
+    prospecto.medio_publicitario ?? prospecto.medio_contacto ?? "",
+  );
+
 export const normalizeEquipoVentaSelect = (raw: string | null | undefined): string => {
   const value = (raw ?? "").trim().toLowerCase();
   if (!value) {

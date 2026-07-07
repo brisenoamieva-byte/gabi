@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   assertDesarrolloAccess,
-  canAccessModule,
+  canAccessInventarioApi,
 } from "@/lib/admin/permissions";
 import { replaceProductosForCluster } from "@/lib/admin/inventario-service";
 import { getAdminSession } from "@/lib/admin/session";
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  if (!canAccessModule(session.profile, "inventario")) {
+  if (!canAccessInventarioApi(session.profile)) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 

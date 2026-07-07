@@ -1,10 +1,8 @@
 import {
-  createOperacionApartado,
   getApartadoContextFromProspecto,
   getApartadoPrefill,
   mergeProspectoIntoPrefill,
   type ApartadoContextFromProspecto,
-  type CreateApartadoInput,
 } from "@/lib/admin/operaciones-service";
 import {
   assertAsesorDesarrollo,
@@ -17,7 +15,7 @@ const assertProspectoPuedeApartar = (etapa: string) => {
     throw new Error("Este prospecto ya está vendido.");
   }
   if (etapa === "perdido") {
-    throw new Error("No puedes apartar un prospecto marcado como perdido.");
+    throw new Error("No puedes apartar un prospecto marcado como descartado.");
   }
 };
 
@@ -72,30 +70,8 @@ export const getApartadoPrefillForAsesor = async (
   );
 };
 
-export const createApartadoForAsesor = async (
-  asesorId: string,
-  prospectoId: string,
-  input: CreateApartadoInput,
-) => {
-  const prospecto = await getProspectoForAsesor(asesorId, prospectoId);
-  await assertAsesorDesarrollo(asesorId, prospecto.desarrollo_id);
-  assertProspectoPuedeApartar(prospecto.etapa);
-  await assertSinOperacionActiva(prospectoId);
-
-  if (input.prospectoId && input.prospectoId !== prospectoId) {
-    throw new Error("Prospecto no coincide.");
-  }
-  if (input.desarrolloId !== prospecto.desarrollo_id) {
-    throw new Error("Desarrollo no coincide.");
-  }
-
-  return createOperacionApartado(
-    {
-      ...input,
-      prospectoId,
-      desarrolloId: prospecto.desarrollo_id,
-      estatusSembrado: input.estatusSembrado?.trim() || "Apartado",
-    },
-    undefined,
+export const createApartadoForAsesor = async () => {
+  throw new Error(
+    "Solo gerencia puede registrar apartados. Usa «Solicitar apartado a gerencia» para notificar al gerente.",
   );
 };

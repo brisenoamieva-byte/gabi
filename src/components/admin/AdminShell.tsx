@@ -83,7 +83,6 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
 
   const navItems = [
     { href: "/admin/documentos", label: "Documentos", ready: true },
-    { href: "/admin/inventario", label: "Inventario", ready: true },
     { href: "/admin/desarrollos", label: "Desarrollos", ready: true },
     { href: "/admin/leads", label: "Leads", ready: true },
     { href: "/admin/guardias", label: "Guardias", ready: true },
@@ -151,6 +150,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
               const Icon = navIcons[item.href as keyof typeof navIcons] ?? FileText;
               const active =
                 pathname === item.href ||
+                (item.href === "/admin/sembrado" && pathname === "/admin/inventario") ||
                 (item.href === "/admin/asesores" && pathname === "/admin/usuarios") ||
                 (item.href === "/admin/dmb" && pathname.startsWith("/admin/dmb/"));
 

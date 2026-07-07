@@ -5,7 +5,7 @@ import {
   getApartadoPrefill,
   type CreateApartadoInput,
 } from "@/lib/admin/operaciones-service";
-import { canAccessModule } from "@/lib/admin/permissions";
+import { canAccessModule, canRegisterApartado } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
 export async function GET(request: Request) {
@@ -62,6 +62,13 @@ export async function POST(request: Request) {
 
   if (!canAccessModule(session.profile, "sembrado")) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  }
+
+  if (!canRegisterApartado(session.profile)) {
+    return NextResponse.json(
+      { error: "Solo gerencia puede registrar apartados." },
+      { status: 403 },
+    );
   }
 
   try {

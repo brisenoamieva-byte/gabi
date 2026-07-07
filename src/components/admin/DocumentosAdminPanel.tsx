@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/documentos-scope";
 import type { DocumentoRecord } from "@/lib/admin/types";
 import type { Cluster, Desarrollo, DisponibilidadUnidad, Prototipo } from "@/lib/data";
+import { filterClustersByDesarrollo } from "@/lib/catalog/cluster-filter";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type DocumentosAdminPanelProps = {
@@ -94,9 +95,14 @@ export function DocumentosAdminPanel({
 
   const esFichaTecnica = categoria === "ficha_tecnica";
 
+  const clustersDisponibles = useMemo(
+    () => filterClustersByDesarrollo(clusters, desarrolloId),
+    [clusters, desarrolloId],
+  );
+
   const clusterSeleccionado = useMemo(
-    () => clusters.find((item) => item.id === clusterId),
-    [clusterId, clusters],
+    () => clustersDisponibles.find((item) => item.id === clusterId),
+    [clusterId, clustersDisponibles],
   );
 
   const etapasDisponibles = useMemo(
@@ -142,6 +148,13 @@ export function DocumentosAdminPanel({
   useEffect(() => {
     void loadDocumentos();
   }, [loadDocumentos]);
+
+  useEffect(() => {
+    if (!clustersDisponibles.some((item) => item.id === clusterId)) {
+      setClusterId("");
+      setPrototipoId("");
+    }
+  }, [clusterId, clustersDisponibles, desarrolloId]);
 
   useEffect(() => {
     if (esFichaTecnica) {
@@ -471,7 +484,11 @@ export function DocumentosAdminPanel({
               </span>
               <select
                 value={desarrolloId}
-                onChange={(event) => setDesarrolloId(event.target.value)}
+                onChange={(event) => {
+                  setDesarrolloId(event.target.value);
+                  setClusterId("");
+                  setPrototipoId("");
+                }}
                 className="input-cotizador"
               >
                 {desarrollos.map((item) => (
@@ -513,7 +530,7 @@ export function DocumentosAdminPanel({
                   required
                 >
                   <option value="">Selecciona cluster</option>
-                  {clusters.map((item) => (
+                  {clustersDisponibles.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.nombre}
                     </option>
@@ -575,7 +592,7 @@ export function DocumentosAdminPanel({
                       required
                     >
                       <option value="">Selecciona cluster</option>
-                      {clusters.map((item) => (
+                      {clustersDisponibles.map((item) => (
                         <option key={item.id} value={item.id}>
                           {item.nombre}
                         </option>

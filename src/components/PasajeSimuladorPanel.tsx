@@ -22,9 +22,7 @@ import {
 import { downloadPasajeSimuladorPdf } from "@/lib/cotizador/pasaje-simulador-pdf";
 import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
 import { formatAreaM2 } from "@/lib/format/money";
-import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
-import { enrichPasajeUnidad } from "@/lib/catalog/pasaje-unidad-detalles";
-import { isPasajeDepartamentosCluster } from "@/lib/catalog/pasaje-alamos-acabados";
+import { enrichPasajeUnidad, computePasajeSuperficieTotalM2 } from "@/lib/catalog/pasaje-unidad-detalles";
 import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
 import { saveCotizacionClient } from "@/lib/comercial/save-cotizacion-client";
 
@@ -330,7 +328,7 @@ const buildResumen = (
   if (supBodega) {
     supLines.push(`Bodega: ${supBodega}`);
   }
-  const supTotal = formatAreaM2(context.unidad?.superficieConstruccionM2);
+  const supTotal = formatAreaM2(computePasajeSuperficieTotalM2(context.unidad));
   if (supTotal) {
     supLines.push(`Sup. total: ${supTotal}`);
   }
@@ -343,7 +341,7 @@ const buildResumen = (
     `${tipoLabel} ${context.unidadNombre ?? "—"}`,
     context.prototipoNombre ? `Modelo: ${context.prototipoNombre}` : null,
     context.unidad?.nivel ? `Nivel: ${context.unidad.nivel}` : null,
-    context.clusterNombre ? `Cluster: ${context.clusterNombre}` : null,
+    context.clusterNombre ? `Producto: ${context.clusterNombre}` : null,
     ...supLines,
     `Entrega estimada: ${formatMonthYear(PASAJE_FECHA_ENTREGA)}`,
     "",
@@ -369,7 +367,8 @@ const buildResumen = (
     "",
     "Ejercicio de rentas (estimado):",
     `  · Renta mensual: ${formatPrice(result.rentaMensual)}`,
-    `  · Rendimiento anual estimado: ${formatPctShort(result.rendimientoTotalAnual)}`,
+    `  · Rendimiento rentas: ${formatPctShort(result.rendimientoRentasAnual)}`,
+    `  · Rendimiento total est.: ${formatPctShort(result.rendimientoTotalAnual)}`,
     "",
     "* Vigencia 7 días, sujeto a cambio sin previo aviso.",
     "* Apartado de $50,000 se aplica a cuenta de enganche.",
@@ -620,7 +619,7 @@ export function PasajeSimuladorPanel({
   const m2Interna = unidad?.superficieInternaM2 ?? null;
   const m2Externa = unidad?.superficieExternaM2 ?? null;
   const m2Bodega = unidad?.superficieBodegaM2 ?? null;
-  const m2Total = unidad?.superficieConstruccionM2 ?? prototipo?.construccionM2 ?? null;
+  const m2Total = computePasajeSuperficieTotalM2(unidad) ?? prototipo?.construccionM2 ?? null;
   const recamaras = prototipo?.recamaras ?? 0;
   const cajones = unidad?.cajones ?? null;
   const fmtM2 = (value: number | null) => formatAreaM2(value) || "—";
@@ -728,7 +727,7 @@ export function PasajeSimuladorPanel({
         <label className="block">
           <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
             <UserRound className="h-3.5 w-3.5" aria-hidden />
-            Prospecto
+            En atención a:
           </span>
           {onClienteNombreChange ? (
             <input
@@ -764,7 +763,7 @@ export function PasajeSimuladorPanel({
   const selectorBlock = showSelectors ? (
     <div className="grid gap-4">
       <label className="block">
-        <FieldLabel>Cluster</FieldLabel>
+        <FieldLabel>Producto</FieldLabel>
         <select
           value={clusterId}
           onChange={(event) => onClusterChange?.(event.target.value)}
@@ -827,7 +826,7 @@ export function PasajeSimuladorPanel({
             Selecciona un producto para cotizar
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Elige cluster, prototipo o unidad para correr el simulador con los precios reales.
+            Elige producto, prototipo o unidad para correr el simulador con los precios reales.
           </p>
         </div>
       </div>
@@ -888,10 +887,6 @@ export function PasajeSimuladorPanel({
         </div>
 
       </section>
-
-      {tipo === "departamento" && isPasajeDepartamentosCluster(clusterId) ? (
-        <PasajeAcabadosPanel compact />
-      ) : null}
 
       {tipo === "oficina" ? (
         <div className="rounded-xl bg-amber-50 px-4 py-2.5 text-center text-sm font-black uppercase tracking-wider text-amber-900 ring-1 ring-amber-200">
@@ -1169,7 +1164,7 @@ export function PasajeSimuladorPanel({
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">+ Plusvalía estimada</p>
+            <p className="text-xs text-slate-500">Rendimiento total est.</p>
             <p className="text-lg font-black tabular-nums text-[#6CC24A]">
               {formatPctShort(resultado.rendimientoTotalAnual)}
             </p>

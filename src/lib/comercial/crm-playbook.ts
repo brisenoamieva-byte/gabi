@@ -45,7 +45,7 @@ export const PLAYBOOK_PERFILAMIENTO_OBJETIVO =
 export const PERFILAMIENTO_VENTANAS_HORARIAS = ["9–11 h", "12–14 h", "17–19 h"] as const;
 
 const CADENCIA_HINT =
-  "Si no responde: día 1 (llamada + WA), pausa día 2, día 3 (WA + llamada), día 4 (llamada + WA), pausa 5–6, día 7 último intento → Perdido.";
+  "Si no responde: día 1 (llamada + WA), pausa día 2, día 3 (WA + llamada), día 4 (llamada + WA), pausa 5–6, día 7 último intento → Descartado.";
 
 const basePasos = (): PlaybookStep[] => [
   {

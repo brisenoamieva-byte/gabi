@@ -1,6 +1,6 @@
 import type { AdminProfile } from "@/lib/admin/types";
 import { listProspectos } from "@/lib/admin/prospectos-service";
-import { listSembradoUnidades } from "@/lib/admin/operaciones-service";
+import { listSembradoUnidades, listOperaciones } from "@/lib/admin/operaciones-service";
 import {
   getReporteSemanalSegments,
   type ReporteSemanalSegmentConfig,
@@ -102,6 +102,7 @@ function buildSegmentoReporte(
   desarrolloId: string,
   config: ReporteSemanalSegmentConfig,
   rows: SembradoUnidadRow[],
+  todasOperaciones: OperacionComercialRecord[],
   periodo: { desde: string; hasta: string },
   mes: { desde: string; hasta: string },
   mesAnterior: { desde: string; hasta: string },
@@ -112,6 +113,12 @@ function buildSegmentoReporte(
     config.clusterId === "__all__"
       ? rows
       : rows.filter((row) => row.clusterId === config.clusterId);
+
+  const rowByUnidadId = new Map(segmentRows.map((row) => [row.unidadId, row]));
+  const operacionesSegmento =
+    config.clusterId === "__all__"
+      ? todasOperaciones
+      : todasOperaciones.filter((op) => rowByUnidadId.has(op.unidad_id));
 
   let ventasSemana = 0;
   let apartadosSemana = 0;
@@ -197,10 +204,6 @@ function buildSegmentoReporte(
     if (isDateInRange(op.fecha_cierre, periodo.desde, periodo.hasta) && VENTA_ESTATUS.has(estatus)) {
       ventasSemana += 1;
     }
-    if (op.cancelada && isDateInRange(op.cancelada_at, periodo.desde, periodo.hasta)) {
-      cancelacionesSemana += 1;
-      canceladosLineas.push(toOperacionLinea(row, op));
-    }
 
     if (isDateInRange(op.fecha_cierre, mes.desde, mes.hasta) && VENTA_ESTATUS.has(estatus)) {
       ventasMes += 1;
@@ -213,6 +216,26 @@ function buildSegmentoReporte(
 
     cajaSemana += row.totalCobrado;
     modeloMap.set(modelo, modeloEntry);
+  }
+
+  for (const op of operacionesSegmento) {
+    if (!op.cancelada || !op.cancelada_at) {
+      continue;
+    }
+    if (!isDateInRange(op.cancelada_at, periodo.desde, periodo.hasta)) {
+      continue;
+    }
+    cancelacionesSemana += 1;
+    const row = rowByUnidadId.get(op.unidad_id);
+    if (row) {
+      canceladosLineas.push(toOperacionLinea(row, op));
+    }
+    if (isDateInRange(op.fecha_apartado, periodo.desde, periodo.hasta)) {
+      apartadosSemana += 1;
+    }
+    if (isDateInRange(op.fecha_apartado, mes.desde, mes.hasta)) {
+      apartadosMes += 1;
+    }
   }
 
   const totalUnidades = objetivos?.totalUnidades ?? segmentRows.length;
@@ -296,6 +319,7 @@ function buildSegmentoReporte(
 function buildGeneralSegmento(
   desarrolloId: string,
   rows: SembradoUnidadRow[],
+  todasOperaciones: OperacionComercialRecord[],
   periodo: { desde: string; hasta: string },
   mes: { desde: string; hasta: string },
   mesAnterior: { desde: string; hasta: string },
@@ -306,6 +330,7 @@ function buildGeneralSegmento(
     desarrolloId,
     { id: "general", label: "General", clusterId: "__all__" },
     rows,
+    todasOperaciones,
     periodo,
     mes,
     mesAnterior,
@@ -473,9 +498,10 @@ export async function getReporteComercialSemanal(
   const year = new Date(`${periodo.hasta}T12:00:00`).getUTCFullYear();
   const acumuladoDesde = `${year}-01-01`;
 
-  const [rows, prospectosSemana, prospectosMes, prospectosAcum, visitasCount, visitasMesMap, cotizacionesSemana] =
+  const [rows, todasOperaciones, prospectosSemana, prospectosMes, prospectosAcum, visitasCount, visitasMesMap, cotizacionesSemana] =
     await Promise.all([
       listSembradoUnidades({ desarrolloId: filters.desarrolloId }, profile),
+      listOperaciones({ desarrolloId: filters.desarrolloId, includeCanceladas: true }, profile),
       listProspectos(
         {
           desarrolloId: filters.desarrolloId,
@@ -526,6 +552,7 @@ export async function getReporteComercialSemanal(
           filters.desarrolloId,
           config,
           rows,
+          todasOperaciones,
           periodo,
           mes,
           mesAnterior,
@@ -537,6 +564,7 @@ export async function getReporteComercialSemanal(
         buildGeneralSegmento(
           filters.desarrolloId,
           rows,
+          todasOperaciones,
           periodo,
           mes,
           mesAnterior,

@@ -180,6 +180,7 @@ export function RegistrarApartadoModal({
   const [cotizacionHint, setCotizacionHint] = useState(false);
   const asesoresRef = useRef(asesores);
   const unidadesOpcionesRef = useRef(unidadesOpciones);
+  const prospectoMedioRef = useRef("");
   const initialLoadKeyRef = useRef<string | null>(null);
 
   asesoresRef.current = asesores;
@@ -201,6 +202,9 @@ export function RegistrarApartadoModal({
 
       if (prefill) {
         const nextForm = prefillToForm(prefill);
+        if (nextForm.medioPublicitario) {
+          prospectoMedioRef.current = nextForm.medioPublicitario;
+        }
         if (!nextForm.equipoVenta && esAsesor) {
           nextForm.equipoVenta = "Interno (BBR)";
         }
@@ -276,6 +280,11 @@ export function RegistrarApartadoModal({
 
           if (data.prefill) {
             const nextForm = prefillToForm(data.prefill);
+            if (!nextForm.medioPublicitario && prospectoMedioRef.current) {
+              nextForm.medioPublicitario = prospectoMedioRef.current;
+            } else if (nextForm.medioPublicitario) {
+              prospectoMedioRef.current = nextForm.medioPublicitario;
+            }
             setForm(nextForm);
             setCotizacionHint(data.prefill.cotizacionReciente);
             setPromotorAsesorId(
@@ -782,6 +791,11 @@ export function RegistrarApartadoModal({
                   <option value={form.medioPublicitario}>{form.medioPublicitario}</option>
                 ) : null}
               </select>
+              {desdeLead && form.medioPublicitario ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Medio del registro del prospecto — confirma o corrige si aplica.
+                </p>
+              ) : null}
             </Field>
             <Field label="Equipo de venta">
               <select

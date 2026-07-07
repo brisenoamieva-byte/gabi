@@ -11,13 +11,13 @@ export const PROSPECTO_ETAPAS = [
 export type ProspectoEtapa = (typeof PROSPECTO_ETAPAS)[number];
 
 export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
-  nuevo: "Nuevo",
+  nuevo: "Nuevo / Por Contactar",
   contactado: "Contactado",
   cita: "Cita",
   negociacion: "Negociación",
   apartado: "Apartado",
   vendido: "Vendido",
-  perdido: "Perdido",
+  perdido: "Descartado",
 };
 
 export const prospectoEtapaColor: Record<ProspectoEtapa, string> = {

@@ -162,7 +162,7 @@ export const sendGerenteComplianceDigestEmail = async (
       ? [
           "",
           "Cadencia de perfilamiento:",
-          `• Expiradas sin respuesta (revisar Perdido): ${cadencia.expiredCount}`,
+          `• Expiradas sin respuesta (revisar Descartado): ${cadencia.expiredCount}`,
           `• Toques vencidos hoy: ${cadencia.overdueTouchesTotal}`,
           `• Toques pendientes hoy: ${cadencia.dueTodayTotal}`,
         ]

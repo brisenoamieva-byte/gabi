@@ -10,6 +10,8 @@ export default async function AdminSembradoPage() {
     <SembradoAdminPanel
       desarrollos={catalog.allowedDesarrollos}
       scopeLabel={catalog.scopeLabel}
+      clusters={catalog.clusters}
+      prototipos={catalog.prototipos}
     />
   );
 }

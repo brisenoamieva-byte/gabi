@@ -65,10 +65,18 @@ export const canAccessModule = (profile: AdminProfile, module: AdminModule) => {
   return false;
 };
 
+/** APIs de curación masiva (misma tabla que sembrado). */
+export const canAccessInventarioApi = (profile: AdminProfile) =>
+  canAccessModule(profile, "inventario") || canAccessModule(profile, "sembrado");
+
 export const canDeleteProspectos = (profile: AdminProfile) => isSuperAdmin(profile);
 
 export const canReassignProspectos = (profile: AdminProfile) =>
   canAccessModule(profile, "leads");
+
+/** Solo gerente o superadmin registran apartados en sembrado. */
+export const canRegisterApartado = (profile: AdminProfile) =>
+  profile.rol === "gerente" || isSuperAdmin(profile);
 
 export const canAccessCrmComplianceApi = (profile: AdminProfile) =>
   canAccessModule(profile, "leads") || canAccessModule(profile, "compliance-coach");

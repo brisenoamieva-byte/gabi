@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, Clock, Download, Loader2, RefreshCw, Users } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { DesarrolloCadenciaReport } from "@/lib/comercial/cadencia-service";
+import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type CadenciaAdminPanelProps = {
@@ -190,7 +191,7 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 {report.expiredCount} cadencia(s) expirada(s) sin respuesta — revisar con asesores si
-                deben pasar a <strong>Perdido</strong>.
+                deben pasar a <strong>{prospectoEtapaLabel.perdido}</strong>.
               </span>
             </div>
           ) : null}

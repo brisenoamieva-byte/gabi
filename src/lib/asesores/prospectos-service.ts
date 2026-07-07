@@ -15,7 +15,11 @@ import {
   buildProspectoTelefonoDuplicadoMessage,
   validateProspectoTelefono,
 } from "@/lib/comercial/prospecto-telefono";
-import { bootstrapCadenciaForProspecto, pauseCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import {
+  bootstrapCadenciaForProspecto,
+  pauseCadenciaForProspecto,
+} from "@/lib/comercial/cadencia-service";
+import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-form-options";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -146,6 +150,10 @@ export const createProspectoForAsesor = async (
 
   const telefono = telefonoValidation.telefono;
   const email = input.email?.trim();
+  const medioContacto = input.medioContacto?.trim();
+  const medioPublicitario = resolveMedioPublicitarioFromProspecto({
+    medio_contacto: medioContacto,
+  });
 
   const duplicate = await findProspectoByTelefonoInDesarrollo(input.desarrolloId, telefono);
   if (duplicate) {
@@ -171,7 +179,8 @@ export const createProspectoForAsesor = async (
     nombre,
     email,
     telefono,
-    medioContacto: input.medioContacto?.trim(),
+    medioContacto,
+    medioPublicitario: medioPublicitario || undefined,
     asesorId,
     etapa: "nuevo" as const,
     notas: input.notas?.trim(),
@@ -243,4 +252,8 @@ export const updateProspectoForAsesor = async (
   return getProspectoForAsesor(asesorId, prospectoId);
 };
 
-export { ETAPAS_ASESOR, prospectoEtapaEditableByAsesor } from "@/lib/asesores/prospectos-client";
+export {
+  ETAPAS_ASESOR,
+  prospectoAsesorPuedeCotizarOSolicitarApartado,
+  prospectoEtapaEditableByAsesor,
+} from "@/lib/asesores/prospectos-client";

@@ -241,7 +241,7 @@ export function AsesorDashboardCrmHero({
               <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" />
               <span className="flex-1">
                 {cadenciaBrief?.expiredCount} cadencia(s) expirada(s) sin respuesta — revisa si deben
-                pasar a Perdido.
+                pasar a {prospectoEtapaLabel.perdido}.
               </span>
               <ArrowRight className="h-4 w-4 shrink-0 text-amber-200" />
             </Link>

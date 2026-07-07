@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Building2, Home, Layers, Loader2, Plus, RefreshCw, Smartphone } from "lucide-react";
-import type { Desarrollo } from "@/lib/data";
+import { useSearchParams } from "next/navigation";
+import { Building2, ClipboardList, Home, Layers, Loader2, Plus, RefreshCw, Smartphone, Table2 } from "lucide-react";
+import type { Cluster, Desarrollo, Prototipo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
+import { InventarioAdminPanel } from "@/components/admin/InventarioAdminPanel";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer";
@@ -22,7 +24,11 @@ import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 type SembradoAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  clusters: Cluster[];
+  prototipos: Prototipo[];
 };
+
+type SembradoVista = "sembrado" | "curacion";
 
 type Resumen = {
   total: number;
@@ -238,8 +244,17 @@ type SembradoSegmentoId = string;
 const defaultSegmentoForDesarrollo = (id: string): SembradoSegmentoId =>
   getDefaultSembradoSegmentId(id) ?? "general";
 
-export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPanelProps) {
+export function SembradoAdminPanel({
+  desarrollos,
+  scopeLabel,
+  clusters,
+  prototipos,
+}: SembradoAdminPanelProps) {
+  const searchParams = useSearchParams();
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
+  const [vista, setVista] = useState<SembradoVista>(
+    searchParams.get("seccion") === "curacion" ? "curacion" : "sembrado",
+  );
   const [segmento, setSegmento] = useState<SembradoSegmentoId>(() =>
     defaultSegmentoForDesarrollo(desarrolloId),
   );
@@ -389,10 +404,12 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
                 ? `Inventario completo por segmento — ${segmentoConfig?.label ?? "selecciona segmento"}.`
                 : "Todas las unidades del desarrollo: estatus comercial, precios, cobranza y curación para recorrido."}
               {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}{" "}
-              Los apartados reportados desde CRM aparecen aquí al pulsar <strong>Actualizar</strong>.
+              Apartados, precios, cobranza y curación para recorrido en un solo lugar.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {vista === "sembrado" ? (
+              <>
             {unidadesPendientes.length ? (
               <button
                 type="button"
@@ -428,57 +445,111 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
               <Smartphone className="h-4 w-4" />
               Vista campo
             </Link>
+              </>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
-            <select
-              value={desarrolloId}
-              onChange={(event) => {
-                const nextId = event.target.value;
-                setDesarrolloId(nextId);
-                setSegmento(defaultSegmentoForDesarrollo(nextId));
-              }}
-              className="rounded-xl border border-slate-200 px-3 py-2"
-            >
-              {desarrollos.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-slate-600">Estatus</span>
-            <select
-              value={estatusFilter}
-              onChange={(event) => setEstatusFilter(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3 py-2"
-            >
-              <option value="">Todos</option>
-              {estatusOptions.map(([estatus, count]) => (
-                <option key={estatus} value={estatus}>
-                  {estatusSembradoLabel[estatus] ?? estatus} ({count})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex items-end gap-2 pb-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!showAllUnits}
-              onChange={(event) => setShowAllUnits(!event.target.checked)}
-              className="rounded border-slate-300"
-            />
-            <span className="font-semibold text-slate-600">Solo con operación activa</span>
-          </label>
+        <div className="mt-5 flex flex-wrap gap-2 border-b border-slate-100 pb-4">
+          <button
+            type="button"
+            onClick={() => setVista("sembrado")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
+              vista === "sembrado"
+                ? "bg-gabi-forest text-white"
+                : "border border-slate-200 bg-white text-gabi-forest"
+            }`}
+          >
+            <ClipboardList className="h-4 w-4" />
+            Sembrado y operaciones
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista("curacion")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
+              vista === "curacion"
+                ? "bg-gabi-forest text-white"
+                : "border border-slate-200 bg-white text-gabi-forest"
+            }`}
+          >
+            <Table2 className="h-4 w-4" />
+            Curación e importación CSV
+          </button>
         </div>
+
+        {vista === "sembrado" ? (
+          <div className="mt-5 flex flex-wrap gap-3">
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
+              <select
+                value={desarrolloId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setDesarrolloId(nextId);
+                  setSegmento(defaultSegmentoForDesarrollo(nextId));
+                }}
+                className="rounded-xl border border-slate-200 px-3 py-2"
+              >
+                {desarrollos.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Estatus</span>
+              <select
+                value={estatusFilter}
+                onChange={(event) => setEstatusFilter(event.target.value)}
+                className="rounded-xl border border-slate-200 px-3 py-2"
+              >
+                <option value="">Todos</option>
+                {estatusOptions.map(([estatus, count]) => (
+                  <option key={estatus} value={estatus}>
+                    {estatusSembradoLabel[estatus] ?? estatus} ({count})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-end gap-2 pb-2 text-sm">
+              <input
+                type="checkbox"
+                checked={!showAllUnits}
+                onChange={(event) => setShowAllUnits(!event.target.checked)}
+                className="rounded border-slate-300"
+              />
+              <span className="font-semibold text-slate-600">Solo con operación activa</span>
+            </label>
+          </div>
+        ) : (
+          <div className="mt-5">
+            <label className="block max-w-md text-sm">
+              <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
+              <select
+                value={desarrolloId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setDesarrolloId(nextId);
+                  setSegmento(defaultSegmentoForDesarrollo(nextId));
+                }}
+                className="rounded-xl border border-slate-200 px-3 py-2"
+              >
+                {desarrollos.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
       </div>
 
+      {vista === "sembrado" ? (
+        <>
       {tieneSegmentos ? (
         <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
           {segmentTabs.map(({ id, label, icon: Icon }) => (
@@ -602,6 +673,19 @@ export function SembradoAdminPanel({ desarrollos, scopeLabel }: SembradoAdminPan
           onSuccess={() => void loadSembrado()}
         />
       ) : null}
+        </>
+      ) : (
+        <InventarioAdminPanel
+          embedded
+          desarrollos={desarrollos}
+          scopeLabel={scopeLabel}
+          clusters={clusters}
+          prototipos={prototipos}
+          desarrolloIdOverride={desarrolloId}
+          clusterIdOverride={activeClusterId}
+          onUnitsChanged={() => void loadSembrado()}
+        />
+      )}
     </div>
   );
 }

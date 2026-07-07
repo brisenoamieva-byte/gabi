@@ -461,7 +461,7 @@ const expireCadenciaIfNoResponse = async (cadenciaId: string) => {
   }
 
   const now = new Date().toISOString();
-  const pauseReason = "Cadencia completada sin respuesta — revisar si marcar Perdido.";
+  const pauseReason = "Cadencia completada sin respuesta — revisar si marcar Descartado.";
 
   const { data: cadencia } = await supabase
     .from("prospecto_cadencia")
@@ -481,7 +481,7 @@ const expireCadenciaIfNoResponse = async (cadenciaId: string) => {
   }
 
   const cadenciaNote =
-    "[GABI · Cadencia] Secuencia de 8 días completada sin respuesta. Mover a Perdido si no hay interés.";
+    "[GABI · Cadencia] Secuencia de 8 días completada sin respuesta. Mover a Descartado si no hay interés.";
 
   const { data: prospecto } = await supabase
     .from("prospectos")

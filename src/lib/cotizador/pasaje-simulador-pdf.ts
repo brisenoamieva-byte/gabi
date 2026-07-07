@@ -1,13 +1,13 @@
 import type { DisponibilidadUnidad } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import { formatAreaM2 } from "@/lib/format/money";
+import { computePasajeSuperficieTotalM2 } from "@/lib/catalog/pasaje-unidad-detalles";
 import {
   formatMonthYear,
   formatPctShort,
   type PasajeSimuladorResultado,
   type PasajeUnidadTipo,
 } from "@/lib/cotizador/pasaje-simulador";
-import { getPasajeDeptosAcabados } from "@/lib/catalog/pasaje-alamos-acabados";
 
 export type PasajeSimuladorPdfInput = {
   desarrolloNombre: string;
@@ -314,7 +314,7 @@ function drawHeader(
   caps(doc, "Elaboración", right, y + 7, { color: MUTED_ON_DARK, size: 5.5, align: "right", maxW: dateW });
   text(doc, fechaDoc, right, y + 12, { size: 7.5, color: WHITE, align: "right", maxW: dateW });
 
-  caps(doc, "Prospecto", left, y + h - 10, { color: MUTED_ON_DARK, size: 5.5 });
+  caps(doc, "En atención a:", left, y + h - 10, { color: MUTED_ON_DARK, size: 5.5 });
   text(doc, input.clienteNombre?.trim() || "Sin nombre", left, y + h - 5, {
     size: 9.5,
     bold: true,
@@ -359,7 +359,7 @@ export async function downloadPasajeSimuladorPdf(
   // —— Producto (specs en 3 columnas) ——
   const specs: Array<[string, string]> = [];
   if (input.prototipoNombre) specs.push(["Modelo", input.prototipoNombre]);
-  if (input.clusterNombre) specs.push(["Cluster", input.clusterNombre]);
+  if (input.clusterNombre) specs.push(["Producto", input.clusterNombre]);
   if (input.unidad?.nivel) specs.push(["Nivel", input.unidad.nivel]);
   if (input.recamaras) specs.push(["Recámaras", String(input.recamaras)]);
   if (input.unidad?.cajones) specs.push(["Cajones", String(input.unidad.cajones)]);
@@ -371,7 +371,7 @@ export async function downloadPasajeSimuladorPdf(
   pushArea("Sup. interna", input.unidad?.superficieInternaM2);
   pushArea("Terraza / balcón", input.unidad?.superficieExternaM2);
   pushArea("Bodega", input.unidad?.superficieBodegaM2);
-  pushArea("Sup. total", input.unidad?.superficieConstruccionM2);
+  pushArea("Sup. total", computePasajeSuperficieTotalM2(input.unidad));
 
   const specCols = 3;
   const specRows = Math.ceil(specs.length / specCols);
@@ -545,8 +545,8 @@ export async function downloadPasajeSimuladorPdf(
   const rentColW = innerW / 3;
   const rentMetrics = [
     { label: "Renta mensual", value: formatPrice(r.rentaMensual) },
-    { label: "Rend. rentas", value: formatPctShort(r.rendimientoRentasAnual) },
-    { label: "Rend. total est.", value: formatPctShort(r.rendimientoTotalAnual), color: GREEN },
+    { label: "Rendimiento rentas", value: formatPctShort(r.rendimientoRentasAnual) },
+    { label: "Rendimiento total est.", value: formatPctShort(r.rendimientoTotalAnual), color: GREEN },
   ];
   rentMetrics.forEach((metric, index) => {
     const cx = left + index * rentColW;
@@ -561,42 +561,10 @@ export async function downloadPasajeSimuladorPdf(
 
   y += rentasH + PAGE.gap;
 
-  // —— Acabados (resumen Anexo C, solo departamentos) ——
-  if (input.tipo === "departamento") {
-    const { pdfResumen, noIncluye } = getPasajeDeptosAcabados();
-    const acabadosH = 22;
-    setFill(doc, WHITE);
-    setDraw(doc, BORDER);
-    doc.setLineWidth(0.15);
-    roundedRect(doc, PAGE.marginX, y, contentW, acabadosH, "FD", 2);
-    caps(doc, "Acabados incluidos · Anexo C", left, y + 4.5, { color: ACCENT, size: 6 });
-
-    const colW = innerW / 2;
-    pdfResumen.forEach((line, index) => {
-      const col = index % 2;
-      const row = Math.floor(index / 2);
-      text(doc, `· ${line}`, left + col * colW, y + 9 + row * 3.2, {
-        size: 5.5,
-        color: INK,
-        maxW: colW - 3,
-      });
-    });
-
-    const noIncluyeLine = `No incluye: ${noIncluye.slice(0, 2).join("; ")}…`;
-    text(doc, noIncluyeLine, left, y + acabadosH - 3, {
-      size: 5,
-      color: MUTED,
-      maxW: innerW,
-    });
-
-    y += acabadosH + PAGE.gap;
-  }
-
   // Pie fijo al fondo (nunca se superpone)
   drawFooter(doc, pageW, pageH, contentW);
 
-  // Sanity: el contenido no debe invadir el pie
-  if (y + rentasH > footerTop - 2) {
+  if (y > footerTop - 2) {
     console.warn("[pasaje-simulador-pdf] El contenido excede el área útil de una página.");
   }
 

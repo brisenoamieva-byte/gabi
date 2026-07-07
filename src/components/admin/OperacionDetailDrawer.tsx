@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FolderOpen, Loader2, Save, X } from "lucide-react";
+import { FolderOpen, Loader2, Save, Trash2, X } from "lucide-react";
 import type { OperacionDetail } from "@/lib/admin/operaciones-service";
 import {
   ESTATUS_SEMBRADO,
@@ -103,6 +103,9 @@ export function OperacionDetailDrawer({
   const [form, setForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
   const [error, setError] = useState("");
 
   const loadDetail = useCallback(async () => {
@@ -211,6 +214,40 @@ export function OperacionDetailDrawer({
       setError(submitError instanceof Error ? submitError.message : "Error al guardar.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const puedeCancelar =
+    detail != null &&
+    !detail.operacion.cancelada &&
+    detail.operacion.estatus_sembrado !== "Vendidas Cobradas";
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/operaciones/${operacionId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          motivo: motivoCancelacion.trim() || undefined,
+          prospectoEtapa: "cita",
+        }),
+      });
+
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo cancelar el apartado.");
+      }
+
+      onSuccess();
+      onClose();
+    } catch (cancelError) {
+      setError(cancelError instanceof Error ? cancelError.message : "Error al cancelar.");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -403,6 +440,60 @@ export function OperacionDetailDrawer({
 
           {form ? (
             <div className="space-y-2 border-t border-slate-100 p-5">
+              {puedeCancelar ? (
+                <div className="rounded-xl border border-red-100 bg-red-50/60 p-4">
+                  {!confirmCancel ? (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmCancel(true)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Cancelar apartado
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-red-800">
+                        La unidad volverá a disponible. El historial del apartado se conserva para
+                        reportes (cliente, fechas, cobranza, medio).
+                      </p>
+                      <Field label="Motivo (opcional)">
+                        <textarea
+                          value={motivoCancelacion}
+                          onChange={(event) => setMotivoCancelacion(event.target.value)}
+                          className={`${inputClass} min-h-[72px]`}
+                          placeholder="Ej. cliente desistió, cambió de unidad, no pasó crédito…"
+                        />
+                      </Field>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmCancel(false);
+                            setMotivoCancelacion("");
+                          }}
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600"
+                        >
+                          No, volver
+                        </button>
+                        <button
+                          type="button"
+                          disabled={cancelling}
+                          onClick={() => void handleCancel()}
+                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                        >
+                          {cancelling ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          Confirmar cancelación
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
               {onOpenExpediente ? (
                 <button
                   type="button"

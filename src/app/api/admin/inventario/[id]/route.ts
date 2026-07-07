@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   assertDesarrolloAccess,
-  canAccessModule,
+  canAccessInventarioApi,
 } from "@/lib/admin/permissions";
 import {
   deactivateProductoRecomendado,
@@ -20,7 +20,7 @@ export async function PATCH(
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  if (!canAccessModule(session.profile, "inventario")) {
+  if (!canAccessInventarioApi(session.profile)) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
@@ -62,7 +62,7 @@ export async function DELETE(
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  if (!canAccessModule(session.profile, "inventario")) {
+  if (!canAccessInventarioApi(session.profile)) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 

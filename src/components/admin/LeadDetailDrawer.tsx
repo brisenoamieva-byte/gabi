@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Save, ShoppingBag, Trash2, X } from "lucide-react";
+import { AlertTriangle, Bell, Loader2, Save, ShoppingBag, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
@@ -16,6 +16,7 @@ import {
 } from "@/lib/comercial/prospecto-etapas";
 import { formatXperienceLeadId } from "@/lib/comercial/xperience-catalog-ids";
 import { XPERIENCE_CALIFICACIONES } from "@/lib/comercial/xperience-leads";
+import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
 import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
 
 type LeadDetailDrawerProps = {
@@ -50,6 +51,7 @@ type AsesorOption = {
 type AdminMe = {
   canDeleteProspectos?: boolean;
   canReassignProspectos?: boolean;
+  canRegisterApartado?: boolean;
 };
 
 export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetailDrawerProps) {
@@ -68,10 +70,13 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [adminMe, setAdminMe] = useState<AdminMe>({});
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
+  const [solicitudApartado, setSolicitudApartado] = useState<SolicitudApartadoRow | null>(null);
   const [compliance, setCompliance] = useState<ProspectoComplianceRow | null>(null);
 
   const puedeRegistrarApartado =
-    detail != null && !["apartado", "vendido", "perdido"].includes(detail.etapa);
+    adminMe.canRegisterApartado &&
+    detail != null &&
+    !["apartado", "vendido", "perdido"].includes(detail.etapa);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -129,6 +134,18 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
           setCompliance(complianceData.compliance ?? null);
         } else {
           setCompliance(null);
+        }
+
+        const solicitudResponse = await fetch(
+          `/api/admin/solicitudes-apartado?prospectoId=${encodeURIComponent(prospectoId)}`,
+        );
+        if (solicitudResponse.ok) {
+          const solicitudData = (await solicitudResponse.json()) as {
+            solicitud?: SolicitudApartadoRow | null;
+          };
+          setSolicitudApartado(solicitudData.solicitud ?? null);
+        } else {
+          setSolicitudApartado(null);
         }
       }
     } catch (loadError) {
@@ -278,6 +295,35 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
               ) : compliance ? (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                   Playbook al día · confianza {compliance.confidencePct}%
+                </div>
+              ) : null}
+
+              {solicitudApartado ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="flex items-center gap-2 font-bold">
+                    <Bell className="h-4 w-4 shrink-0" />
+                    Solicitud de apartado del asesor
+                  </p>
+                  <p className="mt-1">
+                    {solicitudApartado.asesorNombre ?? "Asesor"} solicitó registrar apartado
+                    {solicitudApartado.unidadNumero
+                      ? ` (unidad sugerida: ${solicitudApartado.unidadNumero})`
+                      : ""}
+                    .
+                  </p>
+                  {solicitudApartado.notas ? (
+                    <p className="mt-2 text-xs opacity-90">Notas: {solicitudApartado.notas}</p>
+                  ) : null}
+                  {puedeRegistrarApartado ? (
+                    <button
+                      type="button"
+                      onClick={() => setApartadoModalOpen(true)}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gabi-forest px-3 py-2 text-xs font-bold text-white"
+                    >
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                      Registrar apartado
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -544,9 +590,11 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         <RegistrarApartadoModal
           desarrolloId={detail.desarrollo_id}
           prospectoId={prospectoId}
+          initialUnidadId={solicitudApartado?.unidad_id ?? undefined}
           onClose={() => setApartadoModalOpen(false)}
           onSuccess={() => {
             setApartadoModalOpen(false);
+            setSolicitudApartado(null);
             void loadDetail();
             onUpdated();
           }}

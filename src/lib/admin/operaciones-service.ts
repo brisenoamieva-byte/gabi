@@ -5,6 +5,8 @@ import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import { getProspectoById } from "@/lib/admin/prospectos-service";
 import { prospectoEtapaFromSembrado } from "@/lib/comercial/prospecto-etapas";
+import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-form-options";
+import { markSolicitudApartadoAtendida } from "@/lib/comercial/solicitud-apartado-service";
 import { resolveUnidadEstatus } from "@/lib/comercial/unidad-disponibilidad";
 import {
   sembradoToInventarioEstatus,
@@ -314,10 +316,7 @@ export const mergeProspectoIntoPrefill = (
   cotizacionId,
   clienteNombre: prospecto.nombre.trim(),
   origenCiudad: prospecto.origen_ciudad ?? prefill.origenCiudad,
-  medioPublicitario:
-    prospecto.medio_publicitario ??
-    prospecto.medio_contacto ??
-    prefill.medioPublicitario,
+  medioPublicitario: resolveMedioPublicitarioFromProspecto(prospecto) || prefill.medioPublicitario,
   equipoVenta: prospecto.equipo_venta ?? prefill.equipoVenta,
   promotorNombre: prospecto.promotor_nombre ?? prefill.promotorNombre,
   tipoInversion: prospecto.tipo_inversion ?? prefill.tipoInversion,
@@ -340,7 +339,7 @@ export const getApartadoContextFromProspecto = async (
   }
 
   if (prospecto.etapa === "vendido" || prospecto.etapa === "perdido") {
-    throw new Error("Este prospecto ya está cerrado (vendido o perdido).");
+    throw new Error("Este prospecto ya está cerrado (vendido o descartado).");
   }
 
   const cotizacion = prospecto.cotizaciones[0] ?? null;
@@ -366,7 +365,7 @@ export const getApartadoContextFromProspecto = async (
       cotizacionId: cotizacion?.id ?? null,
       clienteNombre: prospecto.nombre.trim(),
       origenCiudad: prospecto.origen_ciudad ?? null,
-      medioPublicitario: prospecto.medio_publicitario ?? prospecto.medio_contacto ?? null,
+      medioPublicitario: resolveMedioPublicitarioFromProspecto(prospecto),
       equipoVenta: prospecto.equipo_venta ?? null,
       promotorNombre: prospecto.promotor_nombre ?? null,
       tipoInversion: prospecto.tipo_inversion ?? null,
@@ -558,7 +557,10 @@ export const getApartadoPrefill = async (
       prospecto?.nombre?.trim() ||
       "",
     origenCiudad: prospecto?.origen_ciudad ?? null,
-    medioPublicitario: prospecto?.medio_publicitario ?? null,
+    medioPublicitario: resolveMedioPublicitarioFromProspecto({
+      medio_publicitario: prospecto?.medio_publicitario,
+      medio_contacto: prospecto?.medio_contacto,
+    }) || null,
     equipoVenta: prospecto?.equipo_venta ?? null,
     promotorNombre: prospecto?.promotor_nombre ?? null,
     tipoInversion: prospecto?.tipo_inversion ?? null,
@@ -741,6 +743,10 @@ export const createOperacionApartado = async (
 
   if (invError) {
     throw new Error(invError.message);
+  }
+
+  if (prospectoId) {
+    await markSolicitudApartadoAtendida(prospectoId, profile?.id ?? null);
   }
 
   return {
@@ -1002,6 +1008,104 @@ export const updateOperacionComercial = async (
       ...patch,
       comprobacion,
     } as OperacionComercialRecord,
+  };
+};
+
+const ESTATUS_NO_CANCELABLES = new Set(["Vendidas Cobradas"]);
+
+export type CancelOperacionInput = {
+  motivo?: string;
+  /** Etapa CRM del prospecto tras cancelar (default: cita para reactivar seguimiento). */
+  prospectoEtapa?: "cita" | "perdido";
+};
+
+export const cancelOperacionComercial = async (
+  operacionId: string,
+  input: CancelOperacionInput = {},
+  profile?: AdminProfile,
+) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: operacion, error: fetchError } = await supabase
+    .from("operaciones_comerciales")
+    .select("*")
+    .eq("id", operacionId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+  if (!operacion) {
+    throw new Error("Operación no encontrada.");
+  }
+
+  if (profile && !canAccessDesarrollo(profile, operacion.desarrollo_id)) {
+    throw new Error("No tienes permiso para esta operación.");
+  }
+
+  if (operacion.cancelada) {
+    throw new Error("Esta operación ya está cancelada.");
+  }
+
+  if (ESTATUS_NO_CANCELABLES.has(operacion.estatus_sembrado)) {
+    throw new Error("No se puede cancelar una venta cerrada y cobrada.");
+  }
+
+  const canceladaAt = new Date().toISOString();
+  const fecha = canceladaAt.slice(0, 10);
+  const motivo = input.motivo?.trim();
+  const notaCancelacion = motivo
+    ? `[Cancelado ${fecha}] ${motivo}`
+    : `[Cancelado ${fecha}]`;
+  const observaciones = operacion.observaciones?.trim()
+    ? `${operacion.observaciones.trim()}\n${notaCancelacion}`
+    : notaCancelacion;
+
+  const { error: updateError } = await supabase
+    .from("operaciones_comerciales")
+    .update({
+      cancelada: true,
+      cancelada_at: canceladaAt,
+      observaciones,
+      updated_at: canceladaAt,
+    })
+    .eq("id", operacionId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  const { error: unidadError } = await supabase
+    .from("disponibilidad_unidades")
+    .update({
+      estatus: "disponible",
+      updated_at: canceladaAt,
+    })
+    .eq("id", operacion.unidad_id);
+
+  if (unidadError) {
+    throw new Error(unidadError.message);
+  }
+
+  if (operacion.prospecto_id) {
+    const nextEtapa = input.prospectoEtapa ?? "cita";
+    await supabase
+      .from("prospectos")
+      .update({
+        etapa: nextEtapa,
+        updated_at: canceladaAt,
+      })
+      .eq("id", operacion.prospecto_id);
+  }
+
+  return {
+    ...(operacion as OperacionComercialRecord),
+    cancelada: true,
+    cancelada_at: canceladaAt,
+    observaciones,
   };
 };
 

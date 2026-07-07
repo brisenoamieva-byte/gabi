@@ -46,3 +46,34 @@ export const enrichPasajeInventario = (
   }
   return units.map(enrichPasajeUnidad);
 };
+
+/** Superficie total = interna + terraza/balcón + bodega (cuando hay desglose). */
+export const computePasajeSuperficieTotalM2 = (
+  unit?: Pick<
+    DisponibilidadUnidad,
+    | "superficieInternaM2"
+    | "superficieExternaM2"
+    | "superficieBodegaM2"
+    | "superficieConstruccionM2"
+  > | null,
+): number | null => {
+  if (!unit) {
+    return null;
+  }
+
+  const interna = unit.superficieInternaM2 ?? 0;
+  const externa = unit.superficieExternaM2 ?? 0;
+  const bodega = unit.superficieBodegaM2 ?? 0;
+
+  if (interna > 0 || externa > 0) {
+    const total = interna + externa + bodega;
+    return total > 0 ? Math.round(total * 100) / 100 : null;
+  }
+
+  const base = unit.superficieConstruccionM2;
+  if (base != null && base > 0) {
+    return Math.round((base + bodega) * 100) / 100;
+  }
+
+  return bodega > 0 ? bodega : null;
+};
