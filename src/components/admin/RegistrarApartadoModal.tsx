@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import type { ApartadoAsesorOption } from "@/lib/admin/operaciones-service";
 import type { ApartadoPrefill } from "@/lib/admin/operaciones-service";
@@ -172,10 +172,17 @@ export function RegistrarApartadoModal({
   const [tipoProducto, setTipoProducto] = useState("");
   const [promotorAsesorId, setPromotorAsesorId] = useState("");
   const [form, setForm] = useState<FormState>(() => emptyForm(initialUnidadId ?? ""));
-  const [loadingPrefill, setLoadingPrefill] = useState(false);
+  const [loadingContext, setLoadingContext] = useState(false);
+  const [loadingUnidadPrefill, setLoadingUnidadPrefill] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [cotizacionHint, setCotizacionHint] = useState(false);
+  const asesoresRef = useRef(asesores);
+  const unidadesOpcionesRef = useRef(unidadesOpciones);
+  const initialLoadKeyRef = useRef<string | null>(null);
+
+  asesoresRef.current = asesores;
+  unidadesOpcionesRef.current = unidadesOpciones;
 
   const applyContextMeta = useCallback(
     (
@@ -245,10 +252,13 @@ export function RegistrarApartadoModal({
         return;
       }
 
-      setLoadingPrefill(true);
+      setLoadingUnidadPrefill(true);
       setError("");
 
       try {
+        const asesoresActuales = asesoresRef.current;
+        const unidadesActuales = unidadesOpcionesRef.current;
+
         if (esAsesor && prospectoId && asesorId) {
           const params = new URLSearchParams({ asesorId, unidadId });
           const response = await fetch(
@@ -271,11 +281,11 @@ export function RegistrarApartadoModal({
               inferPromotorAsesorId(
                 nextForm.equipoVenta,
                 nextForm.promotorNombre,
-                asesores,
+                asesoresActuales,
                 esAsesor ? asesorId : undefined,
               ),
             );
-            const row = unidadesOpciones.find((item) => item.unidadId === unidadId);
+            const row = unidadesActuales.find((item) => item.unidadId === unidadId);
             if (row) {
               setTipoProducto(resolveSembradoSegmentIdForUnidad(desarrolloId, row) ?? "");
             }
@@ -299,7 +309,7 @@ export function RegistrarApartadoModal({
           setForm(nextForm);
           setCotizacionHint(data.prefill.cotizacionReciente);
           setPromotorAsesorId(
-            inferPromotorAsesorId(nextForm.equipoVenta, nextForm.promotorNombre, asesores),
+            inferPromotorAsesorId(nextForm.equipoVenta, nextForm.promotorNombre, asesoresActuales),
           );
         }
       } catch (loadError) {
@@ -310,10 +320,10 @@ export function RegistrarApartadoModal({
             : message,
         );
       } finally {
-        setLoadingPrefill(false);
+        setLoadingUnidadPrefill(false);
       }
     },
-    [desarrolloId, esAsesor, asesorId, prospectoId, asesores, unidadesOpciones],
+    [desarrolloId, esAsesor, asesorId, prospectoId],
   );
 
   useEffect(() => {
@@ -327,7 +337,7 @@ export function RegistrarApartadoModal({
       return;
     }
 
-    setLoadingPrefill(true);
+    setLoadingContext(true);
     setError("");
 
     try {
@@ -380,7 +390,7 @@ export function RegistrarApartadoModal({
           : message,
       );
     } finally {
-      setLoadingPrefill(false);
+      setLoadingContext(false);
     }
   }, [prospectoId, esAsesor, asesorId, applyContextMeta]);
 
@@ -400,6 +410,18 @@ export function RegistrarApartadoModal({
   }, [asesores.length, desarrolloId, esAsesor]);
 
   useEffect(() => {
+    const loadKey = prospectoId
+      ? `prospecto:${prospectoId}:${asesorId ?? ""}`
+      : initialUnidadId
+        ? `unidad:${initialUnidadId}`
+        : null;
+
+    if (!loadKey || initialLoadKeyRef.current === loadKey) {
+      return;
+    }
+
+    initialLoadKeyRef.current = loadKey;
+
     if (prospectoId) {
       void loadFromProspecto();
       return;
@@ -408,7 +430,7 @@ export function RegistrarApartadoModal({
     if (initialUnidadId) {
       void loadPrefill(initialUnidadId);
     }
-  }, [prospectoId, initialUnidadId, loadFromProspecto, loadPrefill]);
+  }, [prospectoId, initialUnidadId, asesorId, loadFromProspecto, loadPrefill]);
 
   const patch = (partial: Partial<FormState>) => {
     setForm((prev) => ({ ...prev, ...partial }));
@@ -677,7 +699,14 @@ export function RegistrarApartadoModal({
             ) : null}
           </Field>
 
-          {loadingPrefill ? (
+          {loadingContext ? (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Cargando prospecto y unidades…
+            </div>
+          ) : null}
+
+          {loadingUnidadPrefill ? (
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
               Cargando datos de cotización…
@@ -900,7 +929,13 @@ export function RegistrarApartadoModal({
             </button>
             <button
               type="submit"
-              disabled={submitting || loadingPrefill || !form.unidadId || (segmentos.length > 0 && !tipoProducto)}
+              disabled={
+                submitting ||
+                loadingContext ||
+                loadingUnidadPrefill ||
+                !form.unidadId ||
+                (segmentos.length > 0 && !tipoProducto)
+              }
               className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
