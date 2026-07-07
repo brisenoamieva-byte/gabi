@@ -274,6 +274,28 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
         : "Aplica 043 para canal WhatsApp en digest y playbook Gavia.",
   });
 
+  const guardiaMarcajesOk = await probeTable("guardia_marcajes", "id");
+  checks.push({
+    id: "044",
+    label: "Marcajes guardia GPS",
+    migrationFile: "044_guardia_marcajes.sql",
+    ok: guardiaMarcajesOk,
+    detail: guardiaMarcajesOk
+      ? "Marcaje entrada/salida en caseta disponible."
+      : "Falta guardia_marcajes — aplica 044.",
+  });
+
+  const cadenciaOk = await probeTable("prospecto_cadencia", "prospecto_id");
+  checks.push({
+    id: "045",
+    label: "Cadencia de perfilamiento BBR",
+    migrationFile: "045_cadencia_perfilamiento.sql",
+    ok: cadenciaOk,
+    detail: cadenciaOk
+      ? "Motor de cadencia 8 días activo."
+      : "Falta prospecto_cadencia — aplica 045.",
+  });
+
   await createSupabaseServiceClient()
     ?.from("prospectos")
     .delete()
