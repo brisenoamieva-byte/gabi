@@ -1,4 +1,5 @@
 import { assertDesarrolloAccess } from "@/lib/admin/permissions";
+import { resolveAdminUserIdForDb } from "@/lib/admin/session";
 import type { AdminProfile } from "@/lib/admin/types";
 import {
   getWeekDates,
@@ -165,7 +166,7 @@ export const upsertGuardiaAsignacion = async (
         fecha: input.fecha,
         turno: input.turno,
         estado: "borrador",
-        creado_por_admin_id: adminUserId,
+        creado_por_admin_id: resolveAdminUserIdForDb(adminUserId),
         updated_at: now,
       },
       { onConflict: "desarrollo_id,fecha,turno" },
@@ -263,7 +264,7 @@ export const copyGuardiasWeekToNext = async (
         turno: item.turno,
         estado: "borrador",
         notas: item.notas,
-        creado_por_admin_id: adminUserId,
+        creado_por_admin_id: resolveAdminUserIdForDb(adminUserId),
         updated_at: now,
       },
       { onConflict: "desarrollo_id,fecha,turno" },
