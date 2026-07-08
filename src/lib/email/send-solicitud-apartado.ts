@@ -2,16 +2,7 @@ import { getGerenteEmailsForDesarrollo } from "@/lib/comercial/gerente-email-rec
 import { isEmailConfigured } from "@/lib/email/config";
 import { sendViaResend } from "@/lib/email/send-via-resend";
 
-const getSiteUrl = () => {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-};
+import { resolveSiteUrl } from "@/lib/site-url";
 
 export type SolicitudApartadoEmailResult =
   | { sent: true; recipients: string[] }
@@ -35,7 +26,7 @@ export const sendSolicitudApartadoEmail = async (input: {
     return { sent: false, error: "no_gerente_email" };
   }
 
-  const link = `${getSiteUrl()}/admin/leads?desarrolloId=${encodeURIComponent(input.desarrolloId)}&prospecto=${encodeURIComponent(input.prospectoId)}`;
+  const link = `${resolveSiteUrl()}/admin/leads?desarrolloId=${encodeURIComponent(input.desarrolloId)}&prospecto=${encodeURIComponent(input.prospectoId)}`;
   const subject = `[GABI] Solicitud de apartado — ${input.prospectoNombre}`;
   const unidadLine = input.unidadNumero ? `Unidad sugerida: ${input.unidadNumero}` : "";
   const notasLine = input.notas?.trim() ? `Notas del asesor: ${input.notas.trim()}` : "";

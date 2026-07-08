@@ -1,20 +1,11 @@
 import { isEmailConfigured } from "@/lib/email/config";
 import { sendViaResend } from "@/lib/email/send-via-resend";
+import { resolveSiteUrl } from "@/lib/site-url";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
-const getSiteUrl = () => {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-};
-
 async function resolvePasswordSetupLink(email: string): Promise<string> {
-  const loginUrl = `${getSiteUrl()}/admin/login`;
+  const siteUrl = resolveSiteUrl();
+  const loginUrl = `${siteUrl}/admin/login`;
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return loginUrl;
@@ -27,7 +18,7 @@ async function resolvePasswordSetupLink(email: string): Promise<string> {
       type,
       email: normalizedEmail,
       options: {
-        redirectTo: `${getSiteUrl()}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       },
     });
 
@@ -58,8 +49,9 @@ export async function sendGerenteAdminAccessEmail(input: {
   }
 
   try {
+    const siteUrl = resolveSiteUrl();
     const setupLink = await resolvePasswordSetupLink(email);
-    const loginUrl = `${getSiteUrl()}/admin/login`;
+    const loginUrl = `${siteUrl}/admin/login`;
     const subject = "[GABI] Tu acceso al panel admin comercial";
 
     const text = [

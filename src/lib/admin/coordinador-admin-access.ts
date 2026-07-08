@@ -3,6 +3,7 @@ import {
   formatGerenteAdminAccessEmailHint,
   sendGerenteAdminAccessEmail,
 } from "@/lib/email/send-gerente-admin-access";
+import { resolveSiteUrl } from "@/lib/site-url";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type CoordinadorAdminSync = {
@@ -13,16 +14,7 @@ export type CoordinadorAdminSync = {
   adminMessage?: string;
 };
 
-const getSiteUrl = () => {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-};
+const getSiteUrl = () => resolveSiteUrl();
 
 const findAuthUserIdByEmail = async (email: string) => {
   const supabase = createSupabaseServiceClient();

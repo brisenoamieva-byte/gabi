@@ -1,4 +1,5 @@
 import type { AdminRol } from "@/lib/admin/types";
+import { resolveSiteUrl } from "@/lib/site-url";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type AdminUserRecord = {
@@ -57,16 +58,7 @@ const toRecord = (row: {
   updatedAt: row.updated_at,
 });
 
-const getSiteUrl = () => {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-};
+const getSiteUrl = () => resolveSiteUrl();
 
 const findAuthUserIdByEmail = async (email: string) => {
   const supabase = createSupabaseServiceClient();
