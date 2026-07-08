@@ -112,24 +112,30 @@ export function AdminLoginForm() {
       ) : null}
       {otpExpired ? (
         <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-          El enlace del correo expiró o ya se usó. Pide reenvío desde Admin → Equipo → «Acceso admin ·
-          correo».
+          El enlace expiró o ya se usó. Si recibiste un correo en inglés de «Supabase Auth», ignóralo.
+          Pide reenvío desde Admin → Equipo → «Acceso admin · correo» y abre el correo{" "}
+          <strong>GABI — Crea tu contraseña del panel admin</strong>.
         </p>
       ) : null}
 
-      <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        className="space-y-4"
+        autoComplete="off"
+      >
         <label className="block">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
             Email
           </span>
           <input
             type="email"
+            name="gabi-admin-email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
             autoComplete="email"
             className="input-cotizador"
-            placeholder={GABI_OPERADOR.email}
+            placeholder="tu@correo.com"
           />
         </label>
         <label className="block">

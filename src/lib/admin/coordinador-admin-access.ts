@@ -94,7 +94,7 @@ export const syncCoordinadorAdminAccess = async (input: {
       adminInviteSent: invited,
       adminRevoked: false,
       adminEmailSent: emailResult.sent,
-      adminMessage: `${emailHint} ${supabaseHint} Entra en /admin/login.`,
+      adminMessage: `${emailHint} ${supabaseHint} Solo abrir el correo GABI (español), no Supabase Auth (inglés). Entra en /admin/login.`,
     };
   } catch (syncError) {
     return {

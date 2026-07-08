@@ -60,12 +60,13 @@ export async function sendGerenteAdminAccessEmail(input: {
     const siteUrl = resolveSiteUrl();
     const setupLink = await resolvePasswordSetupLink(email);
     const loginUrl = `${siteUrl}/admin/login?email=${encodeURIComponent(email)}`;
-    const subject = "[GABI] Tu acceso al panel admin comercial";
+    const subject = "GABI — Crea tu contraseña del panel admin";
 
     const text = [
       `Hola ${input.nombre.trim()},`,
       "",
-      "Ya tienes acceso de gerencia en GABI Admin (Leads, sembrado, apartados y guardias).",
+      "IMPORTANTE: usa solo este correo (asunto «GABI — Crea tu contraseña…»).",
+      "Ignora correos viejos en inglés de «Supabase Auth».",
       "",
       "1. Abre este enlace para crear tu contraseña (solo la primera vez):",
       setupLink,
@@ -80,6 +81,7 @@ export async function sendGerenteAdminAccessEmail(input: {
 
     const html = `
       <p>Hola <strong>${input.nombre.trim()}</strong>,</p>
+      <p><strong>Importante:</strong> usa solo este correo. Ignora invitaciones en inglés de «Supabase Auth».</p>
       <p>Ya tienes acceso de <strong>gerencia</strong> en GABI Admin (Leads, sembrado, apartados y guardias).</p>
       <ol>
         <li><a href="${setupLink}"><strong>Crear tu contraseña</strong></a> (solo la primera vez)</li>
