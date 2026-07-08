@@ -46,6 +46,34 @@ const mapRow = (row: Record<string, unknown>): SolicitudApartadoRow => ({
   unidadNumero: (row.unidad as { unidad?: string } | null)?.unidad ?? null,
 });
 
+export const cancelSolicitudesApartadoForProspectos = async (
+  prospectoIds: string[],
+): Promise<void> => {
+  const uniqueIds = Array.from(new Set(prospectoIds.filter(Boolean)));
+  if (!uniqueIds.length) {
+    return;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return;
+  }
+
+  await supabase
+    .from("solicitudes_apartado")
+    .update({
+      estado: "cancelada",
+      updated_at: new Date().toISOString(),
+    })
+    .in("prospecto_id", uniqueIds)
+    .eq("estado", "pendiente");
+};
+
+const isProspectoActivo = (row: Record<string, unknown>): boolean => {
+  const prospecto = row.prospecto as { activo?: boolean } | null;
+  return prospecto?.activo !== false;
+};
+
 export const getSolicitudApartadoPendiente = async (
   prospectoId: string,
 ): Promise<SolicitudApartadoRow | null> => {
@@ -57,13 +85,17 @@ export const getSolicitudApartadoPendiente = async (
   const { data } = await supabase
     .from("solicitudes_apartado")
     .select(
-      "*, prospecto:prospectos(nombre), asesor:asesores(nombre), unidad:disponibilidad_unidades(unidad)",
+      "*, prospecto:prospectos(nombre, activo), asesor:asesores(nombre), unidad:disponibilidad_unidades(unidad)",
     )
     .eq("prospecto_id", prospectoId)
     .eq("estado", "pendiente")
     .maybeSingle();
 
-  return data ? mapRow(data as Record<string, unknown>) : null;
+  if (!data || !isProspectoActivo(data as Record<string, unknown>)) {
+    return null;
+  }
+
+  return mapRow(data as Record<string, unknown>);
 };
 
 export const listSolicitudesApartadoPendientes = async (
@@ -77,13 +109,23 @@ export const listSolicitudesApartadoPendientes = async (
   const { data } = await supabase
     .from("solicitudes_apartado")
     .select(
-      "*, prospecto:prospectos(nombre), asesor:asesores(nombre), unidad:disponibilidad_unidades(unidad)",
+      "*, prospecto:prospectos(nombre, activo), asesor:asesores(nombre), unidad:disponibilidad_unidades(unidad)",
     )
     .eq("desarrollo_id", desarrolloId)
     .eq("estado", "pendiente")
     .order("created_at", { ascending: false });
 
-  return (data ?? []).map((row) => mapRow(row as Record<string, unknown>));
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const activas = rows.filter(isProspectoActivo);
+  const inactivas = rows.filter((row) => !isProspectoActivo(row));
+
+  if (inactivas.length) {
+    await cancelSolicitudesApartadoForProspectos(
+      inactivas.map((row) => row.prospecto_id as string),
+    );
+  }
+
+  return activas.map((row) => mapRow(row));
 };
 
 export type CreateSolicitudApartadoResult = {

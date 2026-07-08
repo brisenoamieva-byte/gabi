@@ -18,6 +18,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import type { VisitaTipo } from "@/lib/visitas/types";
 import { normalizeProspectoTelefono } from "@/lib/comercial/prospecto-telefono";
+import { cancelSolicitudesApartadoForProspectos } from "@/lib/comercial/solicitud-apartado-service";
 
 export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
@@ -865,6 +866,8 @@ export const bulkDeactivateProspectos = async (
   if (updateError) {
     throw new Error(updateError.message);
   }
+
+  await cancelSolicitudesApartadoForProspectos(allowedIds);
 
   return allowedIds.length;
 };
