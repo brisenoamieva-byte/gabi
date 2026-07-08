@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { KeyRound } from "lucide-react";
 import Link from "next/link";
 import { GabiLogo } from "@/components/brand/GabiLogo";
@@ -9,10 +9,20 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export default function AdminResetPasswordPage() {
   const router = useRouter();
+  const [accountEmail, setAccountEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setAccountEmail(user.email);
+      }
+    });
+  }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -39,7 +49,12 @@ export default function AdminResetPasswordPage() {
       }
 
       await supabase.auth.signOut();
-      router.replace("/admin/login?reset=ok");
+      const loginEmail = accountEmail || (await supabase.auth.getUser()).data.user?.email;
+      const params = new URLSearchParams({ reset: "ok" });
+      if (loginEmail) {
+        params.set("email", loginEmail);
+      }
+      router.replace(`/admin/login?${params.toString()}`);
     } catch {
       setError("Error inesperado. Intenta de nuevo.");
     } finally {
@@ -55,8 +70,12 @@ export default function AdminResetPasswordPage() {
           <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
             Backoffice comercial
           </p>
-          <h1 className="mt-2 text-2xl font-black text-gabi-forest">Nueva contraseña</h1>
-          <p className="mt-2 text-sm text-slate-500">Elige una contraseña para tu cuenta admin.</p>
+          <h1 className="mt-2 text-2xl font-black text-gabi-forest">Crea tu contraseña</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            {accountEmail
+              ? `Cuenta: ${accountEmail}. Elige una contraseña para entrar al panel admin.`
+              : "Elige una contraseña para tu cuenta admin."}
+          </p>
         </div>
 
         <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">

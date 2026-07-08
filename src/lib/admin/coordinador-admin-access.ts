@@ -1,9 +1,9 @@
+import { ensureAuthUserForAdmin } from "@/lib/admin/admin-auth-user";
 import { isLeadershipAsesorRol, normalizeAsesorRol } from "@/lib/asesores/types";
 import {
   formatGerenteAdminAccessEmailHint,
   sendGerenteAdminAccessEmail,
 } from "@/lib/email/send-gerente-admin-access";
-import { resolveSiteUrl } from "@/lib/site-url";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type CoordinadorAdminSync = {
@@ -12,35 +12,6 @@ export type CoordinadorAdminSync = {
   adminRevoked: boolean;
   adminEmailSent?: boolean;
   adminMessage?: string;
-};
-
-const getSiteUrl = () => resolveSiteUrl();
-
-const findAuthUserIdByEmail = async (email: string) => {
-  const supabase = createSupabaseServiceClient();
-  if (!supabase) {
-    return null;
-  }
-
-  let page = 1;
-  while (page <= 20) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const match = data.users.find((user) => user.email?.toLowerCase() === email);
-    if (match) {
-      return match.id;
-    }
-
-    if (data.users.length < 200) {
-      break;
-    }
-    page += 1;
-  }
-
-  return null;
 };
 
 const resolveAuthUserId = async (email: string) => {
@@ -61,28 +32,8 @@ const resolveAuthUserId = async (email: string) => {
     return { userId: linkedProfile.id as string, invited: false };
   }
 
-  const existingAuthId = await findAuthUserIdByEmail(normalizedEmail);
-  if (existingAuthId) {
-    return { userId: existingAuthId, invited: false };
-  }
-
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
-    redirectTo: `${getSiteUrl()}/auth/callback`,
-  });
-
-  if (error) {
-    const retryId = await findAuthUserIdByEmail(normalizedEmail);
-    if (retryId) {
-      return { userId: retryId, invited: false };
-    }
-    throw new Error(error.message);
-  }
-
-  if (!data.user?.id) {
-    throw new Error("No se pudo crear el usuario de admin.");
-  }
-
-  return { userId: data.user.id, invited: true };
+  const { userId, created } = await ensureAuthUserForAdmin(normalizedEmail);
+  return { userId, invited: created };
 };
 
 export const syncCoordinadorAdminAccess = async (input: {
@@ -135,8 +86,8 @@ export const syncCoordinadorAdminAccess = async (input: {
 
     const emailHint = formatGerenteAdminAccessEmailHint(emailResult);
     const supabaseHint = invited
-      ? "Supabase también envió invitación (revisa spam si no llega)."
-      : "Si ya tenías usuario, usa el enlace del correo GABI para definir contraseña.";
+      ? "Usuario creado en Supabase."
+      : "Usuario ya existía — usa el enlace del correo GABI para definir contraseña.";
 
     return {
       adminLinked: true,

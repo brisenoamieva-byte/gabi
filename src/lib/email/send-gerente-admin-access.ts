@@ -1,3 +1,4 @@
+import { adminAuthCallbackUrl } from "@/lib/admin/admin-auth-callback";
 import { isEmailConfigured } from "@/lib/email/config";
 import { sendViaResend } from "@/lib/email/send-via-resend";
 import { resolveSiteUrl } from "@/lib/site-url";
@@ -5,26 +6,33 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 async function resolvePasswordSetupLink(email: string): Promise<string> {
   const siteUrl = resolveSiteUrl();
-  const loginUrl = `${siteUrl}/admin/login`;
+  const loginUrl = `${siteUrl}/admin/login?email=${encodeURIComponent(email.trim().toLowerCase())}`;
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return loginUrl;
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const redirectTo = adminAuthCallbackUrl(siteUrl);
 
-  for (const type of ["recovery", "invite"] as const) {
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type,
-      email: normalizedEmail,
-      options: {
-        redirectTo: `${siteUrl}/auth/callback`,
-      },
-    });
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: "recovery",
+    email: normalizedEmail,
+    options: { redirectTo },
+  });
 
-    if (!error && data.properties?.action_link) {
-      return data.properties.action_link;
-    }
+  if (!error && data.properties?.action_link) {
+    return data.properties.action_link;
+  }
+
+  const fallback = await supabase.auth.admin.generateLink({
+    type: "magiclink",
+    email: normalizedEmail,
+    options: { redirectTo },
+  });
+
+  if (!fallback.error && fallback.data.properties?.action_link) {
+    return fallback.data.properties.action_link;
   }
 
   return loginUrl;
@@ -51,7 +59,7 @@ export async function sendGerenteAdminAccessEmail(input: {
   try {
     const siteUrl = resolveSiteUrl();
     const setupLink = await resolvePasswordSetupLink(email);
-    const loginUrl = `${siteUrl}/admin/login`;
+    const loginUrl = `${siteUrl}/admin/login?email=${encodeURIComponent(email)}`;
     const subject = "[GABI] Tu acceso al panel admin comercial";
 
     const text = [
@@ -67,7 +75,7 @@ export async function sendGerenteAdminAccessEmail(input: {
       "",
       "Usa tu correo y la contraseña que definas. Guárdala en el navegador del celular.",
       "",
-      "Si el enlace expiró, vuelve a pedir acceso desde Admin → Equipo → «Correo acceso admin».",
+      "Si el enlace expiró, pide reenvío desde Admin → Equipo → «Acceso admin · correo».",
     ].join("\n");
 
     const html = `

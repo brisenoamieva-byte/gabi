@@ -14,7 +14,8 @@ import { isGabiOperator } from "@/lib/gabi/operator";
 export function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState<string>(GABI_OPERADOR.email);
+  const emailParam = searchParams.get("email")?.trim().toLowerCase() ?? "";
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,7 +33,10 @@ export function AdminLoginForm() {
       window.location.hostname !== "localhost" &&
         !window.location.hostname.startsWith("127."),
     );
-  }, []);
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, [emailParam]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -108,7 +112,8 @@ export function AdminLoginForm() {
       ) : null}
       {otpExpired ? (
         <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-          El enlace del correo expiró. Vuelve a enviarlo desde Supabase o usa tu contraseña maestra.
+          El enlace del correo expiró o ya se usó. Pide reenvío desde Admin → Equipo → «Acceso admin ·
+          correo».
         </p>
       ) : null}
 
@@ -129,7 +134,7 @@ export function AdminLoginForm() {
         </label>
         <label className="block">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-            Contraseña maestra
+            Contraseña
           </span>
           <input
             type="password"
@@ -145,7 +150,7 @@ export function AdminLoginForm() {
             {error}
           </p>
         ) : null}
-        {isProductionHost ? (
+        {isProductionHost && isGabiOperator({ email }) ? (
           <p className="text-xs leading-relaxed text-slate-400">
             Como operador gabi usa la misma contraseña que en <code>/operador</code>.
           </p>

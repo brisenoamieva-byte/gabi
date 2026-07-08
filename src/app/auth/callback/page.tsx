@@ -2,18 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { isAdminPasswordSetupFlow } from "@/lib/admin/admin-auth-callback";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [message, setMessage] = useState("Procesando enlace de acceso...");
+  const [message, setMessage] = useState("Validando enlace…");
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
 
+    const redirectToPasswordSetup = () => {
+      router.replace("/admin/reset-password");
+    };
+
+    const redirectToLoginWithError = (email?: string | null) => {
+      const params = new URLSearchParams({ error: "otp_expired" });
+      if (email) {
+        params.set("email", email);
+      }
+      router.replace(`/admin/login?${params.toString()}`);
+    };
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        router.replace("/admin/reset-password");
+        redirectToPasswordSetup();
       }
     });
 
@@ -21,11 +34,38 @@ export default function AuthCallbackPage() {
       const search = new URLSearchParams(window.location.search);
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
 
-      if (hash.get("error") || search.get("error")) {
-        setMessage("El enlace expiró o ya fue usado. Solicita uno nuevo o define la contraseña en Supabase.");
+      const flow = search.get("flow");
+      const linkType = hash.get("type") ?? search.get("type");
+      const wantsPasswordSetup = isAdminPasswordSetupFlow({ flow, type: linkType });
+
+      const authError = hash.get("error") ?? search.get("error");
+      if (authError) {
+        setMessage("El enlace expiró o ya fue usado. Te llevamos al login para pedir uno nuevo.");
         window.setTimeout(() => {
-          router.replace("/admin/login?error=otp_expired");
-        }, 2500);
+          redirectToLoginWithError(search.get("email"));
+        }, 2200);
+        return;
+      }
+
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (error) {
+          redirectToLoginWithError();
+          return;
+        }
+
+        if (wantsPasswordSetup) {
+          redirectToPasswordSetup();
+          return;
+        }
+
+        router.replace(search.get("next") ?? "/admin/documentos");
         return;
       }
 
@@ -33,20 +73,28 @@ export default function AuthCallbackPage() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-          router.replace("/admin/login?error=auth");
+          setMessage("No se pudo validar el enlace. Pide reenvío desde Admin → Equipo.");
+          window.setTimeout(() => {
+            redirectToLoginWithError();
+          }, 2200);
           return;
         }
 
-        const next = search.get("next") ?? "/admin/documentos";
-        router.replace(next);
+        if (wantsPasswordSetup) {
+          redirectToPasswordSetup();
+          return;
+        }
+
+        router.replace(search.get("next") ?? "/admin/documentos");
         return;
       }
 
-      const type = hash.get("type");
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (session && type === "recovery") {
-        router.replace("/admin/reset-password");
+      if (session && wantsPasswordSetup) {
+        redirectToPasswordSetup();
         return;
       }
 
@@ -57,8 +105,8 @@ export default function AuthCallbackPage() {
 
       setMessage("No se pudo validar el enlace.");
       window.setTimeout(() => {
-        router.replace("/admin/login");
-      }, 2500);
+        redirectToLoginWithError();
+      }, 2200);
     };
 
     void handleCallback();

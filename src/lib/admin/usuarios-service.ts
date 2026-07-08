@@ -1,5 +1,5 @@
 import type { AdminRol } from "@/lib/admin/types";
-import { resolveSiteUrl } from "@/lib/site-url";
+import { ensureAuthUserForAdmin } from "@/lib/admin/admin-auth-user";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type AdminUserRecord = {
@@ -58,35 +58,6 @@ const toRecord = (row: {
   updatedAt: row.updated_at,
 });
 
-const getSiteUrl = () => resolveSiteUrl();
-
-const findAuthUserIdByEmail = async (email: string) => {
-  const supabase = createSupabaseServiceClient();
-  if (!supabase) {
-    return null;
-  }
-
-  let page = 1;
-  while (page <= 20) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const match = data.users.find((user) => user.email?.toLowerCase() === email);
-    if (match) {
-      return match.id;
-    }
-
-    if (data.users.length < 200) {
-      break;
-    }
-    page += 1;
-  }
-
-  return null;
-};
-
 const resolveAuthUserId = async (email: string) => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -105,28 +76,8 @@ const resolveAuthUserId = async (email: string) => {
     return { userId: linkedProfile.id as string, invited: false };
   }
 
-  const existingAuthId = await findAuthUserIdByEmail(normalizedEmail);
-  if (existingAuthId) {
-    return { userId: existingAuthId, invited: false };
-  }
-
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
-    redirectTo: `${getSiteUrl()}/auth/callback`,
-  });
-
-  if (error) {
-    const retryId = await findAuthUserIdByEmail(normalizedEmail);
-    if (retryId) {
-      return { userId: retryId, invited: false };
-    }
-    throw new Error(error.message);
-  }
-
-  if (!data.user?.id) {
-    throw new Error("No se pudo invitar al usuario.");
-  }
-
-  return { userId: data.user.id, invited: true };
+  const { userId, created } = await ensureAuthUserForAdmin(normalizedEmail);
+  return { userId, invited: created };
 };
 
 const validateDesarrollosForRol = (rol: AdminRol, desarrollosIds: string[]) => {
