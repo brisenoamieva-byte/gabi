@@ -2,7 +2,7 @@
 description: Diseño visual Gabi — paleta, contraste, tipografía y componentes UI
 globs:
   - src/components/**
-  - src/app/**
+  - src/app/**/*.tsx
   - src/app/globals.css
 alwaysApply: false
 ---
