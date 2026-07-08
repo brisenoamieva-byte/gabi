@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { writeStoredAsesorSession } from "@/lib/asesores/session-client";
-import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
 import { isGabiOperator } from "@/lib/gabi/operator";
 
 export function AdminLoginForm() {
