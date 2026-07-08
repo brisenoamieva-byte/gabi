@@ -2,12 +2,20 @@ import {
   CRM_PLAYBOOK_PILOT_DESARROLLO_IDS,
   getDefaultCrmPlaybook,
 } from "@/lib/comercial/crm-playbook";
+import {
+  isDesarrolloAutomationActive,
+  isDesarrolloAutomationPausedByPolicy,
+} from "@/lib/comercial/desarrollo-automation";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 /** Playbook activo salvo fila explícita con enabled=false en crm_playbook_configs. */
 export const isCrmPlaybookEnabledForDesarrollo = async (
   desarrolloId: string,
 ): Promise<boolean> => {
+  if (!(await isDesarrolloAutomationActive(desarrolloId))) {
+    return false;
+  }
+
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return getDefaultCrmPlaybook(desarrolloId).enabled;
@@ -42,7 +50,7 @@ export const listDesarrollosWithCrmPlaybookEnabled = async (): Promise<string[]>
 
   const [{ data: catalogRows, error: catalogError }, { data: configRows, error: configError }] =
     await Promise.all([
-      supabase.from("desarrollos_catalog").select("id"),
+      supabase.from("desarrollos_catalog").select("id").eq("activo", true),
       supabase.from("crm_playbook_configs").select("desarrollo_id, enabled"),
     ]);
 
@@ -61,5 +69,5 @@ export const listDesarrollosWithCrmPlaybookEnabled = async (): Promise<string[]>
 
   return (catalogRows ?? [])
     .map((row) => row.id as string)
-    .filter((id) => !explicitlyDisabled.has(id));
+    .filter((id) => !explicitlyDisabled.has(id) && !isDesarrolloAutomationPausedByPolicy(id));
 };

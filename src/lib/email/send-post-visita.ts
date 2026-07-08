@@ -1,3 +1,4 @@
+import { isDesarrolloAutomationActive } from "@/lib/comercial/desarrollo-automation";
 import { getEmailConfig, isEmailConfigured } from "@/lib/email/config";
 import { buildPostVisitaEmailContent } from "@/lib/email/post-visita-template";
 import { getDesarrolloById } from "@/lib/catalog/service";
@@ -87,6 +88,10 @@ export const sendPostVisitaEmailFromVisita = async (
 ): Promise<SendPostVisitaEmailResult> => {
   if (input.tipo !== "recorrido_completado") {
     return { sent: false, reason: "no_email" };
+  }
+
+  if (!(await isDesarrolloAutomationActive(input.desarrolloId))) {
+    return { sent: false, reason: "no_email", detail: "Desarrollo pausado." };
   }
 
   const email = input.clienteEmail?.trim();

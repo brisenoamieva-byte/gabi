@@ -179,7 +179,7 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
         recorrido_etapas: [...DEFAULT_RECORRIDO_ETAPAS],
         recorrido_version: 2,
         recorrido_contenido: getDefaultRecorridoContenido(item.id),
-        activo: true,
+        activo: item.id !== LA_VISTA_RESIDENCIAL_ID,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" },

@@ -14,6 +14,7 @@ import {
   buildProspectFallbackMessage,
 } from "@/lib/whatsapp/templates";
 import { buildWhatsAppUrl } from "@/lib/visitas/follow-up";
+import { isDesarrolloAutomationActive } from "@/lib/comercial/desarrollo-automation";
 import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 
 export type LeadContactEventInput = {
@@ -131,6 +132,19 @@ export const dispatchLeadInboundNotifications = async (
   }
 
   const desarrolloId = prospecto.desarrollo_id;
+
+  if (!(await isDesarrolloAutomationActive(desarrolloId))) {
+    await logContactEvent({
+      prospectoId,
+      desarrolloId,
+      canal: "email_asesor",
+      destinatarioTipo: "asesor",
+      status: "skipped",
+      errorMessage: "Desarrollo pausado — sin notificaciones automáticas.",
+    });
+    return;
+  }
+
   const desarrolloNombre = getDesarrolloNombre(desarrolloId);
   const campanaNombre = prospecto.campana?.nombre ?? "Directo";
 
