@@ -17,6 +17,7 @@ import type { Desarrollo } from "@/lib/data";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { CapturaLogsPanel } from "@/components/admin/CapturaLogsPanel";
 import { LeadsComplianceBanner } from "@/components/admin/LeadsComplianceBanner";
+import { SolicitudesApartadoBanner } from "@/components/admin/SolicitudesApartadoBanner";
 import { LeadDetailDrawer } from "@/components/admin/LeadDetailDrawer";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { exportLeadsCsv, LeadsXperienceTable } from "@/components/admin/LeadsXperienceTable";
@@ -28,6 +29,7 @@ import {
 import { NIVELES_INTERES, nivelInteresLabel } from "@/lib/comercial/prospecto-interes";
 import { formatLeadsDateRangeLabel } from "@/lib/comercial/xperience-leads";
 import type { DesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
+import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
 import { resolveAdminDesarrolloId } from "@/lib/admin/admin-desarrollo-session";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
@@ -38,6 +40,7 @@ type LeadsAdminPanelProps = {
   initialAsesorId?: string;
   initialDesde?: string;
   initialHasta?: string;
+  initialProspectoId?: string;
 };
 
 type AsesorOption = {
@@ -71,6 +74,7 @@ export function LeadsAdminPanel({
   initialAsesorId,
   initialDesde,
   initialHasta,
+  initialProspectoId,
 }: LeadsAdminPanelProps) {
   const monthDefault = currentMonthRange();
   const resolvedDesarrolloId = resolveAdminDesarrolloId(desarrollos, {
@@ -121,8 +125,11 @@ export function LeadsAdminPanel({
   const [canReassignProspectos, setCanReassignProspectos] = useState(false);
   const [complianceReport, setComplianceReport] = useState<DesarrolloComplianceReport | null>(null);
   const [complianceLoading, setComplianceLoading] = useState(false);
+  const [solicitudesApartado, setSolicitudesApartado] = useState<SolicitudApartadoRow[]>([]);
+  const [solicitudesLoading, setSolicitudesLoading] = useState(false);
   const prevDesarrolloId = useRef<string | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const deepLinkHandled = useRef(false);
 
   const loadAsesores = useCallback(async () => {
     if (!desarrolloId) {
@@ -179,6 +186,53 @@ export function LeadsAdminPanel({
       setComplianceLoading(false);
     }
   }, [desarrolloId]);
+
+  const loadSolicitudesApartado = useCallback(async () => {
+    if (!desarrolloId) {
+      setSolicitudesApartado([]);
+      return;
+    }
+
+    setSolicitudesLoading(true);
+    try {
+      const response = await fetch(
+        `/api/admin/solicitudes-apartado?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+      );
+      const data = (await response.json()) as {
+        solicitudes?: SolicitudApartadoRow[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron cargar las solicitudes.");
+      }
+
+      setSolicitudesApartado(data.solicitudes ?? []);
+    } catch {
+      setSolicitudesApartado([]);
+    } finally {
+      setSolicitudesLoading(false);
+    }
+  }, [desarrolloId]);
+
+  const openProspecto = useCallback((prospectoId: string) => {
+    setLeadTab("leads");
+    setSelectedId(prospectoId);
+  }, []);
+
+  const clearProspectoQueryParam = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("prospecto")) {
+      return;
+    }
+
+    url.searchParams.delete("prospecto");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
 
   const loadLeads = useCallback(async () => {
     const active = applied;
@@ -265,13 +319,51 @@ export function LeadsAdminPanel({
     void loadAsesores();
     void loadCampanas();
     void loadCompliance();
+    void loadSolicitudesApartado();
 
     if (prevDesarrolloId.current !== null && prevDesarrolloId.current !== desarrolloId) {
       setAsesorFilter("");
       setCampanaFilter("");
     }
     prevDesarrolloId.current = desarrolloId;
-  }, [loadAsesores, loadCampanas, loadCompliance, desarrolloId]);
+  }, [loadAsesores, loadCampanas, loadCompliance, loadSolicitudesApartado, desarrolloId]);
+
+  useEffect(() => {
+    if (!initialProspectoId || deepLinkHandled.current) {
+      return;
+    }
+
+    deepLinkHandled.current = true;
+
+    const openDeepLink = async () => {
+      try {
+        if (!initialDesarrolloId) {
+          const response = await fetch(`/api/admin/prospectos/${initialProspectoId}`);
+          const data = (await response.json()) as {
+            prospecto?: { desarrollo_id?: string };
+          };
+
+          if (response.ok && data.prospecto?.desarrollo_id) {
+            const nextDesarrolloId = data.prospecto.desarrollo_id;
+            setDesarrolloId(nextDesarrolloId);
+            setApplied((prev) => ({ ...prev, desarrolloId: nextDesarrolloId }));
+          }
+        }
+
+        openProspecto(initialProspectoId);
+      } finally {
+        clearProspectoQueryParam();
+      }
+    };
+
+    void openDeepLink();
+  }, [
+    clearProspectoQueryParam,
+    initialDesarrolloId,
+    initialProspectoId,
+    openProspecto,
+    setDesarrolloId,
+  ]);
 
   useEffect(() => {
     if (leadTab === "captura") {
@@ -846,8 +938,7 @@ export function LeadsAdminPanel({
           desarrolloId={desarrolloId}
           campanas={campanas}
           onOpenProspecto={(prospectoId) => {
-            setLeadTab("leads");
-            setSelectedId(prospectoId);
+            openProspecto(prospectoId);
           }}
         />
       ) : null}
@@ -856,6 +947,14 @@ export function LeadsAdminPanel({
         <div className="shrink-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           {error}
         </div>
+      ) : null}
+
+      {leadTab === "leads" ? (
+        <SolicitudesApartadoBanner
+          solicitudes={solicitudesApartado}
+          loading={solicitudesLoading}
+          onOpenProspecto={openProspecto}
+        />
       ) : null}
 
       {leadTab !== "captura" ? (
@@ -908,8 +1007,14 @@ export function LeadsAdminPanel({
       {selectedId ? (
         <LeadDetailDrawer
           prospectoId={selectedId}
-          onClose={() => setSelectedId(null)}
-          onUpdated={() => void loadLeads()}
+          onClose={() => {
+            setSelectedId(null);
+            void loadSolicitudesApartado();
+          }}
+          onUpdated={() => {
+            void loadLeads();
+            void loadSolicitudesApartado();
+          }}
         />
       ) : null}
 

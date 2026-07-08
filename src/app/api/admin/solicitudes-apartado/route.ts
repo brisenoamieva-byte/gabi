@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { listSolicitudesApartadoPendientes } from "@/lib/comercial/solicitud-apartado-service";
-import { canAccessModule } from "@/lib/admin/permissions";
+import { assertDesarrolloAccess, canAccessModule } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
 export async function GET(request: Request) {
@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ solicitud });
     }
 
+    assertDesarrolloAccess(session.profile, desarrolloId!);
     const solicitudes = await listSolicitudesApartadoPendientes(desarrolloId!);
     return NextResponse.json({ solicitudes });
   } catch (error) {

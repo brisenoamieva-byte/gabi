@@ -8,6 +8,7 @@ type AdminLeadsPageProps = {
     asesorId?: string;
     desde?: string;
     hasta?: string;
+    prospecto?: string;
   };
 };
 
@@ -29,6 +30,7 @@ export default async function AdminLeadsPage({ searchParams }: AdminLeadsPagePro
       initialAsesorId={searchParams?.asesorId}
       initialDesde={searchParams?.desde}
       initialHasta={searchParams?.hasta}
+      initialProspectoId={searchParams?.prospecto?.trim() || undefined}
     />
   );
 }

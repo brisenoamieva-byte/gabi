@@ -124,9 +124,17 @@ export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const adminLoginRedirect = () => {
+    const loginUrl = new URL("/admin/login", request.url);
+    if (pathname !== "/admin/login") {
+      loginUrl.searchParams.set("next", `${pathname}${search}`);
+    }
+    return NextResponse.redirect(loginUrl);
+  };
+
   if (!url || !anonKey) {
     if (!masterAdmin && !pathname.startsWith("/admin/login")) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return adminLoginRedirect();
     }
     return withBrandHeader(response, brand);
   }
@@ -156,11 +164,14 @@ export async function middleware(request: NextRequest) {
     pathname === "/admin/login" || pathname === "/admin/reset-password";
 
   if (!isPublicAdmin && !user && !masterAdmin) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+    return adminLoginRedirect();
   }
 
   if (pathname === "/admin/login" && (user || masterAdmin)) {
-    const dest = isDmbHost ? "/admin/dmb" : "/admin/documentos";
+    const nextPath = request.nextUrl.searchParams.get("next");
+    const safeNext =
+      nextPath?.startsWith("/admin/") && !nextPath.startsWith("//") ? nextPath : null;
+    const dest = safeNext ?? (isDmbHost ? "/admin/dmb" : "/admin/documentos");
     return NextResponse.redirect(new URL(dest, request.url));
   }
 

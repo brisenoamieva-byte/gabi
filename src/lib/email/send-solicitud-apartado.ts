@@ -89,7 +89,7 @@ export const sendSolicitudApartadoEmail = async (input: {
     return { sent: false, error: "no_gerente_email" as const };
   }
 
-  const link = `${getSiteUrl()}/admin/leads?prospecto=${encodeURIComponent(input.prospectoId)}`;
+  const link = `${getSiteUrl()}/admin/leads?desarrolloId=${encodeURIComponent(input.desarrolloId)}&prospecto=${encodeURIComponent(input.prospectoId)}`;
   const subject = `[GABI] Solicitud de apartado — ${input.prospectoNombre}`;
   const unidadLine = input.unidadNumero ? `Unidad sugerida: ${input.unidadNumero}` : "";
   const notasLine = input.notas?.trim() ? `Notas del asesor: ${input.notas.trim()}` : "";
