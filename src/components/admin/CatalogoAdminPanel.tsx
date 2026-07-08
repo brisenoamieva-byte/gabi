@@ -344,7 +344,11 @@ export function CatalogoAdminPanel() {
         throw new Error(data.error ?? "No se pudo actualizar.");
       }
 
-      setSuccess(item.activo ? "Desarrollo desactivado." : "Desarrollo reactivado.");
+      setSuccess(
+        item.activo
+          ? "Desarrollo desactivado — CRM y automatizaciones pausadas."
+          : "Desarrollo reactivado — CRM y automatizaciones habilitadas.",
+      );
       await loadData();
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Error al actualizar");

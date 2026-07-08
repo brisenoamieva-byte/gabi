@@ -355,6 +355,42 @@ export const getDesarrolloCatalogById = async (
   return data ? toDesarrolloAdmin(data) : null;
 };
 
+const syncCrmPlaybookOperativo = async (desarrolloId: string, activo: boolean): Promise<void> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return;
+  }
+
+  const { data: existing } = await supabase
+    .from("crm_playbook_configs")
+    .select("block_etapa, steps")
+    .eq("desarrollo_id", desarrolloId)
+    .maybeSingle();
+
+  const { error } = await supabase.from("crm_playbook_configs").upsert(
+    {
+      desarrollo_id: desarrolloId,
+      enabled: activo,
+      block_etapa: (existing?.block_etapa as boolean | undefined) ?? true,
+      steps: (existing?.steps as unknown[] | undefined) ?? [],
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "desarrollo_id" },
+  );
+
+  if (error && !error.message.includes("crm_playbook_configs")) {
+    throw new Error(error.message);
+  }
+};
+
+/** Activa o pausa un desarrollo; sincroniza playbook CRM y automatizaciones. */
+export const setDesarrolloOperativo = async (
+  id: string,
+  activo: boolean,
+): Promise<DesarrolloCatalogAdminRecord> => {
+  return updateDesarrolloCatalog(id, { activo });
+};
+
 export const createDesarrolloCatalog = async (
   input: DesarrolloCatalogInput,
 ): Promise<DesarrolloCatalogAdminRecord> => {
@@ -489,6 +525,10 @@ export const updateDesarrolloCatalog = async (
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (input.activo !== undefined) {
+    await syncCrmPlaybookOperativo(id, input.activo);
   }
 
   return toDesarrolloAdmin(data);

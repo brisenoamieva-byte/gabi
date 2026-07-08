@@ -8,6 +8,7 @@ import {
   Clock,
   Loader2,
   Mail,
+  PauseCircle,
   Users,
 } from "lucide-react";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
@@ -58,7 +59,8 @@ export function DesarrolloHubCard({
   const updatedLabel =
     formatCatalogDate(desarrollo.updatedAt) ?? formatCatalogDate(stats.campanaUpdatedAt);
   const marcaLabel = resolveComercializadorLabel(desarrollo, comercializadoraNames);
-  const isActive = desarrollo.estado === "activo";
+  const isCatalogActivo = desarrollo.catalogActivo !== false;
+  const isMarketActive = desarrollo.estado === "activo";
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-gabi-forest/20 hover:shadow-md">
@@ -92,17 +94,28 @@ export function DesarrolloHubCard({
             <h3 className="min-w-0 flex-1 text-lg font-black leading-tight text-gabi-forest group-hover:text-gabi-forest-light">
               {desarrollo.nombre}
             </h3>
-            {isActive ? (
-              <CheckCircle2
-                className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"
-                aria-label="Activo"
-              />
+            {isCatalogActivo ? (
+              isMarketActive ? (
+                <CheckCircle2
+                  className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"
+                  aria-label="Activo"
+                />
+              ) : (
+                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-label="Próximamente" />
+              )
             ) : (
-              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-label="Próximamente" />
+              <PauseCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-label="Pausado" />
             )}
           </div>
 
-          <p className="mt-0.5 text-xs font-medium text-slate-500">{marcaLabel}</p>
+          <p className="mt-0.5 text-xs font-medium text-slate-500">
+            {marcaLabel}
+            {!isCatalogActivo ? (
+              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
+                Pausado
+              </span>
+            ) : null}
+          </p>
 
           {stats.parseurEmail ? (
             <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-600">

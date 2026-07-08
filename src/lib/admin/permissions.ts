@@ -71,6 +71,10 @@ export const canAccessInventarioApi = (profile: AdminProfile) =>
 
 export const canDeleteProspectos = (profile: AdminProfile) => isSuperAdmin(profile);
 
+export const canManageDesarrolloOperativo = (profile: AdminProfile, desarrolloId: string) =>
+  canAccessDesarrollo(profile, desarrolloId) &&
+  (isSuperAdmin(profile) || profile.rol === "gerente");
+
 export const canReassignProspectos = (profile: AdminProfile) =>
   canAccessModule(profile, "leads");
 

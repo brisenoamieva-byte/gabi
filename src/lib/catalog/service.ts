@@ -85,6 +85,7 @@ const toDesarrollo = (row: {
   crm: Desarrollo["crm"] | null;
   recorrido_etapas: string[] | null;
   recorrido_version: number | null;
+  activo?: boolean;
   created_at?: string;
   updated_at?: string;
 }): DesarrolloRecord =>
@@ -110,6 +111,7 @@ const toDesarrollo = (row: {
       ? row.recorrido_etapas
       : [...DEFAULT_RECORRIDO_ETAPAS],
     recorridoVersion: row.recorrido_version ?? 2,
+    catalogActivo: row.activo ?? true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -298,6 +300,38 @@ export const listActiveDesarrollos = async (): Promise<DesarrolloRecord[]> => {
 
   if (error || !data?.length) {
     return fallbackDesarrolloRecords().filter((item) => item.estado === "activo");
+  }
+
+  return data.map(toDesarrollo);
+};
+
+/** Catálogo admin: opcionalmente incluye desarrollos pausados (activo=false). */
+export const listDesarrolloRecords = async (options?: {
+  includeInactive?: boolean;
+}): Promise<DesarrolloRecord[]> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    const all = fallbackDesarrolloRecords().map((item) => ({ ...item, catalogActivo: true }));
+    if (options?.includeInactive) {
+      return all;
+    }
+    return all.filter((item) => item.estado === "activo");
+  }
+
+  let query = supabase.from("desarrollos_catalog").select("*").order("nombre", { ascending: true });
+
+  if (!options?.includeInactive) {
+    query = query.eq("activo", true).eq("estado", "activo");
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data?.length) {
+    const fallback = fallbackDesarrolloRecords().map((item) => ({ ...item, catalogActivo: true }));
+    return options?.includeInactive
+      ? fallback
+      : fallback.filter((item) => item.estado === "activo");
   }
 
   return data.map(toDesarrollo);

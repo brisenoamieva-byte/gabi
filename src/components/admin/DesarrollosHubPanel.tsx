@@ -20,6 +20,7 @@ import {
 import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
 import { DesarrolloHubCard } from "@/components/admin/DesarrolloHubCard";
 import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
+import { DesarrolloOperativoCard } from "@/components/admin/DesarrolloOperativoCard";
 import type { ComercializadoraAdminRecord } from "@/lib/admin/catalog-service";
 import { filterDesarrollosHub, getDesarrolloHeroImage } from "@/lib/catalog/desarrollo-hub-utils";
 import { getDesarrolloXperienceProductId } from "@/lib/comercial/xperience-catalog-ids";
@@ -121,7 +122,12 @@ export function DesarrollosHubPanel({
   const [hubTab, setHubTab] = useState<HubTab>(
     tabFromUrl && HUB_TABS.some((item) => item.id === tabFromUrl) ? tabFromUrl : "desarrollos",
   );
+  const [desarrollosState, setDesarrollosState] = useState(desarrollos);
   const [marcaFilter, setMarcaFilter] = useState(marcaFromUrl ?? "");
+
+  useEffect(() => {
+    setDesarrollosState(desarrollos);
+  }, [desarrollos]);
 
   const comercializadoraNames = useMemo(
     () => Object.fromEntries(comercializadoras.map((item) => [item.id, item.nombre])),
@@ -129,19 +135,19 @@ export function DesarrollosHubPanel({
   );
 
   const selectedDesarrollo = useMemo(() => {
-    if (!desarrollos.length || !selectedFromUrl) {
+    if (!desarrollosState.length || !selectedFromUrl) {
       return null;
     }
-    return desarrollos.find((item) => item.id === selectedFromUrl) ?? null;
-  }, [desarrollos, selectedFromUrl]);
+    return desarrollosState.find((item) => item.id === selectedFromUrl) ?? null;
+  }, [desarrollosState, selectedFromUrl]);
 
   const filteredDesarrollos = useMemo(
-    () => filterDesarrollosHub(desarrollos, searchQuery, marcaFilter || undefined),
-    [desarrollos, marcaFilter, searchQuery],
+    () => filterDesarrollosHub(desarrollosState, searchQuery, marcaFilter || undefined),
+    [desarrollosState, marcaFilter, searchQuery],
   );
 
   const desarrollosByMarca = useMemo(() => {
-    const counts = desarrollos.reduce<Record<string, number>>((acc, item) => {
+    const counts = desarrollosState.reduce<Record<string, number>>((acc, item) => {
       acc[item.comercializadoraId] = (acc[item.comercializadoraId] ?? 0) + 1;
       return acc;
     }, {});
@@ -151,7 +157,7 @@ export function DesarrollosHubPanel({
         desarrollosAsignados: counts[marca.id] ?? 0,
       }))
       .filter((marca) => marca.desarrollosAsignados > 0);
-  }, [comercializadoras, desarrollos]);
+  }, [comercializadoras, desarrollosState]);
 
   const loadStats = useCallback(
     async (desarrolloId: string) => {
@@ -261,10 +267,10 @@ export function DesarrollosHubPanel({
   );
 
   useEffect(() => {
-    for (const desarrollo of desarrollos) {
+    for (const desarrollo of desarrollosState) {
       void loadStats(desarrollo.id);
     }
-  }, [desarrollos, loadStats]);
+  }, [desarrollosState, loadStats]);
 
   useEffect(() => {
     if (tabFromUrl && HUB_TABS.some((item) => item.id === tabFromUrl)) {
@@ -320,7 +326,7 @@ export function DesarrollosHubPanel({
     pushHubUrl({ tab: "desarrollos" });
   };
 
-  if (!desarrollos.length) {
+  if (!desarrollosState.length) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
         No tienes desarrollos asignados.
@@ -415,6 +421,20 @@ export function DesarrollosHubPanel({
         </div>
 
         <DesarrolloOnboardingCard desarrolloId={selectedDesarrollo.id} />
+
+        <DesarrolloOperativoCard
+          desarrolloId={selectedDesarrollo.id}
+          desarrolloNombre={selectedDesarrollo.nombre}
+          catalogActivo={selectedDesarrollo.catalogActivo !== false}
+          canManage={isSuperAdmin || permissions.leads}
+          onUpdated={(activo) => {
+            setDesarrollosState((prev) =>
+              prev.map((item) =>
+                item.id === selectedDesarrollo.id ? { ...item, catalogActivo: activo } : item,
+              ),
+            );
+          }}
+        />
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {permissions.leads ? (
@@ -518,7 +538,7 @@ export function DesarrollosHubPanel({
         {permissions.leads ? (
           <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
             <CampanasAdminPanel
-              desarrollos={desarrollos}
+              desarrollos={desarrollosState}
               embedded
               initialDesarrolloId={selectedDesarrollo.id}
             />
@@ -672,7 +692,7 @@ export function DesarrollosHubPanel({
 
       {hubTab === "campanas" && permissions.leads ? (
         <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
-          <CampanasAdminPanel desarrollos={desarrollos} scopeLabel={scopeLabel} />
+          <CampanasAdminPanel desarrollos={desarrollosState} scopeLabel={scopeLabel} />
         </div>
       ) : null}
 

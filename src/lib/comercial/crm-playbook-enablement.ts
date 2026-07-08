@@ -2,10 +2,7 @@ import {
   CRM_PLAYBOOK_PILOT_DESARROLLO_IDS,
   getDefaultCrmPlaybook,
 } from "@/lib/comercial/crm-playbook";
-import {
-  isDesarrolloAutomationActive,
-  isDesarrolloAutomationPausedByPolicy,
-} from "@/lib/comercial/desarrollo-automation";
+import { isDesarrolloAutomationActive } from "@/lib/comercial/desarrollo-automation";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 /** Playbook activo salvo fila explícita con enabled=false en crm_playbook_configs. */
@@ -69,5 +66,5 @@ export const listDesarrollosWithCrmPlaybookEnabled = async (): Promise<string[]>
 
   return (catalogRows ?? [])
     .map((row) => row.id as string)
-    .filter((id) => !explicitlyDisabled.has(id) && !isDesarrolloAutomationPausedByPolicy(id));
+    .filter((id) => !explicitlyDisabled.has(id));
 };

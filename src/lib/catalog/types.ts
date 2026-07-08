@@ -15,6 +15,8 @@ export type DesarrolloRecord = Desarrollo & {
   comercializadoraId: string;
   recorridoEtapas: string[];
   recorridoVersion: number;
+  /** Operativo en catálogo (false = pausado, sin automatizaciones CRM). */
+  catalogActivo?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };

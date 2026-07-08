@@ -3,7 +3,8 @@ import { DesarrollosHubPanel } from "@/components/admin/DesarrollosHubPanel";
 import { listComercializadoras, type ComercializadoraAdminRecord } from "@/lib/admin/catalog-service";
 import { getAdminCatalogContext } from "@/lib/admin/catalog-context";
 import { requireAdminModule } from "@/lib/admin/guards";
-import { canAccessModule, isSuperAdmin } from "@/lib/admin/permissions";
+import { canAccessModule, filterDesarrollosForAdmin, isSuperAdmin } from "@/lib/admin/permissions";
+import { listDesarrolloRecords } from "@/lib/catalog/service";
 import { comercializadores as fallbackComercializadores } from "@/lib/data";
 
 const fallbackComercializadoras = (): ComercializadoraAdminRecord[] =>
@@ -25,6 +26,10 @@ const fallbackComercializadoras = (): ComercializadoraAdminRecord[] =>
 export default async function AdminDesarrollosPage() {
   const session = await requireAdminModule("leads");
   const catalog = await getAdminCatalogContext(session.profile);
+  const hubDesarrollos = filterDesarrollosForAdmin(
+    await listDesarrolloRecords({ includeInactive: true }),
+    session.profile,
+  );
 
   let comercializadoras: ComercializadoraAdminRecord[] = [];
   try {
@@ -49,7 +54,7 @@ export default async function AdminDesarrollosPage() {
       }
     >
       <DesarrollosHubPanel
-        desarrollos={catalog.allowedDesarrollos}
+        desarrollos={hubDesarrollos}
         clusters={catalog.clusters}
         comercializadoras={comercializadoras}
         scopeLabel={catalog.scopeLabel}
