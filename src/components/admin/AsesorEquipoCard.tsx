@@ -203,7 +203,7 @@ export function AsesorEquipoCard({
           className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#2DD4BF]/40 bg-[#2DD4BF]/10 text-xs font-bold text-gabi-forest disabled:opacity-40"
         >
           <Shield className="h-3.5 w-3.5" />
-          Acceso admin
+          Acceso admin · correo
         </button>
       ) : null}
     </article>

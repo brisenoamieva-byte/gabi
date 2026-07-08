@@ -1,5 +1,6 @@
-import { getEmailConfig, isEmailConfigured } from "@/lib/email/config";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { getGerenteEmailsForDesarrollo } from "@/lib/comercial/gerente-email-recipients";
+import { isEmailConfigured } from "@/lib/email/config";
+import { sendViaResend } from "@/lib/email/send-via-resend";
 
 const getSiteUrl = () => {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
@@ -12,64 +13,9 @@ const getSiteUrl = () => {
   return "http://localhost:3000";
 };
 
-const sendViaResend = async (params: {
-  to: string;
-  subject: string;
-  html: string;
-  text: string;
-}) => {
-  const { apiKey, from } = getEmailConfig();
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY no configurada.");
-  }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [params.to],
-      subject: params.subject,
-      html: params.html,
-      text: params.text,
-    }),
-  });
-
-  const data = (await response.json()) as { message?: string };
-  if (!response.ok) {
-    throw new Error(data.message ?? `Resend respondió ${response.status}`);
-  }
-};
-
-const getGerenteEmailsForDesarrollo = async (desarrolloId: string): Promise<string[]> => {
-  const supabase = createSupabaseServiceClient();
-  if (!supabase) {
-    return [];
-  }
-
-  const { data } = await supabase
-    .from("admin_profiles")
-    .select("email, rol, desarrollos_ids, activo")
-    .eq("activo", true);
-
-  const emails = new Set<string>();
-  for (const row of data ?? []) {
-    const rol = row.rol as string;
-    const desarrollos = (row.desarrollos_ids as string[] | null) ?? [];
-    if (rol === "superadmin" || rol === "admin") {
-      emails.add((row.email as string).trim());
-      continue;
-    }
-    if (rol === "gerente" && desarrollos.includes(desarrolloId)) {
-      emails.add((row.email as string).trim());
-    }
-  }
-
-  return Array.from(emails).filter(Boolean);
-};
+export type SolicitudApartadoEmailResult =
+  | { sent: true; recipients: string[] }
+  | { sent: false; error: "email_not_configured" | "no_gerente_email" | "send_failed"; detail?: string };
 
 export const sendSolicitudApartadoEmail = async (input: {
   desarrolloId: string;
@@ -79,14 +25,14 @@ export const sendSolicitudApartadoEmail = async (input: {
   asesorNombre: string;
   notas?: string;
   unidadNumero?: string | null;
-}) => {
+}): Promise<SolicitudApartadoEmailResult> => {
   if (!isEmailConfigured()) {
-    return { sent: false, error: "email_not_configured" as const };
+    return { sent: false, error: "email_not_configured" };
   }
 
   const recipients = await getGerenteEmailsForDesarrollo(input.desarrolloId);
   if (!recipients.length) {
-    return { sent: false, error: "no_gerente_email" as const };
+    return { sent: false, error: "no_gerente_email" };
   }
 
   const link = `${getSiteUrl()}/admin/leads?desarrolloId=${encodeURIComponent(input.desarrolloId)}&prospecto=${encodeURIComponent(input.prospectoId)}`;
@@ -101,7 +47,7 @@ export const sendSolicitudApartadoEmail = async (input: {
     unidadLine,
     notasLine,
     "",
-    `Regístralo en Admin → Leads → Registrar apartado:`,
+    "Regístralo en Admin → Leads:",
     link,
   ]
     .filter(Boolean)
@@ -118,9 +64,34 @@ export const sendSolicitudApartadoEmail = async (input: {
     <p><a href="${link}">Abrir en GABI Admin y registrar apartado</a></p>
   `;
 
-  for (const to of recipients) {
-    await sendViaResend({ to, subject, html, text });
+  try {
+    for (const to of recipients) {
+      await sendViaResend({ to, subject, html, text });
+    }
+    return { sent: true, recipients };
+  } catch (error) {
+    return {
+      sent: false,
+      error: "send_failed",
+      detail: error instanceof Error ? error.message : "Error al enviar correo.",
+    };
+  }
+};
+
+export function formatSolicitudApartadoEmailHint(result: SolicitudApartadoEmailResult): string {
+  if (result.sent) {
+    return `Gerencia notificada por correo (${result.recipients.join(", ")}).`;
   }
 
-  return { sent: true, recipients };
-};
+  if (result.error === "email_not_configured") {
+    return "Correo no configurado en el servidor — gerencia verá la solicitud en Admin → Leads.";
+  }
+
+  if (result.error === "no_gerente_email") {
+    return "No hay correo de gerente configurado — la solicitud quedó en Admin → Leads.";
+  }
+
+  return result.detail
+    ? `Solicitud registrada, pero falló el correo: ${result.detail}`
+    : "Solicitud registrada, pero no se pudo enviar el correo.";
+}

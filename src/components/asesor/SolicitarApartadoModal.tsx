@@ -34,6 +34,7 @@ export function SolicitarApartadoModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [emailHint, setEmailHint] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,6 +119,7 @@ export function SolicitarApartadoModal({
 
       const data = (await response.json()) as {
         solicitud?: SolicitudApartadoRow;
+        emailHint?: string;
         error?: string;
       };
 
@@ -126,6 +128,7 @@ export function SolicitarApartadoModal({
       }
 
       setSuccess(true);
+      setEmailHint(data.emailHint ?? "");
       setSolicitudPendiente(data.solicitud ?? null);
       onSuccess();
     } catch (submitError) {
@@ -176,7 +179,8 @@ export function SolicitarApartadoModal({
             <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               <p className="font-semibold">Solicitud enviada</p>
               <p className="mt-1">
-                El gerente recibirá un correo y podrá registrar el apartado desde Admin → Leads.
+                {emailHint ||
+                  "Gerencia puede registrar el apartado desde Admin → Leads (también en la bandeja de solicitudes)."}
               </p>
             </div>
           ) : null}

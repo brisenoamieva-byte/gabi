@@ -1,10 +1,15 @@
 import { isLeadershipAsesorRol, normalizeAsesorRol } from "@/lib/asesores/types";
+import {
+  formatGerenteAdminAccessEmailHint,
+  sendGerenteAdminAccessEmail,
+} from "@/lib/email/send-gerente-admin-access";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type CoordinadorAdminSync = {
   adminLinked: boolean;
   adminInviteSent: boolean;
   adminRevoked: boolean;
+  adminEmailSent?: boolean;
   adminMessage?: string;
 };
 
@@ -131,13 +136,22 @@ export const syncCoordinadorAdminAccess = async (input: {
       throw new Error(error.message);
     }
 
+    const emailResult = await sendGerenteAdminAccessEmail({
+      email: input.email,
+      nombre: input.nombre,
+    });
+
+    const emailHint = formatGerenteAdminAccessEmailHint(emailResult);
+    const supabaseHint = invited
+      ? "Supabase también envió invitación (revisa spam si no llega)."
+      : "Si ya tenías usuario, usa el enlace del correo GABI para definir contraseña.";
+
     return {
       adminLinked: true,
       adminInviteSent: invited,
       adminRevoked: false,
-      adminMessage: invited
-        ? `Invitación enviada a ${input.email} para entrar en /admin/login y definir contraseña.`
-        : `Acceso admin activo para ${input.email} en /admin/login.`,
+      adminEmailSent: emailResult.sent,
+      adminMessage: `${emailHint} ${supabaseHint} Entra en /admin/login.`,
     };
   } catch (syncError) {
     return {

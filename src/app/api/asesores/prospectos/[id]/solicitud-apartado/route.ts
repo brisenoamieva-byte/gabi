@@ -52,7 +52,7 @@ export async function POST(request: Request, context: RouteContext) {
       ? prospecto.cotizaciones.find((item) => item.id === body.cotizacionId)
       : prospecto.cotizaciones[0];
 
-    const solicitud = await createSolicitudApartado({
+    const { solicitud, emailHint } = await createSolicitudApartado({
       prospectoId: id,
       desarrolloId: prospecto.desarrollo_id,
       asesorId,
@@ -64,7 +64,7 @@ export async function POST(request: Request, context: RouteContext) {
       notas: body.notas,
     });
 
-    return NextResponse.json({ solicitud }, { status: 201 });
+    return NextResponse.json({ solicitud, emailHint }, { status: 201 });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {

@@ -1,5 +1,9 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
-import { sendSolicitudApartadoEmail } from "@/lib/email/send-solicitud-apartado";
+import {
+  formatSolicitudApartadoEmailHint,
+  sendSolicitudApartadoEmail,
+  type SolicitudApartadoEmailResult,
+} from "@/lib/email/send-solicitud-apartado";
 
 export type SolicitudApartadoEstado = "pendiente" | "atendida" | "cancelada";
 
@@ -82,6 +86,12 @@ export const listSolicitudesApartadoPendientes = async (
   return (data ?? []).map((row) => mapRow(row as Record<string, unknown>));
 };
 
+export type CreateSolicitudApartadoResult = {
+  solicitud: SolicitudApartadoRow;
+  email: SolicitudApartadoEmailResult;
+  emailHint: string;
+};
+
 export const createSolicitudApartado = async (input: {
   prospectoId: string;
   desarrolloId: string;
@@ -92,7 +102,7 @@ export const createSolicitudApartado = async (input: {
   unidadId?: string;
   cotizacionId?: string;
   notas?: string;
-}): Promise<SolicitudApartadoRow> => {
+}): Promise<CreateSolicitudApartadoResult> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     throw new Error("Supabase no configurado.");
@@ -139,21 +149,21 @@ export const createSolicitudApartado = async (input: {
 
   const solicitud = mapRow(data as Record<string, unknown>);
 
-  try {
-    await sendSolicitudApartadoEmail({
-      desarrolloId: input.desarrolloId,
-      desarrolloNombre: input.desarrolloNombre,
-      prospectoId: input.prospectoId,
-      prospectoNombre: input.prospectoNombre,
-      asesorNombre: input.asesorNombre,
-      notas: input.notas,
-      unidadNumero: solicitud.unidadNumero,
-    });
-  } catch {
-    // no bloquear si el correo falla
-  }
+  const email = await sendSolicitudApartadoEmail({
+    desarrolloId: input.desarrolloId,
+    desarrolloNombre: input.desarrolloNombre,
+    prospectoId: input.prospectoId,
+    prospectoNombre: input.prospectoNombre,
+    asesorNombre: input.asesorNombre,
+    notas: input.notas,
+    unidadNumero: solicitud.unidadNumero,
+  });
 
-  return solicitud;
+  return {
+    solicitud,
+    email,
+    emailHint: formatSolicitudApartadoEmailHint(email),
+  };
 };
 
 export const markSolicitudApartadoAtendida = async (
