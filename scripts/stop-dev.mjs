@@ -2,6 +2,9 @@ import { execSync } from "node:child_process";
 
 const ports = [3000, 3001, 3002];
 
+/** Solo útil en dev local; en Vercel/CI no hay servidor en esos puertos. */
+const isCiOrVercel = Boolean(process.env.VERCEL || process.env.CI);
+
 function killPortWindows(port) {
   try {
     const output = execSync(`netstat -ano | findstr ":${port} "`, {
@@ -35,6 +38,10 @@ function killPortWindows(port) {
   } catch {
     // puerto libre
   }
+}
+
+if (isCiOrVercel) {
+  process.exit(0);
 }
 
 if (process.platform === "win32") {

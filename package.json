@@ -6,7 +6,7 @@
     "dev": "node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs && next dev",
     "dev:stop": "node scripts/stop-dev.mjs",
     "dev:reset": "npm run predev && node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs --full && next dev",
-    "build": "node scripts/stop-dev.mjs && node scripts/clean-dev-pwa.mjs --full && next build",
+    "build": "node scripts/clean-dev-pwa.mjs --full && next build",
     "start": "next start",
     "lint": "next lint",
     "process-logo": "node scripts/process-gabi-logo.mjs",
