@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { CRM_PLAYBOOK_PILOT_DESARROLLO_IDS } from "@/lib/comercial/crm-playbook";
+import { listDesarrollosWithCrmPlaybookEnabled } from "@/lib/comercial/crm-playbook-enablement";
 import { sendCadenciaReminderToAsesor } from "@/lib/comercial/cadencia-notifications";
 import {
   listCadenciaDailyReminderTargets,
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   let remindersSent = 0;
   let targetsChecked = 0;
 
-  for (const desarrolloId of CRM_PLAYBOOK_PILOT_DESARROLLO_IDS) {
+  for (const desarrolloId of await listDesarrollosWithCrmPlaybookEnabled()) {
     const config = await getCrmPlaybookConfig(desarrolloId);
     if (!config?.enabled) {
       continue;

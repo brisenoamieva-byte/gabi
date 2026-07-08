@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, Loader2, LogIn, LogOut, MapPin } from "lucide-react";
 import type { AsesorGuardiaHoy } from "@/lib/asesores/guardias-service";
-import { isGuardiasMarcajesEnabled } from "@/lib/comercial/guardias";
 import { guardiaMarcajeTipoLabel } from "@/lib/comercial/guardia-marcaje-types";
 
 type AsesorGuardiaHoyCardProps = {
@@ -47,38 +46,38 @@ function geolocationErrorMessage(error: GeolocationPositionError): string {
 
 export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHoyCardProps) {
   const [guardias, setGuardias] = useState<AsesorGuardiaHoy[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [marcajesEnabled, setMarcajesEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submittingTurno, setSubmittingTurno] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const isPilot = isGuardiasMarcajesEnabled(desarrolloId);
-
   const load = useCallback(async () => {
-    if (!isPilot) {
-      setGuardias([]);
-      return;
-    }
-
     setLoading(true);
     setError("");
 
     try {
       const params = new URLSearchParams({ asesorId, desarrolloId });
       const response = await fetch(`/api/asesores/guardias?${params}`);
-      const data = (await response.json()) as { guardias?: AsesorGuardiaHoy[]; error?: string };
+      const data = (await response.json()) as {
+        guardias?: AsesorGuardiaHoy[];
+        marcajesEnabled?: boolean;
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo cargar la guardia.");
       }
+      setMarcajesEnabled(Boolean(data.marcajesEnabled));
       setGuardias(data.guardias ?? []);
     } catch (e) {
+      setMarcajesEnabled(false);
       setGuardias([]);
       setError(e instanceof Error ? e.message : "Error al cargar guardia.");
     } finally {
       setLoading(false);
     }
-  }, [asesorId, desarrolloId, isPilot]);
+  }, [asesorId, desarrolloId]);
 
   useEffect(() => {
     void load();
@@ -129,10 +128,6 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
     }
   };
 
-  if (!isPilot) {
-    return null;
-  }
-
   if (loading) {
     return (
       <div className="flex items-center gap-2 rounded-2xl border border-slate-200/90 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
@@ -140,6 +135,10 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
         Guardia de hoy…
       </div>
     );
+  }
+
+  if (!marcajesEnabled) {
+    return null;
   }
 
   if (!guardias.length) {

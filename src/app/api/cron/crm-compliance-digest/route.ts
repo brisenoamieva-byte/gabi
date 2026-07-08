@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { CRM_PLAYBOOK_PILOT_DESARROLLO_IDS } from "@/lib/comercial/crm-playbook";
+import { listDesarrollosWithCrmPlaybookEnabled } from "@/lib/comercial/crm-playbook-enablement";
 import {
   getDesarrolloComplianceReport,
   listComplianceDigestTargets,
@@ -49,7 +49,7 @@ async function runComplianceDigest(): Promise<{
 
   const supabase = createSupabaseServiceClient();
 
-  for (const desarrolloId of CRM_PLAYBOOK_PILOT_DESARROLLO_IDS) {
+  for (const desarrolloId of await listDesarrollosWithCrmPlaybookEnabled()) {
     const config = await getCrmPlaybookConfig(desarrolloId);
     if (!config?.enabled) {
       continue;

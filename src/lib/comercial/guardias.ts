@@ -1,5 +1,4 @@
 import { PASAJE_ALAMOS_ID } from "@/lib/catalog/desarrollos-registry";
-import { MISION_LA_GAVIA_DESARROLLO_ID } from "@/lib/catalog/mision-la-gavia";
 
 export const GUARDIA_TURNOS = ["matutino", "vespertino"] as const;
 export type GuardiaTurno = (typeof GUARDIA_TURNOS)[number];
@@ -7,17 +6,8 @@ export type GuardiaTurno = (typeof GUARDIA_TURNOS)[number];
 export const GUARDIA_ESTADOS = ["borrador", "publicada"] as const;
 export type GuardiaEstado = (typeof GUARDIA_ESTADOS)[number];
 
-/** Desarrollos con marcajes GPS de entrada/salida en caseta. */
-export const GUARDIAS_MARCAJES_DESARROLLO_IDS = [
-  PASAJE_ALAMOS_ID,
-  MISION_LA_GAVIA_DESARROLLO_ID,
-] as const;
-
 /** Desarrollo por defecto en admin Guardias (Pasaje Álamos). */
 export const GUARDIAS_PILOT_DESARROLLO_ID = PASAJE_ALAMOS_ID;
-
-export const isGuardiasMarcajesEnabled = (desarrolloId: string): boolean =>
-  (GUARDIAS_MARCAJES_DESARROLLO_IDS as readonly string[]).includes(desarrolloId);
 
 export const guardiaTurnoLabel: Record<GuardiaTurno, string> = {
   matutino: "10:00 – 15:00",

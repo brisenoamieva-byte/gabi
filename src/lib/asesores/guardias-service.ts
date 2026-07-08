@@ -14,7 +14,6 @@ import {
   guardiaTurnoLabel,
   guardiaTurnoShortLabel,
   isGuardiaTurno,
-  isGuardiasMarcajesEnabled,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -129,6 +128,26 @@ function toMarcajeResumen(row: MarcajeRow): GuardiaMarcajeResumen {
   };
 }
 
+export async function hasGuardiaCasetaConfig(desarrolloId: string): Promise<boolean> {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return desarrolloId in GUARDIA_CASETA_FALLBACK;
+  }
+
+  const { data, error } = await supabase
+    .from("guardia_caseta_config")
+    .select("desarrollo_id")
+    .eq("desarrollo_id", desarrolloId)
+    .maybeSingle();
+
+  if (error) {
+    assertMarcajesTable(error.message);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
 export async function getCasetaConfig(desarrolloId: string): Promise<GuardiaCasetaConfig> {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -212,7 +231,7 @@ export const getGuardiasHoyForAsesor = async (
 ): Promise<AsesorGuardiaHoy[]> => {
   await assertAsesorDesarrollo(asesorId, desarrolloId);
 
-  if (!isGuardiasMarcajesEnabled(desarrolloId)) {
+  if (!(await hasGuardiaCasetaConfig(desarrolloId))) {
     return [];
   }
 
@@ -280,7 +299,7 @@ export async function registerGuardiaMarcaje(input: {
 }): Promise<GuardiaMarcajeResumen> {
   await assertAsesorDesarrollo(input.asesorId, input.desarrolloId);
 
-  if (!isGuardiasMarcajesEnabled(input.desarrolloId)) {
+  if (!(await hasGuardiaCasetaConfig(input.desarrolloId))) {
     throw new Error("Marcajes de guardia no están activos para este desarrollo.");
   }
 

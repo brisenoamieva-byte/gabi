@@ -4,7 +4,7 @@ import type {
   GuardiaMarcajesDiaPayload,
 } from "@/lib/admin/guardia-marcajes-types";
 import type { AdminProfile } from "@/lib/admin/types";
-import { getCasetaConfig } from "@/lib/asesores/guardias-service";
+import { getCasetaConfig, hasGuardiaCasetaConfig } from "@/lib/asesores/guardias-service";
 import { formatCasetaEtiquetaResumen } from "@/lib/comercial/guardia-caseta";
 import type { GuardiaMarcajeTipo } from "@/lib/comercial/guardia-marcaje-types";
 import {
@@ -30,6 +30,17 @@ export async function listGuardiaMarcajesDia(
   asesorNames: Record<string, string>,
 ): Promise<GuardiaMarcajesDiaPayload> {
   assertDesarrolloAccess(profile, desarrolloId);
+
+  const marcajesEnabled = await hasGuardiaCasetaConfig(desarrolloId);
+  if (!marcajesEnabled) {
+    return {
+      fecha,
+      desarrolloId,
+      marcajesEnabled: false,
+      caseta: null,
+      filas: [],
+    };
+  }
 
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -127,6 +138,7 @@ export async function listGuardiaMarcajesDia(
   return {
     fecha,
     desarrolloId,
+    marcajesEnabled: true,
     caseta: {
       etiqueta: formatCasetaEtiquetaResumen(caseta),
       radioMetros: caseta.radioMetros,

@@ -199,11 +199,11 @@ export const mergePlaybookConfigWithDefaults = (
   return sortPlaybookSteps(merged);
 };
 
-export const getDefaultCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig | null => {
-  if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
-    return null;
+export const getDefaultCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig => {
+  if (isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+    return DEFAULT_CRM_PLAYBOOKS[desarrolloId as CrmPlaybookPilotDesarrolloId];
   }
-  return DEFAULT_CRM_PLAYBOOKS[desarrolloId as CrmPlaybookPilotDesarrolloId];
+  return buildGenericCrmPlaybook(desarrolloId);
 };
 
 export const buildGenericCrmPlaybook = (desarrolloId: string): CrmPlaybookConfig => ({

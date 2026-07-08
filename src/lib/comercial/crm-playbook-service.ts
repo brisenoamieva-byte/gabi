@@ -2,7 +2,6 @@ import type { ProspectoDetail, ProspectoListRow } from "@/lib/admin/prospectos-s
 import { listProspectos } from "@/lib/admin/prospectos-service";
 import { isLeadershipAsesorId, resolveProspectoAsesorFilter } from "@/lib/asesores/leadership-access";
 import {
-  buildGenericCrmPlaybook,
   canAdvancePlaybookEtapa,
   getAutoCompletedPlaybookStepIds,
   getDefaultCrmPlaybook,
@@ -90,13 +89,12 @@ const mapDbConfig = (row: DbPlaybookConfigRow, defaultConfig: CrmPlaybookConfig)
   };
 };
 
-export const getCrmPlaybookConfig = async (desarrolloId: string): Promise<CrmPlaybookConfig | null> => {
-  const pilotDefault = getDefaultCrmPlaybook(desarrolloId);
-  const parseFallback = pilotDefault ?? buildGenericCrmPlaybook(desarrolloId);
+export const getCrmPlaybookConfig = async (desarrolloId: string): Promise<CrmPlaybookConfig> => {
+  const defaultConfig = getDefaultCrmPlaybook(desarrolloId);
 
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
-    return pilotDefault;
+    return defaultConfig;
   }
 
   const { data, error } = await supabase
@@ -106,10 +104,10 @@ export const getCrmPlaybookConfig = async (desarrolloId: string): Promise<CrmPla
     .maybeSingle();
 
   if (error || !data) {
-    return pilotDefault;
+    return defaultConfig;
   }
 
-  return mapDbConfig(data as DbPlaybookConfigRow, parseFallback);
+  return mapDbConfig(data as DbPlaybookConfigRow, defaultConfig);
 };
 
 export const upsertCrmPlaybookConfig = async (
@@ -127,7 +125,7 @@ export const upsertCrmPlaybookConfig = async (
   }
 
   const pilotDefault = getDefaultCrmPlaybook(desarrolloId);
-  const defaultConfig = pilotDefault ?? buildGenericCrmPlaybook(desarrolloId);
+  const defaultConfig = pilotDefault;
   const steps = sortPlaybookSteps(parsePlaybookSteps(input.steps, defaultConfig.steps));
 
   const { error } = await supabase.from("crm_playbook_configs").upsert(
@@ -146,7 +144,7 @@ export const upsertCrmPlaybookConfig = async (
     throw new Error(error.message);
   }
 
-  return (await getCrmPlaybookConfig(desarrolloId))!;
+  return (await getCrmPlaybookConfig(desarrolloId));
 };
 
 export const getPlaybookProgressMap = async (prospectoIds: string[]): Promise<Map<string, string[]>> => {

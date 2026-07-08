@@ -6,6 +6,16 @@ alter table public.guardia_caseta_config
 comment on column public.guardia_caseta_config.puntos_extra is
   'Puntos adicionales válidos para marcaje GPS [{ lat, lng, radio_metros, etiqueta }].';
 
+insert into public.guardia_caseta_config (desarrollo_id, lat, lng, radio_metros, etiqueta)
+values (
+  'pasaje-alamos',
+  20.6046377,
+  -100.3799446,
+  100,
+  'Caseta ventas · Pasaje Álamos (Av. Industrialización #09, Álamos 2ª Secc.)'
+)
+on conflict (desarrollo_id) do nothing;
+
 update public.guardia_caseta_config
 set
   lat = 20.5936759,

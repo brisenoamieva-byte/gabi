@@ -25,7 +25,6 @@ import {
   logoutAsesorSession,
 } from "@/lib/session/asesor-session-actions";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
-import { formatPrice } from "@/lib/data";
 
 type ToolTile = {
   title: string;
@@ -138,9 +137,6 @@ export default function DashboardPage() {
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-black text-[#201044]">{desarrollo.nombre}</p>
-            <p className="text-xs text-slate-500">
-              Desde {formatPrice(desarrollo.precioDesde)} · {desarrollo.ubicacion}
-            </p>
           </div>
         </motion.div>
 

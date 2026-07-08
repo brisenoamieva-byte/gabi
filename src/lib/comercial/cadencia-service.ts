@@ -18,7 +18,7 @@ import {
   type CadenciaStatus,
   type CadenciaTouchStatus,
 } from "@/lib/comercial/cadencia-perfilamiento";
-import { isCrmPlaybookPilotDesarrollo } from "@/lib/comercial/crm-playbook";
+import { isCrmPlaybookEnabledForDesarrollo } from "@/lib/comercial/crm-playbook-enablement";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { isLeadershipAsesorId } from "@/lib/asesores/leadership-access";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
@@ -144,7 +144,7 @@ export const bootstrapCadenciaForProspecto = async (
     return { created: false };
   }
 
-  if (!isCrmPlaybookPilotDesarrollo(prospecto.desarrollo_id as string)) {
+  if (!(await isCrmPlaybookEnabledForDesarrollo(prospecto.desarrollo_id as string))) {
     return { created: false };
   }
 
@@ -582,7 +582,7 @@ export const ensureCadenciasForAsesor = async (
   desarrolloId: string,
 ): Promise<void> => {
   const supabase = createSupabaseServiceClient();
-  if (!supabase || !isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+  if (!supabase || !(await isCrmPlaybookEnabledForDesarrollo(desarrolloId))) {
     return;
   }
 
@@ -921,7 +921,7 @@ export const getCadenciaSummaryForProspecto = async (
 };
 
 export const ensureCadenciasForDesarrollo = async (desarrolloId: string): Promise<void> => {
-  if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+  if (!(await isCrmPlaybookEnabledForDesarrollo(desarrolloId))) {
     return;
   }
 
@@ -992,7 +992,7 @@ export const getAsesorCadenciaBrief = async (
   asesorId: string,
   desarrolloId: string,
 ): Promise<AsesorCadenciaBrief> => {
-  if (!isCrmPlaybookPilotDesarrollo(desarrolloId)) {
+  if (!(await isCrmPlaybookEnabledForDesarrollo(desarrolloId))) {
     return { hoyCount: 0, expiredCount: 0, activeCount: 0 };
   }
 

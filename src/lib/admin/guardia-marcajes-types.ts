@@ -22,12 +22,13 @@ export type GuardiaMarcajeAdminRow = {
 export type GuardiaMarcajesDiaPayload = {
   fecha: string;
   desarrolloId: string;
+  marcajesEnabled: boolean;
   caseta: {
     etiqueta: string | null;
     radioMetros: number;
     lat: number;
     lng: number;
-  };
+  } | null;
   filas: GuardiaMarcajeAdminRow[];
 };
 

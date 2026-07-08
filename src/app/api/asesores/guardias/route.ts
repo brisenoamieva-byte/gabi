@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getGuardiasHoyForAsesor } from "@/lib/asesores/guardias-service";
+import { getGuardiasHoyForAsesor, hasGuardiaCasetaConfig } from "@/lib/asesores/guardias-service";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 export async function GET(request: Request) {
@@ -12,8 +12,11 @@ export async function GET(request: Request) {
 
   try {
     const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
-    const guardias = await getGuardiasHoyForAsesor(asesorId, desarrolloId);
-    return NextResponse.json({ guardias, guardia: guardias[0] ?? null });
+    const [guardias, marcajesEnabled] = await Promise.all([
+      getGuardiasHoyForAsesor(asesorId, desarrolloId),
+      hasGuardiaCasetaConfig(desarrolloId),
+    ]);
+    return NextResponse.json({ guardias, guardia: guardias[0] ?? null, marcajesEnabled });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {
