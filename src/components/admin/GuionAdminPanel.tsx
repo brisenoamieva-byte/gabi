@@ -10,6 +10,8 @@ import {
   type RecorridoContenidoForm,
 } from "@/lib/catalog/recorrido-content-editor";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import { AdminImageUploadField } from "@/components/admin/AdminImageUploadField";
+import { ProductoCatalogAdminPanel } from "@/components/admin/ProductoCatalogAdminPanel";
 
 type GuionAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -166,8 +168,8 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
           </p>
         ) : null}
         <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Edita los textos que ve el asesor en la etapa de presentación del desarrollo. Los puntos
-          de interés del mapa y técnicas de cierre se mantienen del catálogo base.
+          Edita textos e imágenes del recorrido comercial. Sube logos y master plan desde aquí; ya
+          no necesitas tocar el código ni hacer deploy para cambiarlas.
         </p>
 
         <div className="mt-5 flex flex-wrap items-end gap-3">
@@ -285,14 +287,15 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
                 className="input-cotizador"
               />
             </Field>
-            <Field label="Logo (ruta)" className="sm:col-span-2">
-              <input
-                value={form.desarrolladorLogoPath}
-                onChange={(event) => patchForm({ desarrolladorLogoPath: event.target.value })}
-                className="input-cotizador"
-                placeholder="/logos/grupo-vinte.png"
-              />
-            </Field>
+            <AdminImageUploadField
+              label="Logo desarrollador"
+              className="sm:col-span-2"
+              value={form.desarrolladorLogoPath}
+              onChange={(url) => patchForm({ desarrolladorLogoPath: url })}
+              kind="recorrido-desarrollador-logo"
+              desarrolloId={desarrolloId}
+              hint="Slide «Desarrollador» del recorrido."
+            />
             <Field label="Historia" className="sm:col-span-2">
               <textarea
                 value={form.desarrolladorHistoria}
@@ -342,13 +345,24 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
                 className="input-cotizador"
               />
             </Field>
-            <Field label="Logo (ruta)" className="sm:col-span-2">
-              <input
-                value={form.overviewLogoPath}
-                onChange={(event) => patchForm({ overviewLogoPath: event.target.value })}
-                className="input-cotizador"
-              />
-            </Field>
+            <AdminImageUploadField
+              label="Logo desarrollo"
+              className="sm:col-span-2"
+              value={form.overviewLogoPath}
+              onChange={(url) => patchForm({ overviewLogoPath: url })}
+              kind="recorrido-overview-logo"
+              desarrolloId={desarrolloId}
+              hint="Slide «Desarrollo» del recorrido."
+            />
+            <AdminImageUploadField
+              label="Master plan"
+              className="sm:col-span-2"
+              value={form.overviewMasterPlanImage}
+              onChange={(url) => patchForm({ overviewMasterPlanImage: url })}
+              kind="recorrido-master-plan"
+              desarrolloId={desarrolloId}
+              hint="Imagen del plano maestro en la presentación del desarrollo."
+            />
             <Field label="Guía asesor" className="sm:col-span-2">
               <textarea
                 value={form.overviewGuiaAsesor}
@@ -397,6 +411,14 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
           </Section>
         </div>
       ) : null}
+
+      <ProductoCatalogAdminPanel
+        desarrollos={desarrollos.map((item) => ({ id: item.id, nombre: item.nombre }))}
+        desarrolloId={desarrolloId}
+        onDesarrolloIdChange={setDesarrolloId}
+        showDesarrolloPicker={false}
+        scopeLabel={scopeLabel}
+      />
     </div>
   );
 }

@@ -25,13 +25,12 @@ export const applyRecorridoCodeDefaults = (
     ...contenido,
     desarrollador: {
       ...contenido.desarrollador,
-      logoPath: defaultDesarrollador.logoPath ?? contenido.desarrollador.logoPath,
+      logoPath: contenido.desarrollador.logoPath ?? defaultDesarrollador.logoPath,
     },
     overview: {
       ...contenido.overview,
-      logoPath: defaultOverview.logoPath ?? contenido.overview.logoPath,
-      masterPlanImage:
-        defaultOverview.masterPlanImage ?? contenido.overview.masterPlanImage,
+      logoPath: contenido.overview.logoPath ?? defaultOverview.logoPath,
+      masterPlanImage: contenido.overview.masterPlanImage ?? defaultOverview.masterPlanImage,
       masterPlanStats: defaultOverview.masterPlanStats?.length
         ? defaultOverview.masterPlanStats
         : contenido.overview.masterPlanStats,

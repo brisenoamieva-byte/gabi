@@ -15,8 +15,10 @@ import type {
   DesarrolloCatalogAdminRecord,
 } from "@/lib/admin/catalog-service";
 import { slugifyCatalogId } from "@/lib/catalog/slug";
+import { AdminImageUploadField } from "@/components/admin/AdminImageUploadField";
+import { ProductoCatalogAdminPanel } from "@/components/admin/ProductoCatalogAdminPanel";
 
-type Tab = "comercializadoras" | "desarrollos";
+type Tab = "comercializadoras" | "desarrollos" | "producto";
 
 const emptyComercializadoraForm = {
   id: "",
@@ -39,6 +41,8 @@ const emptyDesarrolloForm = {
   precioDesde: "",
   tiposProducto: [] as string[],
   estado: "activo" as "activo" | "proximamente",
+  logo: "",
+  desarrolladorLogo: "",
   colorPrincipal: "#13315C",
   colorAcento: "#2DD4BF",
 };
@@ -163,6 +167,8 @@ export function CatalogoAdminPanel() {
       precioDesde: item.precioDesde ? String(item.precioDesde) : "",
       tiposProducto: [...item.tiposProducto],
       estado: item.estado,
+      logo: item.logo ?? "",
+      desarrolladorLogo: item.desarrolladorLogo ?? "",
       colorPrincipal: item.colorPrincipal,
       colorAcento: item.colorAcento,
     });
@@ -295,6 +301,8 @@ export function CatalogoAdminPanel() {
           : undefined,
         tiposProducto: desarrolloForm.tiposProducto,
         estado: desarrolloForm.estado,
+        logo: desarrolloForm.logo.trim() || null,
+        desarrolladorLogo: desarrolloForm.desarrolladorLogo.trim() || null,
         colorPrincipal: desarrolloForm.colorPrincipal,
         colorAcento: desarrolloForm.colorAcento,
       };
@@ -391,6 +399,17 @@ export function CatalogoAdminPanel() {
             }`}
           >
             Desarrollos
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("producto")}
+            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+              tab === "producto"
+                ? "bg-[#13315C] text-white"
+                : "bg-slate-100 text-[#13315C] hover:bg-slate-200"
+            }`}
+          >
+            Producto
           </button>
         </div>
       </div>
@@ -495,7 +514,7 @@ export function CatalogoAdminPanel() {
             </div>
           )}
         </section>
-      ) : (
+      ) : tab === "desarrollos" ? (
         <section className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -594,6 +613,13 @@ export function CatalogoAdminPanel() {
             </div>
           )}
         </section>
+      ) : (
+        <ProductoCatalogAdminPanel
+          desarrollos={filteredDesarrollos.map((item) => ({
+            id: item.id,
+            nombre: item.nombre,
+          }))}
+        />
       )}
 
       {showComercializadoraForm ? (
@@ -647,15 +673,15 @@ export function CatalogoAdminPanel() {
                 className="input-cotizador"
               />
             </Field>
-            <Field label="Logo (URL)">
-              <input
-                value={comercializadoraForm.logo}
-                onChange={(event) =>
-                  setComercializadoraForm((prev) => ({ ...prev, logo: event.target.value }))
-                }
-                className="input-cotizador sm:col-span-2"
-              />
-            </Field>
+            <AdminImageUploadField
+              label="Logo comercializadora"
+              className="sm:col-span-2"
+              value={comercializadoraForm.logo}
+              onChange={(url) => setComercializadoraForm((prev) => ({ ...prev, logo: url }))}
+              kind="comercializadora-logo"
+              comercializadoraId={comercializadoraForm.id || editComercializadoraId || undefined}
+              hint="Visible en portales y dashboard."
+            />
             <Field label="Color principal">
               <input
                 type="color"
@@ -809,6 +835,24 @@ export function CatalogoAdminPanel() {
                 className="input-cotizador min-h-24"
               />
             </Field>
+            <AdminImageUploadField
+              label="Logo desarrollo"
+              className="sm:col-span-2"
+              value={desarrolloForm.logo}
+              onChange={(url) => setDesarrolloForm((prev) => ({ ...prev, logo: url }))}
+              kind="desarrollo-logo"
+              desarrolloId={desarrolloForm.id || editDesarrolloId || undefined}
+              hint="Hub de desarrollos, cotizador y selector de proyecto."
+            />
+            <AdminImageUploadField
+              label="Logo desarrollador"
+              className="sm:col-span-2"
+              value={desarrolloForm.desarrolladorLogo}
+              onChange={(url) => setDesarrolloForm((prev) => ({ ...prev, desarrolladorLogo: url }))}
+              kind="desarrollo-desarrollador-logo"
+              desarrolloId={desarrolloForm.id || editDesarrolloId || undefined}
+              hint="Cabecera del cotizador y materiales comerciales."
+            />
             <div className="sm:col-span-2">
               <span className="mb-2 block text-xs font-bold uppercase text-slate-500">
                 Tipos de producto

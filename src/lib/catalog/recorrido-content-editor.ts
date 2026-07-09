@@ -19,6 +19,7 @@ export type RecorridoContenidoForm = {
   overviewSubtitulo: string;
   overviewGuiaAsesor: string;
   overviewLogoPath: string;
+  overviewMasterPlanImage: string;
   overviewNarrativa: string;
   overviewDestacados: string;
   bondades: string;
@@ -64,6 +65,7 @@ export const contenidoToForm = (content: RecorridoContenido): RecorridoContenido
   overviewSubtitulo: content.overview.subtitulo,
   overviewGuiaAsesor: content.overview.guiaAsesor ?? "",
   overviewLogoPath: content.overview.logoPath ?? "",
+  overviewMasterPlanImage: content.overview.masterPlanImage ?? "",
   overviewNarrativa: arrayToLines(content.overview.narrativa),
   overviewDestacados: arrayToLines(content.overview.destacados),
   bondades: arrayToLines(content.bondades),
@@ -102,6 +104,7 @@ export const formToContenido = (
     subtitulo: form.overviewSubtitulo.trim(),
     guiaAsesor: form.overviewGuiaAsesor.trim() || undefined,
     logoPath: form.overviewLogoPath.trim() || undefined,
+    masterPlanImage: form.overviewMasterPlanImage.trim() || undefined,
     narrativa: linesToArray(form.overviewNarrativa),
     destacados: linesToArray(form.overviewDestacados),
   },
