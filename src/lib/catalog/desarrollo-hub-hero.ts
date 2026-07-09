@@ -13,7 +13,21 @@ import { investtiDesarrolloLogoShellClass } from "@/lib/catalog/investti-desarro
 const LOGO_EXT = /\.(png|webp|svg)(\?|$)/i;
 
 /** Hero tipo logo (contenedor con padding) vs foto wide (cover). */
-export const isDesarrolloHubLogoHero = (desarrolloId: string, heroSrc: string): boolean => {
+export const isDesarrolloHubLogoHero = (
+  desarrolloId: string,
+  heroSrc: string,
+  options?: { adminHubHero?: boolean },
+): boolean => {
+  if (options?.adminHubHero) {
+    if (heroSrc.includes("/propuestas/desarrollos-alianzas/")) {
+      return true;
+    }
+    if (heroSrc.includes("/logos/") && !/\.jpe?g(\?|$)/i.test(heroSrc)) {
+      return true;
+    }
+    return LOGO_EXT.test(heroSrc.split("?")[0] ?? heroSrc);
+  }
+
   if (desarrolloId in DESARROLLO_HUB_HERO_IMAGES) {
     return true;
   }
@@ -70,8 +84,13 @@ export const resolveDesarrolloHubHeroDisplaySrc = (
   desarrolloId: string,
   heroSrc: string,
   logo?: string | null,
+  options?: { adminHubHero?: boolean },
 ): string => {
-  if (!isDesarrolloHubLogoHero(desarrolloId, heroSrc)) {
+  if (!isDesarrolloHubLogoHero(desarrolloId, heroSrc, options)) {
+    return heroSrc;
+  }
+
+  if (options?.adminHubHero) {
     return heroSrc;
   }
 

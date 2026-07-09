@@ -62,8 +62,10 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [form, setForm] = useState<RecorridoContenidoForm | null>(null);
   const [baseContent, setBaseContent] = useState<RecorridoContenido | null>(null);
+  const [hubHeroImage, setHubHeroImage] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingHubHero, setSavingHubHero] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -75,6 +77,7 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
     if (!desarrolloId) {
       setForm(null);
       setBaseContent(null);
+      setHubHeroImage("");
       return;
     }
 
@@ -83,15 +86,20 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
     setSuccess("");
 
     try {
-      const response = await fetch(
-        `/api/admin/catalog/desarrollos/${encodeURIComponent(desarrolloId)}/recorrido-contenido`,
-      );
-      const data = (await response.json()) as {
+      const [guionResponse, hubResponse] = await Promise.all([
+        fetch(`/api/admin/catalog/desarrollos/${encodeURIComponent(desarrolloId)}/recorrido-contenido`),
+        fetch(`/api/admin/catalog/desarrollos/${encodeURIComponent(desarrolloId)}/hub-hero`),
+      ]);
+      const data = (await guionResponse.json()) as {
         recorridoContenido?: RecorridoContenido;
         error?: string;
       };
+      const hubData = (await hubResponse.json()) as {
+        hubHeroImage?: string | null;
+        error?: string;
+      };
 
-      if (!response.ok) {
+      if (!guionResponse.ok) {
         throw new Error(data.error ?? "No se pudo cargar el guion.");
       }
 
@@ -102,10 +110,12 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
 
       setBaseContent(content);
       setForm(contenidoToForm(content));
+      setHubHeroImage(hubResponse.ok ? hubData.hubHeroImage ?? "" : "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar");
       setForm(null);
       setBaseContent(null);
+      setHubHeroImage("");
     } finally {
       setLoading(false);
     }
@@ -146,6 +156,38 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
       setError(saveError instanceof Error ? saveError.message : "Error al guardar");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveHubHero = async () => {
+    if (!desarrolloId) {
+      return;
+    }
+
+    setSavingHubHero(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/catalog/desarrollos/${encodeURIComponent(desarrolloId)}/hub-hero`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hubHeroImage: hubHeroImage.trim() || null }),
+        },
+      );
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo guardar la portada.");
+      }
+
+      setSuccess("Portada del hub actualizada.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Error al guardar");
+    } finally {
+      setSavingHubHero(false);
     }
   };
 
@@ -428,6 +470,42 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
             />
           </Section>
         </div>
+      ) : null}
+
+      {!loading && desarrolloId ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#13315C]">
+                Portada del hub
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Imagen wide en Admin → Desarrollos (tarjeta y detalle del proyecto).
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={savingHubHero}
+              onClick={() => void saveHubHero()}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#13315C]/15 px-4 text-sm font-bold text-[#13315C] disabled:opacity-50"
+            >
+              {savingHubHero ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Guardar portada
+            </button>
+          </div>
+          <AdminImageUploadField
+            label="Imagen de portada"
+            value={hubHeroImage}
+            onChange={setHubHeroImage}
+            kind="hub-hero"
+            desarrolloId={desarrolloId}
+            hint="Formato horizontal 16:10 recomendado. Si está vacío, se usa cluster o logo."
+          />
+        </section>
       ) : null}
 
       <ProductoCatalogAdminPanel

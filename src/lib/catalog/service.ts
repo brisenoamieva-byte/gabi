@@ -79,6 +79,7 @@ const toDesarrollo = (row: {
   estado: Desarrollo["estado"];
   logo: string | null;
   desarrollador_logo: string | null;
+  hub_hero_image: string | null;
   color_principal: string | null;
   color_acento: string | null;
   brochure_pdf: string | null;
@@ -103,6 +104,7 @@ const toDesarrollo = (row: {
     estado: row.estado,
     logo: row.logo ?? undefined,
     desarrolladorLogo: row.desarrollador_logo ?? undefined,
+    hubHeroImage: row.hub_hero_image ?? undefined,
     colorPrincipal: row.color_principal ?? "#13315C",
     colorAcento: row.color_acento ?? "#2DD4BF",
     brochurePdf: row.brochure_pdf ?? undefined,

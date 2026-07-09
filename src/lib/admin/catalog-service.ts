@@ -32,6 +32,7 @@ export type DesarrolloCatalogAdminRecord = {
   estado: "activo" | "proximamente";
   logo: string | null;
   desarrolladorLogo: string | null;
+  hubHeroImage: string | null;
   colorPrincipal: string;
   colorAcento: string;
   activo: boolean;
@@ -63,6 +64,7 @@ export type DesarrolloCatalogInput = {
   estado?: "activo" | "proximamente";
   logo?: string | null;
   desarrolladorLogo?: string | null;
+  hubHeroImage?: string | null;
   colorPrincipal?: string;
   colorAcento?: string;
   activo?: boolean;
@@ -110,6 +112,7 @@ const toDesarrolloAdmin = (row: {
   estado: "activo" | "proximamente";
   logo: string | null;
   desarrollador_logo: string | null;
+  hub_hero_image: string | null;
   color_principal: string | null;
   color_acento: string | null;
   activo: boolean;
@@ -128,6 +131,7 @@ const toDesarrolloAdmin = (row: {
   estado: row.estado,
   logo: row.logo,
   desarrolladorLogo: row.desarrollador_logo,
+  hubHeroImage: row.hub_hero_image,
   colorPrincipal: row.color_principal ?? "#13315C",
   colorAcento: row.color_acento ?? "#2DD4BF",
   activo: row.activo,
@@ -435,6 +439,7 @@ export const createDesarrolloCatalog = async (
       estado: input.estado ?? "activo",
       logo: input.logo ?? null,
       desarrollador_logo: input.desarrolladorLogo ?? null,
+      hub_hero_image: input.hubHeroImage ?? null,
       color_principal: input.colorPrincipal ?? "#13315C",
       color_acento: input.colorAcento ?? "#2DD4BF",
       crm: { provider: "none", enabled: false },
@@ -506,6 +511,9 @@ export const updateDesarrolloCatalog = async (
   if (input.desarrolladorLogo !== undefined) {
     patch.desarrollador_logo = input.desarrolladorLogo;
   }
+  if (input.hubHeroImage !== undefined) {
+    patch.hub_hero_image = input.hubHeroImage;
+  }
   if (input.colorPrincipal !== undefined) {
     patch.color_principal = input.colorPrincipal;
   }
@@ -532,6 +540,37 @@ export const updateDesarrolloCatalog = async (
   }
 
   return toDesarrolloAdmin(data);
+};
+
+export const updateDesarrolloHubHero = async (
+  id: string,
+  hubHeroImage: string | null,
+): Promise<DesarrolloCatalogAdminRecord> => {
+  return updateDesarrolloCatalog(id, { hubHeroImage: hubHeroImage?.trim() || null });
+};
+
+export const getDesarrolloHubHero = async (
+  id: string,
+): Promise<{ hubHeroImage: string | null }> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("hub_hero_image")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!data) {
+    throw new Error("Desarrollo no encontrado.");
+  }
+
+  return { hubHeroImage: data.hub_hero_image ?? null };
 };
 
 export const updateRecorridoContenido = async (

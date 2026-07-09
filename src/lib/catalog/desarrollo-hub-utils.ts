@@ -22,6 +22,10 @@ export const getDesarrolloHeroImage = (
   desarrollo: Desarrollo,
   clusters: Cluster[],
 ): string | null => {
+  if (desarrollo.hubHeroImage?.trim()) {
+    return desarrollo.hubHeroImage.trim();
+  }
+
   const investtiPortada = getInvesttiDesarrolloPortada(desarrollo.id);
   if (investtiPortada) {
     return investtiPortada;

@@ -61,9 +61,16 @@ export function DesarrolloHubCard({
   onOpen,
 }: DesarrolloHubCardProps) {
   const heroImage = getDesarrolloHeroImage(desarrollo, clusters);
-  const logoHero = Boolean(heroImage && isDesarrolloHubLogoHero(desarrollo.id, heroImage));
+  const adminHubHero = Boolean(
+    desarrollo.hubHeroImage?.trim() && heroImage === desarrollo.hubHeroImage.trim(),
+  );
+  const logoHero = Boolean(
+    heroImage && isDesarrolloHubLogoHero(desarrollo.id, heroImage, { adminHubHero }),
+  );
   const heroDisplaySrc = heroImage
-    ? resolveDesarrolloHubHeroDisplaySrc(desarrollo.id, heroImage, desarrollo.logo)
+    ? resolveDesarrolloHubHeroDisplaySrc(desarrollo.id, heroImage, desarrollo.logo, {
+        adminHubHero,
+      })
     : null;
   const xperienceId = desarrolloDisplayId(desarrollo);
   const createdLabel = formatCatalogDate(desarrollo.createdAt);

@@ -43,6 +43,7 @@ const emptyDesarrolloForm = {
   estado: "activo" as "activo" | "proximamente",
   logo: "",
   desarrolladorLogo: "",
+  hubHeroImage: "",
   colorPrincipal: "#13315C",
   colorAcento: "#2DD4BF",
 };
@@ -169,6 +170,7 @@ export function CatalogoAdminPanel() {
       estado: item.estado,
       logo: item.logo ?? "",
       desarrolladorLogo: item.desarrolladorLogo ?? "",
+      hubHeroImage: item.hubHeroImage ?? "",
       colorPrincipal: item.colorPrincipal,
       colorAcento: item.colorAcento,
     });
@@ -303,6 +305,7 @@ export function CatalogoAdminPanel() {
         estado: desarrolloForm.estado,
         logo: desarrolloForm.logo.trim() || null,
         desarrolladorLogo: desarrolloForm.desarrolladorLogo.trim() || null,
+        hubHeroImage: desarrolloForm.hubHeroImage.trim() || null,
         colorPrincipal: desarrolloForm.colorPrincipal,
         colorAcento: desarrolloForm.colorAcento,
       };
@@ -852,6 +855,15 @@ export function CatalogoAdminPanel() {
               kind="desarrollo-desarrollador-logo"
               desarrolloId={desarrolloForm.id || editDesarrolloId || undefined}
               hint="Cabecera del cotizador y materiales comerciales."
+            />
+            <AdminImageUploadField
+              label="Portada hub"
+              className="sm:col-span-2"
+              value={desarrolloForm.hubHeroImage}
+              onChange={(url) => setDesarrolloForm((prev) => ({ ...prev, hubHeroImage: url }))}
+              kind="hub-hero"
+              desarrolloId={desarrolloForm.id || editDesarrolloId || undefined}
+              hint="Imagen wide en la tarjeta y detalle de Desarrollos admin. JPG/PNG recomendado 16:10."
             />
             <div className="sm:col-span-2">
               <span className="mb-2 block text-xs font-bold uppercase text-slate-500">

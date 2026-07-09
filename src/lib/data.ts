@@ -177,6 +177,8 @@ export interface Desarrollo {
   tarjetasProcesoPdf?: string
   /** Imagen del master plan en /public (recorrido y materiales comerciales). */
   masterPlanImage?: string
+  /** Portada wide del hub admin (tarjeta y detalle de desarrollo). */
+  hubHeroImage?: string
   crm: {
     provider: 'hubspot' | 'custom' | 'none'
     enabled: boolean
