@@ -18,6 +18,13 @@ import {
   getDesarrolloHeroImage,
   resolveComercializadorLabel,
 } from "@/lib/catalog/desarrollo-hub-utils";
+import {
+  desarrolloHubHeroImageClass,
+  desarrolloHubHeroPaddingClass,
+  desarrolloHubHeroShellClass,
+  isDesarrolloHubLogoHero,
+  resolveDesarrolloHubHeroDisplaySrc,
+} from "@/lib/catalog/desarrollo-hub-hero";
 import type { Cluster } from "@/lib/data";
 
 export type DesarrolloHubCardStats = {
@@ -54,6 +61,10 @@ export function DesarrolloHubCard({
   onOpen,
 }: DesarrolloHubCardProps) {
   const heroImage = getDesarrolloHeroImage(desarrollo, clusters);
+  const logoHero = Boolean(heroImage && isDesarrolloHubLogoHero(desarrollo.id, heroImage));
+  const heroDisplaySrc = heroImage
+    ? resolveDesarrolloHubHeroDisplaySrc(desarrollo.id, heroImage, desarrollo.logo)
+    : null;
   const xperienceId = desarrolloDisplayId(desarrollo);
   const createdLabel = formatCatalogDate(desarrollo.createdAt);
   const updatedLabel =
@@ -65,15 +76,35 @@ export function DesarrolloHubCard({
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-gabi-forest/20 hover:shadow-md">
       <button type="button" onClick={onOpen} className="flex flex-1 flex-col text-left">
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
-          {heroImage ? (
-            <Image
-              src={heroImage}
-              alt={desarrollo.nombre}
-              fill
-              className="object-cover transition duration-300 group-hover:scale-[1.02]"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            />
+        <div
+          className={`relative aspect-[16/10] w-full overflow-hidden ${
+            logoHero ? desarrolloHubHeroShellClass(desarrollo.id) : "bg-slate-100"
+          }`}
+        >
+          {heroDisplaySrc ? (
+            logoHero ? (
+              <div
+                className={`absolute inset-0 flex items-center justify-center ${desarrolloHubHeroPaddingClass(desarrollo.id)}`}
+              >
+                <Image
+                  src={heroDisplaySrc}
+                  alt={desarrollo.nombre}
+                  width={960}
+                  height={600}
+                  className={desarrolloHubHeroImageClass(desarrollo.id)}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  unoptimized={heroDisplaySrc.endsWith(".png")}
+                />
+              </div>
+            ) : (
+              <Image
+                src={heroDisplaySrc}
+                alt={desarrollo.nombre}
+                fill
+                className="object-cover object-center transition duration-300 group-hover:scale-[1.02]"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              />
+            )
           ) : (
             <div
               className="flex h-full w-full items-center justify-center"
