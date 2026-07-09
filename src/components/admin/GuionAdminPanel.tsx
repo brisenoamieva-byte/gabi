@@ -11,6 +11,8 @@ import {
 } from "@/lib/catalog/recorrido-content-editor";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { AdminImageUploadField } from "@/components/admin/AdminImageUploadField";
+import { GuionPoisEditor } from "@/components/admin/GuionPoisEditor";
+import { GuionTecnicasCierreEditor } from "@/components/admin/GuionTecnicasCierreEditor";
 import { ProductoCatalogAdminPanel } from "@/components/admin/ProductoCatalogAdminPanel";
 
 type GuionAdminPanelProps = {
@@ -168,8 +170,8 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
           </p>
         ) : null}
         <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Edita textos e imágenes del recorrido comercial. Sube logos y master plan desde aquí; ya
-          no necesitas tocar el código ni hacer deploy para cambiarlas.
+          Edita textos, imágenes, puntos del mapa y técnicas de cierre del recorrido comercial. Todo
+          se guarda en el catálogo sin necesidad de código ni deploy.
         </p>
 
         <div className="mt-5 flex flex-wrap items-end gap-3">
@@ -270,6 +272,15 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
                 className="input-cotizador min-h-24"
               />
             </Field>
+          </Section>
+
+          <Section title="Mapa · Puntos de interés">
+            <GuionPoisEditor
+              puntos={form.puntosCercanos}
+              categoriasOrden={form.zonaCategoriasOrden}
+              onPuntosChange={(puntos) => patchForm({ puntosCercanos: puntos })}
+              onCategoriasOrdenChange={(zonaCategoriasOrden) => patchForm({ zonaCategoriasOrden })}
+            />
           </Section>
 
           <Section title="2 · Desarrollador">
@@ -408,6 +419,13 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
                 className="input-cotizador min-h-32"
               />
             </Field>
+          </Section>
+
+          <Section title="Ideas de cierre">
+            <GuionTecnicasCierreEditor
+              tecnicas={form.tecnicasCierre}
+              onChange={(tecnicasCierre) => patchForm({ tecnicasCierre })}
+            />
           </Section>
         </div>
       ) : null}

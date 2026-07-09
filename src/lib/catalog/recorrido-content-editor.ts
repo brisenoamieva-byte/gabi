@@ -1,4 +1,5 @@
 import type { RecorridoContenido } from "@/lib/catalog/recorrido-content";
+import type { PuntoInteres, TecnicaCierre } from "@/lib/data";
 
 export type RecorridoContenidoForm = {
   zonaTitulo: string;
@@ -8,6 +9,8 @@ export type RecorridoContenidoForm = {
   zonaMapaEmbedUrl: string;
   zonaMapaUrl: string;
   zonaMensajeAsesor: string;
+  zonaCategoriasOrden: string;
+  puntosCercanos: PuntoInteres[];
   desarrolladorTitulo: string;
   desarrolladorSubtitulo: string;
   desarrolladorHistoria: string;
@@ -23,9 +26,26 @@ export type RecorridoContenidoForm = {
   overviewNarrativa: string;
   overviewDestacados: string;
   bondades: string;
+  tecnicasCierre: TecnicaCierre[];
   tecnicaTitulo: string;
   tecnicaPuntos: string;
 };
+
+export const emptyPuntoInteres = (): PuntoInteres => ({
+  id: "",
+  nombre: "",
+  categoria: "",
+  tiempo: "",
+  detalle: "",
+});
+
+export const emptyTecnicaCierre = (): TecnicaCierre => ({
+  id: "",
+  nombre: "",
+  descripcion: "",
+  ejemplo: "",
+  cuandoUsar: "",
+});
 
 export const linesToArray = (text: string) =>
   text
@@ -54,6 +74,8 @@ export const contenidoToForm = (content: RecorridoContenido): RecorridoContenido
   zonaMapaEmbedUrl: content.zona.mapaEmbedUrl,
   zonaMapaUrl: content.zona.mapaUrl,
   zonaMensajeAsesor: content.zona.mensajeAsesor,
+  zonaCategoriasOrden: arrayToLines(content.zona.categoriasOrden),
+  puntosCercanos: content.zona.puntosCercanos.map((punto) => ({ ...punto })),
   desarrolladorTitulo: content.desarrollador.titulo,
   desarrolladorSubtitulo: content.desarrollador.subtitulo,
   desarrolladorHistoria: content.desarrollador.historia,
@@ -69,6 +91,7 @@ export const contenidoToForm = (content: RecorridoContenido): RecorridoContenido
   overviewNarrativa: arrayToLines(content.overview.narrativa),
   overviewDestacados: arrayToLines(content.overview.destacados),
   bondades: arrayToLines(content.bondades),
+  tecnicasCierre: content.tecnicasCierre.map((tecnica) => ({ ...tecnica })),
   tecnicaTitulo: content.tecnicaDosMinutos.titulo,
   tecnicaPuntos: arrayToLines(content.tecnicaDosMinutos.puntos),
 });
@@ -87,6 +110,17 @@ export const formToContenido = (
     mapaEmbedUrl: form.zonaMapaEmbedUrl.trim(),
     mapaUrl: form.zonaMapaUrl.trim(),
     mensajeAsesor: form.zonaMensajeAsesor.trim(),
+    categoriasOrden: linesToArray(form.zonaCategoriasOrden),
+    puntosCercanos: form.puntosCercanos
+      .map((punto) => ({
+        id: punto.id.trim(),
+        nombre: punto.nombre.trim(),
+        categoria: punto.categoria.trim(),
+        tiempo: punto.tiempo.trim(),
+        detalle: punto.detalle.trim(),
+        ...(punto.destacado ? { destacado: true } : {}),
+      }))
+      .filter((punto) => punto.id && punto.nombre),
   },
   desarrollador: {
     ...base.desarrollador,
@@ -109,6 +143,15 @@ export const formToContenido = (
     destacados: linesToArray(form.overviewDestacados),
   },
   bondades: linesToArray(form.bondades),
+  tecnicasCierre: form.tecnicasCierre
+    .map((tecnica) => ({
+      id: tecnica.id.trim(),
+      nombre: tecnica.nombre.trim(),
+      descripcion: tecnica.descripcion.trim(),
+      ejemplo: tecnica.ejemplo.trim(),
+      cuandoUsar: tecnica.cuandoUsar.trim(),
+    }))
+    .filter((tecnica) => tecnica.id && tecnica.nombre),
   tecnicaDosMinutos: {
     ...base.tecnicaDosMinutos,
     titulo: form.tecnicaTitulo.trim(),

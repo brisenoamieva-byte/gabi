@@ -204,13 +204,27 @@ export const mergeRecorridoContenido = (
   }
 
   return {
-    zona: patch.zona ? { ...base.zona, ...patch.zona } : base.zona,
+    zona: patch.zona
+      ? {
+          ...base.zona,
+          ...patch.zona,
+          categoriasOrden:
+            patch.zona.categoriasOrden !== undefined
+              ? patch.zona.categoriasOrden
+              : base.zona.categoriasOrden,
+          puntosCercanos:
+            patch.zona.puntosCercanos !== undefined
+              ? patch.zona.puntosCercanos
+              : base.zona.puntosCercanos,
+        }
+      : base.zona,
     desarrollador: patch.desarrollador
       ? { ...base.desarrollador, ...patch.desarrollador }
       : base.desarrollador,
     overview: patch.overview ? { ...base.overview, ...patch.overview } : base.overview,
-    bondades: patch.bondades?.length ? patch.bondades : base.bondades,
-    tecnicasCierre: patch.tecnicasCierre?.length ? patch.tecnicasCierre : base.tecnicasCierre,
+    bondades: patch.bondades !== undefined ? patch.bondades : base.bondades,
+    tecnicasCierre:
+      patch.tecnicasCierre !== undefined ? patch.tecnicasCierre : base.tecnicasCierre,
     tecnicaDosMinutos: patch.tecnicaDosMinutos
       ? { ...base.tecnicaDosMinutos, ...patch.tecnicaDosMinutos }
       : base.tecnicaDosMinutos,
