@@ -3,7 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Building2, ClipboardList, Home, Layers, Loader2, Plus, RefreshCw, Smartphone, Table2 } from "lucide-react";
+import {
+  Building2,
+  ClipboardList,
+  Home,
+  Layers,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Plus,
+  RefreshCw,
+  Smartphone,
+  Table2,
+} from "lucide-react";
 import type { Cluster, Desarrollo, Prototipo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import { InventarioAdminPanel } from "@/components/admin/InventarioAdminPanel";
@@ -44,6 +56,9 @@ function SembradoTable({
   onVerOperacion,
   onEditUnidad,
   onToggleVisitable,
+  dense = false,
+  stickyHeader = false,
+  stickyFirstColumn = false,
 }: {
   filas: SembradoUnidadRow[];
   estatusFilter: string;
@@ -53,7 +68,20 @@ function SembradoTable({
   onVerOperacion: (operacionId: string) => void;
   onEditUnidad: (row: SembradoUnidadRow) => void;
   onToggleVisitable: (row: SembradoUnidadRow) => void;
+  dense?: boolean;
+  stickyHeader?: boolean;
+  stickyFirstColumn?: boolean;
 }) {
+  const cellPad = dense ? "px-3 py-1.5" : "px-4 py-3";
+  const headClass = stickyHeader
+    ? "sticky top-0 z-20 bg-slate-50 shadow-[0_1px_0_0_rgb(226_232_240)]"
+    : "";
+  const firstColClass = stickyFirstColumn
+    ? "sticky left-0 z-10 bg-white shadow-[1px_0_0_0_rgb(241_245_249)]"
+    : "";
+  const firstHeadClass = stickyFirstColumn
+    ? "sticky left-0 z-30 bg-slate-50 shadow-[1px_0_0_0_rgb(226_232_240)]"
+    : "";
   const rowsToShow = useMemo(() => {
     if (estatusFilter) {
       return filas.filter(
@@ -75,24 +103,23 @@ function SembradoTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-          <tr>
-            <th className="px-4 py-3">Unidad</th>
-            <th className="px-4 py-3">Recorrido</th>
-            <th className="px-4 py-3">Precio lista</th>
-            <th className="px-4 py-3">Lista</th>
-            <th className="px-4 py-3">Estatus</th>
-            <th className="px-4 py-3">Cliente</th>
-            <th className="px-4 py-3">Medio</th>
-            <th className="px-4 py-3">Esquema</th>
-            <th className="px-4 py-3">Precio venta</th>
-            <th className="px-4 py-3">Cobrado</th>
-            <th className="px-4 py-3">Saldo</th>
-            <th className="px-4 py-3">Acciones</th>
-          </tr>
-        </thead>
+    <table className="min-w-full text-left text-sm">
+      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th className={`${cellPad} ${headClass} ${firstHeadClass}`}>Unidad</th>
+          <th className={`${cellPad} ${headClass}`}>Recorrido</th>
+          <th className={`${cellPad} ${headClass}`}>Precio lista</th>
+          <th className={`${cellPad} ${headClass}`}>Lista</th>
+          <th className={`${cellPad} ${headClass}`}>Estatus</th>
+          <th className={`${cellPad} ${headClass}`}>Cliente</th>
+          <th className={`${cellPad} ${headClass}`}>Medio</th>
+          <th className={`${cellPad} ${headClass}`}>Esquema</th>
+          <th className={`${cellPad} ${headClass}`}>Precio venta</th>
+          <th className={`${cellPad} ${headClass}`}>Cobrado</th>
+          <th className={`${cellPad} ${headClass}`}>Saldo</th>
+          <th className={`${cellPad} ${headClass}`}>Acciones</th>
+        </tr>
+      </thead>
         <tbody>
           {rowsToShow.map((row) => {
             const op = row.operacion;
@@ -103,12 +130,19 @@ function SembradoTable({
               op?.comprobacion ?? (precioVenta ? precioVenta - row.totalCobrado : null);
             const puedeApartar = !op && row.estatusInventario === "disponible";
 
+            const rowBg = apartadoPendiente ? "bg-amber-50/40" : "bg-white";
+            const stickyBg = stickyFirstColumn
+              ? apartadoPendiente
+                ? "bg-amber-50/40"
+                : "bg-white group-hover:bg-slate-50"
+              : "";
+
             return (
               <tr
                 key={row.unidadId}
-                className={`border-t border-slate-100 ${op ? "hover:bg-slate-50" : apartadoPendiente ? "bg-amber-50/40" : ""}`}
+                className={`group border-t border-slate-100 ${op ? "hover:bg-slate-50" : apartadoPendiente ? "bg-amber-50/40" : ""}`}
               >
-                <td className="px-4 py-3">
+                <td className={`${cellPad} ${firstColClass} ${stickyBg || rowBg}`}>
                   <button
                     type="button"
                     onClick={() => onEditUnidad(row)}
@@ -118,7 +152,7 @@ function SembradoTable({
                   </button>
                   <p className="text-xs text-slate-400">{row.tipo}</p>
                 </td>
-                <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                <td className={cellPad} onClick={(event) => event.stopPropagation()}>
                   <button
                     type="button"
                     onClick={() => onToggleVisitable(row)}
@@ -132,11 +166,11 @@ function SembradoTable({
                     {row.visitable ? "Sí" : "No"}
                   </button>
                 </td>
-                <td className="px-4 py-3 tabular-nums text-slate-600">
+                <td className={`${cellPad} tabular-nums text-slate-600`}>
                   {row.precio ? formatPrice(row.precio) : "—"}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{row.listaPrecios ?? "—"}</td>
-                <td className="px-4 py-3">
+                <td className={`${cellPad} text-slate-600`}>{row.listaPrecios ?? "—"}</td>
+                <td className={cellPad}>
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-semibold ${
                       apartadoPendiente
@@ -147,19 +181,19 @@ function SembradoTable({
                     {estatusSembradoLabel[estatus] ?? estatus}
                   </span>
                 </td>
-                <td className="px-4 py-3">{op?.cliente_nombre ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{op?.medio_publicitario ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{op?.esquema_pago ?? "—"}</td>
-                <td className="px-4 py-3 tabular-nums">
+                <td className={cellPad}>{op?.cliente_nombre ?? "—"}</td>
+                <td className={`${cellPad} text-slate-600`}>{op?.medio_publicitario ?? "—"}</td>
+                <td className={`${cellPad} text-slate-600`}>{op?.esquema_pago ?? "—"}</td>
+                <td className={`${cellPad} tabular-nums`}>
                   {precioVenta ? formatPrice(precioVenta) : "—"}
                 </td>
-                <td className="px-4 py-3 tabular-nums">
+                <td className={`${cellPad} tabular-nums`}>
                   {row.totalCobrado ? formatPrice(row.totalCobrado) : "—"}
                 </td>
-                <td className="px-4 py-3 tabular-nums">
+                <td className={`${cellPad} tabular-nums`}>
                   {saldo != null ? formatPrice(saldo) : "—"}
                 </td>
-                <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                <td className={cellPad} onClick={(event) => event.stopPropagation()}>
                   <div className="flex flex-wrap gap-1">
                     <button
                       type="button"
@@ -199,8 +233,7 @@ function SembradoTable({
             );
           })}
         </tbody>
-      </table>
-    </div>
+    </table>
   );
 }
 
@@ -272,12 +305,34 @@ export function SembradoAdminPanel({
   const [operacionId, setOperacionId] = useState<string | null>(null);
   const [expedienteOperacionId, setExpedienteOperacionId] = useState<string | null>(null);
   const [unidadEdit, setUnidadEdit] = useState<SembradoUnidadRow | null>(null);
+  const [modoAmplio, setModoAmplio] = useState(() => searchParams.get("amplio") === "1");
 
   useEffect(() => {
-    if (desarrolloId) {
-      setSegmento(defaultSegmentoForDesarrollo(desarrolloId));
+    if (vista !== "sembrado" && modoAmplio) {
+      setModoAmplio(false);
     }
-  }, [desarrolloId]);
+  }, [vista, modoAmplio]);
+
+  useEffect(() => {
+    if (!modoAmplio) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setModoAmplio(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [modoAmplio]);
 
   const unidadesDisponibles = useMemo(
     () => filas.filter((row) => !row.operacion && row.estatusInventario === "disponible"),
@@ -390,6 +445,41 @@ export function SembradoAdminPanel({
     icon: segmentIcons[index % segmentIcons.length] ?? Home,
   }));
 
+  const sembradoTitle =
+    tieneSegmentos && segmentoConfig ? `Sembrado — ${segmentoConfig.label}` : "Sembrado";
+
+  const sembradoSubtitle = resumen
+    ? `${resumen.total} unidades · ${filas.filter((row) => row.operacion).length} con operación activa${
+        unidadesPendientes.length
+          ? ` · ${unidadesPendientes.length} apartado${unidadesPendientes.length === 1 ? "" : "s"} pendiente${unidadesPendientes.length === 1 ? "" : "s"}`
+          : ""
+      }`
+    : null;
+
+  const sembradoTableProps = {
+    filas,
+    estatusFilter,
+    showAllUnits,
+    onRegistrarApartado: (unidadId: string) => openApartadoModal(unidadId, "registrar"),
+    onCompletarApartado: (unidadId: string) => openApartadoModal(unidadId, "completar"),
+    onVerOperacion: setOperacionId,
+    onEditUnidad: setUnidadEdit,
+    onToggleVisitable: (row: SembradoUnidadRow) => void toggleVisitable(row),
+  };
+
+  const renderSembradoTable = (options?: {
+    dense?: boolean;
+    stickyHeader?: boolean;
+    stickyFirstColumn?: boolean;
+  }) => (
+    <SembradoTable
+      {...sembradoTableProps}
+      dense={options?.dense}
+      stickyHeader={options?.stickyHeader}
+      stickyFirstColumn={options?.stickyFirstColumn}
+    />
+  );
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
@@ -435,6 +525,14 @@ export function SembradoAdminPanel({
             >
               <RefreshCw className="h-4 w-4" />
               Actualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoAmplio(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Vista amplia
             </button>
             <Link
               href={`/disponibilidad?from=admin&desarrolloId=${encodeURIComponent(desarrolloId)}`}
@@ -593,22 +691,21 @@ export function SembradoAdminPanel({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h3 className="text-lg font-black text-gabi-forest">
-            {tieneSegmentos && segmentoConfig
-              ? `Sembrado — ${segmentoConfig.label}`
-              : "Sembrado"}
-          </h3>
-          {resumen ? (
-            <p className="text-sm text-slate-500">
-              {resumen.total} unidades ·{" "}
-              {filas.filter((row) => row.operacion).length} con operación activa
-              {unidadesPendientes.length
-                ? ` · ${unidadesPendientes.length} apartado${unidadesPendientes.length === 1 ? "" : "s"} pendiente${unidadesPendientes.length === 1 ? "" : "s"}`
-                : ""}
-            </p>
-          ) : null}
+      <div className="flex max-h-[min(72vh,calc(100dvh-18rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-black text-gabi-forest">{sembradoTitle}</h3>
+            {sembradoSubtitle ? <p className="text-sm text-slate-500">{sembradoSubtitle}</p> : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => setModoAmplio(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-3 py-2 text-xs font-bold text-gabi-forest hover:bg-gabi-forest/5"
+            title="Abrir vista amplia a pantalla completa"
+          >
+            <Maximize2 className="h-4 w-4" />
+            Vista amplia
+          </button>
         </div>
 
         {loading ? (
@@ -617,16 +714,9 @@ export function SembradoAdminPanel({
             Cargando sembrado…
           </div>
         ) : (
-          <SembradoTable
-            filas={filas}
-            estatusFilter={estatusFilter}
-            showAllUnits={showAllUnits}
-            onRegistrarApartado={(unidadId) => openApartadoModal(unidadId, "registrar")}
-            onCompletarApartado={(unidadId) => openApartadoModal(unidadId, "completar")}
-            onVerOperacion={setOperacionId}
-            onEditUnidad={setUnidadEdit}
-            onToggleVisitable={(row) => void toggleVisitable(row)}
-          />
+          <div className="min-h-0 flex-1 overflow-auto">
+            {renderSembradoTable({ stickyHeader: true })}
+          </div>
         )}
       </div>
 
@@ -672,6 +762,153 @@ export function SembradoAdminPanel({
           onClose={() => setUnidadEdit(null)}
           onSuccess={() => void loadSembrado()}
         />
+      ) : null}
+
+      {modoAmplio && vista === "sembrado" ? (
+        <div className="fixed inset-0 z-[45] flex flex-col bg-[#eef2f6]">
+          <header className="shrink-0 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gabi-sand">
+                  Vista amplia · Control gerencia
+                </p>
+                <h2 className="truncate text-lg font-black text-gabi-forest">{sembradoTitle}</h2>
+                {sembradoSubtitle ? (
+                  <p className="text-xs text-slate-500">{sembradoSubtitle}</p>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {unidadesPendientes.length ? (
+                  <button
+                    type="button"
+                    onClick={() => openApartadoModal(undefined, "completar")}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900"
+                  >
+                    Completar ({unidadesPendientes.length})
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => openApartadoModal(undefined, "registrar")}
+                  disabled={!unidadesDisponibles.length}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gabi-forest/20 px-3 py-1.5 text-xs font-bold text-gabi-forest disabled:opacity-50"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Apartado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void loadSembrado()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-gabi-forest px-3 py-1.5 text-xs font-bold text-white"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Actualizar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoAmplio(false)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"
+                  title="Salir de vista amplia (Esc)"
+                >
+                  <Minimize2 className="h-3.5 w-3.5" />
+                  Salir
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-2">
+              <label className="text-xs">
+                <span className="mb-0.5 block font-semibold text-slate-500">Desarrollo</span>
+                <select
+                  value={desarrolloId}
+                  onChange={(event) => {
+                    const nextId = event.target.value;
+                    setDesarrolloId(nextId);
+                    setSegmento(defaultSegmentoForDesarrollo(nextId));
+                  }}
+                  className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                >
+                  {desarrollos.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-xs">
+                <span className="mb-0.5 block font-semibold text-slate-500">Estatus</span>
+                <select
+                  value={estatusFilter}
+                  onChange={(event) => setEstatusFilter(event.target.value)}
+                  className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                >
+                  <option value="">Todos</option>
+                  {estatusOptions.map(([estatus, count]) => (
+                    <option key={estatus} value={estatus}>
+                      {estatusSembradoLabel[estatus] ?? estatus} ({count})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex items-center gap-2 pb-1.5 text-xs">
+                <input
+                  type="checkbox"
+                  checked={!showAllUnits}
+                  onChange={(event) => setShowAllUnits(!event.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                <span className="font-semibold text-slate-600">Solo con operación</span>
+              </label>
+
+              {tieneSegmentos ? (
+                <div className="ml-auto flex flex-wrap gap-1">
+                  {segmentTabs.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSegmento(id)}
+                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                        segmento === id
+                          ? "bg-gabi-forest text-white"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </header>
+
+          {error ? (
+            <div className="shrink-0 border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="flex min-h-0 flex-1 flex-col p-2">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              {loading ? (
+                <div className="flex flex-1 items-center justify-center gap-2 text-slate-500">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Cargando sembrado…
+                </div>
+              ) : (
+                <div className="min-h-0 flex-1 overflow-auto">
+                  {renderSembradoTable({
+                    dense: true,
+                    stickyHeader: true,
+                    stickyFirstColumn: true,
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       ) : null}
         </>
       ) : (

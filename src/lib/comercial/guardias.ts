@@ -79,6 +79,77 @@ export const formatDayHeader = (ymd: string): { dow: string; day: string } => {
   return { dow, day };
 };
 
+/** Primer día del mes (YYYY-MM-01) para la fecha dada. */
+export const getMonthStart = (date: Date = new Date()): string => {
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  return formatDateYmd(d);
+};
+
+/** Todas las fechas YYYY-MM-DD del mes indicado por monthStart (día 1). */
+export const getMonthDates = (monthStart: string): string[] => {
+  const first = parseYmd(monthStart);
+  const year = first.getFullYear();
+  const month = first.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, index) =>
+    formatDateYmd(new Date(year, month, index + 1)),
+  );
+};
+
+export const shiftMonth = (monthStart: string, deltaMonths: number): string => {
+  const d = parseYmd(monthStart);
+  d.setMonth(d.getMonth() + deltaMonths, 1);
+  return formatDateYmd(d);
+};
+
+export const formatMonthLabel = (monthStart: string): string => {
+  const d = parseYmd(monthStart);
+  return new Intl.DateTimeFormat("es-MX", { month: "long", year: "numeric" }).format(d);
+};
+
+export const GUARDIA_WEEKDAY_LABELS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"] as const;
+
+export type GuardiaCalendarDay = {
+  fecha: string;
+  inMonth: boolean;
+};
+
+export type GuardiaCalendarWeek = GuardiaCalendarDay[];
+
+/** Cuadrícula mensual (semanas × 7 días, lunes a domingo). */
+export const getMonthCalendarGrid = (monthStart: string): GuardiaCalendarWeek[] => {
+  const first = parseYmd(monthStart);
+  const year = first.getFullYear();
+  const month = first.getMonth();
+  const gridStart = new Date(year, month, 1);
+  const dayOfWeek = gridStart.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  gridStart.setDate(gridStart.getDate() + mondayOffset);
+
+  const weeks: GuardiaCalendarWeek[] = [];
+  const cursor = new Date(gridStart);
+  const lastOfMonth = new Date(year, month + 1, 0);
+
+  while (true) {
+    const week: GuardiaCalendarDay[] = [];
+    for (let index = 0; index < 7; index += 1) {
+      week.push({
+        fecha: formatDateYmd(cursor),
+        inMonth: cursor.getMonth() === month,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(week);
+
+    const sunday = parseYmd(week[6].fecha);
+    if (sunday >= lastOfMonth) {
+      break;
+    }
+  }
+
+  return weeks;
+};
+
 /** Color de chip por asesor (estable). */
 export const guardiaAsesorColor = (asesorId: string): string => {
   let hash = 0;

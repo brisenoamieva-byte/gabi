@@ -2,8 +2,11 @@ import { assertDesarrolloAccess } from "@/lib/admin/permissions";
 import { resolveAdminUserIdForDb } from "@/lib/admin/session";
 import type { AdminProfile } from "@/lib/admin/types";
 import {
+  getMonthDates,
   getWeekDates,
   isGuardiaTurno,
+  parseYmd,
+  shiftMonth,
   shiftWeekStart,
   type GuardiaEstado,
   type GuardiaTurno,
@@ -26,6 +29,14 @@ export type GuardiaAsignacionRecord = {
 export type GuardiaWeekPayload = {
   weekStart: string;
   weekDates: string[];
+  asignaciones: GuardiaAsignacionRecord[];
+  asesorCounts: Record<string, number>;
+  coverage: { totalSlots: number; filledSlots: number; publishedSlots: number };
+};
+
+export type GuardiaMonthPayload = {
+  monthStart: string;
+  monthDates: string[];
   asignaciones: GuardiaAsignacionRecord[];
   asesorCounts: Record<string, number>;
   coverage: { totalSlots: number; filledSlots: number; publishedSlots: number };
@@ -108,6 +119,61 @@ export const listGuardiasWeek = async (
   return {
     weekStart,
     weekDates,
+    asignaciones,
+    asesorCounts,
+    coverage: {
+      totalSlots,
+      filledSlots: asignaciones.length,
+      publishedSlots,
+    },
+  };
+};
+
+export const listGuardiasMonth = async (
+  desarrolloId: string,
+  monthStart: string,
+  profile: AdminProfile,
+): Promise<GuardiaMonthPayload> => {
+  assertDesarrolloAccess(profile, desarrolloId);
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const monthDates = getMonthDates(monthStart);
+  const desde = monthDates[0];
+  const hasta = monthDates[monthDates.length - 1];
+
+  const { data, error } = await supabase
+    .from("guardia_asignaciones")
+    .select("*")
+    .eq("desarrollo_id", desarrolloId)
+    .gte("fecha", desde)
+    .lte("fecha", hasta)
+    .order("fecha", { ascending: true });
+
+  if (error) {
+    assertGuardiasTable(error.message);
+    throw new Error(error.message);
+  }
+
+  const asignaciones = (data ?? []).map((row) => toRecord(row as Row));
+  const asesorCounts: Record<string, number> = {};
+  let publishedSlots = 0;
+
+  for (const item of asignaciones) {
+    asesorCounts[item.asesorId] = (asesorCounts[item.asesorId] ?? 0) + 1;
+    if (item.estado === "publicada") {
+      publishedSlots += 1;
+    }
+  }
+
+  const totalSlots = monthDates.length * 2;
+
+  return {
+    monthStart,
+    monthDates,
     asignaciones,
     asesorCounts,
     coverage: {
@@ -282,6 +348,79 @@ export const copyGuardiasWeekToNext = async (
   return { copied, skipped };
 };
 
+export const copyGuardiasMonthToNext = async (
+  desarrolloId: string,
+  fromMonthStart: string,
+  profile: AdminProfile,
+  adminUserId: string,
+): Promise<{ copied: number; skipped: number }> => {
+  assertDesarrolloAccess(profile, desarrolloId);
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const sourceMonth = await listGuardiasMonth(desarrolloId, fromMonthStart, profile);
+  if (!sourceMonth.asignaciones.length) {
+    return { copied: 0, skipped: 0 };
+  }
+
+  const toMonthStart = shiftMonth(fromMonthStart, 1);
+  const targetDates = getMonthDates(toMonthStart);
+  const dayToTarget = new Map(
+    targetDates.map((fecha) => [parseYmd(fecha).getDate(), fecha] as const),
+  );
+
+  const targetMonth = await listGuardiasMonth(desarrolloId, toMonthStart, profile);
+  const occupiedSlots = new Set(
+    targetMonth.asignaciones.map((item) => `${item.fecha}|${item.turno}`),
+  );
+
+  const now = new Date().toISOString();
+  let copied = 0;
+  let skipped = 0;
+
+  for (const item of sourceMonth.asignaciones) {
+    const dayNumber = parseYmd(item.fecha).getDate();
+    const targetDate = dayToTarget.get(dayNumber);
+    if (!targetDate) {
+      skipped += 1;
+      continue;
+    }
+
+    const slotKey = `${targetDate}|${item.turno}`;
+    if (occupiedSlots.has(slotKey)) {
+      skipped += 1;
+      continue;
+    }
+
+    const { error } = await supabase.from("guardia_asignaciones").upsert(
+      {
+        desarrollo_id: desarrolloId,
+        asesor_id: item.asesorId,
+        fecha: targetDate,
+        turno: item.turno,
+        estado: "borrador",
+        notas: item.notas,
+        creado_por_admin_id: resolveAdminUserIdForDb(adminUserId),
+        updated_at: now,
+      },
+      { onConflict: "desarrollo_id,fecha,turno" },
+    );
+
+    if (error) {
+      assertGuardiasTable(error.message);
+      throw new Error(error.message);
+    }
+
+    copied += 1;
+    occupiedSlots.add(slotKey);
+  }
+
+  return { copied, skipped };
+};
+
 export const publishGuardiasWeek = async (
   desarrolloId: string,
   weekStart: string,
@@ -312,6 +451,36 @@ export const publishGuardiasWeek = async (
   return { updated: data?.length ?? 0 };
 };
 
+export const publishGuardiasMonth = async (
+  desarrolloId: string,
+  monthStart: string,
+  profile: AdminProfile,
+): Promise<{ updated: number }> => {
+  assertDesarrolloAccess(profile, desarrolloId);
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const monthDates = getMonthDates(monthStart);
+  const { data, error } = await supabase
+    .from("guardia_asignaciones")
+    .update({ estado: "publicada", updated_at: new Date().toISOString() })
+    .eq("desarrollo_id", desarrolloId)
+    .gte("fecha", monthDates[0])
+    .lte("fecha", monthDates[monthDates.length - 1])
+    .eq("estado", "borrador")
+    .select("id");
+
+  if (error) {
+    assertGuardiasTable(error.message);
+    throw new Error(error.message);
+  }
+
+  return { updated: data?.length ?? 0 };
+};
+
 export type GuardiaConflicto = {
   asesorId: string;
   fecha: string;
@@ -324,6 +493,39 @@ export const listGuardiaConflictos = async (
   weekStart: string,
   profile: AdminProfile,
 ): Promise<GuardiaConflicto[]> => {
+  const week = await listGuardiasWeek(desarrolloId, weekStart, profile);
+  return listGuardiaConflictosInRange(
+    desarrolloId,
+    week.asignaciones,
+    week.weekDates[0],
+    week.weekDates[6],
+    profile,
+  );
+};
+
+export const listGuardiaConflictosMonth = async (
+  desarrolloId: string,
+  monthStart: string,
+  profile: AdminProfile,
+): Promise<GuardiaConflicto[]> => {
+  const month = await listGuardiasMonth(desarrolloId, monthStart, profile);
+  const monthDates = month.monthDates;
+  return listGuardiaConflictosInRange(
+    desarrolloId,
+    month.asignaciones,
+    monthDates[0],
+    monthDates[monthDates.length - 1],
+    profile,
+  );
+};
+
+const listGuardiaConflictosInRange = async (
+  desarrolloId: string,
+  asignaciones: GuardiaAsignacionRecord[],
+  desde: string,
+  hasta: string,
+  profile: AdminProfile,
+): Promise<GuardiaConflicto[]> => {
   assertDesarrolloAccess(profile, desarrolloId);
 
   const supabase = createSupabaseServiceClient();
@@ -331,8 +533,7 @@ export const listGuardiaConflictos = async (
     return [];
   }
 
-  const week = await listGuardiasWeek(desarrolloId, weekStart, profile);
-  const asesorIds = Array.from(new Set(week.asignaciones.map((a) => a.asesorId)));
+  const asesorIds = Array.from(new Set(asignaciones.map((a) => a.asesorId)));
   if (!asesorIds.length) {
     return [];
   }
@@ -341,8 +542,8 @@ export const listGuardiaConflictos = async (
     .from("guardia_asignaciones")
     .select("asesor_id, fecha, turno, desarrollo_id")
     .in("asesor_id", asesorIds)
-    .gte("fecha", week.weekDates[0])
-    .lte("fecha", week.weekDates[6])
+    .gte("fecha", desde)
+    .lte("fecha", hasta)
     .neq("desarrollo_id", desarrolloId);
 
   if (error) {
@@ -351,7 +552,7 @@ export const listGuardiaConflictos = async (
   }
 
   const localKeys = new Set(
-    week.asignaciones.map((a) => `${a.asesorId}|${a.fecha}|${a.turno}`),
+    asignaciones.map((a) => `${a.asesorId}|${a.fecha}|${a.turno}`),
   );
 
   return (data ?? [])

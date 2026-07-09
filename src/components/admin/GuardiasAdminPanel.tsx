@@ -15,16 +15,17 @@ import type { DesarrolloRecord } from "@/lib/catalog/types";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { GuardiasMarcajesHoyPanel } from "@/components/admin/GuardiasMarcajesHoyPanel";
 import {
-  formatDayHeader,
-  formatWeekRangeLabel,
-  getWeekStartMonday,
+  formatMonthLabel,
+  getMonthCalendarGrid,
+  getMonthStart,
   guardiaAsesorChipStyle,
   guardiaEstadoLabel,
-  guardiaTurnoLabel,
   guardiaTurnoShortLabel,
   GUARDIA_TURNOS,
+  GUARDIA_WEEKDAY_LABELS,
   GUARDIAS_PILOT_DESARROLLO_ID,
-  shiftWeekStart,
+  parseYmd,
+  shiftMonth,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
 
@@ -34,9 +35,9 @@ type GuardiasAdminPanelProps = {
   initialDesarrolloId?: string;
 };
 
-type WeekPayload = {
-  weekStart: string;
-  weekDates: string[];
+type MonthPayload = {
+  monthStart: string;
+  monthDates: string[];
   asignaciones: GuardiaAsignacionRecord[];
   asesorCounts: Record<string, number>;
   coverage: { totalSlots: number; filledSlots: number; publishedSlots: number };
@@ -53,8 +54,8 @@ export function GuardiasAdminPanel({
     urlDesarrolloId: initialDesarrolloId,
     fallbackDesarrolloId: GUARDIAS_PILOT_DESARROLLO_ID,
   });
-  const [weekStart, setWeekStart] = useState(getWeekStartMonday());
-  const [week, setWeek] = useState<WeekPayload | null>(null);
+  const [monthStart, setMonthStart] = useState(getMonthStart());
+  const [month, setMonth] = useState<MonthPayload | null>(null);
   const [asesores, setAsesores] = useState<AsesorRecord[]>([]);
   const [conflictos, setConflictos] = useState<GuardiaConflicto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,15 +72,17 @@ export function GuardiasAdminPanel({
 
   const slotMap = useMemo(() => {
     const map = new Map<string, GuardiaAsignacionRecord>();
-    for (const item of week?.asignaciones ?? []) {
+    for (const item of month?.asignaciones ?? []) {
       map.set(`${item.fecha}|${item.turno}`, item);
     }
     return map;
-  }, [week]);
+  }, [month]);
 
-  const loadWeek = useCallback(async () => {
+  const calendarGrid = useMemo(() => getMonthCalendarGrid(monthStart), [monthStart]);
+
+  const loadMonth = useCallback(async () => {
     if (!desarrolloId) {
-      setWeek(null);
+      setMonth(null);
       setAsesores([]);
       setLoading(false);
       return;
@@ -91,11 +94,11 @@ export function GuardiasAdminPanel({
     try {
       const params = new URLSearchParams({
         desarrolloId,
-        weekStart,
+        monthStart,
       });
       const response = await fetch(`/api/admin/guardias?${params}`);
       const data = (await response.json()) as {
-        week?: WeekPayload;
+        month?: MonthPayload;
         asesores?: AsesorRecord[];
         conflictos?: GuardiaConflicto[];
         error?: string;
@@ -105,20 +108,20 @@ export function GuardiasAdminPanel({
         throw new Error(data.error ?? "No se pudo cargar el calendario.");
       }
 
-      setWeek(data.week ?? null);
+      setMonth(data.month ?? null);
       setAsesores(data.asesores ?? []);
       setConflictos(data.conflictos ?? []);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar");
-      setWeek(null);
+      setMonth(null);
     } finally {
       setLoading(false);
     }
-  }, [desarrolloId, weekStart]);
+  }, [desarrolloId, monthStart]);
 
   useEffect(() => {
-    void loadWeek();
-  }, [loadWeek]);
+    void loadMonth();
+  }, [loadMonth]);
 
   const assignAsesor = async (asesorId: string, fecha: string, turno: GuardiaTurno) => {
     setSaving(true);
@@ -137,7 +140,7 @@ export function GuardiasAdminPanel({
         throw new Error(data.error ?? "No se pudo asignar.");
       }
 
-      await loadWeek();
+      await loadMonth();
     } catch (assignError) {
       setError(assignError instanceof Error ? assignError.message : "Error al asignar");
     } finally {
@@ -158,7 +161,7 @@ export function GuardiasAdminPanel({
         throw new Error(data.error ?? "No se pudo quitar la guardia.");
       }
 
-      await loadWeek();
+      await loadMonth();
     } catch (clearError) {
       setError(clearError instanceof Error ? clearError.message : "Error al quitar");
     } finally {
@@ -166,7 +169,7 @@ export function GuardiasAdminPanel({
     }
   };
 
-  const handleCopyWeek = async () => {
+  const handleCopyMonth = async () => {
     setCopying(true);
     setError("");
     setSuccess("");
@@ -175,7 +178,7 @@ export function GuardiasAdminPanel({
       const response = await fetch("/api/admin/guardias", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "copyWeek", desarrolloId, weekStart }),
+        body: JSON.stringify({ action: "copyMonth", desarrolloId, monthStart }),
       });
       const data = (await response.json()) as {
         copied?: number;
@@ -184,18 +187,18 @@ export function GuardiasAdminPanel({
       };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo copiar la semana.");
+        throw new Error(data.error ?? "No se pudo copiar el mes.");
       }
 
       const copied = data.copied ?? 0;
       const skipped = data.skipped ?? 0;
       if (copied > 0) {
-        setWeekStart((prev) => shiftWeekStart(prev, 1));
+        setMonthStart((prev) => shiftMonth(prev, 1));
       }
       setSuccess(
         copied
-          ? `Semana copiada a la siguiente (${copied} turno${copied === 1 ? "" : "s"}${skipped ? `, ${skipped} omitidos` : ""}).`
-          : "No hay guardias en esta semana para copiar.",
+          ? `Mes copiado al siguiente (${copied} turno${copied === 1 ? "" : "s"}${skipped ? `, ${skipped} omitidos` : ""}).`
+          : "No hay guardias en este mes para copiar.",
       );
     } catch (copyError) {
       setError(copyError instanceof Error ? copyError.message : "Error al copiar");
@@ -213,7 +216,7 @@ export function GuardiasAdminPanel({
       const response = await fetch("/api/admin/guardias", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "publish", desarrolloId, weekStart }),
+        body: JSON.stringify({ action: "publish", desarrolloId, monthStart }),
       });
       const data = (await response.json()) as { updated?: number; error?: string };
 
@@ -223,10 +226,10 @@ export function GuardiasAdminPanel({
 
       setSuccess(
         data.updated
-          ? `Semana publicada (${data.updated} guardia${data.updated === 1 ? "" : "s"}).`
+          ? `Mes publicado (${data.updated} guardia${data.updated === 1 ? "" : "s"}).`
           : "No hay guardias en borrador para publicar.",
       );
-      await loadWeek();
+      await loadMonth();
     } catch (publishError) {
       setError(publishError instanceof Error ? publishError.message : "Error al publicar");
     } finally {
@@ -244,8 +247,8 @@ export function GuardiasAdminPanel({
   const desarrolloNombre =
     desarrollos.find((d) => d.id === desarrolloId)?.nombre ?? desarrolloId;
 
-  const coveragePct = week
-    ? Math.round((week.coverage.filledSlots / week.coverage.totalSlots) * 100)
+  const coveragePct = month
+    ? Math.round((month.coverage.filledSlots / month.coverage.totalSlots) * 100)
     : 0;
 
   return (
@@ -257,7 +260,7 @@ export function GuardiasAdminPanel({
           </p>
           <h2 className="text-2xl font-black text-gabi-forest">Calendario de guardias</h2>
           <p className="mt-1 text-sm text-slate-500">
-            {scopeLabel} · Arrastra asesores a cada turno (matutino y vespertino).
+            {scopeLabel} · Vista mensual. Arrastra asesores a cada turno (matutino y vespertino).
           </p>
         </div>
 
@@ -282,26 +285,26 @@ export function GuardiasAdminPanel({
           <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-1 py-1">
             <button
               type="button"
-              onClick={() => setWeekStart((prev) => shiftWeekStart(prev, -1))}
+              onClick={() => setMonthStart((prev) => shiftMonth(prev, -1))}
               className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-              aria-label="Semana anterior"
+              aria-label="Mes anterior"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <div className="min-w-[10rem] px-2 text-center text-sm font-bold text-gabi-forest">
-              {formatWeekRangeLabel(weekStart)}
+            <div className="min-w-[9rem] px-2 text-center text-sm font-bold capitalize text-gabi-forest">
+              {formatMonthLabel(monthStart)}
             </div>
             <button
               type="button"
-              onClick={() => setWeekStart((prev) => shiftWeekStart(prev, 1))}
+              onClick={() => setMonthStart((prev) => shiftMonth(prev, 1))}
               className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-              aria-label="Semana siguiente"
+              aria-label="Mes siguiente"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => setWeekStart(getWeekStartMonday())}
+              onClick={() => setMonthStart(getMonthStart())}
               className="ml-1 rounded-lg px-2 py-1 text-xs font-bold text-gabi-forest hover:bg-gabi-forest/5"
             >
               Hoy
@@ -311,7 +314,7 @@ export function GuardiasAdminPanel({
           <button
             type="button"
             disabled={copying || loading || !desarrolloId}
-            onClick={() => void handleCopyWeek()}
+            onClick={() => void handleCopyMonth()}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-gabi-forest disabled:opacity-50"
           >
             {copying ? (
@@ -319,7 +322,7 @@ export function GuardiasAdminPanel({
             ) : (
               <Copy className="h-4 w-4" />
             )}
-            Copiar a siguiente semana
+            Copiar a siguiente mes
           </button>
 
           <button
@@ -333,7 +336,7 @@ export function GuardiasAdminPanel({
             ) : (
               <Send className="h-4 w-4" />
             )}
-            Publicar semana
+            Publicar mes
           </button>
         </div>
       </header>
@@ -383,7 +386,7 @@ export function GuardiasAdminPanel({
             ) : (
               <ul className="mt-3 space-y-2">
                 {asesores.map((asesor) => {
-                  const count = week?.asesorCounts[asesor.id] ?? 0;
+                  const count = month?.asesorCounts[asesor.id] ?? 0;
                   const chipStyle = guardiaAsesorChipStyle(asesor.id);
                   return (
                     <li key={asesor.id}>
@@ -407,15 +410,15 @@ export function GuardiasAdminPanel({
             )}
           </div>
 
-          {week ? (
+          {month ? (
             <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-              <p className="font-bold text-gabi-forest">Cobertura</p>
+              <p className="font-bold text-gabi-forest">Cobertura del mes</p>
               <p className="mt-1 text-slate-600">
-                {week.coverage.filledSlots}/{week.coverage.totalSlots} turnos ({coveragePct}%)
+                {month.coverage.filledSlots}/{month.coverage.totalSlots} turnos ({coveragePct}%)
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Publicadas: {week.coverage.publishedSlots} · Borrador:{" "}
-                {week.coverage.filledSlots - week.coverage.publishedSlots}
+                Publicadas: {month.coverage.publishedSlots} · Borrador:{" "}
+                {month.coverage.filledSlots - month.coverage.publishedSlots}
               </p>
             </div>
           ) : null}
@@ -428,61 +431,68 @@ export function GuardiasAdminPanel({
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Cargando calendario…
               </div>
-            ) : !week ? (
+            ) : !month ? (
               <p className="py-20 text-center text-sm text-slate-500">Selecciona un desarrollo.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="w-28 px-3 py-2 text-left text-[10px] font-bold uppercase text-slate-500">
-                        Turno
-                      </th>
-                      {week.weekDates.map((fecha) => {
-                        const { dow, day } = formatDayHeader(fecha);
-                        return (
-                          <th
-                            key={fecha}
-                            className="min-w-[6.5rem] px-2 py-2 text-center text-[10px] font-bold uppercase text-slate-600"
+              <div className="p-2 sm:p-3">
+                <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
+                  {GUARDIA_WEEKDAY_LABELS.map((label) => (
+                    <div
+                      key={label}
+                      className="bg-slate-50 px-1 py-1.5 text-center text-[10px] font-bold uppercase text-slate-500"
+                    >
+                      {label}
+                    </div>
+                  ))}
+
+                  {calendarGrid.flatMap((week) =>
+                    week.map((day) => {
+                      const dayNumber = parseYmd(day.fecha).getDate();
+                      return (
+                        <div
+                          key={day.fecha}
+                          className={`min-h-[7.5rem] bg-white p-1 sm:min-h-[8.5rem] sm:p-1.5 ${
+                            day.inMonth ? "" : "bg-slate-50/80"
+                          }`}
+                        >
+                          <p
+                            className={`mb-1 text-right text-[10px] font-bold sm:text-xs ${
+                              day.inMonth ? "text-gabi-forest" : "text-slate-300"
+                            }`}
                           >
-                            <span className="block">{dow}</span>
-                            <span className="text-[11px] font-semibold normal-case text-slate-500">
-                              {day}
-                            </span>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {GUARDIA_TURNOS.map((turno) => (
-                      <tr key={turno} className="border-b border-slate-100 last:border-0">
-                        <td className="align-top px-3 py-3 text-xs text-slate-600">
-                          <p className="font-bold text-gabi-forest">
-                            {guardiaTurnoShortLabel[turno]}
+                            {dayNumber}
                           </p>
-                          <p className="text-[10px] text-slate-400">{guardiaTurnoLabel[turno]}</p>
-                        </td>
-                        {week.weekDates.map((fecha) => {
-                          const slot = slotMap.get(`${fecha}|${turno}`);
-                          return (
-                            <td key={`${fecha}-${turno}`} className="p-1.5 align-top">
-                              <GuardiaSlot
-                                asignacion={slot}
-                                asesorNombre={
-                                  slot ? asesorNames[slot.asesorId] ?? slot.asesorId : undefined
-                                }
-                                disabled={saving}
-                                onAssign={(asesorId) => handleDropOnSlot(fecha, turno, asesorId)}
-                                onClear={() => void clearSlot(fecha, turno)}
-                              />
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+                          {day.inMonth ? (
+                            <div className="space-y-1">
+                              {GUARDIA_TURNOS.map((turno) => {
+                                const slot = slotMap.get(`${day.fecha}|${turno}`);
+                                return (
+                                  <GuardiaSlot
+                                    key={`${day.fecha}-${turno}`}
+                                    turno={turno}
+                                    asignacion={slot}
+                                    asesorNombre={
+                                      slot
+                                        ? asesorNames[slot.asesorId] ?? slot.asesorId
+                                        : undefined
+                                    }
+                                    disabled={saving}
+                                    compact
+                                    onAssign={(asesorId) =>
+                                      handleDropOnSlot(day.fecha, turno, asesorId)
+                                    }
+                                    onClear={() => void clearSlot(day.fecha, turno)}
+                                  />
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    }),
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -491,7 +501,7 @@ export function GuardiasAdminPanel({
             Marcajes GPS: activos cuando el desarrollo tiene caseta configurada en{" "}
             <code className="rounded bg-slate-100 px-1">guardia_caseta_config</code>. Guardias 365
             días · matutino 10–15 h · vespertino 15–20 h. Estado{" "}
-            <strong>{guardiaEstadoLabel.borrador}</strong> hasta publicar la semana.
+            <strong>{guardiaEstadoLabel.borrador}</strong> hasta publicar el mes.
           </p>
         </div>
       </div>
@@ -500,17 +510,21 @@ export function GuardiasAdminPanel({
 }
 
 type GuardiaSlotProps = {
+  turno?: GuardiaTurno;
   asignacion?: GuardiaAsignacionRecord;
   asesorNombre?: string;
   disabled?: boolean;
+  compact?: boolean;
   onAssign: (asesorId: string) => void;
   onClear: () => void;
 };
 
 function GuardiaSlot({
+  turno,
   asignacion,
   asesorNombre,
   disabled,
+  compact = false,
   onAssign,
   onClear,
 }: GuardiaSlotProps) {
@@ -536,29 +550,41 @@ function GuardiaSlot({
     }
   };
 
+  const minHeight = compact ? "min-h-[2.35rem]" : "min-h-[4.5rem]";
+  const turnoLabel = turno ? guardiaTurnoShortLabel[turno] : null;
+
   if (asignacion && asesorNombre) {
     const chipStyle = guardiaAsesorChipStyle(asignacion.asesorId);
     const isPublished = asignacion.estado === "publicada";
 
     return (
       <div
-        className={`relative min-h-[4.5rem] rounded-xl border p-1 ${
+        className={`relative rounded-lg border p-0.5 ${minHeight} ${
           isPublished ? "border-emerald-200 bg-emerald-50/40" : "border-amber-200 bg-amber-50/30"
         }`}
         onDragOver={handleDragOver}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
       >
+        {compact && turnoLabel ? (
+          <p className="px-1 text-[8px] font-bold uppercase tracking-wide text-slate-400">
+            {turnoLabel.slice(0, 3)}
+          </p>
+        ) : null}
         <div
           draggable={!disabled}
           onDragStart={(event) => {
             event.dataTransfer.setData("guardias-slot-asesor", asignacion.asesorId);
             event.dataTransfer.effectAllowed = "move";
           }}
-          className="flex items-start justify-between gap-1 rounded-lg px-2 py-1.5 text-xs font-bold shadow-sm"
+          className={`flex items-start justify-between gap-0.5 rounded-md font-bold shadow-sm ${
+            compact ? "px-1 py-0.5 text-[10px] leading-tight" : "px-2 py-1.5 text-xs"
+          }`}
           style={chipStyle}
         >
-          <span className="line-clamp-3 leading-tight">{asesorNombre}</span>
+          <span className={compact ? "line-clamp-2" : "line-clamp-3 leading-tight"}>
+            {asesorNombre}
+          </span>
           <button
             type="button"
             disabled={disabled}
@@ -566,26 +592,33 @@ function GuardiaSlot({
             className="shrink-0 rounded p-0.5 opacity-80 hover:opacity-100"
             aria-label="Quitar guardia"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
           </button>
         </div>
-        <p className="mt-1 px-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-          {guardiaEstadoLabel[asignacion.estado]}
-        </p>
+        {!compact ? (
+          <p className="mt-1 px-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+            {guardiaEstadoLabel[asignacion.estado]}
+          </p>
+        ) : null}
       </div>
     );
   }
 
   return (
     <div
-      className={`flex min-h-[4.5rem] items-center justify-center rounded-xl border border-dashed px-2 py-2 text-center text-[10px] text-slate-400 transition ${
-        dragOver ? "border-gabi-forest bg-gabi-forest/5 text-gabi-forest" : "border-slate-200 bg-slate-50/50"
+      className={`flex ${minHeight} flex-col items-center justify-center rounded-lg border border-dashed px-1 py-0.5 text-center transition ${
+        dragOver
+          ? "border-gabi-forest bg-gabi-forest/5 text-gabi-forest"
+          : "border-slate-200 bg-slate-50/50 text-slate-400"
       }`}
       onDragOver={handleDragOver}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
-      Arrastra aquí
+      {compact && turnoLabel ? (
+        <p className="text-[8px] font-bold uppercase tracking-wide">{turnoLabel.slice(0, 3)}</p>
+      ) : null}
+      <span className={compact ? "text-[9px]" : "text-[10px]"}>Arrastra</span>
     </div>
   );
 }

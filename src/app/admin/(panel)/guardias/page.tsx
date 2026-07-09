@@ -6,7 +6,7 @@ import { GUARDIAS_PILOT_DESARROLLO_ID } from "@/lib/comercial/guardias";
 type AdminGuardiasPageProps = {
   searchParams?: {
     desarrolloId?: string;
-    weekStart?: string;
+    monthStart?: string;
   };
 };
 

@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import {
+  copyGuardiasMonthToNext,
   copyGuardiasWeekToNext,
-  listGuardiaConflictos,
-  listGuardiasWeek,
+  listGuardiaConflictosMonth,
+  listGuardiasMonth,
+  publishGuardiasMonth,
   publishGuardiasWeek,
   upsertGuardiaAsignacion,
 } from "@/lib/admin/guardias-service";
 import { listAsesores } from "@/lib/admin/asesores-service";
 import { canAccessDesarrollo, canAccessModule } from "@/lib/admin/permissions";
-import { getWeekStartMonday, isGuardiaTurno } from "@/lib/comercial/guardias";
+import { getMonthStart, getWeekStartMonday, isGuardiaTurno } from "@/lib/comercial/guardias";
 import { getAdminSession } from "@/lib/admin/session";
 
 export async function GET(request: Request) {
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const desarrolloId = searchParams.get("desarrolloId")?.trim() ?? "";
-  const weekStart = searchParams.get("weekStart")?.trim() || getWeekStartMonday();
+  const monthStart = searchParams.get("monthStart")?.trim() || getMonthStart();
 
   if (!desarrolloId) {
     return NextResponse.json({ error: "desarrolloId requerido." }, { status: 400 });
@@ -34,11 +36,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const week = await listGuardiasWeek(desarrolloId, weekStart, session.profile);
-    const conflictos = await listGuardiaConflictos(desarrolloId, weekStart, session.profile);
+    const month = await listGuardiasMonth(desarrolloId, monthStart, session.profile);
+    const conflictos = await listGuardiaConflictosMonth(desarrolloId, monthStart, session.profile);
     const asesores = await listAsesores({ desarrolloId }, session.profile);
 
-    return NextResponse.json({ week, conflictos, asesores });
+    return NextResponse.json({ month, conflictos, asesores });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al cargar guardias." },
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
       action?: string;
       desarrolloId?: string;
       weekStart?: string;
+      monthStart?: string;
       asesorId?: string;
       fecha?: string;
       turno?: string;
@@ -73,8 +76,19 @@ export async function POST(request: Request) {
     }
 
     if (body.action === "publish") {
-      const weekStart = body.weekStart?.trim() || getWeekStartMonday();
-      const result = await publishGuardiasWeek(desarrolloId, weekStart, session.profile);
+      const monthStart = body.monthStart?.trim() || getMonthStart();
+      const result = await publishGuardiasMonth(desarrolloId, monthStart, session.profile);
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "copyMonth") {
+      const monthStart = body.monthStart?.trim() || getMonthStart();
+      const result = await copyGuardiasMonthToNext(
+        desarrolloId,
+        monthStart,
+        session.profile,
+        session.userId,
+      );
       return NextResponse.json(result);
     }
 
@@ -86,6 +100,12 @@ export async function POST(request: Request) {
         session.profile,
         session.userId,
       );
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "publishWeek") {
+      const weekStart = body.weekStart?.trim() || getWeekStartMonday();
+      const result = await publishGuardiasWeek(desarrolloId, weekStart, session.profile);
       return NextResponse.json(result);
     }
 
