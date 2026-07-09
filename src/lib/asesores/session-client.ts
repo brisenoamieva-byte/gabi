@@ -1,5 +1,7 @@
-import { GABI_USER_KEY } from "@/lib/session/keys";
 import type { AsesorSession } from "@/lib/asesores/types";
+import type { PortalSession } from "@/lib/portal/session";
+import { PORTAL_STORAGE_KEY } from "@/lib/portal/session";
+import { GABI_USER_KEY } from "@/lib/session/keys";
 
 const USER_STORAGE_KEY = GABI_USER_KEY;
 
@@ -57,6 +59,41 @@ export const refreshStoredAsesorSession = async (): Promise<AsesorSession | null
     }
 
     return null;
+  } catch {
+    return null;
+  }
+};
+
+/** Si el usuario ya entró con correo (admin), activa CRM de campo sin PIN. */
+export const syncAsesorFromAdminAuth = async (): Promise<{
+  asesor: AsesorSession;
+  portal: PortalSession | null;
+} | null> => {
+  try {
+    const response = await fetch("/api/acceso/sync-asesor", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      asesor?: AsesorSession;
+      portal?: PortalSession | null;
+    };
+
+    if (!data.asesor) {
+      return null;
+    }
+
+    writeStoredAsesorSession(data.asesor);
+    if (data.portal) {
+      localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(data.portal));
+    }
+
+    return { asesor: data.asesor, portal: data.portal ?? null };
   } catch {
     return null;
   }

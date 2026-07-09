@@ -7,12 +7,20 @@ import { GabiLogo } from "@/components/brand/GabiLogo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { writeStoredAsesorSession } from "@/lib/asesores/session-client";
+import {
+  syncAsesorFromAdminAuth,
+  writeStoredAsesorSession,
+} from "@/lib/asesores/session-client";
 import { isGabiOperator } from "@/lib/gabi/operator";
 
-export function AdminLoginForm() {
+type AdminLoginFormProps = {
+  variant?: "admin" | "unified";
+};
+
+export function AdminLoginForm({ variant = "admin" }: AdminLoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const unified = variant === "unified";
   const emailParam = searchParams.get("email")?.trim().toLowerCase() ?? "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,8 +31,9 @@ export function AdminLoginForm() {
   const resetOk = searchParams.get("reset") === "ok";
   const otpExpired = searchParams.get("error") === "otp_expired";
   const nextPath = searchParams.get("next");
+  const defaultNext = unified ? "/inicio" : "/admin/documentos";
   const safeNext =
-    nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/admin/documentos";
+    nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : defaultNext;
   const [isProductionHost, setIsProductionHost] = useState(false);
 
   useEffect(() => {
@@ -36,6 +45,20 @@ export function AdminLoginForm() {
       setEmail(emailParam);
     }
   }, [emailParam]);
+
+  const resolvePostLoginPath = async (): Promise<string> => {
+    if (nextPath?.startsWith("/") && !nextPath.startsWith("//")) {
+      await syncAsesorFromAdminAuth();
+      return nextPath;
+    }
+
+    const synced = await syncAsesorFromAdminAuth();
+    if (synced) {
+      return unified ? "/inicio" : safeNext;
+    }
+
+    return safeNext;
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -63,7 +86,7 @@ export function AdminLoginForm() {
       }
 
       if (!configured) {
-        setError("Este correo no tiene acceso admin configurado.");
+        setError("Este correo no tiene acceso configurado.");
         return;
       }
 
@@ -77,12 +100,13 @@ export function AdminLoginForm() {
         setError(
           process.env.NODE_ENV === "development"
             ? authError.message
-            : "Credenciales incorrectas o usuario sin acceso admin.",
+            : "Correo o contraseña incorrectos.",
         );
         return;
       }
 
-      router.replace(safeNext);
+      const destination = await resolvePostLoginPath();
+      router.replace(destination);
       router.refresh();
     } catch {
       setError("No se pudo iniciar sesión.");
@@ -96,11 +120,15 @@ export function AdminLoginForm() {
       <div className="mb-8 text-center">
         <GabiLogo variant="hero" className="mx-auto" />
         <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-          Backoffice comercial
+          {unified ? "Acceso comercial" : "Backoffice comercial"}
         </p>
-        <h1 className="mt-2 text-2xl font-black text-gabi-forest">Admin gabi</h1>
+        <h1 className="mt-2 text-2xl font-black text-gabi-forest">
+          {unified ? "Entrar a gabi" : "Admin gabi"}
+        </h1>
         <p className="mt-2 text-sm text-slate-500">
-          Gestión de documentos, inventario, estudios y usuarios.
+          {unified
+            ? "Un correo y contraseña para admin y CRM. Tus desarrollos y permisos se aplican solos."
+            : "Gestión de documentos, inventario, estudios y usuarios."}
         </p>
       </div>
 
@@ -111,9 +139,7 @@ export function AdminLoginForm() {
       ) : null}
       {otpExpired ? (
         <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-          El enlace expiró o ya se usó. Si recibiste un correo en inglés de «Supabase Auth», ignóralo.
-          Pide reenvío desde Admin → Equipo → «Acceso admin · correo» y abre el correo{" "}
-          <strong>GABI — Crea tu contraseña del panel admin</strong>.
+          El enlace expiró o ya se usó. Pide reenvío desde Admin → Equipo → «Acceso admin · correo».
         </p>
       ) : null}
 
@@ -166,9 +192,18 @@ export function AdminLoginForm() {
           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest text-sm font-bold text-white disabled:opacity-60"
         >
           <LockKeyhole className="h-4 w-4" />
-          {loading ? "Entrando..." : "Entrar al panel"}
+          {loading ? "Entrando..." : unified ? "Entrar" : "Entrar al panel"}
         </button>
       </form>
+
+      {unified ? (
+        <p className="mt-5 text-center text-xs leading-relaxed text-slate-400">
+          Asesor en showroom con tablet compartida:{" "}
+          <Link href="/portal/bbr" className="font-semibold text-gabi-forest underline">
+            entrar con PIN
+          </Link>
+        </p>
+      ) : null}
 
       <p className="mt-6 text-center text-sm text-slate-500">
         <Link href="/" className="font-semibold text-gabi-forest hover:underline">

@@ -101,14 +101,36 @@ export default function PortalLoginPage() {
             <span className="grid mx-auto h-12 w-12 place-items-center rounded-2xl bg-[#13315C]/8 text-[#13315C]">
               <LockKeyhole className="h-6 w-6" />
             </span>
-            <h1 className="mt-4 text-2xl font-black">Portal comercializadoras</h1>
+            <h1 className="mt-4 text-2xl font-black">Acceso comercial</h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              Accede al módulo de tu comercializadora. Tus asesores ingresan con
-              PIN para iniciar recorridos guiados.
+              Gerentes, directores y asesores con correo entran en{" "}
+              <Link href="/acceso" className="font-semibold text-[#13315C] underline">
+                gabi.mx/acceso
+              </Link>
+              . El PIN en showroom queda solo para tablets compartidas.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div className="mt-6 space-y-3">
+            <Link
+              href="/acceso"
+              className="flex w-full items-center justify-center rounded-2xl bg-[#13315C] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#1A4478]"
+            >
+              Entrar con correo y contraseña
+            </Link>
+            <Link
+              href="/portal/bbr"
+              className="flex w-full items-center justify-center rounded-2xl border border-[#13315C]/15 bg-white py-3.5 text-sm font-semibold text-[#13315C]"
+            >
+              BBR · entrar con PIN (showroom)
+            </Link>
+          </div>
+
+          <details className="mt-6 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-600">
+              Otra comercializadora (usuario legacy)
+            </summary>
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <label className="block">
               <span className="mb-2 block text-sm font-bold">Usuario</span>
               <input
@@ -146,20 +168,14 @@ export default function PortalLoginPage() {
               {loading ? "Validando..." : "Entrar al portal"}
             </button>
           </form>
+          </details>
 
-            <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-              Equipo BBR Habitarea: entra directo con tu PIN en{" "}
-              <Link href="/portal/bbr" className="font-semibold text-[#13315C] underline">
-                gabi.mx/portal/bbr
-              </Link>
-              .
-            </p>
-            <p className="mt-3 text-center text-xs leading-relaxed text-slate-400">
-              ¿Eres el operador de gabi?{" "}
-              <Link href="/operador" className="font-semibold text-[#13315C] underline">
-                Centro operador
-              </Link>
-            </p>
+          <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
+            ¿Eres el operador de gabi?{" "}
+            <Link href="/operador" className="font-semibold text-[#13315C] underline">
+              Centro operador
+            </Link>
+          </p>
         </motion.div>
       </section>
     </main>

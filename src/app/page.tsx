@@ -136,7 +136,7 @@ export default function LandingPage() {
               Centro operador
             </Link>
             <Link
-              href="/portal"
+              href="/acceso"
               className="inline-flex shrink-0 items-center gap-1.5 border border-gabi-navy/15 bg-white px-3.5 py-2 text-sm font-medium text-gabi-navy transition hover:border-gabi-navy/30"
             >
               Entrar
@@ -320,10 +320,10 @@ export default function LandingPage() {
           </p>
           <div className="mt-6">
             <Link
-              href="/portal"
+              href="/acceso"
               className="inline-flex items-center gap-2 border border-gabi-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-gabi-navy transition hover:border-gabi-navy/30"
             >
-              Ir al portal
+              Ir al acceso
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -350,8 +350,8 @@ export default function LandingPage() {
             sembrado y análisis de mercado en un solo lugar.
           </p>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <Link href="/portal" className="text-gabi-navy/55 hover:text-gabi-navy">
-              Portal
+            <Link href="/acceso" className="text-gabi-navy/55 hover:text-gabi-navy">
+              Acceso
             </Link>
             <a href="mailto:hola@gabi.mx" className="text-gabi-navy/55 hover:text-gabi-navy">
               hola@gabi.mx

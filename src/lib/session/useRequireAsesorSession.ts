@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   readStoredAsesorSession,
   refreshStoredAsesorSession,
+  syncAsesorFromAdminAuth,
 } from "@/lib/asesores/session-client";
 import type { AsesorSession } from "@/lib/asesores/types";
 import type { Desarrollo } from "@/lib/data";
@@ -43,44 +44,57 @@ export function useRequireAsesorSession(options: Options = {}) {
       return;
     }
 
-    setAuthReady(false);
-    const portalSession = readPortalSession();
-
-    if (requirePortal && !portalSession) {
-      router.replace("/portal");
-      return;
-    }
-
-    const stored = readStoredAsesorSession();
-    const storedDevelopment = localStorage.getItem(GABI_DESARROLLO_KEY);
-
-    if (!stored) {
-      router.replace(
-        unauthenticatedRedirect ??
-          (portalSession ? resolveAdvisorEntryPath(portalSession) : "/portal"),
-      );
-      return;
-    }
-
-    if (requireDesarrollo && !storedDevelopment) {
-      router.replace("/desarrollos");
-      return;
-    }
-
     const load = async () => {
       try {
-        const freshUser = await refreshStoredAsesorSession();
-        if (!freshUser) {
-          localStorage.removeItem(GABI_USER_KEY);
-          localStorage.removeItem(GABI_DESARROLLO_KEY);
+        let portalSession = readPortalSession();
+        let storedUser = readStoredAsesorSession();
+        const storedDevelopment = localStorage.getItem(GABI_DESARROLLO_KEY);
+
+        if (!storedUser) {
+          const synced = await syncAsesorFromAdminAuth();
+          if (synced) {
+            storedUser = synced.asesor;
+            if (synced.portal) {
+              portalSession = synced.portal;
+            }
+          }
+        }
+
+        if (requirePortal && !portalSession) {
+          router.replace("/acceso");
+          return;
+        }
+
+        if (!storedUser) {
           router.replace(
-            portalSession ? resolveAdvisorEntryPath(portalSession) : "/portal",
+            unauthenticatedRedirect ??
+              (portalSession ? resolveAdvisorEntryPath(portalSession) : "/acceso"),
           );
           return;
         }
 
+        if (requireDesarrollo && !storedDevelopment) {
+          router.replace("/desarrollos");
+          return;
+        }
+
+        const freshUser = await refreshStoredAsesorSession();
+        if (!freshUser) {
+          const synced = await syncAsesorFromAdminAuth();
+          if (!synced) {
+            localStorage.removeItem(GABI_USER_KEY);
+            localStorage.removeItem(GABI_DESARROLLO_KEY);
+            router.replace(
+              portalSession ? resolveAdvisorEntryPath(portalSession) : "/acceso",
+            );
+            return;
+          }
+        }
+
+        const activeUser = freshUser ?? storedUser;
+
         if (requireDesarrollo && storedDevelopment) {
-          if (!freshUser.desarrollosIds.includes(storedDevelopment)) {
+          if (!activeUser.desarrollosIds.includes(storedDevelopment)) {
             localStorage.removeItem(GABI_DESARROLLO_KEY);
             router.replace("/desarrollos");
             return;
@@ -105,14 +119,12 @@ export function useRequireAsesorSession(options: Options = {}) {
           setPortal(portalSession);
         }
 
-        setUser(freshUser);
+        setUser(activeUser);
         setAuthReady(true);
       } catch {
         localStorage.removeItem(GABI_USER_KEY);
         localStorage.removeItem(GABI_DESARROLLO_KEY);
-        router.replace(
-          portalSession ? resolveAdvisorEntryPath(portalSession) : "/portal",
-        );
+        router.replace("/acceso");
       }
     };
 

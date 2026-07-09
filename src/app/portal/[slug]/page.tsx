@@ -12,6 +12,10 @@ import {
   resolvePortalLogoutPath,
 } from "@/lib/portal/session";
 import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializadora-portals";
+import {
+  refreshStoredAsesorSession,
+  syncAsesorFromAdminAuth,
+} from "@/lib/asesores/session-client";
 
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
@@ -47,6 +51,18 @@ export default function PortalSlugPinPage() {
 
       setPortal(parsed);
       setReady(true);
+
+      void (async () => {
+        const existing = await refreshStoredAsesorSession();
+        if (existing) {
+          router.replace("/desarrollos");
+          return;
+        }
+        const synced = await syncAsesorFromAdminAuth();
+        if (synced) {
+          router.replace("/desarrollos");
+        }
+      })();
     } catch {
       localStorage.removeItem(PORTAL_STORAGE_KEY);
       router.replace("/portal");

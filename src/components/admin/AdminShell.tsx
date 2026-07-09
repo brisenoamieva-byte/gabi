@@ -125,7 +125,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
           <div className="flex items-center gap-3">
             {profile.rol === "gerente" ? (
               <Link
-                href="/portal/bbr"
+                href="/desarrollos"
                 className="hidden min-h-10 items-center gap-2 rounded-xl border border-[#6CC24A]/35 bg-[#6CC24A]/10 px-3 text-sm font-semibold text-gabi-forest transition hover:bg-[#6CC24A]/15 sm:inline-flex"
               >
                 <MapPinned className="h-4 w-4 shrink-0" />
