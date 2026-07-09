@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BarChart3,
   ChevronDown,
   Kanban,
   LayoutList,
@@ -402,17 +400,6 @@ export function LeadsAdminPanel({
     return () => document.removeEventListener("mousedown", closeOnClick);
   }, [showExportMenu]);
 
-  const chartsHref = useMemo(() => {
-    const params = new URLSearchParams({ tab: "leads", desarrolloId: applied.desarrolloId });
-    if (applied.desde) {
-      params.set("desde", applied.desde);
-    }
-    if (applied.hasta) {
-      params.set("hasta", applied.hasta);
-    }
-    return `/admin/metricas?${params.toString()}`;
-  }, [applied.desarrolloId, applied.desde, applied.hasta]);
-
   const etapaOptions = useMemo(() => {
     if (!resumen) {
       return [];
@@ -667,14 +654,6 @@ export function LeadsAdminPanel({
                     <LayoutList className="h-3 w-3" />
                     Tabla
                   </button>
-                  <Link
-                    href={chartsHref}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50"
-                    title="Gráficas de leads"
-                  >
-                    <BarChart3 className="h-3 w-3" />
-                    Gráficas
-                  </Link>
                   <button
                     type="button"
                     onClick={() => setViewMode("tablero")}
