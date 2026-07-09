@@ -83,8 +83,12 @@ export const resolveDocumentoOficial = async (filters: {
 
     if (filters.tipo === "ficha_tecnica" && filters.prototipoId) {
       query = query.eq("prototipo_id", filters.prototipoId);
-    } else if (filters.tipo === "brochure_desarrollo") {
-      query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
+    } else if (filters.tipo === "brochure_desarrollo" || filters.tipo === "master_plan") {
+      if (filters.clusterId) {
+        query = query.eq("cluster_id", filters.clusterId).is("prototipo_id", null).is("etapa", null);
+      } else {
+        query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
+      }
     } else if (filters.clusterId) {
       query = query.eq("cluster_id", filters.clusterId).is("prototipo_id", null);
       if (etapa) {
@@ -115,6 +119,13 @@ export const resolveDocumentoOficial = async (filters: {
   return tryMatch(null);
 };
 
+export const resolveMasterPlanDocumento = async (desarrolloId: string, clusterId?: string) =>
+  resolveDocumentoOficial({
+    desarrolloId,
+    clusterId,
+    tipo: "master_plan",
+  });
+
 export const findDocumentoActivoEnAlcance = async (key: DocumentoAlcanceKey) => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -131,8 +142,12 @@ export const findDocumentoActivoEnAlcance = async (key: DocumentoAlcanceKey) => 
 
   if (key.tipo === "ficha_tecnica" && key.prototipoId) {
     query = query.eq("prototipo_id", key.prototipoId);
-  } else if (key.tipo === "brochure_desarrollo") {
-    query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
+  } else if (key.tipo === "brochure_desarrollo" || key.tipo === "master_plan") {
+    if (key.clusterId) {
+      query = query.eq("cluster_id", key.clusterId).is("prototipo_id", null).is("etapa", null);
+    } else {
+      query = query.is("cluster_id", null).is("etapa", null).is("prototipo_id", null);
+    }
   } else if (key.clusterId) {
     query = query.eq("cluster_id", key.clusterId).is("prototipo_id", null);
     if (key.etapa) {

@@ -33,7 +33,10 @@ export const sameDocumentoAlcance = (
     return doc.prototipo_id === key.prototipoId;
   }
 
-  if (key.tipo === "brochure_desarrollo") {
+  if (key.tipo === "brochure_desarrollo" || key.tipo === "master_plan") {
+    if (key.clusterId) {
+      return doc.cluster_id === key.clusterId && !doc.prototipo_id && !normalizeEtapa(doc.etapa);
+    }
     return !doc.cluster_id && !docEtapa && !doc.prototipo_id;
   }
 
@@ -97,6 +100,9 @@ export const deriveDocumentoTipo = (
   }
   if (categoria === "ficha_tecnica") {
     return "ficha_tecnica";
+  }
+  if (categoria === "master_plan") {
+    return "master_plan";
   }
   if (categoria !== "brochure") {
     return "otro";

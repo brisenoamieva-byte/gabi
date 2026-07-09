@@ -63,6 +63,9 @@ const getCategoriaFromRecord = (doc: DocumentoRecord): DocumentoCategoria => {
   if (doc.tipo === "ficha_tecnica") {
     return "ficha_tecnica";
   }
+  if (doc.tipo === "master_plan") {
+    return "master_plan";
+  }
   if (doc.tipo === "brochure_desarrollo" || doc.tipo === "brochure_cluster") {
     return "brochure";
   }
@@ -516,6 +519,13 @@ export function DocumentosAdminPanel({
               </select>
             </label>
           </div>
+
+          {categoria === "master_plan" ? (
+            <p className="text-sm text-slate-500">
+              El PDF activo aparece en el <strong>recorrido comercial</strong> (etapa Desarrollo). Si
+              hay imagen de master plan en el guión, se muestra primero; el PDF queda como descarga.
+            </p>
+          ) : null}
 
           {esFichaTecnica ? (
             <div className="grid gap-4 md:grid-cols-2">

@@ -51,6 +51,7 @@ import {
   type PasajeUnidadTipo,
 } from "@/lib/cotizador/pasaje-simulador";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
+import { RecorridoMasterPlanMedia } from "@/components/recorrido/RecorridoMasterPlanMedia";
 import {
   availabilityViewDescription,
   mapProductoFiltroToAvailabilityTipo,
@@ -160,6 +161,9 @@ export default function RecorridoPage() {
   const [loaded, setLoaded] = useState(false);
   const [activeDesarrollo, setActiveDesarrollo] = useState<Desarrollo | null>(null);
   const [activeContenido, setActiveContenido] = useState<RecorridoContenido>(defaultContenido);
+  const [masterPlanPdf, setMasterPlanPdf] = useState<{ url: string; nombre: string } | null>(
+    null,
+  );
   const [direction, setDirection] = useState(1);
   const [showTwoMinuteGuide, setShowTwoMinuteGuide] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
@@ -649,6 +653,8 @@ export default function RecorridoPage() {
     return activeContenido.overview.masterPlanStats ?? [];
   }, [activeContenido.overview.masterPlanStats]);
 
+  const hasMasterPlanVisual = Boolean(masterPlanImage || masterPlanPdf?.url);
+
   useEffect(() => {
     if (!authReady || !sessionDesarrollo) {
       return;
@@ -667,6 +673,7 @@ export default function RecorridoPage() {
           prototipos?: Prototipo[];
           recorridoEtapas?: string[];
           recorridoContenido?: RecorridoContenido;
+          masterPlanPdf?: { url: string; nombre: string; filename?: string } | null;
         };
 
         if (data.desarrollo) {
@@ -690,8 +697,14 @@ export default function RecorridoPage() {
         if (data.prototipos?.length) {
           setActivePrototipos(data.prototipos);
         }
+        setMasterPlanPdf(
+          data.masterPlanPdf?.url
+            ? { url: data.masterPlanPdf.url, nombre: data.masterPlanPdf.nombre }
+            : null,
+        );
       } catch {
         setActiveDesarrollo(desarrollos.find((item) => item.id === desarrolloId) ?? null);
+        setMasterPlanPdf(null);
       }
     };
 
@@ -1607,31 +1620,35 @@ export default function RecorridoPage() {
                         ))}
                       </div>
                     </div>
-                    {masterPlanImage || masterPlanStats.length > 0 ? (
+                    {hasMasterPlanVisual || masterPlanStats.length > 0 ? (
                       <div className="mt-6 space-y-4">
                         <div>
                           <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
-                            {masterPlanImage ? "Master plan" : "Datos clave del desarrollo"}
+                            {hasMasterPlanVisual ? "Master plan" : "Datos clave del desarrollo"}
                           </p>
                           <p className="mt-1 text-sm font-semibold text-slate-500">
-                            {masterPlanImage
+                            {hasMasterPlanVisual
                               ? "Ubica clusters, plazas, parques y accesos con el cliente antes de filtrar producto."
                               : getCotizadorKind(activeDesarrollo?.id ?? "") === "investti"
                                 ? "Revisa etapas, metrajes y amenidades con el brochure antes de abrir el simulador."
                                 : "Confirma escala, metraje y ritmo de venta con el cliente antes de filtrar producto."}
                           </p>
                         </div>
-                        {masterPlanImage ? (
-                          <div className="overflow-hidden rounded-2xl border border-[#201044]/10 bg-white shadow-inner">
-                            <Image
-                              src={masterPlanImage}
-                              alt={`Master plan · ${activeContenido.overview.titulo}`}
-                              width={1600}
-                              height={1200}
-                              className="h-auto w-full object-contain"
-                              priority={false}
-                            />
-                          </div>
+                        {hasMasterPlanVisual ? (
+                          <RecorridoMasterPlanMedia
+                            imageSrc={masterPlanImage}
+                            pdfUrl={masterPlanPdf?.url}
+                            pdfNombre={masterPlanPdf?.nombre}
+                            titulo={activeContenido.overview.titulo}
+                          />
+                        ) : null}
+                        {masterPlanPdf && masterPlanImage && activeDesarrollo ? (
+                          <DocumentDownloadButton
+                            compact
+                            variant="master-plan"
+                            desarrolloId={activeDesarrollo.id}
+                            label="Descargar master plan PDF"
+                          />
                         ) : null}
                         {masterPlanStats.length > 0 ? (
                           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

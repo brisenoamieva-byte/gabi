@@ -414,7 +414,7 @@ export function GuionAdminPanel({ desarrollos, scopeLabel }: GuionAdminPanelProp
               onChange={(url) => patchForm({ overviewMasterPlanImage: url })}
               kind="recorrido-master-plan"
               desarrolloId={desarrolloId}
-              hint="Imagen del plano maestro en la presentación del desarrollo."
+              hint="Imagen del plano maestro en la presentación del desarrollo. Para PDF usa Admin → Documentos → Master plan."
             />
             <Field label="Guía asesor" className="sm:col-span-2">
               <textarea

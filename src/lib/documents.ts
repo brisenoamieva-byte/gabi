@@ -250,6 +250,42 @@ export const downloadDisponibilidadReport = async (
   );
 };
 
+export const downloadMasterPlan = async (desarrolloId: string) => {
+  const desarrollo = desarrollos.find((item) => item.id === desarrolloId);
+  if (!desarrollo) {
+    throw new Error("Desarrollo no encontrado.");
+  }
+
+  const cacheParams = { desarrolloId, tipo: "master_plan" as const };
+  const cached = await readCachedDocument(cacheParams);
+  if (cached) {
+    triggerBlobDownload(cached.blob, cached.filename);
+    return;
+  }
+
+  const oficial = await fetchDocumentoOficial({
+    desarrolloId,
+    tipo: "master_plan",
+  });
+  if (oficial) {
+    await downloadStaticFile(oficial.url, oficial.filename, {
+      desarrolloId,
+      tipo: "master_plan",
+    });
+    return;
+  }
+
+  if (desarrollo.masterPlanImage?.toLowerCase().endsWith(".pdf")) {
+    await downloadStaticFile(
+      desarrollo.masterPlanImage,
+      `${slugify(desarrollo.nombre)}-master-plan.pdf`,
+    );
+    return;
+  }
+
+  throw new DocumentNotAvailableError("Master plan");
+};
+
 export const downloadFichaTecnica = async (prototipoId: string, desarrolloId: string) => {
   const prototipo = getPrototipoById(prototipoId);
   const cluster = prototipo ? getClusterById(prototipo.clusterId) : undefined;

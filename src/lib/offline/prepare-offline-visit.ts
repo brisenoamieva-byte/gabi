@@ -74,6 +74,10 @@ const buildDocumentJobs = (desarrolloId: string): DocumentJob[] => {
       tipo: "brochure_desarrollo",
       label: "Brochure del desarrollo",
     },
+    {
+      tipo: "master_plan",
+      label: "Master plan del desarrollo",
+    },
   ];
 
   const desarrolloClusters = filterClustersForDesarrollo(desarrolloId, clusters);

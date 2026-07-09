@@ -53,6 +53,7 @@
     "db:apply:053": "node scripts/apply-sql-migrations.mjs 053",
     "db:apply:054": "node scripts/apply-sql-migrations.mjs 054",
     "db:apply:055": "node scripts/apply-sql-migrations.mjs 055",
+    "db:apply:056": "node scripts/apply-sql-migrations.mjs 056",
     "db:apply:051-053": "node scripts/apply-sql-migrations.mjs 051 052 053",
     "db:print:040": "node scripts/print-apply-sql.mjs 040",
     "templates:gavia:placeholders": "node scripts/prepare-gavia-docx-placeholders.mjs",

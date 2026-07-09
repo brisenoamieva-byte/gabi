@@ -7,6 +7,7 @@ import {
   downloadDesarrolloBrochure,
   downloadDisponibilidadReport,
   downloadFichaTecnica,
+  downloadMasterPlan,
   downloadTarjetasProceso,
 } from "@/lib/documents";
 
@@ -19,6 +20,7 @@ type DocumentDownloadButtonProps = {
   | { variant: "tarjetas-proceso"; desarrolloId: string }
   | { variant: "cluster"; clusterId: string; desarrolloId: string }
   | { variant: "ficha-tecnica"; prototipoId: string; desarrolloId: string }
+  | { variant: "master-plan"; desarrolloId: string }
   | { variant: "disponibilidad"; clusterId: string; desarrolloId: string; etapa?: string }
 );
 
@@ -40,7 +42,9 @@ export function DocumentDownloadButton({
         ? "Brochure del cluster"
         : props.variant === "ficha-tecnica"
           ? "Ficha técnica PDF"
-          : props.etapa
+          : props.variant === "master-plan"
+            ? "Master plan PDF"
+            : props.etapa
             ? `Disponibilidad · Etapa ${props.etapa}`
             : "Disponibilidad PDF";
 
@@ -59,6 +63,8 @@ export function DocumentDownloadButton({
         await downloadClusterBrochure(props.clusterId, props.desarrolloId);
       } else if (props.variant === "ficha-tecnica") {
         await downloadFichaTecnica(props.prototipoId, props.desarrolloId);
+      } else if (props.variant === "master-plan") {
+        await downloadMasterPlan(props.desarrolloId);
       } else {
         await downloadDisponibilidadReport(props.clusterId, props.desarrolloId, props.etapa);
       }

@@ -19,6 +19,7 @@ export type DocumentoTipo =
   | "brochure_cluster"
   | "disponibilidad"
   | "ficha_tecnica"
+  | "master_plan"
   | "otro";
 
 export type AdminProfile = {
@@ -52,6 +53,7 @@ export const documentoTipoLabel: Record<DocumentoTipo, string> = {
   brochure_cluster: "Brochure comercial",
   disponibilidad: "Disponibilidad",
   ficha_tecnica: "Ficha técnica",
+  master_plan: "Master plan",
   otro: "Otro documento",
 };
 
