@@ -6,6 +6,8 @@ import { ArrowLeft, LockKeyhole } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { isComercializadoraPortalSlug } from "@/lib/portal/comercializadora-portals";
+import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
 
 const PORTAL_KEY = "gabi_portal";
 
@@ -20,8 +22,13 @@ export default function PortalLoginPage() {
     try {
       const stored = localStorage.getItem(PORTAL_KEY);
       if (stored) {
-        const portal = JSON.parse(stored) as { portalPath?: string };
-        if (portal.portalPath) {
+        const portal = JSON.parse(stored) as { portalPath?: string; slug?: string };
+        if (
+          portal.portalPath &&
+          portal.slug &&
+          isComercializadoraPortalSlug(portal.slug) &&
+          !isInvesttiSimuladorPortal(portal.slug)
+        ) {
           router.replace(portal.portalPath);
         }
       }
@@ -140,12 +147,19 @@ export default function PortalLoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-            ¿Eres el operador de gabi?{" "}
-            <Link href="/operador" className="font-semibold text-[#13315C] underline">
-              Centro operador
-            </Link>
-          </p>
+            <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
+              Equipo BBR Habitarea: entra directo con tu PIN en{" "}
+              <Link href="/portal/bbr" className="font-semibold text-[#13315C] underline">
+                gabi.mx/portal/bbr
+              </Link>
+              .
+            </p>
+            <p className="mt-3 text-center text-xs leading-relaxed text-slate-400">
+              ¿Eres el operador de gabi?{" "}
+              <Link href="/operador" className="font-semibold text-[#13315C] underline">
+                Centro operador
+              </Link>
+            </p>
         </motion.div>
       </section>
     </main>

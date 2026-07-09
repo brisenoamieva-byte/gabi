@@ -11,6 +11,7 @@ import {
   type PortalSession,
   resolvePortalLogoutPath,
 } from "@/lib/portal/session";
+import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializadora-portals";
 
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
@@ -27,15 +28,21 @@ export default function PortalSlugPinPage() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(PORTAL_STORAGE_KEY);
-      if (!stored) {
-        router.replace("/portal");
-        return;
+      let parsed: PortalSession | null = null;
+
+      if (stored) {
+        parsed = JSON.parse(stored) as PortalSession;
       }
 
-      const parsed = JSON.parse(stored) as PortalSession;
-      if (parsed.slug !== slug) {
-        router.replace("/portal");
-        return;
+      if (!parsed || parsed.slug !== slug) {
+        const bootstrap = resolveComercializadoraPortalSession(slug);
+        if (bootstrap) {
+          localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(bootstrap));
+          parsed = bootstrap;
+        } else {
+          router.replace("/portal");
+          return;
+        }
       }
 
       setPortal(parsed);

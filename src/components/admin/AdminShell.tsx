@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck, ClipboardCheck, Clock } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck, ClipboardCheck, Clock, MapPinned } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -123,6 +123,15 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {profile.rol === "gerente" ? (
+              <Link
+                href="/portal/bbr"
+                className="hidden min-h-10 items-center gap-2 rounded-xl border border-[#6CC24A]/35 bg-[#6CC24A]/10 px-3 text-sm font-semibold text-gabi-forest transition hover:bg-[#6CC24A]/15 sm:inline-flex"
+              >
+                <MapPinned className="h-4 w-4 shrink-0" />
+                CRM de campo
+              </Link>
+            ) : null}
             <div className="hidden text-right sm:block">
               <p className="text-sm font-bold text-gabi-forest">{profile.nombre}</p>
               <p className="text-xs text-slate-500">{adminRolLabel[profile.rol]}</p>
