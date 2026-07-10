@@ -121,6 +121,9 @@ function assertMarcajesTable(message: string) {
 
 function toMarcajeResumen(row: MarcajeRow): GuardiaMarcajeResumen {
   return {
+    id: row.id,
+    asignacionId: row.asignacion_id,
+    fecha: row.fecha,
     tipo: row.tipo as GuardiaMarcajeTipo,
     registradoAt: row.registrado_at,
     distanciaMetros: row.distancia_metros,

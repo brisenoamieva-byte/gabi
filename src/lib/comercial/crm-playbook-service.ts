@@ -30,6 +30,7 @@ import {
 } from "@/lib/comercial/cadencia-service";
 import { normalizePlaybookVisitDate } from "@/lib/comercial/cadencia-perfilamiento";
 import {
+  computePerfilCalificacionLead,
   perfilamientoVisitaToRow,
   PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
   validatePerfilamientoVisitaInput,
@@ -386,10 +387,12 @@ export const completePlaybookStepForProspecto = async (
 
   if (PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(stepId)) {
     const answers = validatePerfilamientoVisitaInput(perfilamientoVisita);
+    const perfilCalificacionLead = computePerfilCalificacionLead(answers);
     const { error: perfilError } = await supabase
       .from("prospectos")
       .update({
         ...perfilamientoVisitaToRow(answers),
+        perfil_calificacion_lead: perfilCalificacionLead,
         updated_at: new Date().toISOString(),
       })
       .eq("id", prospectoId);

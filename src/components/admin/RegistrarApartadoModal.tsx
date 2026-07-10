@@ -43,6 +43,7 @@ type FormState = {
   precioVenta: string;
   esquemaPago: string;
   fechaApartado: string;
+  fechaCierre: string;
   medioPublicitario: string;
   observacionesPagos: string;
   observaciones: string;
@@ -66,6 +67,7 @@ const emptyForm = (unidadId = ""): FormState => ({
   precioVenta: "",
   esquemaPago: "",
   fechaApartado: new Date().toISOString().slice(0, 10),
+  fechaCierre: "",
   medioPublicitario: "",
   observacionesPagos: "",
   observaciones: "",
@@ -89,6 +91,7 @@ const prefillToForm = (prefill: ApartadoPrefill): FormState => ({
   precioVenta: prefill.precioVenta ? formatAmountInput(prefill.precioVenta) : "",
   esquemaPago: prefill.esquemaPago ?? "",
   fechaApartado: new Date().toISOString().slice(0, 10),
+  fechaCierre: "",
   medioPublicitario: normalizeMedioPublicitarioSelect(prefill.medioPublicitario),
   observacionesPagos: "",
   observaciones: "",
@@ -515,6 +518,7 @@ export function RegistrarApartadoModal({
             precioVenta: parseMoneyInput(form.precioVenta),
             esquemaPago: form.esquemaPago || undefined,
             fechaApartado: form.fechaApartado,
+            fechaCierre: form.fechaCierre || undefined,
             medioPublicitario: form.medioPublicitario || undefined,
             observacionesPagos: form.observacionesPagos || undefined,
             observaciones: form.observaciones || undefined,
@@ -554,6 +558,7 @@ export function RegistrarApartadoModal({
           precioVenta: parseMoneyInput(form.precioVenta),
           esquemaPago: form.esquemaPago || undefined,
           fechaApartado: form.fechaApartado,
+          fechaCierre: form.fechaCierre || undefined,
           medioPublicitario: form.medioPublicitario || undefined,
           observacionesPagos: form.observacionesPagos || undefined,
           observaciones: form.observaciones || undefined,
@@ -596,12 +601,12 @@ export function RegistrarApartadoModal({
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               {esAsesor
-                ? "Registra la unidad en sembrado e inicia el expediente del cliente. Revisa unidad, precio y fecha de apartado."
+                ? "Registra la unidad en sembrado e inicia el expediente del cliente."
                 : desdeLead
-                  ? "Datos del prospecto y su última cotización. Revisa la unidad y completa la operación."
+                  ? "Captura los datos del sembrado (cliente, precios, medio y pagos). La etapa del lead se actualiza al guardar."
                   : esCompletar
-                    ? "La unidad ya está apartada en inventario. Captura al cliente y los datos de la operación."
-                    : "Integra la operación al sembrado. Si hay cotización reciente del asesor, se pre-llena."}
+                    ? "La unidad ya está apartada en inventario. Completa cliente, contacto y operación."
+                    : "Misma estructura que el Excel de sembrado: cliente, precios, pagos y fechas."}
             </p>
           </div>
           <button
@@ -747,7 +752,7 @@ export function RegistrarApartadoModal({
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Cliente *">
+            <Field label="Cliente (nombre completo) *">
               <input
                 required
                 value={form.clienteNombre}
@@ -755,13 +760,24 @@ export function RegistrarApartadoModal({
                 className={inputClass}
               />
             </Field>
-            <Field label="Fecha apartado *">
+            <Field label="Correo electrónico *">
               <input
                 required
-                type="date"
-                value={form.fechaApartado}
-                onChange={(event) => patch({ fechaApartado: event.target.value })}
+                type="email"
+                value={form.prospectoEmail}
+                onChange={(event) => patch({ prospectoEmail: event.target.value })}
                 className={inputClass}
+                placeholder="cliente@correo.com"
+              />
+            </Field>
+            <Field label="Teléfono (10 dígitos) *">
+              <input
+                required
+                value={form.prospectoTelefono}
+                onChange={(event) => patch({ prospectoTelefono: event.target.value })}
+                className={inputClass}
+                inputMode="numeric"
+                placeholder="4421234567"
               />
             </Field>
             <Field label="Origen (ciudad)">
@@ -772,8 +788,9 @@ export function RegistrarApartadoModal({
                 placeholder="Querétaro, CDMX…"
               />
             </Field>
-            <Field label="Medio publicitario">
+            <Field label="Cómo se enteró del desarrollo (medio publicitario) *">
               <select
+                required
                 value={form.medioPublicitario}
                 onChange={(event) => patch({ medioPublicitario: event.target.value })}
                 className={inputClass}
@@ -865,7 +882,7 @@ export function RegistrarApartadoModal({
                 className={inputClass}
               >
                 <option value="">—</option>
-                <option value="vivir">Vivir</option>
+                <option value="vivir">Vivir / Habitar</option>
                 <option value="inversion">Inversión</option>
                 <option value="trabajar">Trabajar</option>
                 <option value="otro">Otro</option>
@@ -918,12 +935,12 @@ export function RegistrarApartadoModal({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Esquema de pago">
+            <Field label="Forma / esquema de pago">
               <input
                 value={form.esquemaPago}
                 onChange={(event) => patch({ esquemaPago: event.target.value })}
                 className={inputClass}
-                placeholder="Contado, 30-30-40…"
+                placeholder="Contado, 30-30-40, MSI…"
               />
             </Field>
             <Field label="Primer pago / apartado">
@@ -937,6 +954,23 @@ export function RegistrarApartadoModal({
                 className={`${inputClass} tabular-nums`}
                 inputMode="numeric"
                 placeholder="50,000"
+              />
+            </Field>
+            <Field label="Fecha apartado *">
+              <input
+                required
+                type="date"
+                value={form.fechaApartado}
+                onChange={(event) => patch({ fechaApartado: event.target.value })}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Fecha cierre de venta">
+              <input
+                type="date"
+                value={form.fechaCierre}
+                onChange={(event) => patch({ fechaCierre: event.target.value })}
+                className={inputClass}
               />
             </Field>
           </div>

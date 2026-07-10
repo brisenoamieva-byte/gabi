@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { GripVertical, Phone, UserRound } from "lucide-react";
+import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
+import { resolvePerfilCalificacionLead } from "@/lib/comercial/perfilamiento-post-visita";
 import {
   PROSPECTO_ETAPAS,
   isProspectoEtapa,
@@ -151,7 +153,9 @@ export function LeadsKanbanBoard({
 
               <div className="flex max-h-[32rem] flex-col gap-2 overflow-y-auto p-3">
                 {cards.length ? (
-                  cards.map((row) => (
+                  cards.map((row) => {
+                    const calificacion = resolvePerfilCalificacionLead(row);
+                    return (
                     <div
                       key={row.id}
                       draggable={canDrag(row) && movingId !== row.id}
@@ -186,6 +190,9 @@ export function LeadsKanbanBoard({
                               <UserRound className="h-4 w-4 text-slate-400" />
                             </div>
                             <p className="truncate font-bold text-gabi-forest">{row.nombre}</p>
+                            {calificacion ? (
+                              <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
+                            ) : null}
                           </div>
                           <p className="mt-1 truncate text-xs text-slate-500">
                             {row.email ?? "Sin email"}
@@ -207,7 +214,8 @@ export function LeadsKanbanBoard({
                         </button>
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 ) : (
                   <p className="px-2 py-6 text-center text-xs text-slate-400">
                     {isApartadoDrop

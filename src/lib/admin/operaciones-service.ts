@@ -263,6 +263,7 @@ export type CreateApartadoInput = {
   precioVenta?: number | null;
   esquemaPago?: string;
   fechaApartado?: string;
+  fechaCierre?: string;
   medioPublicitario?: string;
   observacionesPagos?: string;
   observaciones?: string;
@@ -651,8 +652,12 @@ export const createOperacionApartado = async (
     await supabase
       .from("prospectos")
       .update({
+        nombre: clienteNombre,
+        email: input.prospectoEmail?.trim() || null,
+        telefono: input.prospectoTelefono?.trim() || null,
         origen_ciudad: input.origenCiudad?.trim() || null,
         medio_publicitario: input.medioPublicitario?.trim() || null,
+        medio_contacto: input.medioPublicitario?.trim() || null,
         equipo_venta: input.equipoVenta?.trim() || null,
         promotor_nombre: input.promotorNombre?.trim() || null,
         tipo_inversion: input.tipoInversion ?? null,
@@ -683,6 +688,7 @@ export const createOperacionApartado = async (
       precio_venta: precioVenta,
       esquema_pago: input.esquemaPago?.trim() || null,
       fecha_apartado: fechaApartado,
+      fecha_cierre: input.fechaCierre?.trim() || null,
       medio_publicitario: input.medioPublicitario?.trim() || null,
       observaciones_pagos: input.observacionesPagos?.trim() || null,
       observaciones: input.observaciones?.trim() || null,

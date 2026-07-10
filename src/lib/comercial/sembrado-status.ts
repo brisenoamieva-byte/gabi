@@ -137,6 +137,7 @@ export type ProspectoRecord = {
   perfil_intencion_apartar: boolean | null;
   perfil_decisor_visita: boolean | null;
   perfil_vio_publicidad_redes: boolean | null;
+  perfil_calificacion_lead: string | null;
   created_at: string;
   updated_at: string;
 };

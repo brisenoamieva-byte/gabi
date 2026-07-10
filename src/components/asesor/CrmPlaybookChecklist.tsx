@@ -23,9 +23,13 @@ import {
   formatPerfilamientoSiNo,
   PERFILAMIENTO_VISITA_QUESTIONS,
   PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
+  resolvePerfilCalificacionLead,
+  perfilCalificacionLeadBannerClass,
+  perfilCalificacionLeadDescription,
   type PerfilamientoVisitaAnswers,
   type PerfilamientoVisitaRecord,
 } from "@/lib/comercial/perfilamiento-post-visita";
+import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 
 type PlaybookContactContext = {
@@ -249,7 +253,28 @@ function PlaybookStepRow({
           </div>
         ) : null}
         {done && isPerfilamientoForm && perfilamientoVisita ? (
-          <dl className="mt-2 space-y-2 rounded-lg bg-slate-50 p-2">
+          <div className="mt-2 space-y-2">
+            {(() => {
+              const calificacion = resolvePerfilCalificacionLead({
+                perfil_presupuesto_disponible: perfilamientoVisita.presupuestoDisponible,
+                perfil_intencion_apartar: perfilamientoVisita.intencionApartarInmediato,
+                perfil_decisor_visita: perfilamientoVisita.decisorVisita,
+              });
+              return calificacion ? (
+                <div
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${perfilCalificacionLeadBannerClass[calificacion]}`}
+                >
+                  <PerfilCalificacionLeadBadge calificacion={calificacion} size="md" />
+                  <div>
+                    <p className="text-xs font-bold">Calificación {calificacion}</p>
+                    <p className="text-[11px] leading-snug opacity-90">
+                      {perfilCalificacionLeadDescription[calificacion]}
+                    </p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+            <dl className="space-y-2 rounded-lg bg-slate-50 p-2">
             {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
               <div key={question.key}>
                 <dt className="text-[11px] leading-snug text-slate-500">{question.label}</dt>
@@ -258,7 +283,8 @@ function PlaybookStepRow({
                 </dd>
               </div>
             ))}
-          </dl>
+            </dl>
+          </div>
         ) : null}
 
         {!done && isPerfilamientoForm ? (

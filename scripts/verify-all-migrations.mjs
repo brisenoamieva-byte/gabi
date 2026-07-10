@@ -45,6 +45,8 @@ const checks = [
   { id: "051", table: "guardia_caseta_config", column: "desarrollo_id", file: "051_guardia_caseta_pasaje_alamos.sql" },
   { id: "052", table: "guardia_caseta_config", column: "puntos_extra", file: "052_guardia_caseta_puntos_extra.sql" },
   { id: "055", table: "desarrollos_catalog", column: "hub_hero_image", file: "055_desarrollo_hub_hero.sql" },
+  { id: "057", table: "prospectos", column: "perfil_calificacion_lead", file: "057_prospecto_perfil_calificacion_lead.sql" },
+  { id: "058", table: "guardia_salida_cuestionarios", column: "atendio_citas_visitas", file: "058_guardia_salida_cuestionario.sql" },
 ];
 
 const fails = [];

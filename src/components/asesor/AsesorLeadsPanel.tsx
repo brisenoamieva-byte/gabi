@@ -18,6 +18,7 @@ import {
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { SolicitarApartadoModal } from "@/components/asesor/SolicitarApartadoModal";
 import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedienteApartadoPanel";
+import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { AsesorCadenciaLeadPanel } from "@/components/asesor/AsesorCadenciaLeadPanel";
@@ -51,6 +52,9 @@ import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-servic
 import type { CadenciaStatus } from "@/lib/comercial/cadencia-perfilamiento";
 import {
   readPerfilamientoVisitaFromProspecto,
+  resolvePerfilCalificacionLead,
+  perfilCalificacionLeadBannerClass,
+  perfilCalificacionLeadDescription,
   type PerfilamientoVisitaAnswers,
 } from "@/lib/comercial/perfilamiento-post-visita";
 import {
@@ -218,6 +222,7 @@ function AsesorLeadDrawer({
     prospectoAsesorPuedeCotizarOSolicitarApartado(detail.etapa) &&
     !tieneOperacionActiva;
   const puedeSolicitarApartado = puedeAccionesComerciales && !solicitudPendiente;
+  const perfilCalificacion = detail ? resolvePerfilCalificacionLead(detail) : null;
 
   const isEtapaOptionAllowed = (target: ProspectoEtapa) => {
     if (!detail || !playbook?.config?.enabled || !playbook.config.blockEtapa) {
@@ -309,11 +314,16 @@ function AsesorLeadDrawer({
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
       <div className="flex h-full w-full max-w-lg flex-col bg-white shadow-xl">
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
               Seguimiento
             </p>
-            <h3 className="text-xl font-black text-[#201044]">{detail?.nombre ?? "Cargando…"}</h3>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h3 className="text-xl font-black text-[#201044]">{detail?.nombre ?? "Cargando…"}</h3>
+              {perfilCalificacion ? (
+                <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
+              ) : null}
+            </div>
           </div>
           <button
             type="button"
@@ -340,6 +350,20 @@ function AsesorLeadDrawer({
 
           {detail ? (
             <div className="space-y-5">
+              {perfilCalificacion ? (
+                <div
+                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${perfilCalificacionLeadBannerClass[perfilCalificacion]}`}
+                >
+                  <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold">Calificación del lead: {perfilCalificacion}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed opacity-90">
+                      {perfilCalificacionLeadDescription[perfilCalificacion]}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Email</span>
@@ -1026,7 +1050,9 @@ export function AsesorLeadsPanel({
           />
         ) : (
           <ul className="divide-y divide-slate-100">
-            {prospectos.map((row) => (
+            {prospectos.map((row) => {
+              const calificacion = resolvePerfilCalificacionLead(row);
+              return (
               <li key={row.id}>
                 <button
                   type="button"
@@ -1037,7 +1063,12 @@ export function AsesorLeadsPanel({
                     <UserRound className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold text-[#201044]">{row.nombre}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate font-bold text-[#201044]">{row.nombre}</p>
+                      {calificacion ? (
+                        <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
+                      ) : null}
+                    </div>
                     <p className="truncate text-sm text-slate-500">
                       {row.email ?? row.telefono ?? "Sin contacto"}
                     </p>
@@ -1058,7 +1089,8 @@ export function AsesorLeadsPanel({
                   </span>
                 </button>
               </li>
-            ))}
+            );
+            })}
           </ul>
         )}
       </div>

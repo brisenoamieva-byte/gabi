@@ -20,6 +20,9 @@ export type GuardiaMarcajeRecord = {
 };
 
 export type GuardiaMarcajeResumen = {
+  id: string;
+  asignacionId: string;
+  fecha: string;
   tipo: GuardiaMarcajeTipo;
   registradoAt: string;
   distanciaMetros: number;

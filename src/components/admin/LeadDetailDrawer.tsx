@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Bell, Loader2, Save, ShoppingBag, Trash2, X } from "lucide-react";
+import { AlertTriangle, Bell, ChevronDown, Loader2, Save, ShoppingBag, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
@@ -72,6 +72,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
   const [solicitudApartado, setSolicitudApartado] = useState<SolicitudApartadoRow | null>(null);
   const [compliance, setCompliance] = useState<ProspectoComplianceRow | null>(null);
+  const [crmFieldsOpen, setCrmFieldsOpen] = useState(false);
 
   const puedeRegistrarApartado =
     adminMe.canRegisterApartado &&
@@ -158,6 +159,10 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
+
+  useEffect(() => {
+    setCrmFieldsOpen(!puedeRegistrarApartado);
+  }, [puedeRegistrarApartado]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -327,6 +332,25 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 </div>
               ) : null}
 
+              {puedeRegistrarApartado ? (
+                <div className="rounded-xl border border-gabi-forest/20 bg-gabi-forest/5 px-4 py-4 text-sm text-gabi-forest">
+                  <p className="font-bold">Registrar apartado en sembrado</p>
+                  <p className="mt-1 text-gabi-forest/80">
+                    Captura cliente, contacto, precios, pagos y fechas en el formulario de apartado
+                    (misma estructura que el Excel de sembrado). Los campos CRM de seguimiento quedan
+                    opcionales abajo.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setApartadoModalOpen(true)}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gabi-forest px-4 py-2.5 text-sm font-bold text-white"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Registrar apartado
+                  </button>
+                </div>
+              ) : null}
+
               <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Email</span>
@@ -400,6 +424,23 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 </div>
               </div>
 
+              <div className="rounded-xl border border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCrmFieldsOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-bold text-gabi-forest"
+                >
+                  <span>
+                    {puedeRegistrarApartado
+                      ? "Seguimiento CRM (opcional)"
+                      : "Seguimiento CRM"}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 transition-transform ${crmFieldsOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {crmFieldsOpen ? (
+                  <div className="space-y-4 border-t border-slate-100 px-4 py-4">
               {adminMe.canReassignProspectos ? (
                 <Field label="Asesor asignado">
                   <select
@@ -499,6 +540,9 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   placeholder="Seguimiento, objeciones, próximo paso…"
                 />
               </Field>
+                  </div>
+                ) : null}
+              </div>
 
               <div>
                 <h4 className="mb-3 text-sm font-bold text-gabi-forest">
