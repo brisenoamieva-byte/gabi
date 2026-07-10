@@ -20,8 +20,17 @@ export default function InicioPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const sync = await fetch("/api/acceso/sync-asesor", { method: "POST" });
+        const sync = await fetch("/api/acceso/sync-asesor", {
+          method: "POST",
+          credentials: "same-origin",
+        });
         if (sync.status === 401) {
+          const me = await fetch("/api/admin/me", { credentials: "same-origin" });
+          const meData = (await me.json()) as { authenticated?: boolean };
+          if (meData.authenticated) {
+            router.replace("/admin/documentos");
+            return;
+          }
           router.replace("/acceso");
           return;
         }

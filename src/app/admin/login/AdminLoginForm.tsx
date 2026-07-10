@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { GabiLogo } from "@/components/brand/GabiLogo";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
@@ -18,7 +18,6 @@ type AdminLoginFormProps = {
 };
 
 export function AdminLoginForm({ variant = "admin" }: AdminLoginFormProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const unified = variant === "unified";
   const emailParam = searchParams.get("email")?.trim().toLowerCase() ?? "";
@@ -55,6 +54,16 @@ export function AdminLoginForm({ variant = "admin" }: AdminLoginFormProps) {
     const synced = await syncAsesorFromAdminAuth();
     if (synced) {
       return unified ? "/inicio" : safeNext;
+    }
+
+    try {
+      const meResponse = await fetch("/api/admin/me", { credentials: "same-origin" });
+      const meData = (await meResponse.json()) as { authenticated?: boolean };
+      if (meData.authenticated) {
+        return "/admin/documentos";
+      }
+    } catch {
+      // Sin perfil admin vinculado al correo.
     }
 
     return safeNext;
@@ -105,9 +114,21 @@ export function AdminLoginForm({ variant = "admin" }: AdminLoginFormProps) {
         return;
       }
 
+      await supabase.auth.getSession();
       const destination = await resolvePostLoginPath();
-      router.replace(destination);
-      router.refresh();
+
+      if (unified && destination === safeNext && destination === "/inicio") {
+        const meResponse = await fetch("/api/admin/me", { credentials: "same-origin" });
+        const meData = (await meResponse.json()) as { authenticated?: boolean };
+        if (meData.authenticated) {
+          window.location.assign("/admin/documentos");
+          return;
+        }
+        setError("Tu correo no tiene asesor ni perfil admin vinculado.");
+        return;
+      }
+
+      window.location.assign(destination);
     } catch {
       setError("No se pudo iniciar sesión.");
     } finally {
