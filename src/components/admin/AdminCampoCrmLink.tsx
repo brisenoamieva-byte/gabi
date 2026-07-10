@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Loader2, MapPinned } from "lucide-react";
 import { syncAsesorFromAdminAuth } from "@/lib/asesores/session-client";
+import {
+  canAccessCampoCrmFromAdmin,
+  resolvePreferredCampoDesarrolloId,
+} from "@/lib/admin/campo-crm-access";
 import type { AdminProfile } from "@/lib/admin/types";
 import { prepareCampoCrmEntry } from "@/lib/session/campo-crm-entry";
-
-export const canAccessCampoCrmFromAdmin = (profile: AdminProfile) =>
-  profile.rol === "superadmin" || profile.rol === "gerente";
 
 type AdminCampoCrmLinkProps = {
   profile: AdminProfile;
@@ -27,8 +28,7 @@ export function AdminCampoCrmLink({
     return null;
   }
 
-  const preferredDesarrolloId =
-    desarrolloId ?? profile.desarrollosIds[0] ?? null;
+  const preferredDesarrolloId = resolvePreferredCampoDesarrolloId(profile, desarrolloId);
 
   const openCampoCrm = async () => {
     setLoading(true);
@@ -38,7 +38,7 @@ export function AdminCampoCrmLink({
       const synced = await syncAsesorFromAdminAuth();
       if (!synced?.asesor) {
         setError(
-          "No encontramos tu perfil comercial de campo. Si eres solo admin de operaciones, esta vista es para asesores en showroom.",
+          "No encontramos tu perfil comercial. Verifica en Equipo que tu correo admin coincida con un gerente o director activo.",
         );
         return;
       }

@@ -37,20 +37,28 @@ const loadAdminProfileForUser = async (userId: string) => {
 
   const { data } = await supabase
     .from("admin_profiles")
-    .select("email, rol, asesor_id")
+    .select("email, rol, asesor_id, desarrollos_ids")
     .eq("id", userId)
     .eq("activo", true)
     .maybeSingle();
 
-  return data as { email: string; rol: string; asesor_id: string | null } | null;
+  return data as {
+    email: string;
+    rol: string;
+    asesor_id: string | null;
+    desarrollos_ids: string[] | null;
+  } | null;
 };
 
 const resolveAsesorForAdminUser = async (user: { id: string; email?: string | null }) => {
   const profile = await loadAdminProfileForUser(user.id);
+  const adminRol = profile ? normalizeAdminRol(profile.rol) : undefined;
+
   const asesor = await resolveCampoAsesorSessionForAdminUser({
     adminUserId: user.id,
     adminEmail: profile?.email ?? user.email,
-    adminRol: profile ? normalizeAdminRol(profile.rol) : undefined,
+    adminRol,
+    adminDesarrollosIds: profile?.desarrollos_ids ?? [],
     authEmail: user.email,
   });
 
