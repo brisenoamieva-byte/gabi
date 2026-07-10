@@ -208,3 +208,15 @@ export const resolveCampoAsesorSessionForAdminUser = async (input: {
 
   return applyAdminScopeToAsesorSession(asesor, adminRol, adminDesarrollosIds);
 };
+
+/** Sesión CRM de campo para operador gabi autenticado con cookie master (sin Supabase). */
+export const resolveCampoAsesorSessionForMasterOperator = async (
+  email: string,
+): Promise<AsesorSession | null> =>
+  resolveCampoAsesorSessionForAdminUser({
+    adminUserId: "operador-gabi",
+    adminEmail: email,
+    adminRol: "superadmin",
+    adminDesarrollosIds: [],
+    authEmail: email,
+  });

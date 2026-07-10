@@ -2,13 +2,17 @@ import { type NextRequest, NextResponse } from "next/server";
 import {
   persistAdminAsesorLink,
   resolveCampoAsesorSessionForAdminUser,
+  resolveCampoAsesorSessionForMasterOperator,
 } from "@/lib/admin/linked-asesor-session";
 import type { AdminRol } from "@/lib/admin/types";
+import type { AsesorSession } from "@/lib/asesores/types";
 import {
   asesorSessionCookieOptions,
   signAsesorSession,
   ASESOR_SESSION_COOKIE,
 } from "@/lib/asesores/session-cookie";
+import { getMasterSessionEmail } from "@/lib/gabi/master-session";
+import { isGabiOperator } from "@/lib/gabi/operator";
 import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializadora-portals";
 import {
   applySupabaseCookies,
@@ -69,8 +73,63 @@ const resolveAsesorForAdminUser = async (user: { id: string; email?: string | nu
   return asesor;
 };
 
+const resolveAsesorForMasterOperator = async (): Promise<AsesorSession | null> => {
+  const masterEmail = await getMasterSessionEmail();
+  if (!masterEmail || !isGabiOperator({ email: masterEmail })) {
+    return null;
+  }
+
+  return resolveCampoAsesorSessionForMasterOperator(masterEmail);
+};
+
+const buildSyncAsesorResponse = (
+  asesor: AsesorSession | null,
+  options?: {
+    setAsesorCookie?: boolean;
+    applySupabaseCookieResponse?: () => ReturnType<
+      ReturnType<typeof createSupabaseRouteHandlerClient>["getCookieResponse"]
+    >;
+    unauthorized?: boolean;
+  },
+) => {
+  if (options?.unauthorized) {
+    const response = NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (options.applySupabaseCookieResponse) {
+      applySupabaseCookies(response, options.applySupabaseCookieResponse());
+    }
+    return response;
+  }
+
+  if (!asesor) {
+    const response = NextResponse.json({ asesor: null, portal: null });
+    if (options?.applySupabaseCookieResponse) {
+      applySupabaseCookies(response, options.applySupabaseCookieResponse());
+    }
+    return response;
+  }
+
+  const portal = resolveComercializadoraPortalSession(defaultPortalSlug);
+  const response = NextResponse.json({ asesor, portal });
+  if (options?.applySupabaseCookieResponse) {
+    applySupabaseCookies(response, options.applySupabaseCookieResponse());
+  }
+  if (options?.setAsesorCookie) {
+    response.cookies.set(
+      ASESOR_SESSION_COOKIE,
+      signAsesorSession(asesor.id),
+      asesorSessionCookieOptions(),
+    );
+  }
+  return response;
+};
+
 /** Tras login con correo, activa sesión de asesor para el CRM de campo. */
 export async function POST(request: NextRequest) {
+  const masterAsesor = await resolveAsesorForMasterOperator();
+  if (masterAsesor) {
+    return buildSyncAsesorResponse(masterAsesor, { setAsesorCookie: true });
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ asesor: null, portal: null });
   }
@@ -81,27 +140,26 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const response = NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    applySupabaseCookies(response, getCookieResponse());
-    return response;
+    return buildSyncAsesorResponse(null, {
+      unauthorized: true,
+      applySupabaseCookieResponse: getCookieResponse,
+    });
   }
 
   const asesor = await resolveAsesorForAdminUser(user);
-  if (!asesor) {
-    const response = NextResponse.json({ asesor: null, portal: null });
-    applySupabaseCookies(response, getCookieResponse());
-    return response;
-  }
-
-  const portal = resolveComercializadoraPortalSession(defaultPortalSlug);
-  const response = NextResponse.json({ asesor, portal });
-  applySupabaseCookies(response, getCookieResponse());
-  response.cookies.set(ASESOR_SESSION_COOKIE, signAsesorSession(asesor.id), asesorSessionCookieOptions());
-  return response;
+  return buildSyncAsesorResponse(asesor, {
+    setAsesorCookie: Boolean(asesor),
+    applySupabaseCookieResponse: getCookieResponse,
+  });
 }
 
 /** Refresca sesión de asesor si ya hay login admin activo. */
 export async function GET(request: NextRequest) {
+  const masterAsesor = await resolveAsesorForMasterOperator();
+  if (masterAsesor) {
+    return buildSyncAsesorResponse(masterAsesor);
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ asesor: null, portal: null });
   }
@@ -112,20 +170,13 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const response = NextResponse.json({ asesor: null, portal: null });
-    applySupabaseCookies(response, getCookieResponse());
-    return response;
+    return buildSyncAsesorResponse(null, {
+      applySupabaseCookieResponse: getCookieResponse,
+    });
   }
 
   const asesor = await resolveAsesorForAdminUser(user);
-  if (!asesor) {
-    const response = NextResponse.json({ asesor: null, portal: null });
-    applySupabaseCookies(response, getCookieResponse());
-    return response;
-  }
-
-  const portal = resolveComercializadoraPortalSession(defaultPortalSlug);
-  const response = NextResponse.json({ asesor, portal });
-  applySupabaseCookies(response, getCookieResponse());
-  return response;
+  return buildSyncAsesorResponse(asesor, {
+    applySupabaseCookieResponse: getCookieResponse,
+  });
 }

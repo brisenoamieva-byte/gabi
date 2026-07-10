@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { Loader2, MapPinned } from "lucide-react";
-import { syncAsesorFromAdminAuth } from "@/lib/asesores/session-client";
+import {
+  refreshStoredAsesorSession,
+  syncAsesorFromAdminAuth,
+} from "@/lib/asesores/session-client";
+import { isGabiOperator } from "@/lib/gabi/operator";
 import {
   canAccessCampoCrmFromAdmin,
   resolvePreferredCampoDesarrolloId,
@@ -35,15 +39,22 @@ export function AdminCampoCrmLink({
     setError("");
 
     try {
-      const synced = await syncAsesorFromAdminAuth();
-      if (!synced?.asesor) {
+      let asesor = (await syncAsesorFromAdminAuth())?.asesor ?? null;
+
+      if (!asesor) {
+        asesor = await refreshStoredAsesorSession();
+      }
+
+      if (!asesor) {
         setError(
-          "No encontramos tu perfil comercial. Verifica en Equipo que tu correo admin coincida con un gerente o director activo.",
+          isGabiOperator({ email: profile.email })
+            ? "No se pudo activar el CRM de campo. Recarga la página e intenta de nuevo."
+            : "No encontramos tu perfil comercial. Verifica en Equipo que tu correo admin coincida con un gerente o director activo.",
         );
         return;
       }
 
-      const path = prepareCampoCrmEntry(synced.asesor, preferredDesarrolloId);
+      const path = prepareCampoCrmEntry(asesor, preferredDesarrolloId);
       window.location.assign(path);
     } catch {
       setError("No se pudo abrir el CRM de campo.");

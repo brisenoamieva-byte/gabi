@@ -1,3 +1,4 @@
+import { isLeadershipAsesorRol } from "@/lib/asesores/types";
 import type { AsesorSession } from "@/lib/asesores/types";
 import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
 
@@ -6,7 +7,11 @@ export const pickCampoDesarrolloId = (
   preferredId?: string | null,
 ): string | null => {
   const ids = asesor.desarrollosIds ?? [];
-  if (preferredId && ids.includes(preferredId)) {
+  if (
+    preferredId &&
+    (ids.includes(preferredId) ||
+      (isLeadershipAsesorRol(asesor.rol) && !ids.length))
+  ) {
     return preferredId;
   }
   if (ids.length === 1) {

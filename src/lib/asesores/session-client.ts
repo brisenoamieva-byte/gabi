@@ -64,36 +64,54 @@ export const refreshStoredAsesorSession = async (): Promise<AsesorSession | null
   }
 };
 
+const parseSyncedAsesorResponse = async (
+  response: Response,
+): Promise<{ asesor: AsesorSession; portal: PortalSession | null } | null> => {
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = (await response.json()) as {
+    asesor?: AsesorSession;
+    portal?: PortalSession | null;
+  };
+
+  if (!data.asesor) {
+    return null;
+  }
+
+  writeStoredAsesorSession(data.asesor);
+  if (data.portal) {
+    localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(data.portal));
+  }
+
+  return { asesor: data.asesor, portal: data.portal ?? null };
+};
+
 /** Si el usuario ya entró con correo (admin), activa CRM de campo sin PIN. */
 export const syncAsesorFromAdminAuth = async (): Promise<{
   asesor: AsesorSession;
   portal: PortalSession | null;
 } | null> => {
   try {
-    const response = await fetch("/api/acceso/sync-asesor", {
+    const postResponse = await fetch("/api/acceso/sync-asesor", {
       method: "POST",
       credentials: "same-origin",
     });
-
-    if (!response.ok) {
-      return null;
+    const fromPost = await parseSyncedAsesorResponse(postResponse);
+    if (fromPost) {
+      return fromPost;
     }
 
-    const data = (await response.json()) as {
-      asesor?: AsesorSession;
-      portal?: PortalSession | null;
-    };
-
-    if (!data.asesor) {
-      return null;
+    const getResponse = await fetch("/api/acceso/sync-asesor", {
+      credentials: "same-origin",
+    });
+    const fromGet = await parseSyncedAsesorResponse(getResponse);
+    if (fromGet) {
+      return fromGet;
     }
 
-    writeStoredAsesorSession(data.asesor);
-    if (data.portal) {
-      localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(data.portal));
-    }
-
-    return { asesor: data.asesor, portal: data.portal ?? null };
+    return null;
   } catch {
     return null;
   }
