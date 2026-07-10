@@ -1,5 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getLinkedAsesorSessionForAdminUser } from "@/lib/admin/linked-asesor-session";
+import {
+  persistAdminAsesorLink,
+  resolveCampoAsesorSessionForAdminUser,
+} from "@/lib/admin/linked-asesor-session";
+import type { AdminRol } from "@/lib/admin/types";
 import {
   asesorSessionCookieOptions,
   signAsesorSession,
@@ -9,12 +13,55 @@ import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializad
 import {
   applySupabaseCookies,
   createSupabaseRouteHandlerClient,
+  createSupabaseServiceClient,
 } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const defaultPortalSlug = "bbr";
 
-/** Tras login con correo, vincula sesión de asesor (CRM de campo) si el perfil admin tiene asesor_id. */
+const normalizeAdminRol = (rol: string): AdminRol => {
+  if (rol === "admin" || rol === "superadmin") {
+    return "superadmin";
+  }
+  if (rol === "director" || rol === "gerente") {
+    return "gerente";
+  }
+  return "operaciones";
+};
+
+const loadAdminProfileForUser = async (userId: string) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("admin_profiles")
+    .select("email, rol, asesor_id")
+    .eq("id", userId)
+    .eq("activo", true)
+    .maybeSingle();
+
+  return data as { email: string; rol: string; asesor_id: string | null } | null;
+};
+
+const resolveAsesorForAdminUser = async (user: { id: string; email?: string | null }) => {
+  const profile = await loadAdminProfileForUser(user.id);
+  const asesor = await resolveCampoAsesorSessionForAdminUser({
+    adminUserId: user.id,
+    adminEmail: profile?.email ?? user.email,
+    adminRol: profile ? normalizeAdminRol(profile.rol) : undefined,
+    authEmail: user.email,
+  });
+
+  if (asesor && !profile?.asesor_id) {
+    await persistAdminAsesorLink(user.id, asesor.id);
+  }
+
+  return asesor;
+};
+
+/** Tras login con correo, activa sesión de asesor para el CRM de campo. */
 export async function POST(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ asesor: null, portal: null });
@@ -31,7 +78,7 @@ export async function POST(request: NextRequest) {
     return response;
   }
 
-  const asesor = await getLinkedAsesorSessionForAdminUser(user.id);
+  const asesor = await resolveAsesorForAdminUser(user);
   if (!asesor) {
     const response = NextResponse.json({ asesor: null, portal: null });
     applySupabaseCookies(response, getCookieResponse());
@@ -62,7 +109,7 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const asesor = await getLinkedAsesorSessionForAdminUser(user.id);
+  const asesor = await resolveAsesorForAdminUser(user);
   if (!asesor) {
     const response = NextResponse.json({ asesor: null, portal: null });
     applySupabaseCookies(response, getCookieResponse());

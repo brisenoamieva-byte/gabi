@@ -38,7 +38,7 @@ export function AdminCampoCrmLink({
       const synced = await syncAsesorFromAdminAuth();
       if (!synced?.asesor) {
         setError(
-          "Tu perfil admin no tiene asesor vinculado. Configúralo en Equipo → Editar.",
+          "No encontramos tu perfil comercial de campo. Si eres solo admin de operaciones, esta vista es para asesores en showroom.",
         );
         return;
       }
