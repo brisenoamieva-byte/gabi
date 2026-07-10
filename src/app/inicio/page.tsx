@@ -10,7 +10,7 @@ import { isLeadershipAsesorRol, type AsesorSession } from "@/lib/asesores/types"
 import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializadora-portals";
 import type { PortalSession } from "@/lib/portal/session";
 import { PORTAL_STORAGE_KEY } from "@/lib/portal/session";
-import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
+import { prepareCampoCrmEntry } from "@/lib/session/campo-crm-entry";
 
 export default function InicioPage() {
   const router = useRouter();
@@ -70,14 +70,8 @@ export default function InicioPage() {
       return;
     }
 
-    const ids = asesor.desarrollosIds ?? [];
-    if (ids.length === 1) {
-      localStorage.setItem(GABI_DESARROLLO_KEY, ids[0]!);
-      router.push("/dashboard");
-      return;
-    }
-
-    router.push("/desarrollos");
+    const path = prepareCampoCrmEntry(asesor, asesor.desarrollosIds[0] ?? null);
+    router.push(path);
   };
 
   if (loading) {
