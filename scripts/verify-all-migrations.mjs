@@ -47,6 +47,7 @@ const checks = [
   { id: "055", table: "desarrollos_catalog", column: "hub_hero_image", file: "055_desarrollo_hub_hero.sql" },
   { id: "057", table: "prospectos", column: "perfil_calificacion_lead", file: "057_prospecto_perfil_calificacion_lead.sql" },
   { id: "058", table: "guardia_salida_cuestionarios", column: "atendio_citas_visitas", file: "058_guardia_salida_cuestionario.sql" },
+  { id: "059", table: "prospectos", column: "etapa", file: "059_quitar_etapa_negociacion.sql" },
 ];
 
 const fails = [];

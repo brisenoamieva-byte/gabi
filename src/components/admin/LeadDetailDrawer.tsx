@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Bell, ChevronDown, Loader2, Save, ShoppingBag, Trash2, X } from "lucide-react";
+import { AlertTriangle, Ban, Bell, ChevronDown, Loader2, Save, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
@@ -11,11 +11,16 @@ import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModa
 import {
   PROSPECTO_ETAPAS,
   isProspectoEtapa,
+  prospectoEtapaDot,
   prospectoEtapaLabel,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
-import { formatXperienceLeadId } from "@/lib/comercial/xperience-catalog-ids";
-import { XPERIENCE_CALIFICACIONES } from "@/lib/comercial/xperience-leads";
+import {
+  perfilCalificacionLeadBannerClass,
+  perfilCalificacionLeadDescription,
+  resolvePerfilCalificacionLead,
+} from "@/lib/comercial/perfilamiento-post-visita";
+import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
 import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
 
@@ -59,11 +64,11 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [rejectingSolicitud, setRejectingSolicitud] = useState(false);
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
   const [campanaId, setCampanaId] = useState("");
-  const [calificacion, setCalificacion] = useState("Sin Calificar");
   const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
   const [asesorId, setAsesorId] = useState("");
   const [asesores, setAsesores] = useState<AsesorOption[]>([]);
@@ -78,6 +83,8 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
     adminMe.canRegisterApartado &&
     detail != null &&
     !["apartado", "vendido", "perdido"].includes(detail.etapa);
+
+  const perfilCalificacion = detail ? resolvePerfilCalificacionLead(detail) : null;
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -102,7 +109,6 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
         setNotas(data.prospecto.notas ?? "");
         setCampanaId(data.prospecto.campana_id ?? "");
-        setCalificacion(data.prospecto.calificacion ?? "Sin Calificar");
         setNivelInteres(
           data.prospecto.nivel_interes === "sin_interes" ||
             data.prospecto.nivel_interes === "bajo" ||
@@ -176,7 +182,6 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
           etapa,
           notas,
           campanaId: campanaId || null,
-          calificacion,
           nivelInteres: nivelInteres || null,
           ...(adminMe.canReassignProspectos ? { asesorId: asesorId || null } : {}),
         }),
@@ -196,6 +201,45 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
       setError(saveError instanceof Error ? saveError.message : "Error al guardar.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRejectSolicitud = async () => {
+    if (!solicitudApartado || !adminMe.canRegisterApartado) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `¿Rechazar la solicitud de apartado de ${solicitudApartado.asesorNombre ?? "el asesor"}? El prospecto se mantiene en el CRM; el asesor podrá solicitar de nuevo si aplica.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setRejectingSolicitud(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/solicitudes-apartado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          solicitudId: solicitudApartado.id,
+          action: "rechazar",
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo rechazar la solicitud.");
+      }
+
+      setSolicitudApartado(null);
+      onUpdated();
+    } catch (rejectError) {
+      setError(rejectError instanceof Error ? rejectError.message : "Error al rechazar solicitud.");
+    } finally {
+      setRejectingSolicitud(false);
     }
   };
 
@@ -239,9 +283,14 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">Lead</p>
-            <h3 className="text-xl font-black text-gabi-forest">
-              {detail?.nombre ?? "Cargando…"}
-            </h3>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h3 className="text-xl font-black text-gabi-forest">
+                {detail?.nombre ?? "Cargando…"}
+              </h3>
+              {perfilCalificacion ? (
+                <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="md" />
+              ) : null}
+            </div>
           </div>
           <button
             type="button"
@@ -268,6 +317,17 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
 
           {detail ? (
             <div className="space-y-5">
+              {detail.es_spam ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  Marcado como <strong>spam</strong>. No cuenta en reportes activos.
+                </div>
+              ) : null}
+              {detail.es_duplicado ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  Marcado como <strong>duplicado</strong> (mismo correo o teléfono que otro lead).
+                </div>
+              ) : null}
+
               {compliance && compliance.issues.length > 0 ? (
                 <div
                   className={`rounded-xl border px-4 py-3 text-sm ${
@@ -332,6 +392,28 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 </div>
               ) : null}
 
+              {perfilCalificacion ? (
+                <div
+                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${perfilCalificacionLeadBannerClass[perfilCalificacion]}`}
+                >
+                  <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
+                  <div>
+                    <p className="text-sm font-bold">Calificación del lead: {perfilCalificacion}</p>
+                    <p className="mt-1 text-xs opacity-90">
+                      {perfilCalificacionLeadDescription[perfilCalificacion]}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p className="font-semibold text-slate-700">Calificación pendiente</p>
+                  <p className="mt-1 text-xs">
+                    Se asigna A, B o C al completar el perfilamiento post-visita en el playbook (3
+                    preguntas: presupuesto, apartado inmediato y decisor de compra).
+                  </p>
+                </div>
+              )}
+
               {puedeRegistrarApartado ? (
                 <div className="rounded-xl border border-gabi-forest/20 bg-gabi-forest/5 px-4 py-4 text-sm text-gabi-forest">
                   <p className="font-bold">Registrar apartado en sembrado</p>
@@ -353,6 +435,19 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
 
               <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
                 <div className="flex justify-between gap-4">
+                  <span className="text-slate-500">Etapa</span>
+                  <span className="inline-flex items-center gap-2 font-medium">
+                    <span
+                      className={`h-2 w-2 rounded-full ${prospectoEtapaDot[isProspectoEtapa(detail.etapa) ? detail.etapa : "nuevo"]}`}
+                    />
+                    {prospectoEtapaLabel[isProspectoEtapa(detail.etapa) ? detail.etapa : "nuevo"]}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500">Asesor</span>
+                  <span className="font-medium">{detail.asesorNombre ?? "Sin asignar"}</span>
+                </div>
+                <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Email</span>
                   <span className="font-medium text-gabi-forest">{detail.email ?? "—"}</span>
                 </div>
@@ -369,48 +464,8 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   <span>{detail.medio_publicitario ?? detail.medio_contacto ?? "—"}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Flags</span>
-                  <span className="flex flex-wrap justify-end gap-1">
-                    {detail.es_spam ? (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
-                        Spam
-                      </span>
-                    ) : null}
-                    {detail.es_duplicado ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                        Duplicado
-                      </span>
-                    ) : null}
-                    {!detail.es_spam && !detail.es_duplicado ? (
-                      <span className="text-slate-600">—</span>
-                    ) : null}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">ID Xperience</span>
-                  <span className="font-semibold tabular-nums text-gabi-forest">
-                    {formatXperienceLeadId(detail.xperience_id) ?? "—"}
-                  </span>
-                </div>
-                {!detail.xperience_id ? (
-                  <div className="flex justify-between gap-4 text-xs">
-                    <span className="text-slate-400">ID GABI</span>
-                    <span className="font-mono text-slate-500">{detail.id.slice(0, 8)}…</span>
-                  </div>
-                ) : null}
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Producto</span>
+                  <span className="text-slate-500">Desarrollo</span>
                   <span>{detail.producto_nombre ?? detail.desarrollo_id}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">iScore / seller</span>
-                  <span>
-                    {detail.iscore ?? "—"} / {detail.seller_score ?? "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Asignado por</span>
-                  <span>{detail.asignado_por ?? "—"}</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Actualizado</span>
@@ -471,20 +526,6 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 </div>
               )}
 
-              <Field label="Calificación (Xperience)">
-                <select
-                  value={calificacion}
-                  onChange={(event) => setCalificacion(event.target.value)}
-                  className={inputClass}
-                >
-                  {XPERIENCE_CALIFICACIONES.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
               <Field label="Nivel de interés">
                 <select
                   value={nivelInteres}
@@ -540,6 +581,22 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                   placeholder="Seguimiento, objeciones, próximo paso…"
                 />
               </Field>
+
+              {adminMe.canDeleteProspectos && !solicitudApartado ? (
+                <div className="border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete()}
+                    disabled={deleting || saving}
+                    className="text-xs font-semibold text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
+                  >
+                    {deleting ? "Eliminando…" : "Eliminar prospecto del CRM…"}
+                  </button>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    También puedes eliminar varios leads desde la lista principal.
+                  </p>
+                </div>
+              ) : null}
                   </div>
                 ) : null}
               </div>
@@ -605,25 +662,25 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
             <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={saving || deleting}
+              disabled={saving || deleting || rejectingSolicitud}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gabi-forest px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar cambios
             </button>
-            {adminMe.canDeleteProspectos ? (
+            {solicitudApartado && adminMe.canRegisterApartado ? (
               <button
                 type="button"
-                onClick={() => void handleDelete()}
-                disabled={deleting || saving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-3 text-sm font-bold text-red-700 disabled:opacity-50"
+                onClick={() => void handleRejectSolicitud()}
+                disabled={rejectingSolicitud || saving || deleting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-950 disabled:opacity-50"
               >
-                {deleting ? (
+                {rejectingSolicitud ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Trash2 className="h-4 w-4" />
+                  <Ban className="h-4 w-4" />
                 )}
-                Eliminar prospecto
+                Rechazar solicitud de apartado
               </button>
             ) : null}
           </div>

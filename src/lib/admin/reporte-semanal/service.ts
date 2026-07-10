@@ -383,8 +383,7 @@ function buildSeguimiento(
   const bucket = (p: (typeof prospectosSemana)[number]): string => {
     if (p.etapa === "perdido") return "No comprará";
     if (p.etapa === "apartado" || p.etapa === "vendido") return "Apartó / Compró / Asignaciones";
-    if (p.etapa === "negociacion") return "Posib. compra inmediata";
-    if (p.etapa === "cita" || p.etapa === "cotizo") return "En seguimiento";
+    if (p.etapa === "cita" || p.etapa === "cotizo" || p.etapa === "negociacion") return "En seguimiento";
     if (p.etapa === "contactado") return "Llamar más adelante";
     return "En seguimiento";
   };
@@ -468,9 +467,9 @@ function buildProspectosInteresados(
       (p) =>
         !p.es_spam &&
         !p.es_duplicado &&
-        (p.etapa === "negociacion" ||
-          p.etapa === "cita" ||
+        (p.etapa === "cita" ||
           p.etapa === "cotizo" ||
+          p.etapa === "negociacion" ||
           p.nivel_interes === "alto"),
     )
     .slice(0, 25)

@@ -2,7 +2,6 @@ export const PROSPECTO_ETAPAS = [
   "nuevo",
   "contactado",
   "cita",
-  "negociacion",
   "apartado",
   "vendido",
   "perdido",
@@ -14,7 +13,6 @@ export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
   nuevo: "Nuevo / Por Contactar",
   contactado: "Contactado",
   cita: "Cita",
-  negociacion: "Negociación",
   apartado: "Apartado",
   vendido: "Vendido",
   perdido: "Descartado",
@@ -24,7 +22,6 @@ export const prospectoEtapaColor: Record<ProspectoEtapa, string> = {
   nuevo: "bg-slate-100 text-slate-700",
   contactado: "bg-sky-100 text-sky-800",
   cita: "bg-violet-100 text-violet-800",
-  negociacion: "bg-amber-100 text-amber-800",
   apartado: "bg-emerald-100 text-emerald-800",
   vendido: "bg-gabi-forest/10 text-gabi-forest",
   perdido: "bg-red-100 text-red-700",
@@ -34,7 +31,6 @@ export const prospectoEtapaDot: Record<ProspectoEtapa, string> = {
   nuevo: "bg-slate-400",
   contactado: "bg-sky-500",
   cita: "bg-violet-500",
-  negociacion: "bg-amber-500",
   apartado: "bg-emerald-500",
   vendido: "bg-gabi-forest",
   perdido: "bg-red-500",
@@ -43,9 +39,10 @@ export const prospectoEtapaDot: Record<ProspectoEtapa, string> = {
 export const isProspectoEtapa = (value: string): value is ProspectoEtapa =>
   PROSPECTO_ETAPAS.includes(value as ProspectoEtapa);
 
-/** Compatibilidad con registros legacy antes de migración 049. */
+/** Compatibilidad con registros legacy (cotizo, negociacion). */
 export const normalizeProspectoEtapaValue = (value: string): ProspectoEtapa | null => {
-  const normalized = value === "cotizo" ? "cita" : value;
+  const normalized =
+    value === "cotizo" || value === "negociacion" ? "cita" : value;
   return isProspectoEtapa(normalized) ? normalized : null;
 };
 

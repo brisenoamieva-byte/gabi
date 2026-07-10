@@ -2,7 +2,7 @@ import { listProspectos } from "@/lib/admin/prospectos-service";
 import type { AdminProfile } from "@/lib/admin/types";
 import { calificacionLabel } from "@/lib/comercial/xperience-leads";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
-import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import { prospectoEtapaLabel, normalizeProspectoEtapaValue, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { fetchLeadsQaResumen, type LeadsQaResumen } from "@/lib/admin/qa-satisfaccion-service";
@@ -203,12 +203,13 @@ export const getLeadsReporte = async (
   };
 
   for (const prospecto of prospectos) {
-    porEtapa[prospecto.etapa] = (porEtapa[prospecto.etapa] ?? 0) + 1;
+    const etapa = normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa;
+    porEtapa[etapa] = (porEtapa[etapa] ?? 0) + 1;
 
     const esValido = !prospecto.es_spam && !prospecto.es_duplicado;
     if (esValido) {
       validos += 1;
-      embudoMap[prospecto.etapa] = (embudoMap[prospecto.etapa] ?? 0) + 1;
+      embudoMap[etapa] = (embudoMap[etapa] ?? 0) + 1;
     }
 
     const calKey = calificacionLabel(prospecto.calificacion);
@@ -363,7 +364,6 @@ export const getLeadsReporte = async (
     "nuevo",
     "contactado",
     "cita",
-    "negociacion",
     "apartado",
     "vendido",
   ];

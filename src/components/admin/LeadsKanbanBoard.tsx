@@ -146,7 +146,7 @@ export function LeadsKanbanBoard({
               </div>
               {isApartadoDrop ? (
                 <p className="border-b border-emerald-100 bg-emerald-50/80 px-3 py-2 text-[10px] leading-snug text-emerald-900">
-                  Arrastra un lead en negociación y suéltalo aquí para{" "}
+                  Arrastra un lead en cita y suéltalo aquí para{" "}
                   <strong>reportar apartado</strong> (unidad + sembrado).
                 </p>
               ) : null}

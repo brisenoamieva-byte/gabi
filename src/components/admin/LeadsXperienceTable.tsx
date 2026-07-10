@@ -12,15 +12,15 @@ import {
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
+import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
+import { resolvePerfilCalificacionLead } from "@/lib/comercial/perfilamiento-post-visita";
 import {
-  calificacionColor,
-  calificacionDisplayLabel,
-  normalizeLeadNombre,
-  scoreBadgeColor,
-  tipoAsignacionBadgeClass,
-  tipoAsignacionLabel,
-} from "@/lib/comercial/xperience-leads";
-import { formatXperienceLeadId } from "@/lib/comercial/xperience-catalog-ids";
+  isProspectoEtapa,
+  normalizeProspectoEtapaValue,
+  prospectoEtapaColor,
+  prospectoEtapaLabel,
+} from "@/lib/comercial/prospecto-etapas";
+import { normalizeLeadNombre } from "@/lib/comercial/xperience-leads";
 
 type LeadsXperienceTableProps = {
   prospectos: ProspectoListRow[];
@@ -67,6 +67,11 @@ function CanalIcon({ canal }: { canal?: string | null }) {
   return <Radio className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />;
 }
 
+const etapaLabelForRow = (row: ProspectoListRow) => {
+  const etapa = normalizeProspectoEtapaValue(row.etapa) ?? (isProspectoEtapa(row.etapa) ? row.etapa : "nuevo");
+  return { etapa, label: prospectoEtapaLabel[etapa] };
+};
+
 export function LeadsXperienceTable({
   prospectos,
   desarrollos,
@@ -91,6 +96,8 @@ export function LeadsXperienceTable({
       return prospectos;
     }
     return prospectos.filter((row) => {
+      const { label: etapaLabel } = etapaLabelForRow(row);
+      const calificacion = resolvePerfilCalificacionLead(row);
       const haystack = [
         row.nombre,
         row.email,
@@ -99,7 +106,8 @@ export function LeadsXperienceTable({
         row.campanaNombre,
         row.campanaCanal,
         row.origen_ciudad,
-        String(row.xperience_id ?? ""),
+        etapaLabel,
+        calificacion ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -124,7 +132,7 @@ export function LeadsXperienceTable({
       </div>
 
       <div className={scrollable ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
-        <table className="min-w-[1180px] w-full text-left text-xs">
+        <table className="min-w-[980px] w-full text-left text-xs">
           <thead
             className={`bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500 ${
               scrollable ? "sticky top-0 z-10 shadow-sm" : ""
@@ -143,29 +151,30 @@ export function LeadsXperienceTable({
                   aria-label="Seleccionar todos"
                 />
               </th>
-              <th className="px-3 py-2.5">ID</th>
               <th className="px-3 py-2.5">Fecha</th>
               <th className="px-3 py-2.5">Producto / Campaña / Canal</th>
               <th className="px-3 py-2.5">Nombre / Correo / Teléfono</th>
               <th className="px-3 py-2.5">Región</th>
-              <th className="px-3 py-2.5">Vendedor</th>
-              <th className="px-3 py-2.5">Tipo de Asignación</th>
-              <th className="px-3 py-2.5">Calificación</th>
-              <th className="px-3 py-2.5">Scores</th>
+              <th className="px-3 py-2.5">Etapa</th>
+              <th className="px-3 py-2.5">Asesor</th>
+              <th className="px-3 py-2.5">Calif.</th>
             </tr>
           </thead>
           <tbody>
             {visibleRows.map((row) => {
               const { fecha, hora } = formatLeadDateTime(row.created_at);
               const canal = row.campanaCanal ?? row.medio_contacto;
-              const calificacionText = calificacionDisplayLabel(row.calificacion);
+              const { etapa, label: etapaLabel } = etapaLabelForRow(row);
+              const calificacion = resolvePerfilCalificacionLead(row);
 
               return (
                 <tr
                   key={row.id}
                   className={`border-t border-slate-100 hover:bg-slate-50/80 ${
                     row.es_duplicado ? "bg-amber-50/40" : ""
-                  } ${selectedIds.has(row.id) ? "bg-gabi-forest/[0.03]" : ""}`}
+                  } ${row.es_spam ? "bg-red-50/30" : ""} ${
+                    selectedIds.has(row.id) ? "bg-gabi-forest/[0.03]" : ""
+                  }`}
                 >
                   <td className="px-3 py-2">
                     <button
@@ -183,15 +192,8 @@ export function LeadsXperienceTable({
                       checked={selectedIds.has(row.id)}
                       onChange={() => onToggleSelect(row.id)}
                       className="rounded border-slate-300"
-                      aria-label={`Seleccionar lead ${row.xperience_id ?? row.id}`}
+                      aria-label={`Seleccionar lead ${row.nombre}`}
                     />
-                  </td>
-                  <td className="px-3 py-2 tabular-nums text-slate-700">
-                    {formatXperienceLeadId(row.xperience_id) ?? (
-                      <span className="text-slate-400" title={`Lead GABI · ${row.id}`}>
-                        —
-                      </span>
-                    )}
                   </td>
                   <td className="px-3 py-2 text-slate-600">
                     <p className="whitespace-nowrap">{fecha}</p>
@@ -215,6 +217,11 @@ export function LeadsXperienceTable({
                           Dup
                         </span>
                       ) : null}
+                      {row.es_spam ? (
+                        <span className="ml-1.5 rounded-full bg-red-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-red-900">
+                          Spam
+                        </span>
+                      ) : null}
                     </p>
                     <p className="max-w-[220px] truncate text-slate-600">{row.email ?? "—"}</p>
                     <p className="text-slate-600">{row.telefono ?? "—"}</p>
@@ -222,37 +229,20 @@ export function LeadsXperienceTable({
                   <td className="max-w-[140px] px-3 py-2 text-slate-600">
                     <p className="line-clamp-2">{row.origen_ciudad ?? "—"}</p>
                   </td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${prospectoEtapaColor[etapa]}`}
+                    >
+                      {etapaLabel}
+                    </span>
+                  </td>
                   <td className="px-3 py-2 text-slate-700">{row.asesorNombre ?? "—"}</td>
                   <td className="px-3 py-2">
-                    <span
-                      className={`inline-flex max-w-[140px] rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ${tipoAsignacionBadgeClass(row.asignado_por)}`}
-                    >
-                      {tipoAsignacionLabel(row.asignado_por)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`inline-flex max-w-[160px] rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ${calificacionColor(row.calificacion)}`}
-                      title={calificacionText}
-                    >
-                      <span className="truncate">{calificacionText}</span>
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-1">
-                      <span
-                        className={`inline-flex min-w-[2rem] justify-center rounded px-1.5 py-0.5 text-[10px] font-bold ${scoreBadgeColor(row.iscore)}`}
-                        title="iScore"
-                      >
-                        {row.iscore ?? "—"}
-                      </span>
-                      <span
-                        className={`inline-flex min-w-[2rem] justify-center rounded px-1.5 py-0.5 text-[10px] font-bold ${scoreBadgeColor(row.seller_score)}`}
-                        title="sellerScore"
-                      >
-                        {row.seller_score ?? "—"}
-                      </span>
-                    </div>
+                    {calificacion ? (
+                      <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
+                    ) : (
+                      <span className="text-[10px] text-slate-400">—</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -274,7 +264,6 @@ export const exportLeadsCsv = (
     row.desarrollo_id;
 
   const headers = [
-    "id",
     "Fecha",
     "Hora",
     "Producto",
@@ -284,12 +273,10 @@ export const exportLeadsCsv = (
     "Correo",
     "Teléfono",
     "Región",
+    "Etapa",
+    "Asesor",
+    "Calificación A/B/C",
     "Comentarios",
-    "Vendedor",
-    "Tipo Asignación",
-    "iScore",
-    "sellerScore",
-    "Calificación",
   ];
 
   const escape = (value: string | number | null | undefined) => {
@@ -302,23 +289,22 @@ export const exportLeadsCsv = (
 
   const lines = prospectos.map((row) => {
     const date = new Date(row.created_at);
+    const { label: etapaLabel } = etapaLabelForRow(row);
+    const calificacion = resolvePerfilCalificacionLead(row);
     return [
-      formatXperienceLeadId(row.xperience_id) ?? "",
       date.toISOString().slice(0, 10),
       date.toTimeString().slice(0, 8),
       desarrolloNombre(row),
       row.campanaNombre ?? "",
-      row.campanaCanal ?? "",
+      row.campanaCanal ?? row.medio_contacto ?? "",
       normalizeLeadNombre(row.nombre),
       row.email ?? "",
       row.telefono ?? "",
       row.origen_ciudad ?? "",
-      row.notas ?? "",
+      etapaLabel,
       row.asesorNombre ?? "",
-      tipoAsignacionLabel(row.asignado_por),
-      row.iscore ?? "",
-      row.seller_score ?? "",
-      calificacionDisplayLabel(row.calificacion),
+      calificacion ?? "",
+      row.notas ?? "",
     ]
       .map(escape)
       .join(",");

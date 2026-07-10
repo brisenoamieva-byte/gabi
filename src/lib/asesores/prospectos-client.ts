@@ -4,7 +4,6 @@ export const ETAPAS_ASESOR: ProspectoEtapa[] = [
   "nuevo",
   "contactado",
   "cita",
-  "negociacion",
   "perdido",
 ];
 

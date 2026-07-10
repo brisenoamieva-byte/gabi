@@ -208,6 +208,61 @@ export const createSolicitudApartado = async (input: {
   };
 };
 
+export const getSolicitudApartadoPendienteById = async (
+  solicitudId: string,
+): Promise<SolicitudApartadoRow | null> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("solicitudes_apartado")
+    .select(
+      "*, prospecto:prospectos(nombre, activo), asesor:asesores(nombre), unidad:disponibilidad_unidades(unidad)",
+    )
+    .eq("id", solicitudId)
+    .eq("estado", "pendiente")
+    .maybeSingle();
+
+  if (!data || !isProspectoActivo(data as Record<string, unknown>)) {
+    return null;
+  }
+
+  return mapRow(data as Record<string, unknown>);
+};
+
+export const rejectSolicitudApartado = async (
+  solicitudId: string,
+): Promise<SolicitudApartadoRow> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data, error } = await supabase
+    .from("solicitudes_apartado")
+    .update({
+      estado: "cancelada",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", solicitudId)
+    .eq("estado", "pendiente")
+    .select(
+      "*, prospecto:prospectos(nombre), asesor:asesores(nombre), unidad:disponibilidad_unidades(unidad)",
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!data) {
+    throw new Error("No hay solicitud de apartado pendiente para rechazar.");
+  }
+
+  return mapRow(data as Record<string, unknown>);
+};
+
 export const markSolicitudApartadoAtendida = async (
   prospectoId: string,
   atendidaPor?: string | null,

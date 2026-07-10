@@ -41,7 +41,6 @@ const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
   "contactado",
   "cita",
-  "negociacion",
 ]);
 
 type DbPlaybookConfigRow = {

@@ -112,9 +112,9 @@ const basePasos = (): PlaybookStep[] => [
   },
   {
     id: "seguimiento-post-cotizacion",
-    etapa: "negociacion",
+    etapa: "cita",
     label: "Seguimiento documentado en notas",
-    hint: "Próximo contacto, objeciones y decisión.",
+    hint: "Próximo contacto, objeciones y decisión (negociación dentro de la etapa cita).",
     kind: "manual",
     required: true,
     order: 80,
@@ -251,7 +251,7 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
   if (signals.cotizacionesCount > 0) {
     done.add("cotizacion");
   }
-  if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("negociacion")) {
+  if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("cita")) {
     done.add("seguimiento-post-cotizacion");
     done.add("seguimiento");
   }

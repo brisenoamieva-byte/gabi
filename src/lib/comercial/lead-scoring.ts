@@ -28,8 +28,7 @@ export const leadContactKeys = (
 
 const ETAPA_ISCORE: Record<string, number> = {
   contactado: 5,
-  cita: 8,
-  negociacion: 12,
+  cita: 10,
   apartado: 15,
   vendido: 18,
 };
@@ -74,7 +73,7 @@ export const computeIscore = (
     score += 5;
   }
 
-  score += ETAPA_ISCORE[prospecto.etapa] ?? 0;
+  score += ETAPA_ISCORE[prospecto.etapa === "negociacion" ? "cita" : prospecto.etapa] ?? 0;
 
   if (prospecto.campana_id) {
     score += 2;
@@ -106,7 +105,7 @@ export const computeSellerScore = (
   }
 
   let score = prospecto.asesor_id ? 5 : 0;
-  score += ETAPA_ISCORE[prospecto.etapa] ?? 0;
+  score += ETAPA_ISCORE[prospecto.etapa === "negociacion" ? "cita" : prospecto.etapa] ?? 0;
 
   const cal = prospecto.calificacion?.trim().toLowerCase() ?? "";
   if (cal.includes("visita")) {
