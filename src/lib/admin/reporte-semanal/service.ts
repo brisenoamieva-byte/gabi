@@ -5,7 +5,10 @@ import {
   getReporteSemanalSegments,
   type ReporteSemanalSegmentConfig,
 } from "@/lib/admin/reporte-semanal/segment-config";
-import { buildAbsorcionMensualSeries } from "@/lib/admin/reporte-semanal/absorcion-mensual";
+import {
+  buildAbsorcionMensualSeries,
+  resolveAbsorcionMonthsBack,
+} from "@/lib/admin/reporte-semanal/absorcion-mensual";
 import { listCotizacionesFunnelSemana } from "@/lib/admin/reporte-semanal/cotizaciones-periodo";
 import {
   buildFunnelSegmento,
@@ -428,13 +431,16 @@ function prospectosPorMes(prospectos: Awaited<ReturnType<typeof listProspectos>>
   return map;
 }
 
-async function visitasPorMes(desarrolloId: string): Promise<Map<string, number>> {
+async function visitasPorMes(
+  desarrolloId: string,
+  monthsBack = 36,
+): Promise<Map<string, number>> {
   const supabase = createSupabaseServiceClient();
   const map = new Map<string, number>();
   if (!supabase) return map;
 
   const since = new Date();
-  since.setUTCMonth(since.getUTCMonth() - 18);
+  since.setUTCMonth(since.getUTCMonth() - monthsBack);
 
   const { data } = await supabase
     .from("visitas_comerciales")
@@ -601,12 +607,14 @@ export async function getReporteComercialSemanal(
   const prospectosMesMap = prospectosPorMes(prospectosAcum);
   const deptosCluster = segmentConfigs?.find((c) => c.resumenKey === "departamentos")?.clusterId;
   const oficinasCluster = segmentConfigs?.find((c) => c.resumenKey === "oficinas")?.clusterId;
+  const absorcionMonthsBack = resolveAbsorcionMonthsBack(prospectosMesMap, visitasMesMap, rows);
   const absorcionMensual = buildAbsorcionMensualSeries(
     rows,
     prospectosMesMap,
     visitasMesMap,
     deptosCluster,
     oficinasCluster,
+    absorcionMonthsBack,
   );
 
   const cancelacionesTotal = segmentos.reduce((s, seg) => s + seg.kpis.cancelacionesSemana, 0);

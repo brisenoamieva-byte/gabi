@@ -3,6 +3,9 @@ import type { ReporteSemanalAbsorcionMes } from "@/lib/admin/reporte-semanal/typ
 
 const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
 
+const MIN_MONTHS_BACK = 18;
+const MAX_MONTHS_BACK = 36;
+
 function monthKey(year: number, month: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
@@ -13,13 +16,49 @@ function monthLabel(year: number, month: number): string {
   return `${labels[month]}-${yy}`;
 }
 
+/** Meses a mostrar: desde el primer dato real (afluencia/apartados/visitas), entre 18 y 36. */
+export function resolveAbsorcionMonthsBack(
+  prospectosByMonth: Map<string, number>,
+  visitasByMonth: Map<string, number>,
+  rows: SembradoUnidadRow[],
+  now = new Date(),
+): number {
+  const candidates: string[] = [];
+  const consider = (key: string | null | undefined) => {
+    if (!key || !/^\d{4}-\d{2}$/.test(key)) return;
+    candidates.push(key);
+  };
+
+  for (const [key, count] of Array.from(prospectosByMonth.entries())) {
+    if (count > 0) consider(key);
+  }
+  for (const [key, count] of Array.from(visitasByMonth.entries())) {
+    if (count > 0) consider(key);
+  }
+  for (const row of rows) {
+    const fa = row.operacion?.fecha_apartado?.slice(0, 7);
+    consider(fa);
+  }
+
+  if (!candidates.length) {
+    return MIN_MONTHS_BACK;
+  }
+
+  const earliest = candidates.reduce((min, key) => (key < min ? key : min));
+  const [year, month] = earliest.split("-").map(Number);
+  const months =
+    (now.getUTCFullYear() - year) * 12 + (now.getUTCMonth() + 1 - month) + 1;
+
+  return Math.min(MAX_MONTHS_BACK, Math.max(MIN_MONTHS_BACK, months));
+}
+
 export function buildAbsorcionMensualSeries(
   rows: SembradoUnidadRow[],
   prospectosByMonth: Map<string, number>,
   visitasByMonth: Map<string, number>,
   clusterDeptos?: string,
   clusterOficinas?: string,
-  monthsBack = 18,
+  monthsBack = MIN_MONTHS_BACK,
 ): ReporteSemanalAbsorcionMes[] {
   const now = new Date();
   const series: ReporteSemanalAbsorcionMes[] = [];

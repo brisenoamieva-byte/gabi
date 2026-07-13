@@ -196,10 +196,13 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
 export function AbsorcionMensualChart({ series }: { series: ReporteSemanalAbsorcionMes[] }) {
   if (!series.length) return null;
 
+  const desdeLabel = series[0]?.mes ?? "";
+  const hastaLabel = series[series.length - 1]?.mes ?? "";
+
   return (
     <ChartCard
       title="Absorción mensual histórica"
-      subtitle="Apartados por segmento, afluencia y citas/visitas (últimos 18 meses)"
+      subtitle={`Apartados por segmento, afluencia y citas/visitas (${desdeLabel} → ${hastaLabel})`}
     >
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">

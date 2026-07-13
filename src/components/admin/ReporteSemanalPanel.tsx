@@ -217,6 +217,26 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
     [hasta],
   );
 
+  const sectionN = useMemo(() => {
+    if (!reporte) {
+      return null;
+    }
+    let n = 0;
+    const next = () => {
+      n += 1;
+      return n;
+    };
+    return {
+      funnel: next(),
+      seguimiento: next(),
+      absorcion: next(),
+      medios: next(),
+      visitas: reporte.visitasInmobiliarias.length ? next() : null,
+      interesados: reporte.prospectosInteresados.length ? next() : null,
+      detalle: next(),
+    };
+  }, [reporte]);
+
   const load = useCallback(async () => {
     if (!desarrolloId) return;
     setLoading(true);
@@ -490,7 +510,7 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
 
           <div className="space-y-6">
             <SectionHeading
-              n={1}
+              n={sectionN!.funnel}
               title="Funnel comercial por segmento"
               desc={
                 reporte.saludCrm.enabled && reporte.saludCrm.pipelineExcludedCount > 0
@@ -529,13 +549,13 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
           </div>
 
           <div className="space-y-6">
-            <SectionHeading n={2} title="Seguimiento de prospectos" />
+            <SectionHeading n={sectionN!.seguimiento} title="Seguimiento de prospectos" />
             <SeguimientoChart items={reporte.seguimiento} />
           </div>
 
           <div className="space-y-6">
             <SectionHeading
-              n={3}
+              n={sectionN!.absorcion}
               title="Absorción mensual"
               desc="Serie histórica de apartados, afluencia y citas"
             />
@@ -543,13 +563,13 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
           </div>
 
           <div className="space-y-6">
-            <SectionHeading n={4} title="Medición de medios" />
+            <SectionHeading n={sectionN!.medios} title="Medición de medios" />
             <MediosDonutChart medios={reporte.medios} />
           </div>
 
-          {reporte.visitasInmobiliarias.length ? (
+          {sectionN!.visitas != null ? (
             <div className="space-y-4">
-              <SectionHeading n={5} title="Visitas inmobiliarias" />
+              <SectionHeading n={sectionN!.visitas} title="Visitas inmobiliarias" />
               <section className="overflow-hidden rounded-2xl border border-gabi-forest/10 bg-white shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
@@ -575,9 +595,9 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
             </div>
           ) : null}
 
-          {reporte.prospectosInteresados.length ? (
+          {sectionN!.interesados != null ? (
             <div className="space-y-4">
-              <SectionHeading n={6} title="Prospectos interesados" />
+              <SectionHeading n={sectionN!.interesados} title="Prospectos interesados" />
               <section className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
@@ -611,7 +631,7 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
 
           <div className="border-t border-gabi-forest/10 pt-8">
             <SectionHeading
-              n={7}
+              n={sectionN!.detalle}
               title="Detalle por segmento"
               desc="Apartados, ventas, precios, ingresos e inventario"
             />
