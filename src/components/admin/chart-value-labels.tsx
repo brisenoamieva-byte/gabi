@@ -7,7 +7,7 @@ export function BarValueLabel(props: {
   width?: number | string;
   height?: number | string;
   value?: number | string;
-  position?: "top" | "right" | "center";
+  position?: "top" | "right" | "center" | "bottom";
   formatter?: (value: number) => string;
 }) {
   const {
