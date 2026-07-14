@@ -20,11 +20,17 @@ const ASESOR_NOMBRE_TO_ID = {
   "Nicolás Roitman": "nroitman",
   "Nicolas Roitman": "nroitman",
   "Coy de Caso": "cdecaso",
-  "Nicolás Perea Sánchez": "nperea",
-  "Nicolas Perea Sánchez": "nperea",
-  "Nicolás Perea": "nperea",
-  "Fernando Vera": "fvera",
-  "Ricardo Briseño": "rbriseno",
+  "Esther Bonnin": "ebonin",
+};
+
+/** Asesores Prospectia que se preservan; el resto (Lili, Cross, etc.) → gerente. */
+const GERENTE_ASESOR_ID = "nroitman";
+
+const resolveAsesorId = (asesorNombre) => {
+  const name = String(asesorNombre ?? "").trim();
+  if (!name) return { id: GERENTE_ASESOR_ID, missing: false };
+  if (ASESOR_NOMBRE_TO_ID[name]) return { id: ASESOR_NOMBRE_TO_ID[name], missing: false };
+  return { id: GERENTE_ASESOR_ID, missing: true };
 };
 
 const isTruthy = (value) => {
@@ -102,20 +108,6 @@ const mapNivelInteres = (etiqueta) => {
   if (et.includes("llamar")) return "bajo";
   if (et.includes("no comprar") || et.includes("no contesta")) return "sin_interes";
   return null;
-};
-
-const resolveAsesorId = (asesorNombre, asesores) => {
-  const name = String(asesorNombre ?? "").trim();
-  if (!name) return { id: null, missing: false };
-  if (ASESOR_NOMBRE_TO_ID[name]) return { id: ASESOR_NOMBRE_TO_ID[name], missing: false };
-  const byExact = (asesores ?? []).find((a) => a.nombre.trim().toLowerCase() === name.toLowerCase());
-  if (byExact) return { id: byExact.id, missing: false };
-  const byPartial = (asesores ?? []).find((a) => {
-    const n = a.nombre.trim().toLowerCase();
-    return name.toLowerCase().includes(n) || n.includes(name.toLowerCase());
-  });
-  if (byPartial) return { id: byPartial.id, missing: false };
-  return { id: null, missing: true };
 };
 
 const parseCreatedAt = (value) => {
@@ -216,7 +208,6 @@ const main = async () => {
   }
   const wb = XLSX.readFile(xlsxPath);
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: null, raw: false });
-  const { data: asesores } = await supabase.from("asesores").select("id, nombre, email");
   const campanaCache = new Map();
   let created = 0;
   let updated = 0;
@@ -255,7 +246,7 @@ const main = async () => {
       skipped += 1;
       continue;
     }
-    const { id: asesorId, missing } = resolveAsesorId(row.Asesor, asesores ?? []);
+    const { id: asesorId, missing } = resolveAsesorId(row.Asesor);
     if (asesorId) asesorAssigned += 1;
     else if (missing) {
       asesorMissing += 1;
