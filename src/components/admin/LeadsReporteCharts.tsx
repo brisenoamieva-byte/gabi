@@ -5,6 +5,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -19,6 +20,7 @@ import type {
   LeadsReporteMes,
   LeadsReporteRegion,
 } from "@/lib/admin/leads-reporte-service";
+import { BarValueLabel, PieValueLabel } from "@/components/admin/chart-value-labels";
 
 const FOREST = "#1a4d3e";
 const MINT = "#6cc24a";
@@ -73,7 +75,7 @@ export function LeadsTimeSeriesChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
         <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
@@ -84,8 +86,12 @@ export function LeadsTimeSeriesChart({
           ]}
         />
         <Legend formatter={(value) => (value === "validos" ? "Válidos" : "Duplicados")} />
-        <Bar dataKey="validos" stackId="leads" fill={FOREST} radius={[0, 0, 0, 0]} />
-        <Bar dataKey="duplicados" stackId="leads" fill={MINT} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="validos" stackId="leads" fill={FOREST} radius={[0, 0, 0, 0]}>
+          <LabelList dataKey="validos" content={<BarValueLabel position="center" />} />
+        </Bar>
+        <Bar dataKey="duplicados" stackId="leads" fill={MINT} radius={[4, 4, 0, 0]}>
+          <LabelList dataKey="total" content={<BarValueLabel position="top" />} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
@@ -109,7 +115,7 @@ export function LeadsCampanaChart({ campanas }: { campanas: LeadsReporteCampana[
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 36, left: 8, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
         <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
         <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
@@ -119,7 +125,9 @@ export function LeadsCampanaChart({ campanas }: { campanas: LeadsReporteCampana[
             payload?.[0]?.payload?.fullName ? String(payload[0].payload.fullName) : ""
           }
         />
-        <Bar dataKey="total" fill={FOREST} radius={[0, 4, 4, 0]} />
+        <Bar dataKey="total" fill={FOREST} radius={[0, 4, 4, 0]}>
+          <LabelList dataKey="total" content={<BarValueLabel position="right" />} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
@@ -145,7 +153,7 @@ export function LeadsCalificacionChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 48 }}>
+      <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 48 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
         <XAxis
           dataKey="name"
@@ -157,7 +165,9 @@ export function LeadsCalificacionChart({
         />
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
         <Tooltip />
-        <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]}>
+          <LabelList dataKey="value" content={<BarValueLabel position="top" />} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
@@ -181,7 +191,7 @@ export function LeadsRegionChart({ regiones }: { regiones: LeadsReporteRegion[] 
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 48 }}>
+      <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 48 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
         <XAxis
           dataKey="name"
@@ -197,7 +207,9 @@ export function LeadsRegionChart({ regiones }: { regiones: LeadsReporteRegion[] 
             payload?.[0]?.payload?.fullName ? String(payload[0].payload.fullName) : ""
           }
         />
-        <Bar dataKey="total" fill={SAND} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="total" fill={SAND} radius={[4, 4, 0, 0]}>
+          <LabelList dataKey="total" content={<BarValueLabel position="top" />} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
@@ -225,12 +237,14 @@ export function LeadsScoreDistribucionChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+      <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
         <Tooltip formatter={(value) => [Number(value ?? 0), "Respuestas"]} />
-        <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]}>
+          <LabelList dataKey="value" content={<BarValueLabel position="top" />} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
@@ -263,6 +277,8 @@ export function LeadsInteraccionesDonut({
           innerRadius={52}
           outerRadius={88}
           paddingAngle={2}
+          label={PieValueLabel}
+          labelLine={false}
         >
           {filtered.map((_, index) => (
             <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />

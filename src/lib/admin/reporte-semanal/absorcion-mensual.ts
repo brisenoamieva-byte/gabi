@@ -3,7 +3,8 @@ import type { ReporteSemanalAbsorcionMes } from "@/lib/admin/reporte-semanal/typ
 
 const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
 
-const MIN_MONTHS_BACK = 18;
+/** Ventana por defecto solo si aún no hay ningún dato (proyecto vacío). */
+const FALLBACK_MONTHS_BACK = 6;
 const MAX_MONTHS_BACK = 36;
 
 function monthKey(year: number, month: number): string {
@@ -16,7 +17,28 @@ function monthLabel(year: number, month: number): string {
   return `${labels[month]}-${yy}`;
 }
 
-/** Meses a mostrar: desde el primer dato real (afluencia/apartados/visitas), entre 18 y 36. */
+function isActiveMonth(point: ReporteSemanalAbsorcionMes): boolean {
+  return (
+    point.apartadosDeptos > 0 ||
+    point.apartadosOficinas > 0 ||
+    point.afluencia > 0 ||
+    point.citasVisitas > 0
+  );
+}
+
+/** Quita meses vacíos al inicio para no mostrar periodos anteriores al proyecto. */
+export function trimLeadingEmptyAbsorcion(
+  series: ReporteSemanalAbsorcionMes[],
+): ReporteSemanalAbsorcionMes[] {
+  const firstIdx = series.findIndex(isActiveMonth);
+  if (firstIdx <= 0) return series;
+  return series.slice(firstIdx);
+}
+
+/**
+ * Meses a mostrar: desde el primer mes con afluencia/visitas/apartados hasta hoy.
+ * No rellena meses vacíos anteriores al arranque del proyecto.
+ */
 export function resolveAbsorcionMonthsBack(
   prospectosByMonth: Map<string, number>,
   visitasByMonth: Map<string, number>,
@@ -37,11 +59,11 @@ export function resolveAbsorcionMonthsBack(
   }
   for (const row of rows) {
     const fa = row.operacion?.fecha_apartado?.slice(0, 7);
-    consider(fa);
+    if (fa && !row.operacion?.cancelada) consider(fa);
   }
 
   if (!candidates.length) {
-    return MIN_MONTHS_BACK;
+    return FALLBACK_MONTHS_BACK;
   }
 
   const earliest = candidates.reduce((min, key) => (key < min ? key : min));
@@ -49,7 +71,7 @@ export function resolveAbsorcionMonthsBack(
   const months =
     (now.getUTCFullYear() - year) * 12 + (now.getUTCMonth() + 1 - month) + 1;
 
-  return Math.min(MAX_MONTHS_BACK, Math.max(MIN_MONTHS_BACK, months));
+  return Math.min(MAX_MONTHS_BACK, Math.max(1, months));
 }
 
 export function buildAbsorcionMensualSeries(
@@ -58,9 +80,9 @@ export function buildAbsorcionMensualSeries(
   visitasByMonth: Map<string, number>,
   clusterDeptos?: string,
   clusterOficinas?: string,
-  monthsBack = MIN_MONTHS_BACK,
+  monthsBack = FALLBACK_MONTHS_BACK,
+  now = new Date(),
 ): ReporteSemanalAbsorcionMes[] {
-  const now = new Date();
   const series: ReporteSemanalAbsorcionMes[] = [];
 
   for (let i = monthsBack - 1; i >= 0; i--) {
@@ -96,7 +118,7 @@ export function buildAbsorcionMensualSeries(
     });
   }
 
-  return series;
+  return trimLeadingEmptyAbsorcion(series);
 }
 
 export function countVentasEnMes(rows: SembradoUnidadRow[], mesStart: string, mesEnd: string): number {

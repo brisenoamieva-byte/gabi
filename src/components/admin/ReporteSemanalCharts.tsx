@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
+  LabelList,
   Legend,
   Line,
   Pie,
@@ -26,6 +27,7 @@ import type {
   ReporteSemanalObjetivoIngresos,
   ReporteSemanalSeguimiento,
 } from "@/lib/admin/reporte-semanal/types";
+import { BarValueLabel, PieValueLabel } from "@/components/admin/chart-value-labels";
 
 const FOREST = "#1a4d3e";
 const SAND = "#c4a574";
@@ -99,6 +101,8 @@ export function MediosDonutChart({ medios }: { medios: ReporteSemanalMedio[] }) 
                 innerRadius={52}
                 outerRadius={80}
                 paddingAngle={2}
+                label={PieValueLabel}
+                labelLine={false}
               >
                 {data.map((_, i) => (
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -174,16 +178,24 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
       </div>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 48 }}>
+          <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 48 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="medio" tick={{ fontSize: 10 }} angle={-28} textAnchor="end" height={56} />
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Afluencia" fill={FOREST} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Citas" fill={LINE_CITAS} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Ventas" fill={MINT} radius={[2, 2, 0, 0]} />
+            <Bar dataKey="Afluencia" fill={FOREST} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Afluencia" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Bar dataKey="Citas" fill={LINE_CITAS} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Citas" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Apartados" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Bar dataKey="Ventas" fill={MINT} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Ventas" content={<BarValueLabel position="top" />} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -204,17 +216,41 @@ export function AbsorcionMensualChart({ series }: { series: ReporteSemanalAbsorc
     >
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={series} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+          <ComposedChart data={series} margin={{ top: 22, right: 12, left: 0, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
             <YAxis yAxisId="left" tick={{ fontSize: 11 }} allowDecimals={false} />
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="apartadosDeptos" name="Apart. deptos" fill={DEPTOS} radius={[2, 2, 0, 0]} />
-            <Bar yAxisId="left" dataKey="apartadosOficinas" name="Apart. oficinas" fill={OFICINAS} radius={[2, 2, 0, 0]} />
-            <Line yAxisId="right" type="monotone" dataKey="afluencia" name="Afluencia" stroke={LINE_AFLU} strokeWidth={2} dot={false} />
-            <Line yAxisId="right" type="monotone" dataKey="citasVisitas" name="Citas/visitas" stroke={LINE_CITAS} strokeWidth={2} dot={false} />
+            <Bar yAxisId="left" dataKey="apartadosDeptos" name="Apart. deptos" fill={DEPTOS} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="apartadosDeptos" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Bar yAxisId="left" dataKey="apartadosOficinas" name="Apart. oficinas" fill={OFICINAS} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="apartadosOficinas" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="afluencia"
+              name="Afluencia"
+              stroke={LINE_AFLU}
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            >
+              <LabelList dataKey="afluencia" content={<BarValueLabel position="top" />} />
+            </Line>
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="citasVisitas"
+              name="Citas/visitas"
+              stroke={LINE_CITAS}
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            >
+              <LabelList dataKey="citasVisitas" content={<BarValueLabel position="bottom" />} />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -236,14 +272,18 @@ export function SeguimientoChart({ items }: { items: ReporteSemanalSeguimiento[]
     <ChartCard title="Resumen de seguimiento" subtitle="Estatus de prospectos — semana vs mes">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 36, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
             <YAxis type="category" dataKey="estatus" width={140} tick={{ fontSize: 10 }} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="semana" name="Semana" fill={FOREST} radius={[0, 3, 3, 0]} />
-            <Bar dataKey="mes" name="Mes" fill={SAND} radius={[0, 3, 3, 0]} />
+            <Bar dataKey="semana" name="Semana" fill={FOREST} radius={[0, 3, 3, 0]}>
+              <LabelList dataKey="semana" content={<BarValueLabel position="right" />} />
+            </Bar>
+            <Bar dataKey="mes" name="Mes" fill={SAND} radius={[0, 3, 3, 0]}>
+              <LabelList dataKey="mes" content={<BarValueLabel position="right" />} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -343,7 +383,7 @@ export function PrecioM2Chart({
     <ChartCard title="Precio por m²" subtitle="Promedio real, objetivo e inventario disponible">
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
+          <BarChart data={data} margin={{ top: 22, right: 8, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatMoneyShort(v)} />
@@ -352,6 +392,10 @@ export function PrecioM2Chart({
               {data.map((entry) => (
                 <Cell key={entry.name} fill={entry.fill} />
               ))}
+              <LabelList
+                dataKey="value"
+                content={<BarValueLabel position="top" formatter={formatMoneyShort} />}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -408,15 +452,21 @@ export function AbsorcionModeloChart({ items }: { items: ReporteSemanalAbsorcion
     <ChartCard title="Absorción por modelo" subtitle="Ventas, apartados y asignados por tipología">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+          <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="modelo" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Ventas" fill={FOREST} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Asignados" fill={MINT} radius={[2, 2, 0, 0]} />
+            <Bar dataKey="Ventas" fill={FOREST} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Ventas" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Apartados" content={<BarValueLabel position="top" />} />
+            </Bar>
+            <Bar dataKey="Asignados" fill={MINT} radius={[2, 2, 0, 0]}>
+              <LabelList dataKey="Asignados" content={<BarValueLabel position="top" />} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

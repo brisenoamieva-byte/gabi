@@ -1,16 +1,23 @@
 /**
  * Seed presupuesto MKT 2026 de Misión La Gavia desde el Excel de publicidad.
  *
+ * Lógica del Excel (MISION LA GAVIA MKT-*.xlsx):
+ * 1) Propuesta — plantilla de segmentos/conceptos (montos suelen ir en 0).
+ * 2) Real_Presupuesto — partidas reales:
+ *    - "Inversión Inicial Proyectada" = presupuesto base autorizado.
+ *    - ACUMULADO por fila = monto de partida (autorizado/planeado).
+ *    - TOTAL (pie) = inversión proyectada a ene-2027 ≈ suma ACUMULADO.
+ * 3) Detalle Interno — tres ledgers:
+ *    - Cobros BBR HABITAREA "Administración de publicidad" (agregado, se OMITE).
+ *    - Desglose interno BBR (creativo/hosting/callpicker…) = egresos reales.
+ *    - Proveedores externos = egresos reales.
+ *    Erogado Gabi = desglose + externos (pagada+pendiente), no el agregado cobros.
+ *
  * Uso:
  *   npm run mkt:import:gavia
  *   npm run mkt:import:gavia -- "C:/ruta/MISION LA GAVIA MKT.xlsx"
  *   npm run mkt:import:gavia -- --dry-run
  *   npm run mkt:import:gavia -- --replace
- *
- * Fuente:
- *   - Real_Presupuesto → partidas (ACUMULADO como monto autorizado)
- *   - Propuesta → plantilla (conceptos que no estén en Real)
- *   - Detalle Interno → gastos (omite cobros agregados BBR HABITAREA / Administración)
  */
 import { createClient } from "@supabase/supabase-js";
 import { existsSync } from "node:fs";
@@ -19,7 +26,7 @@ import XLSX from "xlsx";
 import { loadEnvLocal } from "./load-env-local.mjs";
 import { MISION_LA_GAVIA_DESARROLLO_ID } from "./mision-la-gavia-excel.mjs";
 
-const DEFAULT_XLSX = "C:/Users/brise/Downloads/MISION LA GAVIA MKT-06.03.26.xlsx";
+const DEFAULT_XLSX = "C:/Users/brise/Downloads/MISION LA GAVIA MKT-06.03.26 (1).xlsx";
 const ANIO = 2026;
 
 const SEGMENT_MAP = {
@@ -237,16 +244,47 @@ const parseGastos = (wb) => {
       iva: Math.round(iva * 100) / 100,
       total: Math.round(total * 100) / 100,
       estatus,
-      observaciones: r[12] != null && String(r[12]).trim() ? String(r[12]).trim() : null,
+      observaciones: [
+        layout === "externo" ? "Ledger: proveedor externo" : "Ledger: egreso BBR",
+        r[12] != null && String(r[12]).trim() ? String(r[12]).trim() : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || null,
     });
   }
 
   return gastos;
 };
 
-const resolveAuthorizedTotal = (partidas) => {
-  const sum = partidas.reduce((s, p) => s + p.monto_autorizado, 0);
-  return Math.round(sum * 100) / 100;
+/** Lee inversión inicial y TOTAL proyectado del sheet Real_Presupuesto. */
+const parsePresupuestoMeta = (wb) => {
+  const realName =
+    wb.SheetNames.find((n) => norm(n).includes("real_presupuesto")) ?? "Real_Presupuesto";
+  const real = XLSX.utils.sheet_to_json(wb.Sheets[realName], { header: 1, defval: null, raw: true });
+  let inversionInicial = 0;
+  let totalProyectado = 0;
+  for (const row of real) {
+    if (!row) continue;
+    const label = String(row[5] ?? row[3] ?? "").trim();
+    if (/inversi[oó]n inicial proyectada/i.test(label)) {
+      inversionInicial = asNumber(row[6]);
+    }
+    if (/^total$/i.test(String(row[3] ?? "").trim())) {
+      totalProyectado = asNumber(row[5]);
+    }
+  }
+  return {
+    inversionInicial: Math.round(inversionInicial * 100) / 100,
+    totalProyectado: Math.round(totalProyectado * 100) / 100,
+  };
+};
+
+const resolveAuthorizedTotal = (partidas, meta) => {
+  const sumPartidas = Math.round(partidas.reduce((s, p) => s + p.monto_autorizado, 0) * 100) / 100;
+  // Prefer TOTAL proyectado (pie Real); si no, suma de partidas; si no, inversión inicial.
+  if (meta.totalProyectado > 0) return meta.totalProyectado;
+  if (sumPartidas > 0) return sumPartidas;
+  return meta.inversionInicial;
 };
 
 const findPartidaId = (partidasDb, gasto) => {
@@ -293,11 +331,21 @@ const main = async () => {
   const wb = XLSX.readFile(xlsxPath, { cellDates: true, cellFormula: false });
   const partidas = parsePartidas(wb);
   const gastos = parseGastos(wb);
-  const montoAutorizado = resolveAuthorizedTotal(partidas);
+  const meta = parsePresupuestoMeta(wb);
+  const montoAutorizado = resolveAuthorizedTotal(partidas, meta);
+  const erogadoPreview = gastos
+    .filter((g) => g.estatus === "pagada" || g.estatus === "pendiente")
+    .reduce((s, g) => s + g.total, 0);
 
   console.log(`[mkt-gavia] Excel: ${xlsxPath}`);
   console.log(`[mkt-gavia] Partidas: ${partidas.length} · Gastos: ${gastos.length}`);
-  console.log(`[mkt-gavia] Monto autorizado (suma ACUMULADO/Total): $${montoAutorizado.toLocaleString("es-MX")}`);
+  console.log(
+    `[mkt-gavia] Inversión inicial: $${meta.inversionInicial.toLocaleString("es-MX")} · Proyectado: $${meta.totalProyectado.toLocaleString("es-MX")}`,
+  );
+  console.log(`[mkt-gavia] Autorizado (Gabi): $${montoAutorizado.toLocaleString("es-MX")}`);
+  console.log(
+    `[mkt-gavia] Erogado facturas (sin cobros BBR agregados): $${erogadoPreview.toLocaleString("es-MX", { maximumFractionDigits: 2 })}`,
+  );
 
   if (dryRun) {
     console.log("[mkt-gavia] --dry-run: no se escribe en Supabase.");
@@ -363,7 +411,18 @@ const main = async () => {
       anio: ANIO,
       monto_autorizado: montoAutorizado,
       moneda: "MXN",
-      notas: `Importado desde ${xlsxPath.split(/[/\\]/).pop()} · Real_Presupuesto + Detalle Interno`,
+      notas: [
+        `Importado desde ${xlsxPath.split(/[/\\]/).pop()}`,
+        meta.inversionInicial
+          ? `Inversión inicial proyectada: $${meta.inversionInicial.toLocaleString("es-MX")}`
+          : null,
+        meta.totalProyectado
+          ? `Proyectado a ene-2027: $${meta.totalProyectado.toLocaleString("es-MX")}`
+          : null,
+        "Gastos = egresos BBR desglosados + proveedores externos (sin cobros agregados Administración).",
+      ]
+        .filter(Boolean)
+        .join(" · "),
       activo: true,
     })
     .select("id")
