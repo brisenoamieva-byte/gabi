@@ -14,7 +14,9 @@
     "Pasaje Álamos": "pasaje-alamos",
     "Pasaje Alamos": "pasaje-alamos",
     "La Vista Residencial": "la-vista-residencial",
-    "La Vista": "la-vista-residencial"
+    "La Vista": "la-vista-residencial",
+    "Misión La Gavia": "mision-la-gavia",
+    "Mision La Gavia": "mision-la-gavia"
   },
   "asesorIdsByEmail": {
     "emmanuel.escobar@grupoinvestti.com": 2722,
@@ -52,11 +54,18 @@
     "Ricardo Briseño": "rbriseno@bbrhabitarea.com",
     "Arturo Rosales Rodríguez": "rgonzalez@bbrhabitarea.com",
     "Rodrigo Gonzalez": "rgonzalez@bbrhabitarea.com",
-    "Penelope Trejo": "ptrejo@bbrhabitarea.com"
+    "Penelope Trejo": "ptrejo@bbrhabitarea.com",
+    "Esther Bonnin": "ebonin@bbrhabitarea.com",
+    "Gabriela Bernal": "gbernal@bbrhabitarea.com",
+    "Luis Escobar": "lescobar@bbrhabitarea.com",
+    "Ibelise Espinoza": "iespinoza@bbrhabitarea.com",
+    "Victor Rodriguez": "vrodriguez@bbrhabitarea.com",
+    "Ilse Murillo": "imurillo@bbrhabitarea.com"
   },
   "defaultAsesorIdByDesarrollo": {
     "pasaje-alamos": "rbriseno",
     "la-vista-residencial": "rbriseno",
+    "mision-la-gavia": "ignacio.underwood",
     "canadas-del-valle": "emmanuel.escobar",
     "canadas-la-porta": "emmanuel.escobar",
     "canadas-del-arroyo": "emmanuel.escobar",

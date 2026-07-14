@@ -10,13 +10,25 @@ export function normalizeMedioPublicitario(raw: string | null | undefined): stri
   if (value.includes("facebook")) return "Facebook";
   if (value.includes("instagram")) return "Instagram";
   if (value.includes("tik") && value.includes("tok")) return "Tik Tok";
-  if (value.includes("google") || value.includes("web") || value.includes("página")) {
+  if (value.includes("google") || value.includes("web") || value.includes("página") || value.includes("pagina")) {
     return "Página Web/GOOGLE";
   }
-  if (value.includes("inmobiliar") || value.includes("asesor externo") || value.includes("broker")) {
+  if (
+    value.includes("inmobiliar") ||
+    value.includes("asesor externo") ||
+    value.includes("broker") ||
+    value.includes("inmo")
+  ) {
     return "Inmobiliarias/Asesor Externo";
   }
-  if (value.includes("contacto directo")) return "Contacto Directo";
+  if (
+    value.includes("contacto directo") ||
+    value.includes("teléfono") ||
+    value.includes("telefono") ||
+    value.includes("llamada")
+  ) {
+    return "Contacto Directo";
+  }
   if (value.includes("evento") || value.includes("promocion")) return "Eventos/Promociones";
   if (value.includes("cross")) return "Crosseling";
   if (value.includes("espectacular")) return "Espectacular";
@@ -25,14 +37,15 @@ export function normalizeMedioPublicitario(raw: string | null | undefined): stri
   return raw!.trim();
 }
 
-/** Prioriza campaña digital CRM; si no hay, normaliza medio publicitario libre. */
+/** Canal de campaña → medio canónico; si no, medio_publicitario / nombre de campaña. */
 export function resolveProspectoMedioLabel(prospecto: ProspectoListRow): string {
+  const canal = prospecto.campanaCanal?.trim();
+  if (canal) return normalizeMedioPublicitario(canal);
+  const medio = prospecto.medio_publicitario?.trim();
+  if (medio) return normalizeMedioPublicitario(medio);
   const campana = prospecto.campanaNombre?.trim();
-  if (campana) {
-    const canal = prospecto.campanaCanal?.trim();
-    return canal ? `${campana} (${canal})` : campana;
-  }
-  return normalizeMedioPublicitario(prospecto.medio_publicitario ?? prospecto.medio_contacto);
+  if (campana) return normalizeMedioPublicitario(campana);
+  return normalizeMedioPublicitario(prospecto.medio_contacto);
 }
 
 function isDateInRange(value: string | null | undefined, desde: string, hasta: string) {
