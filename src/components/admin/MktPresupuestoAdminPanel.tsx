@@ -14,9 +14,18 @@ import {
   type MktGastoEstatus,
   type MktGastoRecord,
   type MktPartidaRecord,
+  type MktPartidaTipo,
   type MktPresupuestoRecord,
   type MktPresupuestoResumen,
 } from "@/lib/comercial/mkt-presupuesto";
+
+type PartidaFormState = {
+  segmento: string;
+  proveedor: string;
+  concepto: string;
+  tipo: MktPartidaTipo;
+  montoAutorizado: string;
+};
 
 type MktPresupuestoAdminPanelProps = {
   desarrolloId: string;
@@ -54,11 +63,11 @@ export function MktPresupuestoAdminPanel({
   const [notasInput, setNotasInput] = useState("");
   const [tab, setTab] = useState<"gastos" | "partidas">("gastos");
 
-  const [partidaForm, setPartidaForm] = useState({
+  const [partidaForm, setPartidaForm] = useState<PartidaFormState>({
     segmento: MKT_PRESUPUESTO_SEGMENTOS[0],
     proveedor: "",
     concepto: "",
-    tipo: "variable" as "fijo" | "variable",
+    tipo: "variable",
     montoAutorizado: "",
   });
 
@@ -319,7 +328,7 @@ export function MktPresupuestoAdminPanel({
       list.push(partida);
       map.set(partida.segmento, list);
     }
-    return map;
+    return Array.from(map.entries());
   }, [partidas]);
 
   return (
@@ -765,11 +774,11 @@ export function MktPresupuestoAdminPanel({
                 </section>
               ) : null}
 
-              {[...partidasBySegmento.entries()].map(([segmento, rows]) => (
+              {partidasBySegmento.map(([segmento, rows]) => (
                 <section key={segmento} className="rounded-2xl border border-slate-200 p-4">
                   <h3 className="text-sm font-bold text-gabi-ink">{segmento}</h3>
                   <ul className="mt-2 space-y-2">
-                    {rows.map((partida) => (
+                    {rows.map((partida: MktPartidaRecord) => (
                       <li
                         key={partida.id}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm"
