@@ -11,6 +11,8 @@ import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 type CadenciaAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  /** Embebido en Salud CRM (sin header propio ni selector de desarrollo). */
+  embedded?: boolean;
 };
 
 const statusLabel: Record<string, string> = {
@@ -27,7 +29,11 @@ const statusClass: Record<string, string> = {
   expired: "bg-amber-100 text-amber-900",
 };
 
-export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPanelProps) {
+export function CadenciaAdminPanel({
+  desarrollos,
+  scopeLabel,
+  embedded = false,
+}: CadenciaAdminPanelProps) {
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [report, setReport] = useState<DesarrolloCadenciaReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,73 +102,83 @@ export function CadenciaAdminPanel({ desarrollos, scopeLabel }: CadenciaAdminPan
     [report],
   );
 
+  const actions = (
+    <div className="flex flex-wrap items-center gap-2">
+      {!embedded ? (
+        <select
+          value={desarrolloId ?? ""}
+          onChange={(event) => setDesarrolloId(event.target.value)}
+          className="rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-semibold text-gabi-ink"
+        >
+          {desarrollos.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.nombre}
+            </option>
+          ))}
+        </select>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => void load()}
+        disabled={loading}
+        className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        Actualizar
+      </button>
+      <button
+        type="button"
+        onClick={() => void handleBackfill()}
+        disabled={syncing || !desarrolloId}
+        className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
+      >
+        {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        Sincronizar leads
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (!desarrolloId) return;
+          window.open(
+            `/api/admin/cadencia/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+            "_blank",
+          );
+        }}
+        disabled={!desarrolloId}
+        className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
+      >
+        <Download className="h-4 w-4" />
+        Exportar CSV
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-            Perfilamiento
-          </p>
-          <h1 className="text-2xl font-black tracking-tight text-gabi-ink">Cadencia de contacto</h1>
-          <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
+      {embedded ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="max-w-2xl text-sm text-gabi-sand">
             Seguimiento de los 8 días BBR por prospecto: toques pendientes, vencidos y estado por
             asesor. Los leads en etapa Nuevo sin cadencia se crean al cargar este panel.
-            {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
+          {actions}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={desarrolloId ?? ""}
-            onChange={(event) => setDesarrolloId(event.target.value)}
-            className="rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-semibold text-gabi-ink"
-          >
-            {desarrollos.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.nombre}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Actualizar
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleBackfill()}
-            disabled={syncing || !desarrolloId}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
-          >
-            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Sincronizar leads
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!desarrolloId) return;
-              window.open(
-                `/api/admin/cadencia/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
-                "_blank",
-              );
-            }}
-            disabled={!desarrolloId}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-sand/30 bg-white px-3 py-2 text-sm font-bold text-gabi-ink disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </button>
-          <Link
-            href="/admin/crm-compliance"
-            className="rounded-xl bg-gabi-forest/10 px-3 py-2 text-sm font-bold text-gabi-forest"
-          >
-            Salud CRM
-          </Link>
-        </div>
-      </header>
+      ) : (
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
+              Perfilamiento
+            </p>
+            <h1 className="text-2xl font-black tracking-tight text-gabi-ink">Cadencia de contacto</h1>
+            <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
+              Seguimiento de los 8 días BBR por prospecto: toques pendientes, vencidos y estado por
+              asesor. Los leads en etapa Nuevo sin cadencia se crean al cargar este panel.
+              {scopeLabel ? ` · ${scopeLabel}` : ""}
+            </p>
+          </div>
+          {actions}
+        </header>
+      )}
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

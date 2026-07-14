@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck, ClipboardCheck, Clock } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { AdminCampoCrmLink } from "@/components/admin/AdminCampoCrmLink";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { adminRolLabel, canAccessModule } from "@/lib/admin/permissions";
+import { adminRolLabel, canAccessModule, canAccessSaludCrm } from "@/lib/admin/permissions";
 import {
   ADMIN_DESARROLLO_CHANGE_EVENT,
   readStoredAdminDesarrolloId,
@@ -26,10 +26,7 @@ const navIcons = {
   "/admin/sembrado": ClipboardList,
   "/admin/expedientes": FolderOpen,
   "/admin/leads": UserRound,
-  "/admin/crm-playbook": ClipboardList,
   "/admin/crm-compliance": ShieldCheck,
-  "/admin/cadencia": Clock,
-  "/admin/compliance-coach": ClipboardCheck,
   "/admin/campanas": Megaphone,
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
@@ -47,10 +44,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/sembrado": "sembrado",
   "/admin/expedientes": "expedientes",
   "/admin/leads": "leads",
-  "/admin/crm-playbook": "leads",
   "/admin/crm-compliance": "leads",
-  "/admin/cadencia": "leads",
-  "/admin/compliance-coach": "compliance-coach",
   "/admin/campanas": "leads",
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
@@ -85,10 +79,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/desarrollos", label: "Desarrollos", ready: true },
     { href: "/admin/leads", label: "Leads", ready: true },
     { href: "/admin/guardias", label: "Guardias", ready: true },
-    { href: "/admin/crm-playbook", label: "Playbook CRM", ready: true },
     { href: "/admin/crm-compliance", label: "Salud CRM", ready: true },
-    { href: "/admin/cadencia", label: "Cadencia", ready: true },
-    { href: "/admin/compliance-coach", label: "Compliance Coach", ready: true },
     { href: "/admin/campanas", label: "Campañas", ready: true },
     { href: "/admin/sembrado", label: "Sembrado", ready: true },
     { href: "/admin/expedientes", label: "Expedientes", ready: true },
@@ -97,7 +88,12 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/guion", label: "Guion", ready: true },
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
     { href: "/admin/investti-simulador", label: "Simulador Investti", ready: true },
-  ].filter((item) => canAccessModule(profile, navModules[item.href]));
+  ].filter((item) => {
+    if (item.href === "/admin/crm-compliance") {
+      return canAccessSaludCrm(profile);
+    }
+    return canAccessModule(profile, navModules[item.href]);
+  });
 
   const handleLogout = async () => {
     await fetch("/api/gabi/master/logout", { method: "POST" });

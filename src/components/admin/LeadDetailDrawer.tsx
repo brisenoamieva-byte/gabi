@@ -408,7 +408,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <p className="font-semibold text-slate-700">Calificación pendiente</p>
                   <p className="mt-1 text-xs">
-                    Se asigna A, B o C al completar el perfilamiento post-visita en el playbook (3
+                    Se asigna A, B o C al completar el perfilamiento en el playbook (3
                     preguntas: presupuesto, apartado inmediato y decisor de compra).
                   </p>
                 </div>

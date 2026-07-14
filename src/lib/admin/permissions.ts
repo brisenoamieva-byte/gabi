@@ -85,6 +85,13 @@ export const canRegisterApartado = (profile: AdminProfile) =>
 export const canAccessCrmComplianceApi = (profile: AdminProfile) =>
   canAccessModule(profile, "leads") || canAccessModule(profile, "compliance-coach");
 
+/** Hub Salud CRM: gerentes (leads) u operaciones (auditoría). */
+export const canAccessSaludCrm = (profile: AdminProfile) => canAccessCrmComplianceApi(profile);
+
+/** Configurar pasos del playbook (solo quien administra leads). */
+export const canConfigureCrmPlaybook = (profile: AdminProfile) =>
+  canAccessModule(profile, "leads");
+
 export const assertDesarrolloAccess = (profile: AdminProfile, desarrolloId: string) => {
   if (!canAccessDesarrollo(profile, desarrolloId)) {
     throw new Error("No tienes permiso para este desarrollo.");

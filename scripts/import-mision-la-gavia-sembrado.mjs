@@ -1,5 +1,5 @@
 /**
- * Importa sembrado Misión La Gavia → Supabase (inventario + operaciones).
+ * Importa sembrado Misión La Gavia → Supabase (inventario + operaciones + cobranza).
  * Requiere migración 018 y catálogo sembrado vía npm run catalog:sync.
  *
  * Uso:
@@ -12,13 +12,26 @@ import { resolve } from "node:path";
 import { loadEnvLocal } from "./load-env-local.mjs";
 import {
   DEFAULT_SEMBRADO_XLSX,
-  MISION_LA_GAVIA_CLUSTER_ID,
   MISION_LA_GAVIA_DESARROLLO_ID,
-  operacionTieneCliente,
   parseSembradoMaps,
   readWorkbook,
   sembradoToInventario,
 } from "./mision-la-gavia-excel.mjs";
+
+const prospectoEtapaFromSembrado = (estatus, cancelada) => {
+  if (cancelada) return "perdido";
+  if (estatus === "Apartado") return "apartado";
+  if (
+    estatus === "Vendidas Cobradas" ||
+    estatus === "Vendidas Desarrollador" ||
+    estatus === "Vendido Cobrado 1er Parte" ||
+    estatus === "Vendidas listas para cobro" ||
+    estatus === "Vendidas en espera de cobro"
+  ) {
+    return "vendido";
+  }
+  return "cita";
+};
 
 const main = async () => {
   if (!loadEnvLocal()) {
@@ -54,7 +67,7 @@ const main = async () => {
 
   const { data: unidadesDb, error: unidadesError } = await supabase
     .from("disponibilidad_unidades")
-    .select("id, unidad, tipo, cluster_id")
+    .select("id, unidad, tipo, cluster_id, precio")
     .eq("desarrollo_id", MISION_LA_GAVIA_DESARROLLO_ID);
 
   if (unidadesError) {
@@ -65,6 +78,9 @@ const main = async () => {
   const unitLookup = new Map((unidadesDb ?? []).map((u) => [u.unidad, u]));
   let inventarioActualizado = 0;
   let operacionesCreadas = 0;
+  let operacionesActualizadas = 0;
+  let prospectosCreados = 0;
+  let cobranzaInsertada = 0;
   const missing = [];
 
   for (const row of rows) {
@@ -81,6 +97,8 @@ const main = async () => {
           lista_precios: row.listaPrecios,
           estatus: sembradoToInventario(row.estatus),
           visitable: sembradoToInventario(row.estatus) === "disponible",
+          entregado: Boolean(row.entregado),
+          escriturado: Boolean(row.escriturado),
           notas: [row.edificio, row.lado, row.listaPrecios].filter(Boolean).join(" · "),
           updated_at: new Date().toISOString(),
         })
@@ -93,57 +111,160 @@ const main = async () => {
       inventarioActualizado += 1;
     }
 
-    const hasOp = operacionTieneCliente(row.estatus, row.cliente);
-    if (!hasOp) continue;
+    if (!row.hasOp && !row.cancelada) continue;
+
+    let prospectoId = null;
+    if (row.cliente) {
+      const { data: existingProspecto } = await supabase
+        .from("prospectos")
+        .select("id")
+        .eq("desarrollo_id", MISION_LA_GAVIA_DESARROLLO_ID)
+        .ilike("nombre", row.cliente)
+        .eq("activo", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingProspecto?.id) {
+        prospectoId = existingProspecto.id;
+        await supabase
+          .from("prospectos")
+          .update({
+            origen_ciudad: row.origenCiudad || null,
+            medio_publicitario: row.medioPublicitario || null,
+            promotor_nombre: row.promotor || null,
+            equipo_venta: row.equipoVenta || null,
+            tipo_inversion: row.tipoInversion,
+            etapa: prospectoEtapaFromSembrado(row.estatus, row.cancelada),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", prospectoId);
+      } else {
+        const { data: prospecto, error: prospectoError } = await supabase
+          .from("prospectos")
+          .insert({
+            desarrollo_id: MISION_LA_GAVIA_DESARROLLO_ID,
+            nombre: row.cliente,
+            origen_ciudad: row.origenCiudad || null,
+            medio_publicitario: row.medioPublicitario || null,
+            promotor_nombre: row.promotor || null,
+            equipo_venta: row.equipoVenta || null,
+            tipo_inversion: row.tipoInversion,
+            etapa: prospectoEtapaFromSembrado(row.estatus, row.cancelada),
+            notas: row.origen ? `Origen sembrado: ${row.origen}` : null,
+          })
+          .select("id")
+          .single();
+
+        if (prospectoError) {
+          console.error(`Prospecto ${row.unidad}:`, prospectoError.message);
+        } else {
+          prospectoId = prospecto.id;
+          prospectosCreados += 1;
+        }
+      }
+    }
 
     const { data: existingOp } = await supabase
       .from("operaciones_comerciales")
       .select("id")
-      .eq("disponibilidad_unidad_id", unit.id)
+      .eq("unidad_id", unit.id)
       .eq("cancelada", false)
       .maybeSingle();
 
-    if (existingOp?.id) continue;
-
-    const { data: prospecto, error: prospectoError } = await supabase
-      .from("prospectos")
-      .insert({
-        nombre: row.cliente,
-        desarrollo_id: MISION_LA_GAVIA_DESARROLLO_ID,
-        origen: row.origen || null,
-        medio: row.origen || null,
-        notas: row.promotor ? `Promotor: ${row.promotor}` : null,
-      })
-      .select("id")
-      .single();
-
-    if (prospectoError) {
-      console.error(`Prospecto ${row.unidad}:`, prospectoError.message);
-      continue;
-    }
-
-    const { error: opError } = await supabase.from("operaciones_comerciales").insert({
-      prospecto_id: prospecto.id,
-      disponibilidad_unidad_id: unit.id,
+    const opPayload = {
       desarrollo_id: MISION_LA_GAVIA_DESARROLLO_ID,
-      cluster_id: MISION_LA_GAVIA_CLUSTER_ID,
-      estatus_sembrado: row.estatus,
-      cancelada: Boolean(row.cancelada),
+      unidad_id: unit.id,
+      prospecto_id: prospectoId,
+      estatus_sembrado: row.cancelada ? "Cancelado" : row.estatus,
+      cliente_nombre: row.cliente || "Sin nombre",
+      origen_ciudad: row.origenCiudad || null,
       equipo_venta: row.equipoVenta || null,
-      promotor: row.promotor || null,
-    });
+      promotor_nombre: row.promotor || null,
+      tipo_inversion: row.tipoInversion,
+      lista_precios: row.listaPrecios,
+      precio_lista: row.precioLista ?? unit.precio ?? null,
+      descuento_pct: row.descuentoPct,
+      precio_venta: row.precioVenta,
+      esquema_pago: row.esquemaPago,
+      fecha_apartado: row.fechaApartado,
+      fecha_cierre: row.fechaCierre,
+      medio_publicitario: row.medioPublicitario,
+      observaciones: row.observaciones,
+      entregado: Boolean(row.entregado),
+      escriturado: Boolean(row.escriturado),
+      cancelada: Boolean(row.cancelada),
+      cancelada_at: row.cancelada ? new Date().toISOString() : null,
+      comprobacion: row.comprobacion,
+      updated_at: new Date().toISOString(),
+    };
 
-    if (opError) {
-      console.error(`Operación ${row.unidad}:`, opError.message);
-      continue;
+    let operacionId = existingOp?.id ?? null;
+
+    if (existingOp?.id) {
+      if (row.cancelada) {
+        await supabase.from("cobranza_mensual").delete().eq("operacion_id", existingOp.id);
+        const { error: cancelErr } = await supabase
+          .from("operaciones_comerciales")
+          .update(opPayload)
+          .eq("id", existingOp.id);
+        if (cancelErr) {
+          console.error(`Cancelar op ${row.unidad}:`, cancelErr.message);
+          continue;
+        }
+        operacionesActualizadas += 1;
+      } else {
+        await supabase.from("cobranza_mensual").delete().eq("operacion_id", existingOp.id);
+        const { error: updErr } = await supabase
+          .from("operaciones_comerciales")
+          .update(opPayload)
+          .eq("id", existingOp.id);
+        if (updErr) {
+          console.error(`Actualizar op ${row.unidad}:`, updErr.message);
+          continue;
+        }
+        operacionesActualizadas += 1;
+      }
+    } else {
+      const { data: operacion, error: opError } = await supabase
+        .from("operaciones_comerciales")
+        .insert(opPayload)
+        .select("id")
+        .single();
+
+      if (opError) {
+        console.error(`Operación ${row.unidad}:`, opError.message);
+        continue;
+      }
+      operacionId = operacion.id;
+      operacionesCreadas += 1;
     }
-    operacionesCreadas += 1;
+
+    if (operacionId && row.pagos?.length && !row.cancelada) {
+      const { error: pagosError } = await supabase.from("cobranza_mensual").insert(
+        row.pagos.map((p) => ({
+          operacion_id: operacionId,
+          mes: p.mes,
+          monto: p.monto,
+        })),
+      );
+      if (pagosError) {
+        console.error(`Cobranza ${row.unidad}:`, pagosError.message);
+      } else {
+        cobranzaInsertada += row.pagos.length;
+      }
+    }
   }
 
   console.log(`[gavia-sembrado] Inventario actualizado: ${inventarioActualizado}`);
+  console.log(`[gavia-sembrado] Prospectos nuevos: ${prospectosCreados}`);
   console.log(`[gavia-sembrado] Operaciones nuevas: ${operacionesCreadas}`);
+  console.log(`[gavia-sembrado] Operaciones actualizadas: ${operacionesActualizadas}`);
+  console.log(`[gavia-sembrado] Filas cobranza: ${cobranzaInsertada}`);
   if (missing.length) {
-    console.warn(`[gavia-sembrado] Sin match en inventario (${missing.length}):`, missing.slice(0, 8).join(", "));
+    console.warn(
+      `[gavia-sembrado] Sin match en inventario (${missing.length}):`,
+      missing.slice(0, 8).join(", "),
+    );
     if (missing.length > 8) console.warn("…");
     console.warn("Ejecuta npm run catalog:sync para cargar unidades La Gavia en Supabase.");
   }

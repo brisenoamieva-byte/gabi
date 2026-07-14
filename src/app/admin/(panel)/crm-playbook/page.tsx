@@ -1,15 +1,16 @@
-import { CrmPlaybookAdminPanel } from "@/components/admin/CrmPlaybookAdminPanel";
-import { getAdminCatalogContext } from "@/lib/admin/catalog-context";
+import { redirect } from "next/navigation";
 import { requireAdminModule } from "@/lib/admin/guards";
 
-export default async function AdminCrmPlaybookPage() {
-  const session = await requireAdminModule("leads");
-  const catalog = await getAdminCatalogContext(session.profile);
+type PageProps = {
+  searchParams?: { desarrolloId?: string };
+};
 
-  return (
-    <CrmPlaybookAdminPanel
-      desarrollos={catalog.allowedDesarrollos}
-      scopeLabel={catalog.scopeLabel}
-    />
-  );
+/** Playbook CRM vive ahora como pestaña «Configurar pasos» en Salud CRM. */
+export default async function AdminCrmPlaybookPage({ searchParams }: PageProps) {
+  await requireAdminModule("leads");
+  const params = new URLSearchParams({ tab: "config" });
+  if (searchParams?.desarrolloId) {
+    params.set("desarrolloId", searchParams.desarrolloId);
+  }
+  redirect(`/admin/crm-compliance?${params.toString()}`);
 }

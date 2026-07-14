@@ -18,6 +18,8 @@ import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 type CrmPlaybookAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
+  /** Embebido en Salud CRM (sin título ni selector de desarrollo). */
+  embedded?: boolean;
 };
 
 const ACTION_KINDS: Array<{ value: PlaybookActionKind; label: string }> = [
@@ -32,7 +34,11 @@ const inputClass =
 
 const pilotDesarrollos = (desarrollos: Desarrollo[]) => desarrollos;
 
-export function CrmPlaybookAdminPanel({ desarrollos, scopeLabel }: CrmPlaybookAdminPanelProps) {
+export function CrmPlaybookAdminPanel({
+  desarrollos,
+  scopeLabel,
+  embedded = false,
+}: CrmPlaybookAdminPanelProps) {
   const options = pilotDesarrollos(desarrollos);
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(options);
   const [config, setConfig] = useState<CrmPlaybookConfig | null>(null);
@@ -158,28 +164,37 @@ export function CrmPlaybookAdminPanel({ desarrollos, scopeLabel }: CrmPlaybookAd
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
-          CRM playbook
+      {embedded ? (
+        <p className="max-w-2xl text-sm text-slate-600">
+          Define los pasos obligatorios por etapa y si el CRM bloquea avances sin completar el
+          playbook. Los asesores ven estos pasos en campo.
         </p>
-        <h1 className="text-2xl font-black text-[#201044]">Siguiente paso por etapa</h1>
-        {scopeLabel ? <p className="mt-1 text-sm text-slate-500">{scopeLabel}</p> : null}
-      </div>
+      ) : (
+        <>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+              CRM playbook
+            </p>
+            <h1 className="text-2xl font-black text-[#201044]">Siguiente paso por etapa</h1>
+            {scopeLabel ? <p className="mt-1 text-sm text-slate-500">{scopeLabel}</p> : null}
+          </div>
 
-      <label className="block max-w-md text-sm">
-        <span className="mb-1 block font-semibold text-slate-600">Desarrollo piloto</span>
-        <select
-          value={desarrolloId}
-          onChange={(event) => setDesarrolloId(event.target.value)}
-          className={inputClass}
-        >
-          {options.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.nombre}
-            </option>
-          ))}
-        </select>
-      </label>
+          <label className="block max-w-md text-sm">
+            <span className="mb-1 block font-semibold text-slate-600">Desarrollo piloto</span>
+            <select
+              value={desarrolloId}
+              onChange={(event) => setDesarrolloId(event.target.value)}
+              className={inputClass}
+            >
+              {options.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

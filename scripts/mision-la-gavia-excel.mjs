@@ -46,6 +46,59 @@ export function operacionTieneCliente(estatus, cliente) {
   return !["Disponibles", "Asignado", "Bloqueado", "Cancelado"].includes(String(estatus ?? "").trim());
 }
 
+function parseNumber(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const cleaned = String(value).replace(/[^0-9.-]/g, "");
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parsePct(value) {
+  const n = parseNumber(value);
+  if (n == null) return null;
+  if (Math.abs(n) <= 1) return n * 100;
+  return n;
+}
+
+function parseDateCell(value) {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return formatIsoDate(value);
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return formatIsoDate(excelSerialToDate(value));
+  }
+  return null;
+}
+
+function normalizeTipoInversion(value) {
+  if (!value || !String(value).trim()) return null;
+  const lower = String(value).trim().toLowerCase();
+  if (lower.includes("vivir") || lower.includes("habitar")) return "vivir";
+  if (lower.includes("invers")) return "inversion";
+  if (lower.includes("trabaj")) return "trabajar";
+  return "otro";
+}
+
+function parsePagosMensuales(headers, row, compIdx) {
+  const pagos = [];
+  if (compIdx < 0) return pagos;
+  for (let c = compIdx + 1; c < headers.length; c += 1) {
+    const header = headers[c];
+    const monto = parseNumber(row[c]);
+    if (!header || monto == null || monto === 0) continue;
+    const mes = header instanceof Date ? header : new Date(header);
+    if (Number.isNaN(mes.getTime()) || mes.getFullYear() < 2000) continue;
+    pagos.push({
+      mes: new Date(mes.getFullYear(), mes.getMonth(), 1).toISOString().slice(0, 10),
+      monto,
+    });
+  }
+  return pagos;
+}
+
 export function readWorkbook(path) {
   return XLSX.readFile(path, { cellDates: true, cellFormula: false });
 }
@@ -66,45 +119,80 @@ export function parseEntregasMap(wb) {
 }
 
 export function parseSembradoMaps(wb) {
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets["Sembrado Depas"], { header: 1, defval: "" });
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets["Sembrado Depas"], {
+    header: 1,
+    defval: "",
+    raw: true,
+  });
   const headerRow = 8;
   const headers = rows[headerRow];
   const idx = (name) => headers.findIndex((h) => h === name);
+  const compIdx = idx("Comprobación");
   const byUnidad = new Map();
 
   for (let i = headerRow + 1; i < rows.length; i += 1) {
     const row = rows[i];
     const unidad = String(row[idx("Depa")] ?? "").trim();
     if (!unidad.includes("-")) continue;
+    const estatus = String(row[idx("Estatus")] ?? "Disponibles").trim();
+    if (estatus === "TOTALES") continue;
+    const cliente = String(row[idx("Nombre Cliente")] ?? "").trim();
+    const medioPublicitario = row[idx("Medio Publicitario")]
+      ? String(row[idx("Medio Publicitario")]).trim()
+      : "";
+    const origen = row[idx("Origen")] ? String(row[idx("Origen")]).trim() : "";
     byUnidad.set(unidad, {
       unidad,
       lado: String(row[idx("Lado")] ?? "").trim(),
       edificio: String(row[idx("Edificio")] ?? "").trim(),
       tipologia: String(row[idx("Tipología")] ?? "").trim(),
       listaPrecios: row[idx("Lista")] ? String(row[idx("Lista")]).trim() : null,
-      estatus: String(row[idx("Estatus")] ?? "Disponibles").trim(),
-      cliente: String(row[idx("Nombre Cliente")] ?? "").trim(),
-      origen: String(row[idx("Origen")] ?? "").trim(),
-      equipoVenta: String(row[idx("Equipo de Venta")] ?? "").trim(),
-      promotor: String(row[idx("Promotor")] ?? "").trim(),
+      estatus,
+      cliente,
+      origen,
+      origenCiudad: row[idx("Lugar de residencia")]
+        ? String(row[idx("Lugar de residencia")]).trim()
+        : null,
+      equipoVenta: row[idx("Equipo de Venta")] ? String(row[idx("Equipo de Venta")]).trim() : "",
+      promotor: row[idx("Promotor")] ? String(row[idx("Promotor")]).trim() : "",
+      tipoInversion: normalizeTipoInversion(row[idx("Tipo Inversión")]),
+      precioLista: parseNumber(row[idx("Precio Lista")]),
+      descuentoPct: parsePct(row[idx("Descuento")]),
+      precioVenta: parseNumber(row[idx("Precio Venta")]),
+      esquemaPago: row[idx("Esquema")] ? String(row[idx("Esquema")]).trim() : null,
+      fechaApartado: parseDateCell(row[idx("Apartado")]),
+      fechaCierre: parseDateCell(row[idx("Cierre Vta.")]),
+      medioPublicitario: medioPublicitario || origen || null,
+      observaciones: row[idx("Observaciones")] ? String(row[idx("Observaciones")]).trim() : null,
+      entregado: Boolean(row[idx("Depa Entregado")]),
+      escriturado: Boolean(row[idx("Depa Escriturado")]),
+      comprobacion: parseNumber(row[idx("Comprobación")]),
+      hasOp: operacionTieneCliente(estatus, cliente),
+      pagos: parsePagosMensuales(headers, row, compIdx),
+      cancelada: false,
     });
   }
 
   const cancelSheet = wb.Sheets["Cancelados "] ?? wb.Sheets.Cancelados;
   if (cancelSheet) {
-    const cancelRows = XLSX.utils.sheet_to_json(cancelSheet, { header: 1, defval: "" });
+    const cancelRows = XLSX.utils.sheet_to_json(cancelSheet, {
+      header: 1,
+      defval: "",
+      raw: true,
+    });
     const cancelHeaders = cancelRows[0];
     const cIdx = (name) => cancelHeaders.findIndex((h) => h === name);
     for (let i = 1; i < cancelRows.length; i += 1) {
       const row = cancelRows[i];
       const unidad = String(row[cIdx("Depa")] ?? "").trim();
       if (!unidad) continue;
-      const prev = byUnidad.get(unidad) ?? { unidad };
+      const prev = byUnidad.get(unidad) ?? { unidad, pagos: [] };
       byUnidad.set(unidad, {
         ...prev,
         estatus: "Cancelado",
         cliente: String(row[cIdx("Nombre Cliente")] ?? prev.cliente ?? "").trim(),
         cancelada: true,
+        hasOp: Boolean(String(row[cIdx("Nombre Cliente")] ?? prev.cliente ?? "").trim()),
       });
     }
   }

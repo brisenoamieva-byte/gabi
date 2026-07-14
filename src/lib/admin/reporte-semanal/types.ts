@@ -173,6 +173,14 @@ export type ReporteSemanalSaludCrm = {
   }>;
 };
 
+export type ReporteSemanalPublicidad = {
+  erogado: number;
+  apartadosPeriodo: number;
+  ventasPeriodo: number;
+  costoPorApartado: number | null;
+  costoPorVenta: number | null;
+};
+
 export type ReporteComercialSemanal = {
   desarrolloId: string;
   desarrolloNombre?: string;
@@ -193,6 +201,7 @@ export type ReporteComercialSemanal = {
   prospectosInteresados: ReporteSemanalProspectoInteresado[];
   segmentos: ReporteSemanalSegmento[];
   saludCrm: ReporteSemanalSaludCrm;
+  publicidad: ReporteSemanalPublicidad;
   meta: {
     generadoAt: string;
     fuentes: string[];

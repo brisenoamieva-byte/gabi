@@ -1,17 +1,17 @@
-import { ComplianceCoachPanel } from "@/components/admin/ComplianceCoachPanel";
-import { getAdminCatalogContext } from "@/lib/admin/catalog-context";
+import { redirect } from "next/navigation";
 import { requireAdminModule } from "@/lib/admin/guards";
-import { canAccessModule } from "@/lib/admin/permissions";
 
-export default async function AdminComplianceCoachPage() {
-  const session = await requireAdminModule("compliance-coach");
-  const catalog = await getAdminCatalogContext(session.profile);
+type PageProps = {
+  searchParams?: { desarrolloId?: string };
+};
 
-  return (
-    <ComplianceCoachPanel
-      desarrollos={catalog.allowedDesarrollos}
-      scopeLabel={catalog.scopeLabel}
-      canOpenLeads={canAccessModule(session.profile, "leads")}
-    />
-  );
+/** Compliance Coach se unificó en Salud CRM. */
+export default async function AdminComplianceCoachPage({ searchParams }: PageProps) {
+  await requireAdminModule("compliance-coach");
+  const params = new URLSearchParams();
+  if (searchParams?.desarrolloId) {
+    params.set("desarrolloId", searchParams.desarrolloId);
+  }
+  const query = params.toString();
+  redirect(query ? `/admin/crm-compliance?${query}` : "/admin/crm-compliance");
 }

@@ -155,7 +155,7 @@ export function PlatformHealthBanner() {
                 <>
                   Algunas funciones pueden fallar hasta aplicar el SQL en Supabase.
                   {pendingCompliance.length
-                    ? " Digest CRM y Compliance Coach requieren migraciones 042+043."
+                    ? " Digest CRM / Salud CRM requieren migraciones 042+043."
                     : null}
                   {showParseurWarning ? " En producción configura PARSEUR_WEBHOOK_SECRET." : null}
                   {showQaWarning ? " Para ADRYO configura QA_WEBHOOK_SECRET." : null}

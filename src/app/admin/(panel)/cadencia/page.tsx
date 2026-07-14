@@ -1,15 +1,18 @@
-import { CadenciaAdminPanel } from "@/components/admin/CadenciaAdminPanel";
-import { getAdminCatalogContext } from "@/lib/admin/catalog-context";
+import { redirect } from "next/navigation";
 import { requireAdminModule } from "@/lib/admin/guards";
 
-export default async function AdminCadenciaPage() {
-  const session = await requireAdminModule("leads");
-  const catalog = await getAdminCatalogContext(session.profile);
+type AdminCadenciaPageProps = {
+  searchParams?: {
+    desarrolloId?: string;
+  };
+};
 
-  return (
-    <CadenciaAdminPanel
-      desarrollos={catalog.allowedDesarrollos}
-      scopeLabel={catalog.scopeLabel}
-    />
-  );
+/** Cadencia vive ahora como pestaña de Salud CRM. */
+export default async function AdminCadenciaPage({ searchParams }: AdminCadenciaPageProps) {
+  await requireAdminModule("leads");
+  const params = new URLSearchParams({ tab: "cadencia" });
+  if (searchParams?.desarrolloId) {
+    params.set("desarrolloId", searchParams.desarrolloId);
+  }
+  redirect(`/admin/crm-compliance?${params.toString()}`);
 }

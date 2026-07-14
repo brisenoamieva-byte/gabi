@@ -96,7 +96,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "necesidades-perfiladas",
     etapa: "cita",
     label: "Necesidades y perfil documentados",
-    hint: "Completa el cuestionario post-visita (presupuesto, apartado, decisor y publicidad en redes).",
+    hint: "Presupuesto, intención de apartar, decisor y publicidad en redes. Puede capturarse en cualquier momento del funnel.",
     kind: "manual",
     required: true,
     order: 60,
@@ -126,6 +126,9 @@ const desarrolloNecesidadesHint: Partial<Record<CrmPlaybookPilotDesarrolloId, st
   [LA_VISTA_RESIDENCIAL_ID]: "Cluster y tipología (Oliveto, Benevento, Volterra).",
   [MISION_LA_GAVIA_DESARROLLO_ID]: "Torre, modelo (2R/3R) y nivel según perfil del cliente.",
 };
+
+export const getNecesidadesPerfilDesarrolloHint = (desarrolloId: string): string | null =>
+  (desarrolloNecesidadesHint[desarrolloId as CrmPlaybookPilotDesarrolloId] ?? null);
 
 const buildPilotPlaybook = (desarrolloId: CrmPlaybookPilotDesarrolloId): CrmPlaybookConfig => ({
   desarrolloId,
@@ -228,6 +231,7 @@ export type PlaybookProspectoSignals = {
   notas: string | null;
   recorridoCompletado: boolean;
   cotizacionesCount: number;
+  perfilamientoCompleto?: boolean;
 };
 
 const PERFILAMIENTO_STEP_IDS = new Set([
@@ -250,6 +254,10 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
   }
   if (signals.cotizacionesCount > 0) {
     done.add("cotizacion");
+  }
+  if (signals.perfilamientoCompleto) {
+    done.add("necesidades-perfiladas");
+    done.add("necesidades");
   }
   if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("cita")) {
     done.add("seguimiento-post-cotizacion");

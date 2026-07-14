@@ -21,6 +21,7 @@ import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedie
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
+import { PerfilamientoVisitaPanel } from "@/components/asesor/PerfilamientoVisitaPanel";
 import { AsesorCadenciaLeadPanel } from "@/components/asesor/AsesorCadenciaLeadPanel";
 import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail, ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
@@ -44,6 +45,7 @@ import {
 } from "@/lib/comercial/format-lead-date";
 import {
   canAdvancePlaybookEtapa,
+  getNecesidadesPerfilDesarrolloHint,
   type CrmPlaybookConfig,
   type PlaybookQueueItem,
 } from "@/lib/comercial/crm-playbook";
@@ -51,6 +53,7 @@ import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled"
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import type { CadenciaStatus } from "@/lib/comercial/cadencia-perfilamiento";
 import {
+  PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
   readPerfilamientoVisitaFromProspecto,
   resolvePerfilCalificacionLead,
   perfilCalificacionLeadBannerClass,
@@ -456,6 +459,20 @@ function AsesorLeadDrawer({
                     Marcar como {prospectoEtapaLabel.perdido}
                   </button>
                 </div>
+              ) : null}
+
+              {playbook?.config?.enabled ? (
+                <PerfilamientoVisitaPanel
+                  record={readPerfilamientoVisitaFromProspecto(detail)}
+                  loading={
+                    completingStepId !== null &&
+                    PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(completingStepId)
+                  }
+                  desarrolloHint={getNecesidadesPerfilDesarrolloHint(detail.desarrollo_id)}
+                  onSubmit={(answers) =>
+                    void handleCompleteStep("necesidades-perfiladas", undefined, answers)
+                  }
+                />
               ) : null}
 
               {playbook?.config?.enabled ? (

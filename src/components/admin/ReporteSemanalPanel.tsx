@@ -468,6 +468,46 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
             </div>
           </header>
 
+          <section className="no-print rounded-2xl border border-[#201044]/12 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gabi-sand">
+                  Eficiencia publicidad
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Gasto MKT erogado en el periodo vs apartados y ventas comerciales.
+                </p>
+              </div>
+              <Link
+                href={`/admin/desarrollos?desarrollo=${encodeURIComponent(desarrolloId)}&view=mkt`}
+                className="text-sm font-semibold text-[#201044] hover:underline"
+              >
+                Administrar presupuesto
+              </Link>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <KpiTile label="Erogado periodo" value={formatMoney(reporte.publicidad.erogado)} />
+              <KpiTile label="Apartados" value={reporte.publicidad.apartadosPeriodo} />
+              <KpiTile label="Ventas" value={reporte.publicidad.ventasPeriodo} />
+              <KpiTile
+                label="Costo / apartado"
+                value={
+                  reporte.publicidad.costoPorApartado != null
+                    ? formatMoney(reporte.publicidad.costoPorApartado)
+                    : "—"
+                }
+              />
+              <KpiTile
+                label="Costo / venta"
+                value={
+                  reporte.publicidad.costoPorVenta != null
+                    ? formatMoney(reporte.publicidad.costoPorVenta)
+                    : "—"
+                }
+              />
+            </div>
+          </section>
+
           {reporte.saludCrm.enabled ? (
             <section className="hidden print:block rounded-xl border border-slate-300 bg-white p-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">

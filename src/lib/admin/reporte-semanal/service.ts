@@ -36,6 +36,7 @@ import type {
   ReporteSemanalSegmento,
 } from "@/lib/admin/reporte-semanal/types";
 import { SEGUIMIENTO_ESTATUS_ORDEN } from "@/lib/admin/reporte-semanal/types";
+import { buildMktEficienciaPeriodo } from "@/lib/admin/mkt-presupuesto-service";
 import {
   isDateInRange,
   monthRangeForDate,
@@ -604,6 +605,7 @@ export async function getReporteComercialSemanal(
   }
 
   const apartadosPeriodo = segmentos.reduce((s, seg) => s + seg.kpis.apartadosSemana, 0);
+  const ventasPeriodo = funnels.reduce((s, funnel) => s + funnel.etapas.ventasPeriodo, 0);
   const afluenciaValida = prospectosSemana.filter((p) => !p.es_spam && !p.es_duplicado).length;
 
   const objetivosOrigen = resolveObjetivosOrigen(
@@ -642,6 +644,26 @@ export async function getReporteComercialSemanal(
         asesoresEnRiesgo: [],
       };
 
+  let publicidad = {
+    erogado: 0,
+    apartadosPeriodo,
+    ventasPeriodo,
+    costoPorApartado: null as number | null,
+    costoPorVenta: null as number | null,
+  };
+  try {
+    publicidad = await buildMktEficienciaPeriodo(
+      filters.desarrolloId,
+      periodo.desde,
+      periodo.hasta,
+      apartadosPeriodo,
+      ventasPeriodo,
+      profile,
+    );
+  } catch {
+    // Tabla MKT aún no migrada: el reporte comercial sigue igual.
+  }
+
   return {
     desarrolloId: filters.desarrolloId,
     periodo,
@@ -661,6 +683,7 @@ export async function getReporteComercialSemanal(
     prospectosInteresados: buildProspectosInteresados(prospectosSemana),
     segmentos,
     saludCrm,
+    publicidad,
     meta: {
       generadoAt: new Date().toISOString(),
       fuentes: [
@@ -669,6 +692,7 @@ export async function getReporteComercialSemanal(
         "cobranza_mensual",
         "prospectos",
         "comercial_objetivos_anuales",
+        "desarrollo_mkt_gasto",
       ],
       objetivosOrigen,
     },

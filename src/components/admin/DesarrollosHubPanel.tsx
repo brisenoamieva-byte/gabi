@@ -4,6 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
+import { DesarrolloHubCard } from "@/components/admin/DesarrolloHubCard";
+import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
+import { DesarrolloOperativoCard } from "@/components/admin/DesarrolloOperativoCard";
+import { MktPresupuestoAdminPanel } from "@/components/admin/MktPresupuestoAdminPanel";
 import {
   ArrowLeft,
   BarChart3,
@@ -16,11 +21,8 @@ import {
   Search,
   UserRound,
   Users,
+  Wallet,
 } from "lucide-react";
-import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
-import { DesarrolloHubCard } from "@/components/admin/DesarrolloHubCard";
-import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
-import { DesarrolloOperativoCard } from "@/components/admin/DesarrolloOperativoCard";
 import type { ComercializadoraAdminRecord } from "@/lib/admin/catalog-service";
 import { filterDesarrollosHub, getDesarrolloHeroImage } from "@/lib/catalog/desarrollo-hub-utils";
 import { getDesarrolloXperienceProductId } from "@/lib/comercial/xperience-catalog-ids";
@@ -116,6 +118,8 @@ export function DesarrollosHubPanel({
   const selectedFromUrl = searchParams.get("desarrollo");
   const tabFromUrl = searchParams.get("tab") as HubTab | null;
   const marcaFromUrl = searchParams.get("marca");
+  const viewFromUrl = searchParams.get("view");
+  const showMktView = viewFromUrl === "mkt";
 
   const [statsById, setStatsById] = useState<Record<string, DesarrolloStats>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -340,6 +344,31 @@ export function DesarrollosHubPanel({
     const xperienceProductId = getDesarrolloXperienceProductId(selectedDesarrollo.id);
     const detailHero = getDesarrolloHeroImage(selectedDesarrollo, clusters);
 
+    if (showMktView && permissions.leads) {
+      return (
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete("view");
+              router.replace(`/admin/desarrollos?${params.toString()}`);
+            }}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-gabi-forest hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a {selectedDesarrollo.nombre}
+          </button>
+          <MktPresupuestoAdminPanel
+            desarrolloId={selectedDesarrollo.id}
+            desarrolloNombre={selectedDesarrollo.nombre}
+            canEdit={permissions.leads}
+            embedded
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <button
@@ -435,6 +464,18 @@ export function DesarrollosHubPanel({
             );
           }}
         />
+
+        {permissions.leads ? (
+          <MktPresupuestoHubCard
+            desarrolloId={selectedDesarrollo.id}
+            onOpen={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("desarrollo", selectedDesarrollo.id);
+              params.set("view", "mkt");
+              router.replace(`/admin/desarrollos?${params.toString()}`);
+            }}
+          />
+        ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {permissions.leads ? (
@@ -701,6 +742,89 @@ export function DesarrollosHubPanel({
           No tienes permiso para administrar campañas.
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function MktPresupuestoHubCard({
+  desarrolloId,
+  onOpen,
+}: {
+  desarrolloId: string;
+  onOpen: () => void;
+}) {
+  const [resumen, setResumen] = useState<{
+    autorizado: number;
+    erogado: number;
+    remanente: number;
+    pctEjercido: number | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const anio = new Date().getFullYear();
+        const params = new URLSearchParams({
+          desarrolloId,
+          anio: String(anio),
+          mode: "resumen",
+        });
+        const response = await fetch(`/api/admin/mkt-presupuesto?${params.toString()}`);
+        const data = (await response.json()) as {
+          resumen?: {
+            autorizado: number;
+            erogado: number;
+            remanente: number;
+            pctEjercido: number | null;
+          };
+        };
+        if (!cancelled && response.ok && data.resumen) {
+          setResumen(data.resumen);
+        }
+      } catch {
+        if (!cancelled) setResumen(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [desarrolloId]);
+
+  return (
+    <div className="rounded-2xl border border-[#201044]/15 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="rounded-xl bg-[#201044]/10 p-2">
+            <Wallet className="h-5 w-5 text-[#201044]" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+              Publicidad / MKT
+            </p>
+            <p className="mt-1 text-sm font-bold text-gabi-ink">Presupuesto de publicidad</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {loading
+                ? "Cargando…"
+                : resumen && (resumen.autorizado > 0 || resumen.erogado > 0)
+                  ? `Autorizado ${formatPrice(resumen.autorizado)} · Erogado ${formatPrice(resumen.erogado)} · Remanente ${formatPrice(resumen.remanente)}`
+                  : "Sin presupuesto este año — crea el autorizado y registra gastos."}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#201044] px-4 py-2 text-sm font-bold text-white"
+        >
+          Administrar
+        </button>
+      </div>
     </div>
   );
 }

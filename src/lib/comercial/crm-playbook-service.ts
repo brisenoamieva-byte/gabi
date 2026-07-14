@@ -31,8 +31,10 @@ import {
 import { normalizePlaybookVisitDate } from "@/lib/comercial/cadencia-perfilamiento";
 import {
   computePerfilCalificacionLead,
+  isPerfilamientoVisitaComplete,
   perfilamientoVisitaToRow,
   PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
+  readPerfilamientoVisitaFromProspecto,
   validatePerfilamientoVisitaInput,
   type PerfilamientoVisitaAnswers,
 } from "@/lib/comercial/perfilamiento-post-visita";
@@ -226,6 +228,9 @@ const buildPlaybookSignals = (
   notas: prospecto.notas,
   recorridoCompletado,
   cotizacionesCount,
+  perfilamientoCompleto: isPerfilamientoVisitaComplete(
+    readPerfilamientoVisitaFromProspecto(prospecto),
+  ),
 });
 
 const resolveRecorridoCompletadoForProspecto = async (

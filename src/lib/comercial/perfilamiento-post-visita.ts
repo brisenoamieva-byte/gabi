@@ -28,7 +28,7 @@ export const PERFILAMIENTO_VISITA_QUESTIONS: Array<{
   {
     key: "decisorVisita",
     label:
-      "¿El prospecto que atendió la visita es quien tomará la decisión final de comprar?",
+      "¿El prospecto con el que hablas es quien tomará la decisión final de comprar?",
   },
   {
     key: "vioPublicidadRedes",
@@ -73,7 +73,7 @@ export const validatePerfilamientoVisitaInput = (
   input: Partial<PerfilamientoVisitaAnswers> | undefined,
 ): PerfilamientoVisitaAnswers => {
   if (!input) {
-    throw new Error("Completa el cuestionario de perfilamiento post-visita.");
+    throw new Error("Completa el cuestionario de perfilamiento.");
   }
 
   for (const question of PERFILAMIENTO_VISITA_QUESTIONS) {

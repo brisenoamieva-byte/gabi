@@ -175,7 +175,9 @@ export const sendGerenteComplianceDigestEmail = async (
     ...exceptionLines,
     "",
     `Panel: ${siteUrl}/admin/crm-compliance?desarrolloId=${encodeURIComponent(report.desarrolloId)}`,
-    cadencia ? `Cadencia: ${siteUrl}/admin/cadencia?desarrolloId=${encodeURIComponent(report.desarrolloId)}` : "",
+    cadencia
+      ? `Cadencia: ${siteUrl}/admin/crm-compliance?tab=cadencia&desarrolloId=${encodeURIComponent(report.desarrolloId)}`
+      : "",
     "",
     "— gabi",
   ].join("\n");
@@ -197,7 +199,7 @@ export const sendGerenteComplianceDigestEmail = async (
     </ul>
     <p><a href="${siteUrl}/admin/crm-compliance?desarrolloId=${encodeURIComponent(report.desarrolloId)}">Abrir panel Salud CRM</a>${
       cadencia
-        ? ` · <a href="${siteUrl}/admin/cadencia?desarrolloId=${encodeURIComponent(report.desarrolloId)}">Cadencia</a>`
+        ? ` · <a href="${siteUrl}/admin/crm-compliance?tab=cadencia&desarrolloId=${encodeURIComponent(report.desarrolloId)}">Cadencia</a>`
         : ""
     }</p>
     <p>— gabi</p>

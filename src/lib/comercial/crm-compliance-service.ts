@@ -18,6 +18,10 @@ import {
 } from "@/lib/comercial/crm-playbook-service";
 import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { getComplianceRecorridoBlockThreshold } from "@/lib/comercial/crm-compliance-config";
+import {
+  isPerfilamientoVisitaComplete,
+  readPerfilamientoVisitaFromProspecto,
+} from "@/lib/comercial/perfilamiento-post-visita";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const COMPLIANCE_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
@@ -76,6 +80,9 @@ const buildPlaybookSignals = (prospecto: ProspectoListRow, cotizacionesCount = 0
   notas: prospecto.notas,
   recorridoCompletado: false,
   cotizacionesCount,
+  perfilamientoCompleto: isPerfilamientoVisitaComplete(
+    readPerfilamientoVisitaFromProspecto(prospecto),
+  ),
 });
 
 const computeProspectoConfidencePct = (

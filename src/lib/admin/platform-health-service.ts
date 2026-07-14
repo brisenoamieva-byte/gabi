@@ -342,11 +342,11 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
   });
   checks.push({
     id: "048",
-    label: "Perfilamiento post-visita en prospectos",
+    label: "Perfilamiento del lead en prospectos",
     migrationFile: "048_prospecto_perfilamiento_visita.sql",
     ok: perfilamientoVisitaOk,
     detail: perfilamientoVisitaOk
-      ? "Cuestionario post-visita (4 preguntas) disponible."
+      ? "Cuestionario de perfilamiento (4 preguntas) disponible."
       : "Faltan columnas perfil_* — aplica 048.",
   });
 
