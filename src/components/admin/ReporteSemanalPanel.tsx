@@ -460,7 +460,6 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
               <KpiTile dark label="Afluencia" value={reporte.resumen.afluencia} />
-              <KpiTile dark label="Cotizaciones" value={reporte.resumen.cotizaciones} />
               <KpiTile dark label="Citas / visitas" value={reporte.resumen.citasVisitas} />
               <KpiTile dark label="Apart. periodo" value={reporte.resumen.apartadosPeriodo} />
               <KpiTile dark label="Apartados deptos." value={reporte.resumen.apartadosDeptos} />

@@ -9,10 +9,11 @@ import {
   buildAbsorcionMensualSeries,
   resolveAbsorcionMonthsBack,
 } from "@/lib/admin/reporte-semanal/absorcion-mensual";
-import { listCotizacionesFunnelSemana } from "@/lib/admin/reporte-semanal/cotizaciones-periodo";
 import {
   buildFunnelSegmento,
   buildVisitasInmobiliarias,
+  filterProspectosConVisitaEnPeriodo,
+  prospectosVisitasPorMes,
   resolveProspectoMedioLabel,
 } from "@/lib/admin/reporte-semanal/funnel-medio";
 import {
@@ -44,7 +45,6 @@ import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getDesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
 
 const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
@@ -431,30 +431,6 @@ function prospectosPorMes(prospectos: Awaited<ReturnType<typeof listProspectos>>
   return map;
 }
 
-async function visitasPorMes(
-  desarrolloId: string,
-  monthsBack = 36,
-): Promise<Map<string, number>> {
-  const supabase = createSupabaseServiceClient();
-  const map = new Map<string, number>();
-  if (!supabase) return map;
-
-  const since = new Date();
-  since.setUTCMonth(since.getUTCMonth() - monthsBack);
-
-  const { data } = await supabase
-    .from("visitas_comerciales")
-    .select("occurred_at")
-    .eq("desarrollo_id", desarrolloId)
-    .gte("occurred_at", since.toISOString());
-
-  for (const row of data ?? []) {
-    const key = String(row.occurred_at).slice(0, 7);
-    map.set(key, (map.get(key) ?? 0) + 1);
-  }
-  return map;
-}
-
 function mesAnteriorRange(hasta: string): { desde: string; hasta: string } {
   const d = new Date(`${hasta}T12:00:00`);
   const prev = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1));
@@ -503,7 +479,7 @@ export async function getReporteComercialSemanal(
   const year = new Date(`${periodo.hasta}T12:00:00`).getUTCFullYear();
   const acumuladoDesde = `${year}-01-01`;
 
-  const [rows, todasOperaciones, prospectosSemana, prospectosMes, prospectosAcum, visitasCount, visitasMesMap, cotizacionesSemana] =
+  const [rows, todasOperaciones, prospectosSemana, prospectosMes, prospectosAcum] =
     await Promise.all([
       listSembradoUnidades({ desarrolloId: filters.desarrolloId }, profile),
       listOperaciones({ desarrolloId: filters.desarrolloId, includeCanceladas: true }, profile),
@@ -535,13 +511,11 @@ export async function getReporteComercialSemanal(
         },
         profile,
       ),
-      countVisitasPeriodo(filters.desarrolloId, periodo.desde, periodo.hasta),
-      visitasPorMes(filters.desarrolloId),
-      listCotizacionesFunnelSemana(
-        { desarrolloId: filters.desarrolloId, desde: periodo.desde, hasta: periodo.hasta },
-        profile,
-      ),
     ]);
+
+  const prospectosCitasPeriodo = filterProspectosConVisitaEnPeriodo(prospectosAcum, periodo);
+  const visitasMesMap = prospectosVisitasPorMes(prospectosAcum);
+  const visitasCount = prospectosCitasPeriodo.length;
 
   const segmentConfigs = getReporteSemanalSegments(filters.desarrolloId);
   const segmentIds = segmentConfigs?.map((config) => config.id) ?? ["general"];
@@ -586,8 +560,7 @@ export async function getReporteComercialSemanal(
           clusterId: config.clusterId,
           rows,
           prospectosSemana,
-          cotizacionesSemana,
-          citasSemana: visitasCount,
+          prospectosCitasPeriodo,
           periodo,
         }),
       )
@@ -598,8 +571,7 @@ export async function getReporteComercialSemanal(
           clusterId: "__all__",
           rows,
           prospectosSemana,
-          cotizacionesSemana,
-          citasSemana: visitasCount,
+          prospectosCitasPeriodo,
           periodo,
         }),
       ];
@@ -675,7 +647,6 @@ export async function getReporteComercialSemanal(
     periodo,
     resumen: {
       afluencia: afluenciaValida,
-      cotizaciones: cotizacionesSemana.length,
       citasVisitas: visitasCount,
       apartadosPeriodo,
       apartadosDeptos,
@@ -697,30 +668,9 @@ export async function getReporteComercialSemanal(
         "operaciones_comerciales",
         "cobranza_mensual",
         "prospectos",
-        "cotizaciones",
-        "visitas_comerciales",
         "comercial_objetivos_anuales",
       ],
       objetivosOrigen,
     },
   };
-}
-
-async function countVisitasPeriodo(
-  desarrolloId: string,
-  desde: string,
-  hasta: string,
-): Promise<number> {
-  const supabase = createSupabaseServiceClient();
-  if (!supabase) return 0;
-
-  const { count, error } = await supabase
-    .from("visitas_comerciales")
-    .select("*", { count: "exact", head: true })
-    .eq("desarrollo_id", desarrolloId)
-    .gte("occurred_at", `${desde}T00:00:00.000Z`)
-    .lte("occurred_at", `${hasta}T23:59:59.999Z`);
-
-  if (error) return 0;
-  return count ?? 0;
 }

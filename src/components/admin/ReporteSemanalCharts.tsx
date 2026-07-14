@@ -31,8 +31,8 @@ const FOREST = "#1a4d3e";
 const SAND = "#c4a574";
 const MINT = "#6cc24a";
 const SLATE = "#64748b";
-const DEPTOS = "#1a4d3e";
-const OFICINAS = "#3d7a6a";
+const DEPTOS = "#2563eb";
+const OFICINAS = "#16a34a";
 const LINE_AFLU = "#c4a574";
 const LINE_CITAS = "#6cc24a";
 
@@ -142,7 +142,6 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
   const data = funnel.porMedio.slice(0, 8).map((m) => ({
     medio: m.medio.length > 18 ? `${m.medio.slice(0, 16)}…` : m.medio,
     Afluencia: m.afluencia,
-    Cotizaciones: m.cotizaciones,
     Citas: m.citas,
     Apartados: m.apartados,
     Ventas: m.ventas,
@@ -154,13 +153,12 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
   return (
     <ChartCard
       title={`Funnel comercial — ${funnel.label}`}
-      subtitle="Afluencia → cotizaciones → citas → apartados (periodo) → ventas (periodo) por medio"
+      subtitle="Afluencia → citas/visitas → apartados (periodo) → ventas (periodo) por medio"
     >
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
         {(
           [
             ["Afluencia", funnel.etapas.afluencia],
-            ["Cotizaciones", funnel.etapas.cotizaciones],
             ["Citas", funnel.etapas.citas],
             ["Apart. periodo", funnel.etapas.apartadosPeriodo],
             ["Apart. vigentes", funnel.etapas.apartadosVigentes],
@@ -183,7 +181,7 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Afluencia" fill={FOREST} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Cotizaciones" fill="#94a3b8" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="Citas" fill={LINE_CITAS} radius={[2, 2, 0, 0]} />
             <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]} />
             <Bar dataKey="Ventas" fill={MINT} radius={[2, 2, 0, 0]} />
           </BarChart>

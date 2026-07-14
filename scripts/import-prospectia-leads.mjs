@@ -126,6 +126,17 @@ const parseCreatedAt = (value) => {
   return date.toISOString();
 };
 
+/** Solo fechas reales de "Visitó desarrollo" (no true/false/-). */
+const parseVisitDate = (value) => {
+  const raw = String(value ?? "").trim();
+  if (!raw || raw.toLowerCase() === "false" || raw.toLowerCase() === "true" || raw === "-") {
+    return null;
+  }
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+};
+
 const parseArgs = () => {
   const args = process.argv.slice(2);
   let xlsxPath = DEFAULT_XLSX;
@@ -253,6 +264,7 @@ const main = async () => {
     }
     const tipoContacto = String(row["Tipo de contacto"] ?? "").trim() || null;
     const createdAt = parseCreatedAt(row["Fecha de creación"]);
+    const visitaRealizadaOn = parseVisitDate(row["Visitó desarrollo"]);
     const calificacion = mapCalificacion({ descartado, etiqueta, estatus });
     const notasParts = [
       etiqueta ? `Etiqueta Prospectia: ${etiqueta}` : null,
@@ -287,7 +299,10 @@ const main = async () => {
       bandera_crm: 0,
       es_spam: false,
       es_duplicado: false,
-      etapa,
+      etapa: visitaRealizadaOn && etapa !== "vendido" && etapa !== "apartado" && etapa !== "perdido"
+        ? "cita"
+        : etapa,
+      visita_realizada_on: visitaRealizadaOn,
       activo: true,
       created_at: createdAt,
       updated_at: parseCreatedAt(row["Fecha de revisión"]) || createdAt,

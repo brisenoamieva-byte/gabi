@@ -1,7 +1,6 @@
-import type { CotizacionFunnelRow } from "@/lib/admin/reporte-semanal/cotizaciones-periodo";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
 import type { ReporteSemanalFunnelMedio, ReporteSemanalFunnelSegmento } from "@/lib/admin/reporte-semanal/types";
-import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
+import type { SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
 
 const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
 
@@ -14,7 +13,7 @@ export function normalizeMedioPublicitario(raw: string | null | undefined): stri
   if (value.includes("google") || value.includes("web") || value.includes("página")) {
     return "Página Web/GOOGLE";
   }
-  if (value.includes("inmobiliar") || value.includes("asesor externo")) {
+  if (value.includes("inmobiliar") || value.includes("asesor externo") || value.includes("broker")) {
     return "Inmobiliarias/Asesor Externo";
   }
   if (value.includes("contacto directo")) return "Contacto Directo";
@@ -56,8 +55,8 @@ export function buildFunnelSegmento(input: {
   clusterId: string;
   rows: SembradoUnidadRow[];
   prospectosSemana: ProspectoListRow[];
-  cotizacionesSemana: CotizacionFunnelRow[];
-  citasSemana: number;
+  /** Prospectos con visita_realizada_on en el periodo (citas/visitas reales). */
+  prospectosCitasPeriodo: ProspectoListRow[];
   periodo: { desde: string; hasta: string };
 }): ReporteSemanalFunnelSegmento {
   const segmentRows =
@@ -69,7 +68,6 @@ export function buildFunnelSegmento(input: {
   let apartadosPeriodo = 0;
   let ventasPeriodo = 0;
   let asignacionesPeriodo = 0;
-  let cotizaciones = 0;
   const medioMap = new Map<string, ReporteSemanalFunnelMedio>();
 
   const ensureMedio = (medio: string): ReporteSemanalFunnelMedio => {
@@ -78,7 +76,6 @@ export function buildFunnelSegmento(input: {
     const entry: ReporteSemanalFunnelMedio = {
       medio,
       afluencia: 0,
-      cotizaciones: 0,
       citas: 0,
       apartados: 0,
       ventas: 0,
@@ -94,12 +91,10 @@ export function buildFunnelSegmento(input: {
     ensureMedio(medio).afluencia += 1;
   }
 
-  for (const cotizacion of input.cotizacionesSemana) {
-    if (input.clusterId !== "__all__" && cotizacion.clusterId !== input.clusterId) {
-      continue;
-    }
-    cotizaciones += 1;
-    ensureMedio(cotizacion.medioLabel).cotizaciones += 1;
+  for (const p of input.prospectosCitasPeriodo) {
+    if (p.es_spam || p.es_duplicado) continue;
+    const medio = resolveProspectoMedioLabel(p);
+    ensureMedio(medio).citas += 1;
   }
 
   for (const row of segmentRows) {
@@ -130,15 +125,20 @@ export function buildFunnelSegmento(input: {
     }
   }
 
-  const porMedio = Array.from(medioMap.values()).sort((a, b) => b.afluencia - a.afluencia);
+  const porMedio = Array.from(medioMap.values()).sort(
+    (a, b) => b.afluencia + b.citas - (a.afluencia + a.citas),
+  );
+
+  const citasValidas = input.prospectosCitasPeriodo.filter(
+    (p) => !p.es_spam && !p.es_duplicado,
+  ).length;
 
   return {
     segmentoId: input.segmentoId,
     label: input.label,
     etapas: {
       afluencia: input.prospectosSemana.filter((p) => !p.es_spam && !p.es_duplicado).length,
-      cotizaciones,
-      citas: input.citasSemana,
+      citas: citasValidas,
       apartadosPeriodo,
       apartadosVigentes,
       ventasPeriodo,
@@ -162,10 +162,33 @@ export function buildVisitasInmobiliarias(
     })
     .slice(0, 30)
     .map((p) => ({
-      inmobiliaria: p.promotor_nombre ?? p.equipo_venta ?? "Inmobiliaria",
+      inmobiliaria: p.promotor_nombre ?? p.equipo_venta ?? p.asesorNombre ?? "Inmobiliaria",
       fecha: p.created_at.slice(0, 10),
       prospecto: p.nombre,
     }));
+}
+
+export function filterProspectosConVisitaEnPeriodo(
+  prospectos: ProspectoListRow[],
+  periodo: { desde: string; hasta: string },
+): ProspectoListRow[] {
+  return prospectos.filter((p) => {
+    if (p.es_spam || p.es_duplicado) return false;
+    return isDateInRange(p.visita_realizada_on, periodo.desde, periodo.hasta);
+  });
+}
+
+export function prospectosVisitasPorMes(
+  prospectos: ProspectoListRow[],
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const p of prospectos) {
+    if (p.es_spam || p.es_duplicado) continue;
+    const key = p.visita_realizada_on?.slice(0, 7);
+    if (!key) continue;
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  return map;
 }
 
 export function sumCobranzaMes(
@@ -182,5 +205,3 @@ export function sumCobranzaMes(
   void mesEnd;
   return total;
 }
-
-export type { OperacionComercialRecord };
