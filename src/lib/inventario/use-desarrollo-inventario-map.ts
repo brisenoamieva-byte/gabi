@@ -21,7 +21,8 @@ export function useDesarrolloInventarioMap(
   const clusterKey = clusterIds.join("|");
 
   useEffect(() => {
-    if (!desarrolloId || !clusterIds.length) {
+    const ids = clusterKey ? clusterKey.split("|").filter(Boolean) : [];
+    if (!desarrolloId || !ids.length) {
       setState(emptyState);
       return;
     }
@@ -30,7 +31,7 @@ export function useDesarrolloInventarioMap(
     setState((current) => ({ ...current, loading: true }));
 
     void Promise.all(
-      clusterIds.map(async (clusterId) => {
+      ids.map(async (clusterId) => {
         const result = await fetchClusterInventario(desarrolloId, clusterId);
         return [clusterId, result.units] as const;
       }),
