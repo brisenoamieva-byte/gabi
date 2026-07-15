@@ -19,50 +19,55 @@ function MisLeadsContent() {
 
   if (!authReady || !user || !desarrollo) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-slate-500">
-        Cargando…
+      <main className="flex min-h-screen items-center justify-center bg-[#F7F6F2] text-slate-500">
+        <p className="text-sm font-medium">Cargando…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#F2F0E9] text-[#201044]">
-      <header className="border-b border-[#201044]/8 bg-white/90 px-5 py-3 backdrop-blur md:px-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+    <main className="min-h-screen bg-[#F7F6F2] text-slate-800">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#F7F6F2]/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3 md:px-10">
           <Link
             href="/dashboard"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#201044]/12 bg-white px-3 text-sm font-semibold"
+            className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
             Dashboard
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <AsesorBackofficeLink rol={user.rol} desarrolloId={desarrollo.id} />
             <button
-            type="button"
-            onClick={() => logoutAsesorSession(router)}
-            aria-label="Cerrar sesión"
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#201044] text-white"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+              type="button"
+              onClick={() => logoutAsesorSession(router)}
+              aria-label="Cerrar sesión"
+              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#201044]"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={2} />
+            </button>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-8">
-        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#201044]/8 bg-white px-4 py-3 shadow-sm">
+      <section className="mx-auto max-w-6xl px-5 py-5 md:px-10 md:py-8">
+        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           {desarrollo.logo ? (
-            <Image
-              src={desarrollo.logo}
-              alt=""
-              width={80}
-              height={48}
-              className="h-8 w-auto object-contain"
-            />
+            <div className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F7F6F2] p-1.5">
+              <Image
+                src={desarrollo.logo}
+                alt=""
+                width={80}
+                height={48}
+                className="h-auto max-h-8 w-full object-contain"
+              />
+            </div>
           ) : null}
-          <div>
-            <p className="text-sm font-black">{desarrollo.nombre}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+              Desarrollo activo
+            </p>
+            <p className="truncate text-[15px] font-semibold text-[#201044]">{desarrollo.nombre}</p>
             <p className="text-xs text-slate-500">Desde {formatPrice(desarrollo.precioDesde)}</p>
           </div>
         </div>
@@ -84,8 +89,8 @@ export default function MisLeadsPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-slate-500">
-          Cargando…
+        <main className="flex min-h-screen items-center justify-center bg-[#F7F6F2] text-slate-500">
+          <p className="text-sm font-medium">Cargando…</p>
         </main>
       }
     >

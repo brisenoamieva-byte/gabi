@@ -43,10 +43,10 @@ export const GUARDIA_CASETA_FALLBACK: Record<string, GuardiaCasetaConfig> = {
   },
   [MISION_LA_GAVIA_DESARROLLO_ID]: {
     desarrolloId: MISION_LA_GAVIA_DESARROLLO_ID,
-    lat: 20.5547,
-    lng: -100.4359,
+    lat: 20.5407382,
+    lng: -100.4275012,
     radioMetros: GUARDIA_RADIO_METROS_DEFAULT,
-    etiqueta: "Caseta ventas · Plaza Citadina (Paseo Constituyentes, El Pueblito)",
+    etiqueta: "Oficina de ventas · Misión La Gavia",
   },
 };
 

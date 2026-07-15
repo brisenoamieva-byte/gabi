@@ -30,16 +30,16 @@ export function AsesorBackofficeLink({
     return (
       <Link
         href={href}
-        className="group flex items-center gap-3 rounded-2xl border border-[#2DD4BF]/35 bg-[#2DD4BF]/10 p-4 shadow-sm transition hover:border-[#2DD4BF]/55 hover:bg-[#2DD4BF]/15 active:scale-[0.99] sm:col-span-2"
+        className="group flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:shadow-[0_4px_16px_rgba(15,23,42,0.06)] active:scale-[0.99]"
       >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#201044]/10 text-[#201044]">
-          <LayoutDashboard className="h-5 w-5" strokeWidth={2.25} />
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#201044]/[0.06] text-[#201044]">
+          <LayoutDashboard className="h-[18px] w-[18px]" strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-black text-[#201044]">Panel admin</h3>
-          <p className="text-xs text-slate-600">Leads, sembrado, reportes y equipo</p>
+          <h3 className="text-sm font-semibold text-[#201044]">Panel admin</h3>
+          <p className="text-xs text-slate-500">Leads, sembrado, reportes y equipo</p>
         </div>
-        <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#201044]" />
+        <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#201044]" />
       </Link>
     );
   }
@@ -47,9 +47,9 @@ export function AsesorBackofficeLink({
   return (
     <Link
       href={href}
-      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[#2DD4BF]/40 bg-[#2DD4BF]/12 px-3 text-xs font-bold text-[#201044] md:px-4 md:text-sm"
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:text-sm"
     >
-      <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden />
+      <LayoutDashboard className="h-3.5 w-3.5 shrink-0" aria-hidden strokeWidth={2} />
       Admin
     </Link>
   );

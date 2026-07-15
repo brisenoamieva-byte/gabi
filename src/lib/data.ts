@@ -1336,8 +1336,8 @@ export const zonaMisionLaGavia = {
   centro: 'Misión La Gavia',
   direccion: 'Corregidora, Querétaro',
   mapaEmbedUrl:
-    'https://maps.google.com/maps?q=Misi%C3%B3n+La+Gavia+Corregidora+Quer%C3%A9taro&t=m&z=15&output=embed',
-  mapaUrl: 'https://maps.app.goo.gl/benxrdUB9EpSgHNU8',
+    'https://maps.google.com/maps?q=20.5407382,-100.4275012&t=m&z=16&output=embed',
+  mapaUrl: 'https://maps.app.goo.gl/Vvqo3neNPWxdmuro8',
   mensajeAsesor:
     'Antes de hablar de torre y precio, ancla ubicación y bondades del entorno: salud, educación, consumo y plusvalía en Corregidora.',
   categoriasOrden: ['Salud', 'Educación', 'Supermercados', 'Centros comerciales', 'Restaurantes'],

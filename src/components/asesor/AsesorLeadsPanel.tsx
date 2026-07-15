@@ -66,6 +66,8 @@ import {
 } from "@/lib/comercial/prospecto-telefono";
 import {
   isProspectoEtapa,
+  PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO,
+  PROSPECTO_ETAPAS_EN_SEGUIMIENTO,
   PROSPECTO_ETAPAS,
   prospectoEtapaColor,
   prospectoEtapaLabel,
@@ -101,7 +103,7 @@ const MEDIO_CONTACTO_OPTIONS = [
 ] as const;
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#201044] focus:outline-none focus:ring-2 focus:ring-[#201044]/15";
+  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#201044]/40 focus:outline-none focus:ring-2 focus:ring-[#201044]/10";
 
 function AsesorLeadDrawer({
   asesorId,
@@ -314,15 +316,17 @@ function AsesorLeadDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
-      <div className="flex h-full w-full max-w-lg flex-col bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-[2px]">
+      <div className="flex h-full w-full max-w-lg flex-col bg-white shadow-[0_0_40px_rgba(15,23,42,0.18)]">
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
               Seguimiento
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h3 className="text-xl font-black text-[#201044]">{detail?.nombre ?? "Cargando…"}</h3>
+              <h3 className="text-lg font-semibold tracking-tight text-[#201044] md:text-xl">
+                {detail?.nombre ?? "Cargando…"}
+              </h3>
               {perfilCalificacion ? (
                 <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
               ) : null}
@@ -331,9 +335,9 @@ function AsesorLeadDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
 
@@ -359,7 +363,7 @@ function AsesorLeadDrawer({
                 >
                   <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
                   <div className="min-w-0">
-                    <p className="text-sm font-bold">Calificación del lead: {perfilCalificacion}</p>
+                    <p className="text-sm font-semibold">Calificación del lead: {perfilCalificacion}</p>
                     <p className="mt-0.5 text-xs leading-relaxed opacity-90">
                       {perfilCalificacionLeadDescription[perfilCalificacion]}
                     </p>
@@ -575,13 +579,13 @@ function AsesorLeadDrawer({
               <button
                 type="button"
                 onClick={() => setApartadoModalOpen(true)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100/80"
               >
-                <ShoppingBag className="h-4 w-4" />
+                <ShoppingBag className="h-4 w-4" strokeWidth={2} />
                 Solicitar apartado a gerencia
               </button>
             ) : solicitudPendiente && puedeAccionesComerciales ? (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900">
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm font-medium text-amber-900">
                 Solicitud de apartado pendiente — gerencia la registrará en sembrado.
               </p>
             ) : null}
@@ -589,9 +593,9 @@ function AsesorLeadDrawer({
               <Link
                 href="/cotizador"
                 onClick={() => prefillCotizadorFromProspecto(detail)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 py-3 text-sm font-bold text-[#201044]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-[#201044] transition hover:border-slate-300 hover:bg-slate-50"
               >
-                <Calculator className="h-4 w-4" />
+                <Calculator className="h-4 w-4" strokeWidth={2} />
                 Cotizar
               </Link>
             ) : null}
@@ -599,9 +603,9 @@ function AsesorLeadDrawer({
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" strokeWidth={2} />}
               Guardar seguimiento
             </button>
           </div>
@@ -637,7 +641,7 @@ export function AsesorLeadsPanel({
   const canManageAllProspectos = isLeadershipAsesorRol(asesorRol);
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
   const [periodFilter, setPeriodFilter] = useState<LeadPeriodFilter>("");
-  const [etapaFilter, setEtapaFilter] = useState("");
+  const [etapaFilter, setEtapaFilter] = useState(PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [prospectos, setProspectos] = useState<ProspectoListRow[]>([]);
@@ -907,6 +911,15 @@ export function AsesorLeadsPanel({
     [resumen],
   );
 
+  const vigentesCount = useMemo(
+    () =>
+      PROSPECTO_ETAPAS_EN_SEGUIMIENTO.reduce(
+        (sum, etapa) => sum + (resumen?.porEtapa?.[etapa] ?? 0),
+        0,
+      ),
+    [resumen],
+  );
+
   return (
     <div className="space-y-4">
       {playbookEnabled ? (
@@ -917,76 +930,80 @@ export function AsesorLeadsPanel({
         />
       ) : null}
 
-      <div className="rounded-2xl border border-[#201044]/8 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
               {canManageAllProspectos ? "Prospectos del desarrollo" : "Mis prospectos"}
             </p>
-            <h2 className="text-xl font-black text-[#201044]">{desarrolloNombre}</h2>
+            <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-[#201044]">
+              {desarrolloNombre}
+            </h2>
             <p className="mt-1 text-sm text-slate-500">
               {canManageAllProspectos
                 ? `${resumen?.total ?? 0} leads en ${desarrolloNombre}`
                 : `${resumen?.total ?? 0} leads asignados a ti`}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setViewMode("lista")}
-              className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold ${
-                viewMode === "lista"
-                  ? "bg-[#201044] text-white"
-                  : "border border-slate-200 bg-white text-slate-600"
-              }`}
-            >
-              <LayoutList className="h-4 w-4" />
-              Lista
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("tablero")}
-              className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold ${
-                viewMode === "tablero"
-                  ? "bg-[#201044] text-white"
-                  : "border border-slate-200 bg-white text-slate-600"
-              }`}
-            >
-              <Kanban className="h-4 w-4" />
-              Tablero
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-[#F7F6F2] p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("lista")}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  viewMode === "lista"
+                    ? "bg-white text-[#201044] shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <LayoutList className="h-3.5 w-3.5" strokeWidth={2} />
+                Lista
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("tablero")}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  viewMode === "tablero"
+                    ? "bg-white text-[#201044] shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Kanban className="h-3.5 w-3.5" strokeWidth={2} />
+                Tablero
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => {
                 resetNewLeadForm();
                 setShowNewLead(true);
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#201044]/15 bg-white px-4 py-2 text-sm font-bold text-[#201044]"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#201044] px-3.5 text-sm font-semibold text-white transition hover:bg-[#2a1760]"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" strokeWidth={2} />
               Nuevo lead
             </button>
             <button
               type="button"
               onClick={() => void loadLeads()}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#201044] px-4 py-2 text-sm font-bold text-white"
+              aria-label="Actualizar"
+              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#201044]"
             >
-              <RefreshCw className="h-4 w-4" />
-              Actualizar
+              <RefreshCw className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-1.5">
           {PERIOD_OPTIONS.map((option) => (
             <button
               key={option.id || "all"}
               type="button"
               onClick={() => setPeriodFilter(option.id)}
-              className={`rounded-full px-3 py-1 text-xs font-bold ${
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 periodFilter === option.id
-                  ? "bg-[#6cc24a] text-white"
-                  : "bg-slate-100 text-slate-600"
+                  ? "bg-[#201044] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
               }`}
             >
               {option.label}
@@ -995,33 +1012,52 @@ export function AsesorLeadsPanel({
         </div>
 
         {viewMode === "lista" ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setEtapaFilter("")}
-            className={`rounded-full px-3 py-1 text-xs font-bold ${
-              !etapaFilter ? "bg-[#201044] text-white" : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            Todos ({resumen?.total ?? 0})
-          </button>
-          {etapasActivas.map(([etapa, count]) => (
+          <div className="mt-3 flex flex-wrap gap-1.5">
             <button
-              key={etapa}
               type="button"
-              onClick={() => setEtapaFilter(etapa === etapaFilter ? "" : etapa)}
-              className={`rounded-full px-3 py-1 text-xs font-bold ${
-                etapaFilter === etapa ? "bg-[#201044] text-white" : "bg-slate-100 text-slate-600"
+              onClick={() => setEtapaFilter(PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                etapaFilter === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO
+                  ? "bg-[#201044] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
               }`}
             >
-              {prospectoEtapaLabel[etapa as ProspectoEtapa] ?? etapa} ({count})
+              Por atender ({vigentesCount})
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setEtapaFilter("")}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                !etapaFilter
+                  ? "bg-[#201044] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+              }`}
+            >
+              Todos ({resumen?.total ?? 0})
+            </button>
+            {etapasActivas.map(([etapa, count]) => (
+              <button
+                key={etapa}
+                type="button"
+                onClick={() =>
+                  setEtapaFilter(
+                    etapa === etapaFilter ? PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO : etapa,
+                  )
+                }
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  etapaFilter === etapa
+                    ? "bg-[#201044] text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+                }`}
+              >
+                {prospectoEtapaLabel[etapa as ProspectoEtapa] ?? etapa} ({count})
+              </button>
+            ))}
           </div>
         ) : null}
 
         <label className="relative mt-4 block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" strokeWidth={2} />
           <input
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
@@ -1037,24 +1073,29 @@ export function AsesorLeadsPanel({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         {loading ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-16 text-slate-500">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex items-center justify-center gap-2 px-6 py-16 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
             Cargando prospectos…
           </div>
         ) : !prospectos.length ? (
-          <p className="px-6 py-16 text-center text-sm text-slate-500">
-            {canManageAllProspectos
-              ? "Aún no hay prospectos registrados en este desarrollo."
-              : "Aún no tienes prospectos registrados. Crea uno con "}
-            {!canManageAllProspectos ? (
-              <>
-                <strong className="font-semibold text-[#201044]">Nuevo lead</strong>, haz un recorrido o
-                cotiza para que aparezcan aquí.
-              </>
+          <div className="px-6 py-16 text-center">
+            <p className="text-sm font-medium text-slate-600">
+              {etapaFilter === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO
+                ? "No hay prospectos por atender en este momento."
+                : canManageAllProspectos
+                  ? "Aún no hay prospectos registrados en este desarrollo."
+                  : "Aún no tienes prospectos registrados."}
+            </p>
+            {!canManageAllProspectos &&
+            etapaFilter !== PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO ? (
+              <p className="mt-1 text-sm text-slate-500">
+                Crea uno con <span className="font-semibold text-[#201044]">Nuevo lead</span>, haz un
+                recorrido o cotiza.
+              </p>
             ) : null}
-          </p>
+          </div>
         ) : viewMode === "tablero" ? (
           <LeadsKanbanBoard
             prospectos={prospectos}
@@ -1070,43 +1111,43 @@ export function AsesorLeadsPanel({
             {prospectos.map((row) => {
               const calificacion = resolvePerfilCalificacionLead(row);
               return (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(row.id)}
-                  className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#201044]/6 text-[#201044]">
-                    <UserRound className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-bold text-[#201044]">{row.nombre}</p>
-                      {calificacion ? (
-                        <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
-                      ) : null}
-                    </div>
-                    <p className="truncate text-sm text-slate-500">
-                      {row.email ?? row.telefono ?? "Sin contacto"}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      {formatLeadActivity(row.updated_at)}
-                      {canManageAllProspectos && row.asesorNombre
-                        ? ` · ${row.asesorNombre}`
-                        : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${
-                      prospectoEtapaColor[row.etapa as ProspectoEtapa] ??
-                      "bg-slate-100 text-slate-700"
-                    }`}
+                <li key={row.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(row.id)}
+                    className="flex w-full items-center gap-3.5 px-5 py-3.5 text-left transition hover:bg-[#F7F6F2]/80"
                   >
-                    {prospectoEtapaLabel[row.etapa as ProspectoEtapa] ?? row.etapa}
-                  </span>
-                </button>
-              </li>
-            );
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#201044]/[0.06] text-[#201044]">
+                      <UserRound className="h-4 w-4" strokeWidth={2} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-[#201044]">{row.nombre}</p>
+                        {calificacion ? (
+                          <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
+                        ) : null}
+                      </div>
+                      <p className="truncate text-sm text-slate-500">
+                        {row.email ?? row.telefono ?? "Sin contacto"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {formatLeadActivity(row.updated_at)}
+                        {canManageAllProspectos && row.asesorNombre
+                          ? ` · ${row.asesorNombre}`
+                          : ""}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium ${
+                        prospectoEtapaColor[row.etapa as ProspectoEtapa] ??
+                        "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {prospectoEtapaLabel[row.etapa as ProspectoEtapa] ?? row.etapa}
+                    </span>
+                  </button>
+                </li>
+              );
             })}
           </ul>
         )}
@@ -1143,14 +1184,17 @@ export function AsesorLeadsPanel({
       ) : null}
 
       {showNewLead ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]">
           <form
             onSubmit={(event) => void handleCreateLead(event)}
-            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+            className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.2)]"
           >
-            <h3 className="text-lg font-black text-[#201044]">Nuevo lead</h3>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+              Registro
+            </p>
+            <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-[#201044]">Nuevo lead</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Registro manual asignado a ti en {desarrolloNombre}.
+              Asignado a ti en {desarrolloNombre}.
             </p>
             <label className="mt-4 block text-sm">
               <span className="mb-1 block font-semibold text-slate-600">Nombre *</span>
@@ -1224,14 +1268,14 @@ export function AsesorLeadsPanel({
               <button
                 type="button"
                 onClick={() => setShowNewLead(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={creating || checkingTelefono || Boolean(newTelefonoError)}
-                className="rounded-xl bg-[#201044] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                className="rounded-lg bg-[#201044] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
               >
                 {creating ? "Guardando…" : "Crear lead"}
               </button>

@@ -117,7 +117,7 @@ export function LeadsKanbanBoard({
             <div
               key={etapa}
               className={`flex w-72 shrink-0 flex-col rounded-2xl border bg-slate-50/80 transition ${
-                isTarget ? "border-gabi-forest ring-2 ring-gabi-forest/20" : "border-slate-200"
+                isTarget ? "border-[#201044] ring-2 ring-[#201044]/15" : "border-slate-200"
               }`}
               onDragOver={(event) => {
                 if (!acceptsDrop) {
@@ -137,10 +137,10 @@ export function LeadsKanbanBoard({
             >
               <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
                 <span className={`h-2.5 w-2.5 rounded-full ${prospectoEtapaDot[etapa]}`} />
-                <h4 className="text-sm font-bold text-gabi-forest">
+                <h4 className="text-sm font-semibold text-[#201044]">
                   {prospectoEtapaLabel[etapa]}
                 </h4>
-                <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500">
+                <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500">
                   {cards.length}
                 </span>
               </div>
@@ -168,15 +168,15 @@ export function LeadsKanbanBoard({
                         setDraggingId(null);
                         setDropTarget(null);
                       }}
-                      className={`rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition ${
+                      className={`rounded-xl border border-slate-100 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition ${
                         canDrag(row) ? "cursor-grab active:cursor-grabbing" : "cursor-default"
-                      } ${draggingId === row.id ? "opacity-50" : "hover:border-gabi-forest/20"} ${
+                      } ${draggingId === row.id ? "opacity-50" : "hover:border-[#201044]/20"} ${
                         movingId === row.id ? "pointer-events-none opacity-60" : ""
                       }`}
                     >
                       <div className="flex items-start gap-2">
                         {canDrag(row) ? (
-                          <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
+                          <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" strokeWidth={2} />
                         ) : (
                           <span className="mt-0.5 h-4 w-4 shrink-0" />
                         )}
@@ -186,10 +186,10 @@ export function LeadsKanbanBoard({
                           className="min-w-0 flex-1 text-left"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                              <UserRound className="h-4 w-4 text-slate-400" />
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#201044]/[0.06]">
+                              <UserRound className="h-3.5 w-3.5 text-[#201044]" strokeWidth={2} />
                             </div>
-                            <p className="truncate font-bold text-gabi-forest">{row.nombre}</p>
+                            <p className="truncate text-sm font-semibold text-[#201044]">{row.nombre}</p>
                             {calificacion ? (
                               <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
                             ) : null}
@@ -198,8 +198,8 @@ export function LeadsKanbanBoard({
                             {row.email ?? "Sin email"}
                           </p>
                           {row.telefono ? (
-                            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-gabi-forest/20 px-2 py-1 text-xs font-semibold text-gabi-forest">
-                              <Phone className="h-3 w-3" />
+                            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600">
+                              <Phone className="h-3 w-3" strokeWidth={2} />
                               {row.telefono}
                             </span>
                           ) : null}

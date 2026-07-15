@@ -23,7 +23,7 @@ export function PerfilCalificacionLeadBadge({
 }: PerfilCalificacionLeadBadgeProps) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-black tabular-nums ${sizeClass[size]} ${perfilCalificacionLeadColor[calificacion]}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold tabular-nums ${sizeClass[size]} ${perfilCalificacionLeadColor[calificacion]}`}
       title={showTooltip ? perfilCalificacionLeadDescription[calificacion] : undefined}
       aria-label={`Calificación ${calificacion}`}
     >

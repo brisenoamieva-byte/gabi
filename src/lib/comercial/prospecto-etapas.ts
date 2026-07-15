@@ -9,6 +9,16 @@ export const PROSPECTO_ETAPAS = [
 
 export type ProspectoEtapa = (typeof PROSPECTO_ETAPAS)[number];
 
+/** Etapas abiertas que el asesor debe atender (prioridad en bandeja). */
+export const PROSPECTO_ETAPAS_EN_SEGUIMIENTO = [
+  "nuevo",
+  "contactado",
+  "cita",
+] as const satisfies readonly ProspectoEtapa[];
+
+/** Sentinel de filtro de listado: solo etapas en seguimiento. */
+export const PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO = "en_seguimiento";
+
 export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
   nuevo: "Nuevo / Por Contactar",
   contactado: "Contactado",

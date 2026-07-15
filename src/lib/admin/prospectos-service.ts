@@ -6,6 +6,8 @@ import {
   mergeProspectoEtapa,
   mergeProspectoEtapaFromVisita,
   normalizeProspectoEtapaValue,
+  PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO,
+  PROSPECTO_ETAPAS_EN_SEGUIMIENTO,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import type { CotizacionRecord, ProspectoRecord } from "@/lib/comercial/sembrado-status";
@@ -149,7 +151,9 @@ export const listProspectos = async (
     query = query.in("desarrollo_id", profile.desarrollosIds);
   }
 
-  if (filters.etapa) {
+  if (filters.etapa === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO) {
+    query = query.in("etapa", [...PROSPECTO_ETAPAS_EN_SEGUIMIENTO]);
+  } else if (filters.etapa) {
     query = query.eq("etapa", filters.etapa);
   }
 

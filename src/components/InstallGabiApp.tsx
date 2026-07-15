@@ -80,7 +80,7 @@ export function InstallGabiApp({ variant = "landing", className = "" }: InstallG
 
     return (
       <div
-        className={`rounded-2xl border border-gabi-emerald/25 bg-gabi-emerald/10 px-4 py-3 text-sm font-semibold text-gabi-navy ${className}`.trim()}
+        className={`rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 ${className}`.trim()}
       >
         gabi está instalada en este dispositivo.
       </div>
@@ -89,7 +89,7 @@ export function InstallGabiApp({ variant = "landing", className = "" }: InstallG
 
   const buttonClass =
     variant === "dashboard"
-      ? "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/12 bg-white px-4 text-sm font-bold text-[#201044] transition hover:bg-slate-50"
+      ? "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#201044] transition hover:border-slate-300 hover:bg-slate-50"
       : variant === "compact"
         ? "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gabi-navy px-4 text-sm font-bold text-white"
         : "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gabi-navy px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-gabi-navy-light";
