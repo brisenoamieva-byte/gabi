@@ -8,6 +8,12 @@ import {
   type GuardiaCasetaConfig,
   type GuardiaCasetaPunto,
 } from "@/lib/comercial/guardia-caseta";
+import {
+  canSalidaVespertinoPorCorrida,
+  resolveGuardiaCorridaEstado,
+  resolvePendienteConCorrida,
+  type GuardiaCorridaEstado,
+} from "@/lib/comercial/guardia-corrida";
 import type { GuardiaMarcajeResumen, GuardiaMarcajeTipo } from "@/lib/comercial/guardia-marcaje-types";
 import {
   formatDateYmd,
@@ -41,6 +47,8 @@ export type AsesorGuardiaHoy = {
     radioMetros: number;
   };
   pendiente: GuardiaMarcajeTipo | null;
+  /** Guardia corrida: entrada matutina + salida vespertina cubren ambas jornadas. */
+  corrida: GuardiaCorridaEstado;
 };
 
 type CasetaRow = {
@@ -220,19 +228,6 @@ async function listMarcajesForAsesorFecha(
   return (data ?? []) as MarcajeRow[];
 }
 
-function resolvePendiente(
-  entrada: GuardiaMarcajeResumen | null,
-  salida: GuardiaMarcajeResumen | null,
-): GuardiaMarcajeTipo | null {
-  if (!entrada) {
-    return "entrada";
-  }
-  if (!salida) {
-    return "salida";
-  }
-  return null;
-}
-
 /**
  * Resuelve la asignación del turno (propia, ajena para cobertura, o crea una si no hay).
  */
@@ -352,6 +347,14 @@ export const getGuardiasHoyForAsesor = async (
     (asignaciones ?? []).map((row) => [row.turno as GuardiaTurno, row]),
   );
   const misMarcajes = await listMarcajesForAsesorFecha(asesorId, desarrolloId, today);
+  const dayRefs = misMarcajes.map((item) => ({ turno: item.turno, tipo: item.tipo }));
+  const corrida = resolveGuardiaCorridaEstado(dayRefs);
+  const entradaMatutina = misMarcajes.find(
+    (item) => item.turno === "matutino" && item.tipo === "entrada",
+  );
+  const salidaVespertina = misMarcajes.find(
+    (item) => item.turno === "vespertino" && item.tipo === "salida",
+  );
 
   return GUARDIA_TURNOS.map((turno) => {
     const row = byTurno.get(turno);
@@ -361,8 +364,16 @@ export const getGuardiasHoyForAsesor = async (
     const marcajesRows = misMarcajes.filter((item) => item.turno === turno);
     const entradaRow = marcajesRows.find((item) => item.tipo === "entrada");
     const salidaRow = marcajesRows.find((item) => item.tipo === "salida");
-    const entrada = entradaRow ? toMarcajeResumen(entradaRow) : null;
-    const salida = salidaRow ? toMarcajeResumen(salidaRow) : null;
+    const entrada = entradaRow
+      ? toMarcajeResumen(entradaRow)
+      : turno === "vespertino" && corrida && entradaMatutina
+        ? toMarcajeResumen(entradaMatutina)
+        : null;
+    const salida = salidaRow
+      ? toMarcajeResumen(salidaRow)
+      : turno === "matutino" && corrida === "completa" && salidaVespertina
+        ? toMarcajeResumen(salidaVespertina)
+        : null;
 
     return {
       asignacionId: (row?.id as string | undefined) ?? `pendiente-${turno}`,
@@ -380,7 +391,13 @@ export const getGuardiasHoyForAsesor = async (
         etiqueta: formatCasetaEtiquetaResumen(caseta),
         radioMetros: caseta.radioMetros,
       },
-      pendiente: resolvePendiente(entrada, salida),
+      pendiente: resolvePendienteConCorrida(
+        turno,
+        Boolean(entradaRow),
+        Boolean(salidaRow),
+        dayRefs,
+      ),
+      corrida,
     };
   });
 };
@@ -451,7 +468,15 @@ export async function registerGuardiaMarcaje(input: {
   }
 
   if (input.tipo === "salida" && !tipos.has("entrada")) {
-    throw new Error("Debes registrar entrada antes de la salida.");
+    const dayMarcajes = await listMarcajesForAsesorFecha(input.asesorId, input.desarrolloId, today);
+    const allowCorrida =
+      turno === "vespertino" &&
+      canSalidaVespertinoPorCorrida(
+        dayMarcajes.map((item) => ({ turno: item.turno, tipo: item.tipo })),
+      );
+    if (!allowCorrida) {
+      throw new Error("Debes registrar entrada antes de la salida.");
+    }
   }
 
   const caseta = await getCasetaConfig(input.desarrolloId);

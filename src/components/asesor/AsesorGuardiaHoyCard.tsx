@@ -251,11 +251,34 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
                           Cobertura
                         </span>
                       ) : null}
+                      {guardia.corrida === "en_curso" ? (
+                        <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+                          Corrida
+                        </span>
+                      ) : null}
+                      {guardia.corrida === "completa" ? (
+                        <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+                          Corrida cubierta
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-0.5 text-sm text-slate-500">{guardia.horario}</p>
                     {!guardia.esPropia && !guardia.esCobertura ? (
                       <p className="mt-1 text-xs text-slate-500">
                         Sin asignación en calendario · puedes marcar presencia
+                      </p>
+                    ) : null}
+                    {guardia.corrida === "en_curso" && guardia.turno === "matutino" ? (
+                      <p className="mt-1 text-xs text-sky-800">
+                        Guardia corrida · puedes cerrar aquí o registrar la salida en vespertino
+                        (cubre ambas).
+                      </p>
+                    ) : null}
+                    {guardia.corrida === "en_curso" &&
+                    guardia.turno === "vespertino" &&
+                    pendiente === "salida" ? (
+                      <p className="mt-1 text-xs text-sky-800">
+                        Guardia corrida · esta salida cubre matutino y vespertino
                       </p>
                     ) : null}
                     {guardia.notas ? (
@@ -305,12 +328,16 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
                         <Icon className="h-4 w-4" strokeWidth={2} />
                       )}
                       {pendiente === "salida"
-                        ? "Registrar salida y cuestionario"
+                        ? guardia.corrida === "en_curso" && guardia.turno === "vespertino"
+                          ? "Registrar salida corrida y cuestionario"
+                          : "Registrar salida y cuestionario"
                         : `Registrar ${guardiaMarcajeTipoLabel[pendiente].toLowerCase()}`}
                     </button>
                   ) : (
                     <p className="text-xs font-medium text-emerald-700">
-                      Turno completo · entrada y salida registradas
+                      {guardia.corrida === "completa"
+                        ? "Guardia corrida completa · matutino y vespertino cubiertos"
+                        : "Turno completo · entrada y salida registradas"}
                     </p>
                   )}
                 </div>

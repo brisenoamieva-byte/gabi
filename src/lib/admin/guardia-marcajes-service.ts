@@ -6,6 +6,7 @@ import type {
 import type { AdminProfile } from "@/lib/admin/types";
 import { getCasetaConfig, hasGuardiaCasetaConfig } from "@/lib/asesores/guardias-service";
 import { formatCasetaEtiquetaResumen } from "@/lib/comercial/guardia-caseta";
+import { isGuardiaCorridaCompleta } from "@/lib/comercial/guardia-corrida";
 import type { GuardiaMarcajeTipo } from "@/lib/comercial/guardia-marcaje-types";
 import {
   formatDateYmd,
@@ -60,19 +61,19 @@ export async function listGuardiaMarcajesDia(
     throw new Error(asignacionesError.message);
   }
 
-  const asignacionIds = (asignaciones ?? []).map((row) => row.id as string);
   let marcajes: Array<{
     asignacion_id: string;
     asesor_id: string;
+    turno: string;
     tipo: string;
     registrado_at: string;
     distancia_metros: number;
   }> = [];
 
-  if (asignacionIds.length) {
+  {
     const { data, error } = await supabase
       .from("guardia_marcajes")
-      .select("asignacion_id, asesor_id, tipo, registrado_at, distancia_metros")
+      .select("asignacion_id, asesor_id, turno, tipo, registrado_at, distancia_metros")
       .eq("desarrollo_id", desarrolloId)
       .eq("fecha", fecha);
 
@@ -84,10 +85,15 @@ export async function listGuardiaMarcajesDia(
   }
 
   const marcajesByAsignacion = new Map<string, typeof marcajes>();
+  const marcajesByAsesor = new Map<string, Array<{ turno: string; tipo: string }>>();
   for (const item of marcajes) {
     const list = marcajesByAsignacion.get(item.asignacion_id) ?? [];
     list.push(item);
     marcajesByAsignacion.set(item.asignacion_id, list);
+
+    const refs = marcajesByAsesor.get(item.asesor_id) ?? [];
+    refs.push({ turno: item.turno, tipo: item.tipo });
+    marcajesByAsesor.set(item.asesor_id, refs);
   }
 
   const filas: GuardiaMarcajeAdminRow[] = (asignaciones ?? []).map((row) => {
@@ -118,11 +124,18 @@ export async function listGuardiaMarcajesDia(
         }
       : null;
 
+    const candidatosCorrida = [entradaRaw?.asesor_id, salidaRaw?.asesor_id].filter(
+      (id): id is string => Boolean(id),
+    );
+    const cubiertoPorCorrida = candidatosCorrida.some((id) =>
+      isGuardiaCorridaCompleta(marcajesByAsesor.get(id) ?? []),
+    );
+
     let cumplimiento: GuardiaMarcajeAdminRow["cumplimiento"] = "sin_publicar";
     if (estadoAsignacion === "publicada") {
-      if (entrada && salida) {
+      if ((entrada && salida) || cubiertoPorCorrida) {
         cumplimiento = "completo";
-      } else if (!entrada) {
+      } else if (!entrada && !cubiertoPorCorrida) {
         cumplimiento = "pendiente_entrada";
       } else {
         cumplimiento = "pendiente_salida";
