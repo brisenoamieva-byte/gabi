@@ -52,6 +52,8 @@ export type GaviaEdificioLayout = {
   row: number;
   tipologia: GaviaTipologia;
   etapa1?: boolean;
+  /** Disponible para seleccionar y cotizar en el plano. */
+  cotizable?: boolean;
   /** Si el edificio no tiene un lado en inventario. */
   lados?: GaviaLado[];
   /**
@@ -98,18 +100,18 @@ const EDIFICIO_IDS = new Set<string>([
 export const MISION_LA_GAVIA_EDIFICIOS: GaviaEdificioLayout[] = [
   // Columna oeste 2R — acceso desde calle este (mirando al oeste)
   { id: "O", col: 2, row: 1, tipologia: "2R", etapa1: true, vistaCalle: "stack-der-izq" },
-  { id: "P", col: 2, row: 2, tipologia: "2R", etapa1: true, vistaCalle: "stack-der-izq" },
-  { id: "Q", col: 2, row: 3, tipologia: "2R", etapa1: true, vistaCalle: "stack-der-izq" },
-  { id: "R", col: 2, row: 4, tipologia: "2R", etapa1: true, vistaCalle: "stack-der-izq" },
+  { id: "P", col: 2, row: 2, tipologia: "2R", etapa1: true, cotizable: true, vistaCalle: "stack-der-izq" },
+  { id: "Q", col: 2, row: 3, tipologia: "2R", etapa1: true, cotizable: true, vistaCalle: "stack-der-izq" },
+  { id: "R", col: 2, row: 4, tipologia: "2R", etapa1: true, cotizable: true, vistaCalle: "stack-der-izq" },
 
   // Manzana central 3R — fila norte (vista desde calle norte, mirando sur)
-  { id: "N", col: 4, row: 1, tipologia: "3R", etapa1: true, vistaCalle: "row-der-izq" },
+  { id: "N", col: 4, row: 1, tipologia: "3R", etapa1: true, cotizable: true, vistaCalle: "row-der-izq" },
   { id: "M", col: 5, row: 1, tipologia: "3R", etapa1: true, vistaCalle: "row-der-izq" },
   { id: "L", col: 6, row: 1, tipologia: "3R", vistaCalle: "row-der-izq" },
   { id: "K", col: 7, row: 1, tipologia: "3R", vistaCalle: "row-der-izq" },
 
   // Manzana central 3R — fila sur (vista desde calle sur, mirando norte)
-  { id: "A", col: 4, row: 2, tipologia: "3R", etapa1: true, vistaCalle: "row-izq-der" },
+  { id: "A", col: 4, row: 2, tipologia: "3R", etapa1: true, cotizable: true, vistaCalle: "row-izq-der" },
   { id: "B", col: 5, row: 2, tipologia: "3R", etapa1: true, vistaCalle: "row-izq-der" },
   { id: "C", col: 6, row: 2, tipologia: "3R", vistaCalle: "row-izq-der" },
   { id: "D", col: 7, row: 2, tipologia: "3R", vistaCalle: "row-izq-der" },
@@ -209,6 +211,13 @@ export function getGaviaEdificioLados(edificio: GaviaEdificioLayout): GaviaLado[
 export function isGaviaVistaApilada(edificio: GaviaEdificioLayout): boolean {
   const vista = edificio.vistaCalle ?? "row-izq-der";
   return vista === "stack-der-izq" || vista === "stack-izq-der";
+}
+
+export function isGaviaEdificioCotizable(edificio: GaviaEdificioLayout | GaviaEdificioId): boolean {
+  if (typeof edificio === "string") {
+    return MISION_LA_GAVIA_EDIFICIOS.some((item) => item.id === edificio && item.cotizable);
+  }
+  return Boolean(edificio.cotizable);
 }
 
 /**

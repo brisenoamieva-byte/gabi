@@ -1642,12 +1642,27 @@ export const datosBancariosPasajeAlamos: DatosBancarios = {
   reportarA: 'cobranza@bbrhabitarea.com',
 }
 
+/** Datos bancarios para apartado — Misión La Gavia (fideicomiso del proyecto). */
+export const datosBancariosMisionLaGavia: DatosBancarios = {
+  razonSocial: 'Fideicomiso 9268/2025 GFM',
+  rfc: 'FGF250918RF4',
+  banco: 'Banca Mifel',
+  sucursal: '—',
+  cuenta: '01600831603',
+  clabe: '042180016008316037',
+  concepto: 'NOMBRE, DESARROLLO Y NUM. DE UNIDAD · MISIÓN LA GAVIA',
+  reportarA: 'cobranza@bbrhabitarea.com',
+}
+
 /** @deprecated Usar getDatosBancarios(desarrolloId) */
 export const datosBancarios = datosBancariosLaVista
 
 export const getDatosBancarios = (desarrolloId?: string | null): DatosBancarios => {
   if (desarrolloId === 'pasaje-alamos') {
     return datosBancariosPasajeAlamos
+  }
+  if (desarrolloId === 'mision-la-gavia') {
+    return datosBancariosMisionLaGavia
   }
   if (desarrolloId && INVESTTI_DESARROLLO_IDS.includes(desarrolloId)) {
     return datosBancariosPasajeAlamos

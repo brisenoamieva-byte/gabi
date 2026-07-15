@@ -24,6 +24,10 @@ import {
 } from "@/lib/comercial/sembrado-status";
 import { hasDisponibilidadPlano } from "@/lib/disponibilidad/planos";
 import {
+  decodeMisionLaGaviaUnidad,
+  isGaviaEdificioCotizable,
+} from "@/lib/disponibilidad/planos/mision-la-gavia";
+import {
   cotizadorHrefForUnidad,
   recorridoHrefForUnidad,
 } from "@/lib/disponibilidad/unit-deep-links";
@@ -462,24 +466,40 @@ export function DisponibilidadPanel({
                   <div className="flex flex-wrap items-center gap-1">
                     {!editMode ? (
                       <>
-                        <Link
-                          href={cotizadorHrefForUnidad(row)}
-                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
-                          title={`Cotizar ${row.unidad}`}
-                          aria-label={`Cotizar ${row.unidad}`}
-                        >
-                          <Calculator className="h-4 w-4" strokeWidth={2} />
-                        </Link>
-                        {row.visitable ? (
-                          <Link
-                            href={recorridoHrefForUnidad(row)}
-                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
-                            title={`Recorrido ${row.unidad}`}
-                            aria-label={`Recorrido ${row.unidad}`}
-                          >
-                            <MapPinned className="h-4 w-4" strokeWidth={2} />
-                          </Link>
-                        ) : null}
+                        {(() => {
+                          const decoded = decodeMisionLaGaviaUnidad(row.unidad);
+                          const canQuote =
+                            !decoded || isGaviaEdificioCotizable(decoded.edificio);
+                          if (!canQuote) {
+                            return (
+                              <span className="px-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                No cotizable
+                              </span>
+                            );
+                          }
+                          return (
+                            <>
+                              <Link
+                                href={cotizadorHrefForUnidad(row)}
+                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
+                                title={`Cotizar ${row.unidad}`}
+                                aria-label={`Cotizar ${row.unidad}`}
+                              >
+                                <Calculator className="h-4 w-4" strokeWidth={2} />
+                              </Link>
+                              {row.visitable ? (
+                                <Link
+                                  href={recorridoHrefForUnidad(row)}
+                                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
+                                  title={`Recorrido ${row.unidad}`}
+                                  aria-label={`Recorrido ${row.unidad}`}
+                                >
+                                  <MapPinned className="h-4 w-4" strokeWidth={2} />
+                                </Link>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </>
                     ) : null}
                     {editMode ? (

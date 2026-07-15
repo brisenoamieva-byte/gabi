@@ -549,15 +549,35 @@ function AsesorLeadDrawer({
                         className="rounded-xl border border-slate-100 px-4 py-3 text-sm"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-bold text-[#201044]">
                               {cotizacion.unidad_numero
                                 ? `Unidad ${cotizacion.unidad_numero}`
                                 : "Cotización"}
                             </p>
                             <p className="text-slate-500">{cotizacion.esquema_pago ?? "—"}</p>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              {cotizacion.created_at ? (
+                                <span className="text-[10px] text-slate-400">
+                                  {new Date(cotizacion.created_at).toLocaleDateString("es-MX", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              ) : null}
+                              {cotizacion.pdf_generado_at ? (
+                                <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100">
+                                  PDF enviado
+                                </span>
+                              ) : (
+                                <span className="rounded-md bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 ring-1 ring-slate-100">
+                                  Cotizada
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <p className="font-bold tabular-nums">
+                          <p className="shrink-0 font-bold tabular-nums">
                             {cotizacion.precio_total
                               ? formatPrice(Number(cotizacion.precio_total))
                               : "—"}

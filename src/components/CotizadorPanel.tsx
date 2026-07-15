@@ -249,6 +249,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         esquema={props.misionLaGaviaEsquema ?? "contado"}
         showSelectors={props.showSelectors ?? true}
         showCopy={props.showCopy}
+        showPdf={props.showPdf ?? props.showCopy}
         onClusterChange={props.onClusterChange}
         onPrototipoChange={props.onPrototipoChange}
         onUnidadChange={props.onUnidadChange}
