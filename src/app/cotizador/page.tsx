@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { ArrowLeft, Copy, LogOut, MapPinned, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
 import {
   RecorridoComplianceGate,
@@ -84,7 +84,23 @@ function resolveDefaultPrototipo(
 type CatalogStatus = "idle" | "loading" | "ready" | "redirecting";
 
 export default function CotizadorPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-slate-500">
+          <p className="text-sm font-medium">Cargando cotizador…</p>
+        </main>
+      }
+    >
+      <CotizadorPageContent />
+    </Suspense>
+  );
+}
+
+function CotizadorPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const deepLinkApplied = useRef(false);
   const { authReady, user, desarrollo, portal } = useRequireAsesorSession();
   const [catalogStatus, setCatalogStatus] = useState<CatalogStatus>("idle");
   const [catalog, setCatalog] = useState<CotizadorCatalog>({ clusters: [], prototipos: [] });
@@ -199,6 +215,43 @@ export default function CotizadorPage() {
   }, [authReady, desarrollo, router, user?.id]);
 
   useEffect(() => {
+    if (catalogStatus !== "ready" || deepLinkApplied.current) {
+      return;
+    }
+
+    const clusterFromUrl = searchParams.get("clusterId")?.trim() || undefined;
+    const prototipoFromUrl = searchParams.get("prototipoId")?.trim() || undefined;
+    const unidadFromUrl = searchParams.get("unidadId")?.trim() || undefined;
+
+    if (!clusterFromUrl && !prototipoFromUrl && !unidadFromUrl) {
+      return;
+    }
+
+    deepLinkApplied.current = true;
+
+    if (clusterFromUrl && catalog.clusters.some((cluster) => cluster.id === clusterFromUrl)) {
+      setClusterId(clusterFromUrl);
+      setPrototipoId(
+        prototipoFromUrl &&
+          getPrototiposCotizables(clusterFromUrl, catalog).some(
+            (prototipo) => prototipo.id === prototipoFromUrl,
+          )
+          ? prototipoFromUrl
+          : resolveDefaultPrototipo(clusterFromUrl, null, catalog),
+      );
+    } else if (
+      prototipoFromUrl &&
+      catalog.prototipos.some((prototipo) => prototipo.id === prototipoFromUrl)
+    ) {
+      setPrototipoId(prototipoFromUrl);
+    }
+
+    if (unidadFromUrl) {
+      setUnidadId(unidadFromUrl);
+    }
+  }, [catalog, catalogStatus, searchParams]);
+
+  useEffect(() => {
     if (catalogStatus !== "ready") {
       return;
     }
@@ -238,6 +291,20 @@ export default function CotizadorPage() {
     desarrollo?.id,
     clusterId || undefined,
   );
+
+  useEffect(() => {
+    if (unidadId || catalogStatus !== "ready") {
+      return;
+    }
+    const unidadCode = searchParams.get("unidad")?.trim();
+    if (!unidadCode || !inventarioUnidades.length) {
+      return;
+    }
+    const match = inventarioUnidades.find((unit) => unit.unidad === unidadCode);
+    if (match) {
+      setUnidadId(match.id);
+    }
+  }, [catalogStatus, inventarioUnidades, searchParams, unidadId]);
 
   const activeDatosBancarios = useMemo(
     () => getDatosBancarios(desarrollo?.id),
@@ -326,19 +393,19 @@ export default function CotizadorPage() {
 
   return (
     <main className="min-h-screen bg-[#F2F0E9] text-[#1e293b]">
-      <header className="border-b border-[#201044]/10 bg-white px-4 py-4 shadow-sm sm:px-6 md:px-10">
+      <header className="border-b border-[#201044]/10 bg-white px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-sm sm:px-6 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-1 items-center gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
             {isInvesttiTerreno ? (
               <InvesttiDesarrolloLogo desarrolloId={desarrollo.id} size="header" />
             ) : desarrollo.logo ? (
-              <div className="flex h-[4.25rem] w-[10.5rem] shrink-0 items-center justify-center rounded-2xl border border-[#201044]/8 bg-[#F2F0E9] px-3 py-2 shadow-sm">
+              <div className="flex h-14 w-[7.5rem] shrink-0 items-center justify-center rounded-2xl border border-[#201044]/8 bg-[#F2F0E9] px-2 py-1.5 shadow-sm sm:h-[4.25rem] sm:w-[10.5rem] sm:px-3 sm:py-2">
                 <Image
                   src={desarrollo.logo}
                   alt={desarrollo.nombre}
                   width={220}
                   height={88}
-                  className="h-auto max-h-14 w-full object-contain"
+                  className="h-auto max-h-10 w-full object-contain sm:max-h-14"
                   priority
                 />
               </div>

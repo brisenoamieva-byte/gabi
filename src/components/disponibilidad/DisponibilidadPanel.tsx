@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Building2,
+  Calculator,
   ExternalLink,
   Loader2,
+  MapPinned,
   Pencil,
   ToggleLeft,
   ToggleRight,
@@ -13,13 +15,21 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
+import { DisponibilidadPlanoGavia } from "@/components/disponibilidad/DisponibilidadPlanoGavia";
 import type { AsesorDisponibilidadRow } from "@/lib/inventario/asesor-disponibilidad";
 import { formatPrice, type Cluster, type Desarrollo } from "@/lib/data";
 import {
   estatusSembradoLabel,
   type SembradoUnidadRow,
 } from "@/lib/comercial/sembrado-status";
+import { hasDisponibilidadPlano } from "@/lib/disponibilidad/planos";
+import {
+  cotizadorHrefForUnidad,
+  recorridoHrefForUnidad,
+} from "@/lib/disponibilidad/unit-deep-links";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+
+type ViewMode = "plano" | "lista";
 
 type DisponibilidadPanelProps = {
   fromAdmin?: boolean;
@@ -77,6 +87,8 @@ export function DisponibilidadPanel({
   const [error, setError] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<SembradoUnidadRow | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("plano");
+  const [highlightUnidadId, setHighlightUnidadId] = useState<string | null>(null);
 
   const isAdminEditMode = fromAdmin && canEditSembrado;
   const needsAsesorAuth = !isAdminEditMode;
@@ -275,7 +287,7 @@ export function DisponibilidadPanel({
 
   if (!adminChecked || (needsAsesorAuth && !asesorAuthReady) || !catalogReady || !user || !desarrollo) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9]">
+      <main className="flex min-h-screen items-center justify-center bg-[#F7F6F2]">
         <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
       </main>
     );
@@ -283,42 +295,46 @@ export function DisponibilidadPanel({
 
   const activeCluster = clusters.find((item) => item.id === clusterId);
   const backHref = editMode ? "/admin/sembrado" : "/dashboard";
+  const showPlano = hasDisponibilidadPlano(desarrollo.id);
+  const effectiveView: ViewMode = showPlano ? viewMode : "lista";
 
   return (
-    <main className="min-h-screen bg-[#F2F0E9] text-[#201044]">
-      <header className="border-b border-[#201044]/8 bg-white/90 px-5 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
+    <main className="min-h-screen bg-[#F7F6F2] text-[#201044]">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#F7F6F2]/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-5">
           <Link
             href={backHref}
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-[#201044]/12 bg-white"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+            aria-label="Volver"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
               {editMode ? "Sembrado · edición gerencia" : "Sembrado · solo lectura"}
             </p>
-            <h1 className="truncate text-lg font-black">Disponibilidad</h1>
+            <h1 className="truncate text-lg font-semibold tracking-tight">Disponibilidad</h1>
             <p className="truncate text-xs text-slate-500">{desarrollo.nombre}</p>
           </div>
           {editMode ? (
             <Link
               href="/admin/sembrado"
-              className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-[#201044] px-3 py-2 text-xs font-bold text-white"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg bg-[#201044] px-3 text-xs font-semibold text-white"
             >
-              Sembrado completo
+              <span className="sm:hidden">Admin</span>
+              <span className="hidden sm:inline">Sembrado completo</span>
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           ) : null}
         </div>
       </header>
 
-      <section className="mx-auto max-w-3xl space-y-4 px-5 py-6">
+      <section className="mx-auto max-w-3xl space-y-4 px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-5 md:py-6">
         {editMode ? (
           <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
             Modo gerencia: puedes cambiar <strong>Recorrido</strong>, <strong>precio</strong> y
             curación. Para apartados y cobranza usa{" "}
-            <Link href="/admin/sembrado" className="font-bold underline">
+            <Link href="/admin/sembrado" className="font-semibold underline">
               Admin → Sembrado
             </Link>
             .
@@ -332,10 +348,10 @@ export function DisponibilidadPanel({
                 key={cluster.id}
                 type="button"
                 onClick={() => setClusterId(cluster.id)}
-                className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   clusterId === cluster.id
                     ? "bg-[#201044] text-white"
-                    : "bg-white text-[#201044] ring-1 ring-[#201044]/10"
+                    : "bg-white text-[#201044] ring-1 ring-slate-200"
                 }`}
               >
                 {cluster.nombre}
@@ -345,19 +361,46 @@ export function DisponibilidadPanel({
         ) : null}
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-white p-3 text-center shadow-sm">
-            <p className="text-xl font-black text-emerald-700">{resumen.disponibles}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Disponibles</p>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-3 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <p className="text-xl font-semibold tabular-nums text-emerald-700">{resumen.disponibles}</p>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Disponibles</p>
           </div>
-          <div className="rounded-xl bg-white p-3 text-center shadow-sm">
-            <p className="text-xl font-black text-amber-700">{resumen.apartados}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Apartados</p>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-3 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <p className="text-xl font-semibold tabular-nums text-amber-700">{resumen.apartados}</p>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Apartados</p>
           </div>
-          <div className="rounded-xl bg-white p-3 text-center shadow-sm">
-            <p className="text-xl font-black text-slate-600">{resumen.vendidos}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Vendidos</p>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-3 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <p className="text-xl font-semibold tabular-nums text-slate-600">{resumen.vendidos}</p>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Vendidos</p>
           </div>
         </div>
+
+        {showPlano ? (
+          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <button
+              type="button"
+              onClick={() => setViewMode("plano")}
+              className={`min-h-11 rounded-md px-4 text-sm font-medium transition ${
+                effectiveView === "plano"
+                  ? "bg-[#201044] text-white"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              Plano
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("lista")}
+              className={`min-h-11 rounded-md px-4 text-sm font-medium transition ${
+                effectiveView === "lista"
+                  ? "bg-[#201044] text-white"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              Lista
+            </button>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -365,30 +408,46 @@ export function DisponibilidadPanel({
           </div>
         ) : null}
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <p className="text-sm font-bold">{activeCluster?.nombre ?? "Unidades"}</p>
-            <p className="text-xs text-slate-500">
-              {editMode
-                ? "Misma vista que el asesor, con controles de edición."
-                : "Estatus en tiempo real desde sembrado (sin datos de clientes)."}
-            </p>
+        {loading ? (
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200/90 bg-white px-4 py-8 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Cargando unidades…
           </div>
-
-          {loading ? (
-            <div className="flex items-center gap-2 px-4 py-8 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando unidades…
+        ) : effectiveView === "plano" ? (
+          <DisponibilidadPlanoGavia
+            unidades={unidades}
+            onSelectUnidad={(row) => {
+              setHighlightUnidadId(row.unidadId);
+              setViewMode("lista");
+              window.setTimeout(() => {
+                document
+                  .getElementById(`unidad-${row.unidadId}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }, 50);
+            }}
+          />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="border-b border-slate-100 px-4 py-3">
+              <p className="text-sm font-semibold">{activeCluster?.nombre ?? "Unidades"}</p>
+              <p className="text-xs text-slate-500">
+                {editMode
+                  ? "Misma vista que el asesor, con controles de edición."
+                  : "Estatus en tiempo real desde sembrado (sin datos de clientes)."}
+              </p>
             </div>
-          ) : (
+
             <ul className="divide-y divide-slate-100">
               {unidades.map((row) => (
                 <li
                   key={row.unidadId}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                  id={`unidad-${row.unidadId}`}
+                  className={`flex flex-col gap-3 px-4 py-3 text-sm transition sm:flex-row sm:items-center sm:justify-between ${
+                    highlightUnidadId === row.unidadId ? "bg-emerald-50/80" : ""
+                  }`}
                 >
-                  <div className="min-w-0">
-                    <p className="font-bold text-[#201044]">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-[#201044]">
                       {row.tipo === "oficina" ? "Of." : "Depto"} {row.unidad}
                       {row.prototipoId ? (
                         <span className="ml-1 font-normal text-slate-500">· {row.prototipoId}</span>
@@ -400,14 +459,36 @@ export function DisponibilidadPanel({
                       {row.visitable ? " · Recorrido" : ""}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
+                    {!editMode ? (
+                      <>
+                        <Link
+                          href={cotizadorHrefForUnidad(row)}
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
+                          title={`Cotizar ${row.unidad}`}
+                          aria-label={`Cotizar ${row.unidad}`}
+                        >
+                          <Calculator className="h-4 w-4" strokeWidth={2} />
+                        </Link>
+                        {row.visitable ? (
+                          <Link
+                            href={recorridoHrefForUnidad(row)}
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
+                            title={`Recorrido ${row.unidad}`}
+                            aria-label={`Recorrido ${row.unidad}`}
+                          >
+                            <MapPinned className="h-4 w-4" strokeWidth={2} />
+                          </Link>
+                        ) : null}
+                      </>
+                    ) : null}
                     {editMode ? (
                       <>
                         <button
                           type="button"
                           disabled={togglingId === row.unidadId}
                           onClick={() => void toggleVisitable(row)}
-                          className="rounded-lg p-2 text-gabi-forest hover:bg-slate-100 disabled:opacity-50"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100 disabled:opacity-50"
                           title={row.visitable ? "Quitar de recorrido" : "Mostrar en recorrido"}
                         >
                           {togglingId === row.unidadId ? (
@@ -426,7 +507,7 @@ export function DisponibilidadPanel({
                               setEditRow(full);
                             }
                           }}
-                          className="rounded-lg p-2 text-gabi-forest hover:bg-slate-100"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
                           title="Editar unidad"
                         >
                           <Pencil className="h-4 w-4" />
@@ -434,21 +515,22 @@ export function DisponibilidadPanel({
                       </>
                     ) : null}
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${estatusClass(row.estatusSembrado)}`}
+                      className={`max-w-[11rem] truncate rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${estatusClass(row.estatusSembrado)}`}
+                      title={row.estatusLabel}
                     >
                       {row.estatusLabel}
                     </span>
                   </div>
                 </li>
               ))}
-              {!unidades.length && !loading ? (
+              {!unidades.length ? (
                 <li className="px-4 py-8 text-center text-sm text-slate-500">
                   No hay unidades en este segmento.
                 </li>
               ) : null}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
 
         {!editMode ? (
           <p className="flex items-center gap-2 text-xs text-slate-400">

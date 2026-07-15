@@ -111,7 +111,7 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
-      <div className="flex h-full w-full max-w-lg flex-col bg-white shadow-xl">
+      <div className="flex h-full w-full max-w-lg flex-col bg-white pt-[env(safe-area-inset-top)] shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
@@ -122,7 +122,7 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
             aria-label="Cerrar"
           >
             <X className="h-5 w-5" />
@@ -279,11 +279,11 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+            className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600"
           >
             Cancelar
           </button>
@@ -291,7 +291,7 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
             type="button"
             disabled={saving}
             onClick={() => void handleSave()}
-            className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-gabi-forest px-4 text-sm font-bold text-white disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Guardar

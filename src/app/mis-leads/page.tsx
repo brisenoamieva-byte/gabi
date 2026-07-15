@@ -27,14 +27,15 @@ function MisLeadsContent() {
 
   return (
     <main className="min-h-screen bg-[#F7F6F2] text-slate-800">
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#F7F6F2]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3 md:px-10">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#F7F6F2]/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-5 md:px-10">
           <Link
             href="/dashboard"
-            className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-            Dashboard
+            <span className="hidden sm:inline">Dashboard</span>
+            <span className="sm:hidden">Inicio</span>
           </Link>
           <div className="flex items-center gap-1.5">
             <AsesorBackofficeLink rol={user.rol} desarrolloId={desarrollo.id} />
@@ -42,7 +43,7 @@ function MisLeadsContent() {
               type="button"
               onClick={() => logoutAsesorSession(router)}
               aria-label="Cerrar sesión"
-              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#201044]"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#201044]"
             >
               <LogOut className="h-4 w-4" strokeWidth={2} />
             </button>
@@ -50,7 +51,7 @@ function MisLeadsContent() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-5 py-5 md:px-10 md:py-8">
+      <section className="mx-auto max-w-6xl px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-5 md:px-10 md:py-8">
         <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           {desarrollo.logo ? (
             <div className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F7F6F2] p-1.5">

@@ -74,8 +74,8 @@ export default function DashboardPage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-[#F7F6F2] text-slate-800">
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#F7F6F2]/90 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-5 py-3 md:px-10">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#F7F6F2]/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-5 md:px-10">
           <div className="flex min-w-0 items-center gap-3">
             {portal?.logo ? (
               <Image
@@ -97,7 +97,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={handleChangeDevelopment}
-              className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:text-sm"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:text-sm"
             >
               Cambiar
             </button>
@@ -105,7 +105,7 @@ export default function DashboardPage() {
               type="button"
               onClick={handleLogout}
               aria-label="Cerrar sesión"
-              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#201044]"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#201044]"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-5 py-5 md:gap-6 md:px-10 md:py-8">
+      <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-5 md:gap-6 md:px-10 md:py-8">
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}

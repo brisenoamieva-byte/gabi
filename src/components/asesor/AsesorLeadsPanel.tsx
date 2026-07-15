@@ -317,7 +317,7 @@ function AsesorLeadDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-[2px]">
-      <div className="flex h-full w-full max-w-lg flex-col bg-white shadow-[0_0_40px_rgba(15,23,42,0.18)]">
+      <div className="flex h-full w-full max-w-lg flex-col bg-white pt-[env(safe-area-inset-top)] shadow-[0_0_40px_rgba(15,23,42,0.18)]">
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
@@ -335,7 +335,8 @@ function AsesorLeadDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Cerrar"
           >
             <X className="h-5 w-5" strokeWidth={2} />
           </button>
@@ -574,12 +575,12 @@ function AsesorLeadDrawer({
         </div>
 
         {detail ? (
-          <div className="space-y-2 border-t border-slate-100 p-5">
+          <div className="space-y-2 border-t border-slate-100 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             {puedeSolicitarApartado ? (
               <button
                 type="button"
                 onClick={() => setApartadoModalOpen(true)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100/80"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100/80"
               >
                 <ShoppingBag className="h-4 w-4" strokeWidth={2} />
                 Solicitar apartado a gerencia
@@ -593,7 +594,7 @@ function AsesorLeadDrawer({
               <Link
                 href="/cotizador"
                 onClick={() => prefillCotizadorFromProspecto(detail)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-[#201044] transition hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#201044] transition hover:border-slate-300 hover:bg-slate-50"
               >
                 <Calculator className="h-4 w-4" strokeWidth={2} />
                 Cotizar
@@ -603,7 +604,7 @@ function AsesorLeadDrawer({
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-4 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" strokeWidth={2} />}
               Guardar seguimiento

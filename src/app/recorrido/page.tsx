@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -15,7 +15,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GabiLogo } from "@/components/brand/GabiLogo";
 import { PostVisitaModal } from "@/components/recorrido/PostVisitaModal";
 import {
@@ -154,7 +154,23 @@ import {
 } from "@/components/recorrido/RecorridoUi";
 
 export default function RecorridoPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] text-slate-500">
+          <p className="text-sm font-medium">Cargando recorrido…</p>
+        </main>
+      }
+    >
+      <RecorridoPageContent />
+    </Suspense>
+  );
+}
+
+function RecorridoPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const deepLinkApplied = useRef(false);
   const { authReady, user, desarrollo: sessionDesarrollo } = useRequireAsesorSession();
   const defaultContenido = getDefaultRecorridoContenido("la-vista-residencial");
   const [state, setState] = useState<RecorridoState>(initialRecorridoState);
@@ -752,6 +768,34 @@ export default function RecorridoPage() {
   }, [authReady, sessionDesarrollo, user?.id]);
 
   useEffect(() => {
+    if (!loaded || deepLinkApplied.current) {
+      return;
+    }
+
+    const unidadFromUrl = searchParams.get("unidadId")?.trim();
+    if (!unidadFromUrl) {
+      return;
+    }
+
+    deepLinkApplied.current = true;
+
+    const clusterFromUrl = searchParams.get("clusterId")?.trim() || undefined;
+    const prototipoFromUrl = searchParams.get("prototipoId")?.trim() || undefined;
+
+    setState((current) => ({
+      ...current,
+      ...(clusterFromUrl ? { clusterId: clusterFromUrl } : {}),
+      ...(prototipoFromUrl ? { prototipoId: prototipoFromUrl } : {}),
+      unidadId: unidadFromUrl,
+    }));
+    setSelectedAvailabilityId(unidadFromUrl);
+    if (clusterFromUrl) {
+      setAvailabilityClusterId(clusterFromUrl);
+    }
+    setShowAvailability(true);
+  }, [loaded, searchParams]);
+
+  useEffect(() => {
     if (loaded) {
       localStorage.setItem(RECORRIDO_STORAGE_KEY, JSON.stringify(state));
     }
@@ -1186,7 +1230,7 @@ export default function RecorridoPage() {
 
   return (
     <main className="min-h-screen bg-bbr-cream text-bbr-purple">
-      <section className="sticky top-0 z-30 border-b border-bbr-cream-dark bg-bbr-cream/95 px-5 py-4 shadow-sm backdrop-blur md:px-8">
+      <section className="sticky top-0 z-30 border-b border-bbr-cream-dark bg-bbr-cream/95 px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-sm backdrop-blur md:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3 md:gap-4">
@@ -2338,13 +2382,13 @@ export default function RecorridoPage() {
         </AnimatePresence>
       </section>
 
-      <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur md:px-8">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+      <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => goToStep(state.etapa - 1)}
             disabled={state.etapa === 0}
-            className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-base font-black text-[#201044] shadow-sm transition disabled:opacity-40"
+            className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-base font-black text-[#201044] shadow-sm transition disabled:opacity-40 sm:flex-none sm:px-5"
           >
             <ArrowLeft className="h-5 w-5" />
             Anterior
@@ -2353,7 +2397,7 @@ export default function RecorridoPage() {
             type="button"
             onClick={handleNextStep}
             disabled={state.etapa === recorridoEtapas.length - 1 || isRegisteringLead}
-            className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-[#201044] px-6 text-base font-black text-white shadow-lg transition disabled:opacity-40"
+            className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#201044] px-4 text-base font-black text-white shadow-lg transition disabled:opacity-40 sm:flex-none sm:px-6"
           >
             {isRegisteringLead ? "Validando..." : "Siguiente"}
             <ArrowRight className="h-5 w-5" />
