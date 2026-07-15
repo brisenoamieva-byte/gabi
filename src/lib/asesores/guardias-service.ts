@@ -11,6 +11,7 @@ import {
 import type { GuardiaMarcajeResumen, GuardiaMarcajeTipo } from "@/lib/comercial/guardia-marcaje-types";
 import {
   formatDateYmd,
+  GUARDIA_TURNOS,
   guardiaTurnoLabel,
   guardiaTurnoShortLabel,
   isGuardiaTurno,
@@ -26,6 +27,11 @@ export type AsesorGuardiaHoy = {
   turnoShortLabel: string;
   horario: string;
   notas: string | null;
+  /** True cuando el turno en calendario es de otro asesor (cobertura). */
+  esCobertura: boolean;
+  /** True cuando este asesor es el asignado en el calendario. */
+  esPropia: boolean;
+  asignadoAsesorId: string | null;
   marcajes: {
     entrada: GuardiaMarcajeResumen | null;
     salida: GuardiaMarcajeResumen | null;
@@ -132,9 +138,13 @@ function toMarcajeResumen(row: MarcajeRow): GuardiaMarcajeResumen {
 }
 
 export async function hasGuardiaCasetaConfig(desarrolloId: string): Promise<boolean> {
+  if (desarrolloId in GUARDIA_CASETA_FALLBACK) {
+    return true;
+  }
+
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
-    return desarrolloId in GUARDIA_CASETA_FALLBACK;
+    return false;
   }
 
   const { data, error } = await supabase
@@ -183,36 +193,31 @@ export async function getCasetaConfig(desarrolloId: string): Promise<GuardiaCase
   return fallback;
 }
 
-async function listMarcajesForAsignaciones(asignacionIds: string[]): Promise<Map<string, MarcajeRow[]>> {
-  const map = new Map<string, MarcajeRow[]>();
-  if (!asignacionIds.length) {
-    return map;
-  }
-
+async function listMarcajesForAsesorFecha(
+  asesorId: string,
+  desarrolloId: string,
+  fecha: string,
+): Promise<MarcajeRow[]> {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
-    return map;
+    return [];
   }
 
   const { data, error } = await supabase
     .from("guardia_marcajes")
     .select("*")
-    .in("asignacion_id", asignacionIds);
+    .eq("asesor_id", asesorId)
+    .eq("desarrollo_id", desarrolloId)
+    .eq("fecha", fecha);
 
   if (error) {
     if (error.message.includes("guardia_marcajes")) {
-      return map;
+      return [];
     }
     throw new Error(error.message);
   }
 
-  for (const row of (data ?? []) as MarcajeRow[]) {
-    const list = map.get(row.asignacion_id) ?? [];
-    list.push(row);
-    map.set(row.asignacion_id, list);
-  }
-
-  return map;
+  return (data ?? []) as MarcajeRow[];
 }
 
 function resolvePendiente(
@@ -226,6 +231,90 @@ function resolvePendiente(
     return "salida";
   }
   return null;
+}
+
+/**
+ * Resuelve la asignación del turno (propia, ajena para cobertura, o crea una si no hay).
+ */
+async function resolveAsignacionForMarcaje(input: {
+  asesorId: string;
+  desarrolloId: string;
+  fecha: string;
+  turno: GuardiaTurno;
+}): Promise<{ id: string; esCobertura: boolean; esPropia: boolean; asignadoAsesorId: string }> {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: existing, error } = await supabase
+    .from("guardia_asignaciones")
+    .select("id, asesor_id, estado")
+    .eq("desarrollo_id", input.desarrolloId)
+    .eq("fecha", input.fecha)
+    .eq("turno", input.turno)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (existing) {
+    const asignadoAsesorId = existing.asesor_id as string;
+    const esPropia = asignadoAsesorId === input.asesorId;
+    return {
+      id: existing.id as string,
+      esCobertura: !esPropia,
+      esPropia,
+      asignadoAsesorId,
+    };
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("guardia_asignaciones")
+    .insert({
+      desarrollo_id: input.desarrolloId,
+      asesor_id: input.asesorId,
+      fecha: input.fecha,
+      turno: input.turno,
+      estado: "publicada",
+      notas: "Registro de presencia (sin turno previo en calendario)",
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, asesor_id")
+    .single();
+
+  if (insertError) {
+    // Carrera: alguien insertó el mismo turno — reutilizar.
+    if (/duplicate|unique/i.test(insertError.message)) {
+      const { data: retry, error: retryError } = await supabase
+        .from("guardia_asignaciones")
+        .select("id, asesor_id, estado")
+        .eq("desarrollo_id", input.desarrolloId)
+        .eq("fecha", input.fecha)
+        .eq("turno", input.turno)
+        .maybeSingle();
+      if (retryError || !retry) {
+        throw new Error(insertError.message);
+      }
+      const asignadoAsesorId = retry.asesor_id as string;
+      const esPropia = asignadoAsesorId === input.asesorId;
+      return {
+        id: retry.id as string,
+        esCobertura: !esPropia,
+        esPropia,
+        asignadoAsesorId,
+      };
+    }
+    throw new Error(insertError.message);
+  }
+
+  return {
+    id: inserted.id as string,
+    esCobertura: false,
+    esPropia: true,
+    asignadoAsesorId: inserted.asesor_id as string,
+  };
 }
 
 export const getGuardiasHoyForAsesor = async (
@@ -246,14 +335,11 @@ export const getGuardiasHoyForAsesor = async (
   const today = formatDateYmd(new Date());
   const caseta = await getCasetaConfig(desarrolloId);
 
-  const { data, error } = await supabase
+  const { data: asignaciones, error } = await supabase
     .from("guardia_asignaciones")
-    .select("id, fecha, turno, notas")
+    .select("id, fecha, turno, notas, asesor_id, estado")
     .eq("desarrollo_id", desarrolloId)
-    .eq("asesor_id", asesorId)
-    .eq("fecha", today)
-    .eq("estado", "publicada")
-    .order("turno", { ascending: true });
+    .eq("fecha", today);
 
   if (error) {
     if (error.message.includes("guardia_asignaciones")) {
@@ -262,25 +348,33 @@ export const getGuardiasHoyForAsesor = async (
     throw new Error(error.message);
   }
 
-  const asignacionIds = (data ?? []).map((row) => row.id as string);
-  const marcajesByAsignacion = await listMarcajesForAsignaciones(asignacionIds);
+  const byTurno = new Map(
+    (asignaciones ?? []).map((row) => [row.turno as GuardiaTurno, row]),
+  );
+  const misMarcajes = await listMarcajesForAsesorFecha(asesorId, desarrolloId, today);
 
-  return (data ?? []).map((row) => {
-    const turno = row.turno as GuardiaTurno;
-    const marcajesRows = marcajesByAsignacion.get(row.id as string) ?? [];
+  return GUARDIA_TURNOS.map((turno) => {
+    const row = byTurno.get(turno);
+    const asignadoAsesorId = (row?.asesor_id as string | undefined) ?? null;
+    const esPropia = Boolean(row && asignadoAsesorId === asesorId);
+    const esCobertura = Boolean(row && asignadoAsesorId && asignadoAsesorId !== asesorId);
+    const marcajesRows = misMarcajes.filter((item) => item.turno === turno);
     const entradaRow = marcajesRows.find((item) => item.tipo === "entrada");
     const salidaRow = marcajesRows.find((item) => item.tipo === "salida");
     const entrada = entradaRow ? toMarcajeResumen(entradaRow) : null;
     const salida = salidaRow ? toMarcajeResumen(salidaRow) : null;
 
     return {
-      asignacionId: row.id as string,
-      fecha: row.fecha as string,
+      asignacionId: (row?.id as string | undefined) ?? `pendiente-${turno}`,
+      fecha: today,
       turno,
       turnoLabel: guardiaTurnoShortLabel[turno],
       turnoShortLabel: guardiaTurnoShortLabel[turno],
       horario: guardiaTurnoLabel[turno],
-      notas: (row.notas as string | null) ?? null,
+      notas: (row?.notas as string | null) ?? null,
+      esCobertura,
+      esPropia,
+      asignadoAsesorId,
       marcajes: { entrada, salida },
       caseta: {
         etiqueta: formatCasetaEtiquetaResumen(caseta),
@@ -325,30 +419,21 @@ export async function registerGuardiaMarcaje(input: {
 
   const today = formatDateYmd(new Date());
   const turno = input.turno;
-
-  const { data: asignacion, error: asignacionError } = await supabase
-    .from("guardia_asignaciones")
-    .select("id, estado")
-    .eq("desarrollo_id", input.desarrolloId)
-    .eq("asesor_id", input.asesorId)
-    .eq("fecha", today)
-    .eq("turno", turno)
-    .maybeSingle();
-
-  if (asignacionError) {
-    throw new Error(asignacionError.message);
-  }
-
-  if (!asignacion || asignacion.estado !== "publicada") {
-    throw new Error("No tienes guardia publicada para este turno hoy.");
-  }
-
-  const asignacionId = asignacion.id as string;
+  const resolved = await resolveAsignacionForMarcaje({
+    asesorId: input.asesorId,
+    desarrolloId: input.desarrolloId,
+    fecha: today,
+    turno,
+  });
+  const asignacionId = resolved.id;
 
   const { data: existing, error: existingError } = await supabase
     .from("guardia_marcajes")
     .select("tipo")
-    .eq("asignacion_id", asignacionId);
+    .eq("asesor_id", input.asesorId)
+    .eq("desarrollo_id", input.desarrolloId)
+    .eq("fecha", today)
+    .eq("turno", turno);
 
   if (existingError) {
     assertMarcajesTable(existingError.message);

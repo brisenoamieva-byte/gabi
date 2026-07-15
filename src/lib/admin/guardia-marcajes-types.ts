@@ -17,6 +17,10 @@ export type GuardiaMarcajeAdminRow = {
     distanciaMetros: number;
   } | null;
   cumplimiento: "completo" | "pendiente_entrada" | "pendiente_salida" | "sin_publicar";
+  coberturaPor: {
+    asesorId: string;
+    asesorNombre: string | null;
+  } | null;
 };
 
 export type GuardiaMarcajesDiaPayload = {

@@ -167,12 +167,11 @@ function SegmentoDetalle({ segmento }: { segmento: ReporteSemanalSegmento }) {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {segmento.objetivoIngresos ? (
-          <ObjetivoIngresosChart obj={segmento.objetivoIngresos} />
-        ) : null}
-        <IngresosColumnasTable cols={segmento.ingresosColumnas} />
-      </div>
+      {segmento.objetivoIngresos ? (
+        <ObjetivoIngresosChart obj={segmento.objetivoIngresos} />
+      ) : null}
+
+      <IngresosColumnasTable cols={segmento.ingresosColumnas} />
 
       <AbsorcionModeloChart items={segmento.absorcionPorModelo} />
 
@@ -296,6 +295,10 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
           }
           .reporte-semanal section {
             break-inside: avoid;
+          }
+          .reporte-semanal {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
       `}</style>
@@ -462,8 +465,12 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               <KpiTile dark label="Afluencia" value={reporte.resumen.afluencia} />
               <KpiTile dark label="Citas / visitas" value={reporte.resumen.citasVisitas} />
               <KpiTile dark label="Apart. periodo" value={reporte.resumen.apartadosPeriodo} />
-              <KpiTile dark label="Apartados deptos." value={reporte.resumen.apartadosDeptos} />
-              <KpiTile dark label="Apartados oficinas" value={reporte.resumen.apartadosOficinas} />
+              {reporte.meta.productLines.departamentos && reporte.meta.productLines.oficinas ? (
+                <>
+                  <KpiTile dark label="Apartados deptos." value={reporte.resumen.apartadosDeptos} />
+                  <KpiTile dark label="Apartados oficinas" value={reporte.resumen.apartadosOficinas} />
+                </>
+              ) : null}
               <KpiTile dark label="Apartados vigentes" value={reporte.resumen.apartadosTotal} />
             </div>
           </header>
@@ -598,7 +605,10 @@ export function ReporteSemanalPanel({ desarrollos, scopeLabel }: Props) {
               title="Absorción mensual"
               desc="Serie histórica de apartados, afluencia y citas"
             />
-            <AbsorcionMensualChart series={reporte.absorcionMensual} />
+            <AbsorcionMensualChart
+              series={reporte.absorcionMensual}
+              showOficinas={reporte.meta.productLines.oficinas}
+            />
           </div>
 
           <div className="space-y-6">

@@ -100,7 +100,14 @@ export function GuardiasMarcajesHoyPanel({ desarrolloId }: Props) {
               {payload.filas.map((fila) => (
                 <tr key={fila.asignacionId} className="border-b border-slate-100 last:border-0">
                   <td className="px-2 py-2 font-semibold text-gabi-forest">
-                    {fila.asesorNombre ?? fila.asesorId}
+                    <div>
+                      {fila.asesorNombre ?? fila.asesorId}
+                      {fila.coberturaPor ? (
+                        <p className="text-[11px] font-medium text-amber-700">
+                          Cubrió {fila.coberturaPor.asesorNombre ?? fila.coberturaPor.asesorId}
+                        </p>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-2 py-2 text-slate-600">{fila.turnoLabel}</td>
                   <td className="px-2 py-2 tabular-nums text-slate-700">

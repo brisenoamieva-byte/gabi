@@ -206,6 +206,11 @@ export type ReporteComercialSemanal = {
     generadoAt: string;
     fuentes: string[];
     objetivosOrigen: "db" | "seed" | "none";
+    /** Líneas de producto a mostrar (evita oficinas en desarrollos residenciales). */
+    productLines: {
+      departamentos: boolean;
+      oficinas: boolean;
+    };
   };
 };
 

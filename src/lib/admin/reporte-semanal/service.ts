@@ -37,6 +37,7 @@ import type {
 } from "@/lib/admin/reporte-semanal/types";
 import { SEGUIMIENTO_ESTATUS_ORDEN } from "@/lib/admin/reporte-semanal/types";
 import { buildMktEficienciaPeriodo } from "@/lib/admin/mkt-presupuesto-service";
+import { getReporteProductLines } from "@/lib/catalog/desarrollos-registry";
 import {
   isDateInRange,
   monthRangeForDate,
@@ -591,17 +592,23 @@ export async function getReporteComercialSemanal(
   );
 
   const cancelacionesTotal = segmentos.reduce((s, seg) => s + seg.kpis.cancelacionesSemana, 0);
+  const productLines = getReporteProductLines(filters.desarrolloId);
 
   let apartadosDeptos = 0;
   let apartadosOficinas = 0;
-  if (segmentConfigs) {
+  if (productLines.departamentos && productLines.oficinas && segmentConfigs) {
     for (const seg of segmentos) {
       const cfg = segmentConfigs.find((c) => c.id === seg.id);
       if (cfg?.resumenKey === "departamentos") apartadosDeptos = seg.kpis.apartadosVigentes;
       if (cfg?.resumenKey === "oficinas") apartadosOficinas = seg.kpis.apartadosVigentes;
     }
   } else {
-    apartadosDeptos = segmentos[0]?.kpis.apartadosVigentes ?? 0;
+    const totalApartados = segmentos.reduce((s, seg) => s + seg.kpis.apartadosVigentes, 0);
+    if (productLines.oficinas && !productLines.departamentos) {
+      apartadosOficinas = totalApartados;
+    } else {
+      apartadosDeptos = totalApartados;
+    }
   }
 
   const apartadosPeriodo = segmentos.reduce((s, seg) => s + seg.kpis.apartadosSemana, 0);
@@ -695,6 +702,7 @@ export async function getReporteComercialSemanal(
         "desarrollo_mkt_gasto",
       ],
       objetivosOrigen,
+      productLines,
     },
   };
 }

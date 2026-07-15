@@ -149,7 +149,6 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
     Citas: m.citas,
     Apartados: m.apartados,
     Ventas: m.ventas,
-    Asignaciones: m.asignaciones,
   }));
 
   if (!data.length) return null;
@@ -159,7 +158,7 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
       title={`Funnel comercial — ${funnel.label}`}
       subtitle="Afluencia → citas/visitas → apartados (periodo) → ventas (periodo) por medio"
     >
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {(
           [
             ["Afluencia", funnel.etapas.afluencia],
@@ -167,7 +166,6 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
             ["Apart. periodo", funnel.etapas.apartadosPeriodo],
             ["Apart. vigentes", funnel.etapas.apartadosVigentes],
             ["Ventas periodo", funnel.etapas.ventasPeriodo],
-            ["Asignaciones", funnel.etapas.asignacionesPeriodo],
           ] as const
         ).map(([label, value]) => (
           <div key={label} className="rounded-lg bg-slate-50 px-2 py-2 text-center">
@@ -185,16 +183,16 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Afluencia" fill={FOREST} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Afluencia" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="Afluencia" content={<BarValueLabel placement="top" />} />
             </Bar>
             <Bar dataKey="Citas" fill={LINE_CITAS} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Citas" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="Citas" content={<BarValueLabel placement="top" />} />
             </Bar>
             <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Apartados" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="Apartados" content={<BarValueLabel placement="top" />} />
             </Bar>
             <Bar dataKey="Ventas" fill={MINT} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Ventas" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="Ventas" content={<BarValueLabel placement="top" />} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -203,16 +201,28 @@ export function FunnelPorMedioChart({ funnel }: { funnel: ReporteSemanalFunnelSe
   );
 }
 
-export function AbsorcionMensualChart({ series }: { series: ReporteSemanalAbsorcionMes[] }) {
+export function AbsorcionMensualChart({
+  series,
+  showOficinas = true,
+}: {
+  series: ReporteSemanalAbsorcionMes[];
+  /** Si false, omite la serie de oficinas (desarrollos residenciales). */
+  showOficinas?: boolean;
+}) {
   if (!series.length) return null;
 
   const desdeLabel = series[0]?.mes ?? "";
   const hastaLabel = series[series.length - 1]?.mes ?? "";
+  const apartadosBarLabel = showOficinas ? "Apart. deptos" : "Apartados";
 
   return (
     <ChartCard
       title="Absorción mensual histórica"
-      subtitle={`Apartados por segmento, afluencia y citas/visitas (${desdeLabel} → ${hastaLabel})`}
+      subtitle={
+        showOficinas
+          ? `Apartados por segmento, afluencia y citas/visitas (${desdeLabel} → ${hastaLabel})`
+          : `Apartados, afluencia y citas/visitas (${desdeLabel} → ${hastaLabel})`
+      }
     >
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
@@ -223,12 +233,26 @@ export function AbsorcionMensualChart({ series }: { series: ReporteSemanalAbsorc
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="apartadosDeptos" name="Apart. deptos" fill={DEPTOS} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="apartadosDeptos" content={<BarValueLabel position="top" />} />
+            <Bar
+              yAxisId="left"
+              dataKey="apartadosDeptos"
+              name={apartadosBarLabel}
+              fill={DEPTOS}
+              radius={[2, 2, 0, 0]}
+            >
+              <LabelList dataKey="apartadosDeptos" content={<BarValueLabel placement="top" />} />
             </Bar>
-            <Bar yAxisId="left" dataKey="apartadosOficinas" name="Apart. oficinas" fill={OFICINAS} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="apartadosOficinas" content={<BarValueLabel position="top" />} />
-            </Bar>
+            {showOficinas ? (
+              <Bar
+                yAxisId="left"
+                dataKey="apartadosOficinas"
+                name="Apart. oficinas"
+                fill={OFICINAS}
+                radius={[2, 2, 0, 0]}
+              >
+                <LabelList dataKey="apartadosOficinas" content={<BarValueLabel placement="top" />} />
+              </Bar>
+            ) : null}
             <Line
               yAxisId="right"
               type="monotone"
@@ -238,7 +262,7 @@ export function AbsorcionMensualChart({ series }: { series: ReporteSemanalAbsorc
               strokeWidth={2}
               dot={{ r: 3 }}
             >
-              <LabelList dataKey="afluencia" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="afluencia" content={<BarValueLabel placement="top" />} />
             </Line>
             <Line
               yAxisId="right"
@@ -249,7 +273,7 @@ export function AbsorcionMensualChart({ series }: { series: ReporteSemanalAbsorc
               strokeWidth={2}
               dot={{ r: 3 }}
             >
-              <LabelList dataKey="citasVisitas" content={<BarValueLabel position="bottom" />} />
+              <LabelList dataKey="citasVisitas" content={<BarValueLabel placement="bottom" />} />
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
@@ -272,17 +296,17 @@ export function SeguimientoChart({ items }: { items: ReporteSemanalSeguimiento[]
     <ChartCard title="Resumen de seguimiento" subtitle="Estatus de prospectos — semana vs mes">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 36, left: 8, bottom: 4 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 40, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
             <YAxis type="category" dataKey="estatus" width={140} tick={{ fontSize: 10 }} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="semana" name="Semana" fill={FOREST} radius={[0, 3, 3, 0]}>
-              <LabelList dataKey="semana" content={<BarValueLabel position="right" />} />
+              <LabelList dataKey="semana" content={<BarValueLabel placement="right" />} />
             </Bar>
             <Bar dataKey="mes" name="Mes" fill={SAND} radius={[0, 3, 3, 0]}>
-              <LabelList dataKey="mes" content={<BarValueLabel position="right" />} />
+              <LabelList dataKey="mes" content={<BarValueLabel placement="right" />} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -341,14 +365,10 @@ export function AvanceObjetivosChart({ avance }: { avance: ReporteSemanalAvanceV
           real={avance.apartadosVentasVigentes}
           objetivo={avance.apartadosObjetivo}
         />
-        <div className="grid grid-cols-3 gap-2 pt-2 text-center text-sm">
+        <div className="grid grid-cols-2 gap-2 pt-2 text-center text-sm">
           <div className="rounded-lg bg-slate-50 px-2 py-2">
             <p className="text-[10px] uppercase text-slate-400">Cancelaciones</p>
             <p className="font-bold tabular-nums">{avance.cancelaciones}</p>
-          </div>
-          <div className="rounded-lg bg-slate-50 px-2 py-2">
-            <p className="text-[10px] uppercase text-slate-400">Asignados</p>
-            <p className="font-bold tabular-nums">{avance.asignados}</p>
           </div>
           <div className="rounded-lg bg-slate-50 px-2 py-2">
             <p className="text-[10px] uppercase text-slate-400">Absorción</p>
@@ -394,7 +414,7 @@ export function PrecioM2Chart({
               ))}
               <LabelList
                 dataKey="value"
-                content={<BarValueLabel position="top" formatter={formatMoneyShort} />}
+                content={<BarValueLabel placement="top" formatter={formatMoneyShort} />}
               />
             </Bar>
           </BarChart>
@@ -443,13 +463,12 @@ export function AbsorcionModeloChart({ items }: { items: ReporteSemanalAbsorcion
     modelo: i.modelo,
     Ventas: i.ventas,
     Apartados: i.apartados,
-    Asignados: i.asignados,
   }));
 
   if (!data.length) return null;
 
   return (
-    <ChartCard title="Absorción por modelo" subtitle="Ventas, apartados y asignados por tipología">
+    <ChartCard title="Absorción por modelo" subtitle="Ventas y apartados por tipología">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 22, right: 8, left: 0, bottom: 4 }}>
@@ -459,13 +478,10 @@ export function AbsorcionModeloChart({ items }: { items: ReporteSemanalAbsorcion
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Ventas" fill={FOREST} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Ventas" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="Ventas" content={<BarValueLabel placement="top" />} />
             </Bar>
             <Bar dataKey="Apartados" fill={SAND} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Apartados" content={<BarValueLabel position="top" />} />
-            </Bar>
-            <Bar dataKey="Asignados" fill={MINT} radius={[2, 2, 0, 0]}>
-              <LabelList dataKey="Asignados" content={<BarValueLabel position="top" />} />
+              <LabelList dataKey="Apartados" content={<BarValueLabel placement="top" />} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -547,22 +563,27 @@ export function IngresosColumnasTable({
   const format = (v: number) =>
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(v);
 
+  const items = [
+    ["Mes anterior", cols.anterior],
+    ["Mes actual", cols.mesActual],
+    ["Acumulado YTD", cols.acumulado],
+    ["Obj. mes sig.", cols.mesSiguienteObjetivo],
+    ["Dif. acumulado", cols.diferenciaAcumulado],
+  ] as const;
+
   return (
     <ChartCard title="Ingresos por periodo" subtitle="Comparativo mensual y acumulado vs objetivo">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {(
-          [
-            ["Mes anterior", cols.anterior],
-            ["Mes actual", cols.mesActual],
-            ["Acumulado YTD", cols.acumulado],
-            ["Obj. mes sig.", cols.mesSiguienteObjetivo],
-            ["Dif. acumulado", cols.diferenciaAcumulado],
-          ] as const
-        ).map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 print:grid-cols-5">
+        {items.map(([label, value]) => (
+          <div
+            key={label}
+            className="min-w-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
+          >
+            <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              {label}
+            </p>
             <p
-              className={`mt-1 text-lg font-black tabular-nums ${
+              className={`mt-1 break-words text-sm font-black leading-snug tabular-nums print:text-[11px] sm:text-base ${
                 label === "Dif. acumulado" && value < 0 ? "text-amber-700" : "text-gabi-forest"
               }`}
             >

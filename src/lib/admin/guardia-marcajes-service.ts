@@ -63,6 +63,7 @@ export async function listGuardiaMarcajesDia(
   const asignacionIds = (asignaciones ?? []).map((row) => row.id as string);
   let marcajes: Array<{
     asignacion_id: string;
+    asesor_id: string;
     tipo: string;
     registrado_at: string;
     distancia_metros: number;
@@ -71,8 +72,9 @@ export async function listGuardiaMarcajesDia(
   if (asignacionIds.length) {
     const { data, error } = await supabase
       .from("guardia_marcajes")
-      .select("asignacion_id, tipo, registrado_at, distancia_metros")
-      .in("asignacion_id", asignacionIds);
+      .select("asignacion_id, asesor_id, tipo, registrado_at, distancia_metros")
+      .eq("desarrollo_id", desarrolloId)
+      .eq("fecha", fecha);
 
     if (error) {
       assertMarcajesTable(error.message);
@@ -94,8 +96,14 @@ export async function listGuardiaMarcajesDia(
     const asesorId = row.asesor_id as string;
     const estadoAsignacion = row.estado as string;
     const items = marcajesByAsignacion.get(asignacionId) ?? [];
-    const entradaRaw = items.find((item) => item.tipo === "entrada");
-    const salidaRaw = items.find((item) => item.tipo === "salida");
+    // Preferir el marcaje del asignado; si no hay, el de quien cubrió.
+    const pickTipo = (tipo: string) => {
+      const propios = items.filter((item) => item.tipo === tipo && item.asesor_id === asesorId);
+      const otros = items.filter((item) => item.tipo === tipo);
+      return propios[0] ?? otros[0];
+    };
+    const entradaRaw = pickTipo("entrada");
+    const salidaRaw = pickTipo("salida");
 
     const entrada = entradaRaw
       ? {
@@ -121,6 +129,13 @@ export async function listGuardiaMarcajesDia(
       }
     }
 
+    const marcoAsesorId =
+      entradaRaw?.asesor_id && entradaRaw.asesor_id !== asesorId
+        ? entradaRaw.asesor_id
+        : salidaRaw?.asesor_id && salidaRaw.asesor_id !== asesorId
+          ? salidaRaw.asesor_id
+          : null;
+
     return {
       asignacionId,
       asesorId,
@@ -132,6 +147,10 @@ export async function listGuardiaMarcajesDia(
       entrada,
       salida,
       cumplimiento,
+      coberturaPor:
+        marcoAsesorId != null
+          ? { asesorId: marcoAsesorId, asesorNombre: asesorNames[marcoAsesorId] ?? null }
+          : null,
     };
   });
 

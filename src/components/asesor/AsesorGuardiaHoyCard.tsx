@@ -203,7 +203,7 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
     return (
       <div className="flex items-center gap-2 rounded-2xl border border-slate-200/90 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Guardia de hoy…
+        Entrada / salida…
       </div>
     );
   }
@@ -212,13 +212,18 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
     return null;
   }
 
-  if (!guardias.length) {
-    return null;
-  }
-
   return (
     <>
       <div className="space-y-3">
+        <div className="px-0.5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            Punto de venta
+          </p>
+          <p className="mt-0.5 text-sm font-semibold text-[#201044]">
+            Marca entrada y salida · también si cubres otro turno
+          </p>
+        </div>
+
         {guardias.map((guardia) => {
           const isSubmitting = submittingTurno === guardia.turno;
           const pendiente = guardia.pendiente;
@@ -226,7 +231,7 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
 
           return (
             <div
-              key={guardia.asignacionId}
+              key={guardia.turno}
               className="rounded-2xl border border-[#201044]/12 bg-white p-4 shadow-sm"
             >
               <div className="flex items-start gap-3">
@@ -235,11 +240,21 @@ export function AsesorGuardiaHoyCard({ asesorId, desarrolloId }: AsesorGuardiaHo
                 </span>
                 <div className="min-w-0 flex-1 space-y-2">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                      Tu guardia hoy
-                    </p>
                     <p className="text-lg font-black text-[#201044]">{guardia.turnoLabel}</p>
                     <p className="text-sm text-slate-600">{guardia.horario}</p>
+                    {guardia.esPropia ? (
+                      <p className="mt-0.5 text-xs font-semibold text-emerald-700">
+                        Turno asignado a ti en calendario
+                      </p>
+                    ) : guardia.esCobertura ? (
+                      <p className="mt-0.5 text-xs font-semibold text-amber-700">
+                        Cobertura · turno de otro asesor en calendario
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Sin asignación en calendario · puedes marcar presencia
+                      </p>
+                    )}
                     {guardia.notas ? (
                       <p className="mt-0.5 text-xs text-slate-500">{guardia.notas}</p>
                     ) : null}

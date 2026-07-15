@@ -1,13 +1,16 @@
 "use client";
 
-/** Etiqueta numérica visible en barras Recharts (sin depender del hover). */
+/**
+ * Etiqueta numérica visible en barras Recharts (sin depender del hover).
+ * Usa `placement` (no `position`): LabelList de Recharts sobrescribe `position` al clonar el elemento.
+ */
 export function BarValueLabel(props: {
   x?: number | string;
   y?: number | string;
   width?: number | string;
   height?: number | string;
   value?: number | string;
-  position?: "top" | "right" | "center" | "bottom";
+  placement?: "top" | "right" | "center" | "bottom";
   formatter?: (value: number) => string;
 }) {
   const {
@@ -16,7 +19,7 @@ export function BarValueLabel(props: {
     width = 0,
     height = 0,
     value,
-    position = "top",
+    placement = "top",
     formatter = (n) => String(n),
   } = props;
   const n = Number(value ?? 0);
@@ -33,7 +36,7 @@ export function BarValueLabel(props: {
     return (
       <text
         x={px}
-        y={position === "bottom" ? py + 12 : py - 6}
+        y={placement === "bottom" ? py + 12 : py - 6}
         fill="#64748b"
         fontSize={9}
         fontWeight={600}
@@ -44,7 +47,7 @@ export function BarValueLabel(props: {
     );
   }
 
-  if (position === "right") {
+  if (placement === "right") {
     return (
       <text
         x={px + pw + 4}
@@ -59,7 +62,7 @@ export function BarValueLabel(props: {
     );
   }
 
-  if (position === "center") {
+  if (placement === "center") {
     if (ph < 12 || pw < 10) return null;
     return (
       <text
@@ -70,6 +73,21 @@ export function BarValueLabel(props: {
         fontWeight={700}
         textAnchor="middle"
         dominantBaseline="middle"
+      >
+        {text}
+      </text>
+    );
+  }
+
+  if (placement === "bottom") {
+    return (
+      <text
+        x={px + pw / 2}
+        y={py + ph + 12}
+        fill="#334155"
+        fontSize={10}
+        fontWeight={600}
+        textAnchor="middle"
       >
         {text}
       </text>

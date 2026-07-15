@@ -163,6 +163,40 @@ export function hasSegmentedReporteSemanal(desarrolloId: string): boolean {
   return getDesarrolloRegistry(desarrolloId)?.reporteSemanalSegmented ?? false;
 }
 
+/** Líneas de producto relevantes para reportes (deptos / oficinas). */
+export type ReporteProductLines = {
+  departamentos: boolean;
+  oficinas: boolean;
+};
+
+/**
+ * Qué series de producto mostrar en reportes.
+ * Si el registry no declara oficinas, no se muestran KPIs ni series de oficinas.
+ */
+export function getReporteProductLines(desarrolloId: string): ReporteProductLines {
+  const segments = getSembradoSegmentsForDesarrollo(desarrolloId);
+  if (segments.length) {
+    const departamentos = segments.some(
+      (s) => s.resumenKey === "departamentos" || s.tipo === "departamento",
+    );
+    const oficinas = segments.some(
+      (s) => s.resumenKey === "oficinas" || s.tipo === "oficina",
+    );
+    if (!departamentos && !oficinas) {
+      return { departamentos: true, oficinas: false };
+    }
+    return {
+      departamentos: departamentos || !oficinas,
+      oficinas,
+    };
+  }
+
+  const clusterIds = getClusterIdsForDesarrollo(desarrolloId);
+  const oficinas = clusterIds.some((id) => /oficina/i.test(id));
+  const departamentos = clusterIds.some((id) => /departamento/i.test(id)) || !oficinas;
+  return { departamentos, oficinas };
+}
+
 /** Desarrollos con reporte multi-segmento (derivado del registry). */
 export function getReporteSemanalDesarrolloIds(): string[] {
   return REGISTRY.filter((entry) => entry.reporteSemanalSegmented).map((entry) => entry.id);

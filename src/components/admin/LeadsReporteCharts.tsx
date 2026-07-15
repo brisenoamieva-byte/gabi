@@ -87,10 +87,10 @@ export function LeadsTimeSeriesChart({
         />
         <Legend formatter={(value) => (value === "validos" ? "Válidos" : "Duplicados")} />
         <Bar dataKey="validos" stackId="leads" fill={FOREST} radius={[0, 0, 0, 0]}>
-          <LabelList dataKey="validos" content={<BarValueLabel position="center" />} />
+          <LabelList dataKey="validos" content={<BarValueLabel placement="center" />} />
         </Bar>
         <Bar dataKey="duplicados" stackId="leads" fill={MINT} radius={[4, 4, 0, 0]}>
-          <LabelList dataKey="total" content={<BarValueLabel position="top" />} />
+          <LabelList dataKey="total" content={<BarValueLabel placement="top" />} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -126,7 +126,7 @@ export function LeadsCampanaChart({ campanas }: { campanas: LeadsReporteCampana[
           }
         />
         <Bar dataKey="total" fill={FOREST} radius={[0, 4, 4, 0]}>
-          <LabelList dataKey="total" content={<BarValueLabel position="right" />} />
+          <LabelList dataKey="total" content={<BarValueLabel placement="right" />} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -166,7 +166,7 @@ export function LeadsCalificacionChart({
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
         <Tooltip />
         <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]}>
-          <LabelList dataKey="value" content={<BarValueLabel position="top" />} />
+          <LabelList dataKey="value" content={<BarValueLabel placement="top" />} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -208,7 +208,7 @@ export function LeadsRegionChart({ regiones }: { regiones: LeadsReporteRegion[] 
           }
         />
         <Bar dataKey="total" fill={SAND} radius={[4, 4, 0, 0]}>
-          <LabelList dataKey="total" content={<BarValueLabel position="top" />} />
+          <LabelList dataKey="total" content={<BarValueLabel placement="top" />} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -243,7 +243,7 @@ export function LeadsScoreDistribucionChart({
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
         <Tooltip formatter={(value) => [Number(value ?? 0), "Respuestas"]} />
         <Bar dataKey="value" fill={VIOLET} radius={[4, 4, 0, 0]}>
-          <LabelList dataKey="value" content={<BarValueLabel position="top" />} />
+          <LabelList dataKey="value" content={<BarValueLabel placement="top" />} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
