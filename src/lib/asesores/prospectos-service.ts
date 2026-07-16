@@ -338,7 +338,7 @@ export const updateProspectoForAsesor = async (
     patch.proximo_contacto_on = normalizeProximoContactoOn(input.proximoContactoOn);
   }
   if (input.proximoContactoNota !== undefined) {
-    patch.proximo_contacto_nota = input.proximoContactoNota.trim() || null;
+    patch.proximo_contacto_nota = input.proximoContactoNota?.trim() || null;
   }
 
   const nextEtapa = (input.etapa ?? existing.etapa) as string;

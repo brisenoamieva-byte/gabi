@@ -131,9 +131,9 @@ export const buildAsesorWeekdayDayCounts = (
   }
 
   const result: Record<string, number[]> = {};
-  for (const [asesorId, fechas] of fechasByAsesor) {
+  for (const [asesorId, fechas] of Array.from(fechasByAsesor.entries())) {
     const counts = [0, 0, 0, 0, 0, 0, 0];
-    for (const fecha of fechas) {
+    for (const fecha of Array.from(fechas)) {
       const idx = getYmdWeekdayIndexMondayFirst(fecha);
       counts[idx] += 1;
     }

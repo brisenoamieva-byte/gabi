@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listUnidadesCotizablesSembrado } from "@/lib/inventario/sembrado-cotizable";
+import { listUnidadesCotizablesSembrado } from "@/lib/inventario/sembrado-cotizable-server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export async function GET(request: Request) {

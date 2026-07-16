@@ -1,4 +1,3 @@
-import { listSembradoUnidades } from "@/lib/admin/operaciones-service";
 import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 import type { SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
 import type { DisponibilidadUnidad } from "@/lib/data";
@@ -63,24 +62,10 @@ export function mapSembradoRowToDisponibilidadUnidad(row: SembradoUnidadRow): Di
   };
 }
 
-export async function listUnidadesCotizablesSembrado(
-  desarrolloId: string,
-  clusterId?: string,
-): Promise<DisponibilidadUnidad[]> {
-  const rows = await listSembradoUnidades({ desarrolloId, clusterId });
-  return rows
-    .filter(isUnidadCotizableSembrado)
-    .filter((row) => isUnidadEnEtapaVendible(desarrolloId, row.unidad))
-    .map(mapSembradoRowToDisponibilidadUnidad);
-}
-
 /** Filtra inventario ya mapeado a la etapa/edificio vendible del desarrollo. */
 export function filterUnidadesEtapaVendible(
   desarrolloId: string,
   units: DisponibilidadUnidad[],
 ): DisponibilidadUnidad[] {
-  if (!isMisionLaGaviaDesarrollo(desarrolloId)) {
-    return units;
-  }
   return units.filter((unit) => isUnidadEnEtapaVendible(desarrolloId, unit.unidad));
 }

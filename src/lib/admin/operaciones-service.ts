@@ -27,7 +27,6 @@ import {
   type ProductoRecomendadoRecord,
 } from "@/lib/inventario/productos-recomendados";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { ensureExpedienteDriveFolderForOperacion } from "@/lib/admin/expediente-service";
 
 export const listOperaciones = async (
   filters: { desarrolloId: string; includeCanceladas?: boolean },
@@ -926,6 +925,9 @@ export const createOperacionApartado = async (
   // Prepara la carpeta del expediente desde el alta del apartado para que ya exista en Drive
   // aunque aún no hayan subido documentos.
   try {
+    const { ensureExpedienteDriveFolderForOperacion } = await import(
+      "@/lib/admin/expediente-service"
+    );
     await ensureExpedienteDriveFolderForOperacion(operacion.id as string);
   } catch {
     // No bloqueamos el registro del apartado: el expediente intentará autocorregirse al abrirse.

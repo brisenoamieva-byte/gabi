@@ -310,7 +310,10 @@ export const getExpedienteDetail = async (
 };
 
 const ensureExpedienteDriveFolderForOperacionRecord = async (
-  operacion: OperacionComercialRecord,
+  operacion: Pick<
+    OperacionComercialRecord,
+    "id" | "desarrollo_id" | "cliente_nombre"
+  > & { drive_folder_id?: string | null },
   options?: { unidadNumero?: string | null },
 ): Promise<{ folderId: string; folderUrl: string } | null> => {
   if (!(await isGoogleDriveConfiguredForDesarrolloAsync(operacion.desarrollo_id))) {
@@ -385,7 +388,12 @@ export const ensureExpedienteDriveFolderForOperacion = async (
   const unidadNumero = (unidad?.unidad as string | null) ?? "—";
 
   return ensureExpedienteDriveFolderForOperacionRecord(
-    operacion as OperacionComercialRecord,
+    {
+      id: operacion.id as string,
+      desarrollo_id: operacion.desarrollo_id as string,
+      cliente_nombre: operacion.cliente_nombre as string,
+      drive_folder_id: (operacion.drive_folder_id as string | null) ?? null,
+    },
     { unidadNumero },
   );
 };

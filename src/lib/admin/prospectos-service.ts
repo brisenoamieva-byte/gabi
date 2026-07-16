@@ -413,7 +413,7 @@ export const updateProspecto = async (
     patch.proximo_contacto_on = normalizeProximoContactoOn(input.proximoContactoOn);
   }
   if (input.proximoContactoNota !== undefined) {
-    patch.proximo_contacto_nota = input.proximoContactoNota.trim() || null;
+    patch.proximo_contacto_nota = input.proximoContactoNota?.trim() || null;
   }
   if (input.nombre !== undefined) {
     const nombre = input.nombre.trim();
