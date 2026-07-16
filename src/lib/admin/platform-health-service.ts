@@ -107,6 +107,27 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
     detail: campanasOk ? "Tabla campanas OK." : "Falta tabla campanas — aplica 019.",
   });
 
+  const partnersOk = await probeTable("partners");
+  let partnerIdOk = partnersOk;
+  if (partnersOk) {
+    partnerIdOk = await probeColumn("prospectos", "partner_id", {
+      desarrollo_id: desarrolloId,
+      nombre: "__gabi_health_probe__",
+      etapa: "nuevo",
+    });
+  }
+  checks.push({
+    id: "063",
+    label: "Alianzas (inmobiliarias / asesores externos)",
+    migrationFile: "063_partners.sql",
+    ok: partnersOk && partnerIdOk,
+    detail: !partnersOk
+      ? "Falta tabla partners — aplica 063."
+      : partnerIdOk
+        ? "Catálogo de aliados y partner_id en prospectos OK."
+        : "Falta columna prospectos.partner_id — aplica 063.",
+  });
+
   const expedienteOk = await probeTable("expediente_documentos");
   checks.push({
     id: "022",

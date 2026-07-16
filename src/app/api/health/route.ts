@@ -60,8 +60,31 @@ export async function GET() {
       : "ASESOR_SESSION_SECRET ausente (requerido en producción)",
   };
 
+  const emailConfigured = Boolean(
+    process.env.RESEND_API_KEY?.trim() && process.env.EMAIL_FROM?.trim(),
+  );
+  checks.email = {
+    ok: emailConfigured || process.env.NODE_ENV !== "production",
+    detail: emailConfigured
+      ? "Resend configurado"
+      : "Falta RESEND_API_KEY o EMAIL_FROM (notificaciones)",
+  };
+
+  const metaLeadConfigured = Boolean(
+    process.env.META_WEBHOOK_VERIFY_TOKEN?.trim() &&
+      process.env.META_APP_SECRET?.trim() &&
+      process.env.META_PAGE_ACCESS_TOKEN?.trim(),
+  );
+  checks.metaLeads = {
+    ok: true, // no tumba la plataforma; solo informa
+    detail: metaLeadConfigured
+      ? "Meta Lead Ads listo (verify + secret + page token)"
+      : "Meta Lead Ads incompleto (faltan META_APP_SECRET y/o META_PAGE_ACCESS_TOKEN)",
+  };
+
   const criticalOk = Boolean(checks.env?.ok && checks.database?.ok);
-  const allOk = criticalOk && Boolean(checks.cron?.ok && checks.session?.ok);
+  const softOk = Boolean(checks.cron?.ok && checks.session?.ok && checks.email?.ok);
+  const allOk = criticalOk && softOk;
 
   let status: HealthStatus = "ok";
   if (!criticalOk) {

@@ -69,6 +69,7 @@
     "db:smoke:playbook": "node scripts/smoke-playbook-api.mjs",
     "db:smoke:playbook-queue": "node scripts/smoke-playbook-queue.mjs",
     "drive:test": "node --import tsx scripts/drive-test.mjs",
+    "smoke:go-live": "node scripts/smoke-go-live.mjs",
     "predev": "node scripts/check-supabase-env.mjs && node scripts/catalog-sync-if-needed.mjs",
     "prebuild": "node scripts/generate-gabi-pwa-icons.mjs"
   },
