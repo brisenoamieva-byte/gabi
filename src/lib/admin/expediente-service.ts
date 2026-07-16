@@ -1,5 +1,5 @@
 import { assertDesarrolloAccess, canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
-import { resolveAdminUserIdForDb } from "@/lib/admin/session";
+import { resolveAdminUserIdForDb } from "@/lib/admin/admin-user-id";
 import type { AdminProfile } from "@/lib/admin/types";
 import {
   computeChecklistProgreso,
