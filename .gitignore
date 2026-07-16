@@ -33,6 +33,9 @@ yarn-error.log*
 .env*.local
 .gabi/
 
+# working extracts (never commit bank PDFs / temp media)
+.tmp/
+
 # vercel
 .vercel
 

@@ -12,6 +12,10 @@ node scripts/smoke-go-live.mjs https://www.gabi.mx
 
 También: `GET https://www.gabi.mx/api/health` → debe responder `status: "ok"` (o `degraded` con detalle).
 
+## Continuidad (pérdida de laptop)
+
+Ver [docs/dr-laptop-loss.md](./dr-laptop-loss.md): qué sobrevive, qué se pierde y checklist de vault + segundo admin.
+
 ## Infraestructura
 
 - [x] Deploy Production en Vercel (`main`) en verde (CI lint+build)
