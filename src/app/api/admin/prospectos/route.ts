@@ -31,13 +31,13 @@ export async function GET(request: Request) {
   const spam = searchParams.get("spam") as "exclude" | "only" | "include" | null;
   const duplicados = searchParams.get("duplicados") as "exclude" | "only" | "include" | null;
   const nivelInteres = searchParams.get("nivelInteres") ?? undefined;
-  const calificacionLeadRaw = searchParams.get("calificacionLead") ?? undefined;
+  const calificacionLeadRaw = searchParams.get("calificacionLead");
   const calificacionLead =
     calificacionLeadRaw === "A" ||
     calificacionLeadRaw === "B" ||
     calificacionLeadRaw === "C" ||
     calificacionLeadRaw === "sin"
-      ? calificacionLeadRaw
+      ? (calificacionLeadRaw as "A" | "B" | "C" | "sin")
       : undefined;
   const withResumen = searchParams.get("resumen") === "1";
 
@@ -45,7 +45,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "desarrolloId requerido." }, { status: 400 });
   }
 
-  const sharedFilters = {
+  const sharedFilters: {
+    asesorId?: string;
+    search?: string;
+    desde?: string;
+    hasta?: string;
+    campanaId?: string;
+    partnerId?: string;
+    nivelInteres?: string;
+    spam: "exclude" | "only" | "include";
+    duplicados: "exclude" | "only" | "include";
+    calificacionLead?: "A" | "B" | "C" | "sin";
+  } = {
     asesorId,
     search,
     desde,
