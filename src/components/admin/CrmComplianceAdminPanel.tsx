@@ -13,14 +13,17 @@ import {
   RefreshCw,
   Settings2,
   ShieldCheck,
+  Target,
   Wrench,
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { DesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
+import type { GarantiaSlaReport } from "@/lib/comercial/garantia-sla";
 import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { CadenciaAdminPanel } from "@/components/admin/CadenciaAdminPanel";
 import { CrmPlaybookAdminPanel } from "@/components/admin/CrmPlaybookAdminPanel";
+import { GarantiaSlaDashboard } from "@/components/admin/GarantiaSlaDashboard";
 
 type CrmComplianceAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -29,17 +32,16 @@ type CrmComplianceAdminPanelProps = {
   canOpenLeads?: boolean;
 };
 
-type SaludCrmTab = "playbook" | "cadencia" | "config" | "herramientas";
+type SaludCrmTab = "garantia" | "playbook" | "cadencia" | "config" | "herramientas";
 
 const pilotDesarrollos = (desarrollos: Desarrollo[]) => desarrollos;
 
 const parseTab = (value: string | null, canConfigure: boolean): SaludCrmTab => {
+  if (value === "playbook" || value === "cumplimiento") return "playbook";
   if (value === "cadencia") return "cadencia";
   if (value === "herramientas") return "herramientas";
   if (value === "config" && canConfigure) return "config";
-  // legado
-  if (value === "cumplimiento") return "playbook";
-  return "playbook";
+  return "garantia";
 };
 
 export function CrmComplianceAdminPanel({
@@ -57,6 +59,9 @@ export function CrmComplianceAdminPanel({
     parseTab(searchParams.get("tab"), canConfigurePlaybook),
   );
   const [report, setReport] = useState<DesarrolloComplianceReport | null>(null);
+  const [garantia, setGarantia] = useState<GarantiaSlaReport | null>(null);
+  const [garantiaLoading, setGarantiaLoading] = useState(false);
+  const [garantiaError, setGarantiaError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [testPhone, setTestPhone] = useState("");
@@ -71,7 +76,7 @@ export function CrmComplianceAdminPanel({
     if (next === "config" && !canConfigurePlaybook) return;
     setTab(next);
     const params = new URLSearchParams(searchParams.toString());
-    if (next === "playbook") {
+    if (next === "garantia") {
       params.delete("tab");
     } else {
       params.set("tab", next);
@@ -114,11 +119,45 @@ export function CrmComplianceAdminPanel({
     }
   }, [desarrolloId]);
 
+  const loadGarantia = useCallback(async () => {
+    if (!desarrolloId) {
+      setGarantia(null);
+      return;
+    }
+
+    setGarantiaLoading(true);
+    setGarantiaError("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/crm-compliance/garantia?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+      );
+      const data = (await response.json()) as {
+        report?: GarantiaSlaReport;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo cargar la garantía SLA.");
+      }
+
+      setGarantia(data.report ?? null);
+    } catch (loadError) {
+      setGarantia(null);
+      setGarantiaError(loadError instanceof Error ? loadError.message : "Error al cargar.");
+    } finally {
+      setGarantiaLoading(false);
+    }
+  }, [desarrolloId]);
+
   useEffect(() => {
     if (tab === "playbook") {
       void load();
     }
-  }, [load, tab]);
+    if (tab === "garantia") {
+      void loadGarantia();
+    }
+  }, [load, loadGarantia, tab]);
 
   const healthTone = useMemo(() => {
     if (!report?.playbookEnabled) {
@@ -175,8 +214,8 @@ export function CrmComplianceAdminPanel({
           </p>
           <h1 className="text-2xl font-black tracking-tight text-gabi-ink">Salud CRM</h1>
           <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
-            Un solo lugar para ver si el equipo sigue el playbook, si la cadencia de contacto va al
-            día y (si tienes permiso) configurar los pasos.
+            Garantía de seguimiento, playbook, cadencia y configuración — lo que vendes al dueño del
+            desarrollo es el cumplimiento, no solo el CRM.
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>
@@ -245,6 +284,12 @@ export function CrmComplianceAdminPanel({
 
       <div className="flex flex-wrap gap-2 border-b border-gabi-cream-dark pb-px">
         <TabButton
+          active={tab === "garantia"}
+          icon={Target}
+          label="Garantía SLA"
+          onClick={() => setActiveTab("garantia")}
+        />
+        <TabButton
           active={tab === "playbook"}
           icon={ShieldCheck}
           label="Playbook al día"
@@ -271,6 +316,19 @@ export function CrmComplianceAdminPanel({
           onClick={() => setActiveTab("herramientas")}
         />
       </div>
+
+      {tab === "garantia" ? (
+        <GarantiaSlaDashboard
+          report={garantia}
+          loading={garantiaLoading}
+          error={garantiaError}
+          desarrolloId={desarrolloId}
+          canOpenLeads={canOpenLeads}
+          onRefresh={() => void loadGarantia()}
+          canConfigurePlaybook={canConfigurePlaybook}
+          onOpenConfig={() => setActiveTab("config")}
+        />
+      ) : null}
 
       {tab === "cadencia" ? (
         <CadenciaAdminPanel desarrollos={desarrollos} scopeLabel={scopeLabel} embedded />
