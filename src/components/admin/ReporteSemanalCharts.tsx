@@ -507,7 +507,7 @@ export function InventarioHeatmap({ celdas }: { celdas: ReporteSemanalMatrizCeld
   }
 
   return (
-    <ChartCard title="Matriz de inventario" subtitle="Unidades disponibles — lista × modelo">
+    <ChartCard title="Matriz de inventario" subtitle="Disponibles — lista oficial × modelo">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-xs">
           <thead>

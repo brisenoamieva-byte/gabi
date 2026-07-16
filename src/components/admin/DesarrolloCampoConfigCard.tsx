@@ -149,9 +149,8 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
             <Landmark className="h-5 w-5" />
             Cotizador, bancarios y Drive
           </h3>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Sin tocar código: reglas del cotizador genérico, datos de apartado y carpeta de
-            expedientes.
+          <p className="mt-1 text-sm text-slate-500">
+            Cotizador, bancarios y Drive.
           </p>
         </div>
         {canEdit ? (

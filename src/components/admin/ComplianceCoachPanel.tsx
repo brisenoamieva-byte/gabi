@@ -123,9 +123,8 @@ export function ComplianceCoachPanel({
             Auditoría CRM
           </p>
           <h1 className="text-2xl font-black tracking-tight text-gabi-forest">Compliance Coach</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Lista de excepciones para revisión operativa: pasos vencidos y pendientes antes del
-            reporte comercial. Sin acceso a edición de leads — solo auditoría y exportación.
+          <p className="mt-1 text-sm text-slate-500">
+            Excepciones CRM
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>

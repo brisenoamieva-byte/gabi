@@ -231,14 +231,12 @@ export function InventarioAdminPanel({
           <div>
             <h3 className="text-lg font-black text-gabi-forest">Curación para recorrido y cotizador</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Orden, visibilidad en visita, razones de venta e instrucciones. El estatus comercial se
-              edita en la pestaña <strong>Sembrado</strong>.
+              Visibilidad en visita y razones de venta. El estatus comercial está en Sembrado.
             </p>
           </div>
         )}
         <p className={`${embedded ? "mt-2" : "mt-3"} max-w-3xl text-sm text-slate-500`}>
-          Edita la tabla, importa CSV o agrega filas. El estatus mostrado refleja el sembrado en tiempo
-          real (solo lectura aquí).
+          Edita la tabla o importa CSV.
         </p>
 
         {!embedded ? (

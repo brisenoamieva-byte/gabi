@@ -1011,9 +1011,6 @@ export function RegistrarApartadoModal({
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    Puedes vender con una lista cerrada; el inventario sigue en la activa.
-                  </p>
                 </>
               ) : (
                 <input

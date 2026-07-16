@@ -2,6 +2,10 @@ import type { AdminProfile } from "@/lib/admin/types";
 import { listProspectos } from "@/lib/admin/prospectos-service";
 import { listSembradoUnidades, listOperaciones } from "@/lib/admin/operaciones-service";
 import {
+  listListasPreciosParaApartado,
+  type ListaPreciosRecord,
+} from "@/lib/admin/listas-precios-service";
+import {
   getReporteSemanalSegments,
   type ReporteSemanalSegmentConfig,
 } from "@/lib/admin/reporte-semanal/segment-config";
@@ -58,6 +62,72 @@ const APARTADO_ESTATUS = new Set([
   "Vendidas Cobradas",
 ]);
 
+const SIN_LISTA = "Sin lista";
+
+type ListaResolver = {
+  resolveForInventario: (listaPreciosStamp: string | null) => string;
+  resolveForOperacion: (operacion: OperacionComercialRecord) => string | null;
+  compareListas: (a: string, b: string) => number;
+};
+
+function buildListaResolver(listas: ListaPreciosRecord[]): ListaResolver {
+  const ordenadas = [...listas].sort((a, b) => {
+    if (a.estado === "activa" && b.estado !== "activa") return -1;
+    if (b.estado === "activa" && a.estado !== "activa") return 1;
+    return b.vigencia_desde.localeCompare(a.vigencia_desde);
+  });
+
+  const byId = new Map(ordenadas.map((lista) => [lista.id, lista]));
+  const byNombre = new Map(
+    ordenadas.map((lista) => [lista.nombre.trim().toLowerCase(), lista]),
+  );
+  const activa = ordenadas.find((lista) => lista.estado === "activa") ?? null;
+  const orderIndex = new Map(ordenadas.map((lista, index) => [lista.nombre, index]));
+
+  return {
+    resolveForInventario(listaPreciosStamp) {
+      const stamp = listaPreciosStamp?.trim();
+      if (stamp) {
+        const hit = byNombre.get(stamp.toLowerCase());
+        if (hit) {
+          return hit.nombre;
+        }
+      }
+      return activa?.nombre ?? SIN_LISTA;
+    },
+    resolveForOperacion(operacion) {
+      if (operacion.lista_precios_id) {
+        const byOfficialId = byId.get(operacion.lista_precios_id);
+        if (byOfficialId) {
+          return byOfficialId.nombre;
+        }
+      }
+      const stamp = operacion.lista_precios?.trim();
+      if (stamp) {
+        const hit = byNombre.get(stamp.toLowerCase());
+        if (hit) {
+          return hit.nombre;
+        }
+        // Texto legacy sin lista oficial: no inventar nombre.
+        if (ordenadas.length === 0) {
+          return stamp;
+        }
+      }
+      return activa?.nombre ?? stamp ?? null;
+    },
+    compareListas(a, b) {
+      const ia = orderIndex.has(a) ? orderIndex.get(a)! : Number.MAX_SAFE_INTEGER;
+      const ib = orderIndex.has(b) ? orderIndex.get(b)! : Number.MAX_SAFE_INTEGER;
+      if (ia !== ib) {
+        return ia - ib;
+      }
+      if (a === SIN_LISTA) return 1;
+      if (b === SIN_LISTA) return -1;
+      return a.localeCompare(b, "es");
+    },
+  };
+}
+
 function modeloLabel(row: SembradoUnidadRow): string {
   if (row.prototipoId) {
     const parts = row.prototipoId.split("-");
@@ -76,6 +146,7 @@ function precioM2(row: SembradoUnidadRow, operacion: OperacionComercialRecord | 
 function toOperacionLinea(
   row: SembradoUnidadRow,
   operacion: OperacionComercialRecord,
+  listas: ListaResolver,
 ): ReporteSemanalOperacionLinea {
   return {
     cliente: operacion.cliente_nombre,
@@ -83,7 +154,7 @@ function toOperacionLinea(
     precioM2: precioM2(row, operacion),
     precioLista: operacion.precio_lista,
     precioVenta: operacion.precio_venta,
-    lista: operacion.lista_precios,
+    lista: listas.resolveForOperacion(operacion),
     plazo: operacion.esquema_pago,
     asesor: operacion.promotor_nombre ?? operacion.equipo_venta,
     fecha: operacion.fecha_apartado ?? operacion.fecha_cierre,
@@ -113,6 +184,7 @@ function buildSegmentoReporte(
   mesAnterior: { desde: string; hasta: string },
   acumuladoDesde: string,
   objetivos: ReporteObjetivosAnuales | null,
+  listas: ListaResolver,
 ): ReporteSemanalSegmento {
   const segmentRows =
     config.clusterId === "__all__"
@@ -151,7 +223,7 @@ function buildSegmentoReporte(
 
   for (const row of segmentRows) {
     const op = row.operacion;
-    const lista = row.listaPrecios ?? op?.lista_precios ?? "Sin lista";
+    const lista = listas.resolveForInventario(row.listaPrecios);
     const modelo = modeloLabel(row);
 
     if (!op || op.cancelada) {
@@ -185,7 +257,7 @@ function buildSegmentoReporte(
 
     if (APARTADO_ESTATUS.has(estatus)) {
       apartadosVigentes += 1;
-      apartadosVigentesLineas.push(toOperacionLinea(row, op));
+      apartadosVigentesLineas.push(toOperacionLinea(row, op, listas));
       comprometidos += Number(op.precio_venta ?? op.precio_lista ?? 0);
       if (!VENTA_ESTATUS.has(estatus)) {
         modeloEntry.apartados += 1;
@@ -213,7 +285,7 @@ function buildSegmentoReporte(
     if (isDateInRange(op.fecha_cierre, mes.desde, mes.hasta) && VENTA_ESTATUS.has(estatus)) {
       ventasMes += 1;
       ventasMesMonto += Number(op.precio_venta ?? 0);
-      ventasMesLineas.push(toOperacionLinea(row, op));
+      ventasMesLineas.push(toOperacionLinea(row, op, listas));
     }
     if (isDateInRange(op.fecha_apartado, mes.desde, mes.hasta)) {
       apartadosMes += 1;
@@ -233,7 +305,7 @@ function buildSegmentoReporte(
     cancelacionesSemana += 1;
     const row = rowByUnidadId.get(op.unidad_id);
     if (row) {
-      canceladosLineas.push(toOperacionLinea(row, op));
+      canceladosLineas.push(toOperacionLinea(row, op, listas));
     }
     if (isDateInRange(op.fecha_apartado, periodo.desde, periodo.hasta)) {
       apartadosSemana += 1;
@@ -315,7 +387,7 @@ function buildSegmentoReporte(
     apartadosVigentes: apartadosVigentesLineas.slice(0, 80),
     canceladosSemana: canceladosLineas.slice(0, 30),
     matrizInventario: Array.from(matrizMap.values()).sort(
-      (a, b) => a.lista.localeCompare(b.lista) || a.modelo.localeCompare(b.modelo),
+      (a, b) => listas.compareListas(a.lista, b.lista) || a.modelo.localeCompare(b.modelo, "es"),
     ),
     absorcionPorModelo: Array.from(modeloMap.values()).sort((a, b) => b.ventas - a.ventas),
   };
@@ -330,6 +402,7 @@ function buildGeneralSegmento(
   mesAnterior: { desde: string; hasta: string },
   acumuladoDesde: string,
   objetivos: ReporteObjetivosAnuales | null,
+  listas: ListaResolver,
 ): ReporteSemanalSegmento {
   return buildSegmentoReporte(
     desarrolloId,
@@ -341,6 +414,7 @@ function buildGeneralSegmento(
     mesAnterior,
     acumuladoDesde,
     objetivos,
+    listas,
   );
 }
 
@@ -481,7 +555,7 @@ export async function getReporteComercialSemanal(
   const year = new Date(`${periodo.hasta}T12:00:00`).getUTCFullYear();
   const acumuladoDesde = `${year}-01-01`;
 
-  const [rows, todasOperaciones, prospectosSemana, prospectosMes, prospectosAcum] =
+  const [rows, todasOperaciones, prospectosSemana, prospectosMes, prospectosAcum, listasOficiales] =
     await Promise.all([
       listSembradoUnidades({ desarrolloId: filters.desarrolloId }, profile),
       listOperaciones({ desarrolloId: filters.desarrolloId, includeCanceladas: true }, profile),
@@ -513,7 +587,10 @@ export async function getReporteComercialSemanal(
         },
         profile,
       ),
+      listListasPreciosParaApartado(filters.desarrolloId, profile).catch(() => [] as ListaPreciosRecord[]),
     ]);
+
+  const listas = buildListaResolver(listasOficiales);
 
   const prospectosCitasPeriodo = filterProspectosConVisitaEnPeriodo(prospectosAcum, periodo);
   const visitasMesMap = prospectosVisitasPorMes(prospectosAcum);
@@ -539,6 +616,7 @@ export async function getReporteComercialSemanal(
           mesAnterior,
           acumuladoDesde,
           objetivosMap.get(config.id) ?? null,
+          listas,
         ),
       )
     : [
@@ -551,6 +629,7 @@ export async function getReporteComercialSemanal(
           mesAnterior,
           acumuladoDesde,
           objetivosMap.get("general") ?? null,
+          listas,
         ),
       ];
 

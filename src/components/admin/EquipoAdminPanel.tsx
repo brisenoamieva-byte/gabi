@@ -124,8 +124,7 @@ export function EquipoAdminPanel({
           </p>
         ) : null}
         <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Administra quién vende en piso de ventas y quién configura GABI en el backoffice. Son dos
-          accesos distintos que pueden pertenecer a la misma persona.
+          Portal comercial (PIN) y accesos de backoffice.
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">

@@ -266,14 +266,8 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
             Alianzas
           </p>
           <h1 className="text-2xl font-bold text-gabi-forest">Inmobiliarias y asesores externos</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Catálogo único por comercializadora
-            {comercializadoraActiva ? ` (${comercializadoraActiva.nombre})` : ""}            . Un aliado
-            puede referir leads en cualquiera de sus desarrollos
-            {comercializadoraActiva?.desarrolloNombres.length
-              ? ` (${comercializadoraActiva.desarrolloNombres.join(", ")})`
-              : ""}
-            . Guarda el convenio firmado (PDF) con cada casa alianza.
+          <p className="mt-1 text-sm text-slate-500">
+            {comercializadoraActiva?.nombre ?? "Por comercializadora"}
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>
@@ -321,8 +315,7 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
         >
           <p className="mb-3 text-xs text-slate-500">
             Se registra para toda la comercializadora
-            {comercializadoraActiva ? ` · ${comercializadoraActiva.nombre}` : ""}. No hace falta
-            repetirlo por desarrollo.
+            {comercializadoraActiva ? ` · ${comercializadoraActiva.nombre}` : ""}.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-xs font-semibold text-slate-500 sm:col-span-2">
@@ -389,17 +382,18 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
               />
             </label>
             <label className="block text-xs font-semibold text-slate-500 sm:col-span-2">
-              Convenio con casa alianza (PDF)
+              Convenio (PDF)
               <input
                 type="file"
                 accept="application/pdf,.pdf"
                 onChange={(event) => setCreateConvenioFile(event.target.files?.[0] ?? null)}
                 className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gabi-forest/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gabi-forest"
               />
-              <span className="mt-1 block text-[11px] font-normal text-slate-400">
-                Opcional al crear; también se puede subir después desde la tabla.
-                {createConvenioFile ? ` · ${createConvenioFile.name}` : ""}
-              </span>
+              {createConvenioFile ? (
+                <span className="mt-1 block text-[11px] font-normal text-slate-400">
+                  {createConvenioFile.name}
+                </span>
+              ) : null}
             </label>
           </div>
           <div className="mt-4 flex gap-2">

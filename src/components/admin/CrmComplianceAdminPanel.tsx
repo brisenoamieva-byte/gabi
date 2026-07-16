@@ -213,9 +213,8 @@ export function CrmComplianceAdminPanel({
             Supervisión comercial
           </p>
           <h1 className="text-2xl font-black tracking-tight text-gabi-forest">Salud CRM</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Garantía de seguimiento, playbook, cadencia y configuración — lo que vendes al dueño del
-            desarrollo es el cumplimiento, no solo el CRM.
+          <p className="mt-1 text-sm text-slate-500">
+            Garantía, playbook y cadencia
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>

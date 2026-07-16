@@ -207,9 +207,9 @@ export function CampanasAdminPanel({
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">CRM</p>
               <h2 className="text-2xl font-black text-gabi-forest">Campañas</h2>
-              <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                Canales de captación por desarrollo — atribución de leads (Online / Offline).
-                {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
+              <p className="mt-1 text-sm text-slate-500">
+                Canales de captación
+                {scopeLabel ? ` · ${scopeLabel}` : ""}
               </p>
             </div>
             {actionButtons}

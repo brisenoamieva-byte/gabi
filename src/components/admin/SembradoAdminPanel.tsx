@@ -459,12 +459,11 @@ export function SembradoAdminPanel({
               Control gerencia
             </p>
             <h2 className="text-2xl font-black text-gabi-forest">Sembrado y disponibilidad</h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500">
               {tieneSegmentos
-                ? `Inventario completo por segmento — ${segmentoConfig?.label ?? "selecciona segmento"}.`
-                : "Todas las unidades del desarrollo: estatus comercial, precios, cobranza y curación para recorrido."}
-              {scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}{" "}
-              Apartados, precios, cobranza y curación para recorrido en un solo lugar.
+                ? segmentoConfig?.label ?? "Inventario por segmento"
+                : "Inventario, apartados y cobranza"}
+              {scopeLabel ? ` · ${scopeLabel}` : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

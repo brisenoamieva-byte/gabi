@@ -378,29 +378,22 @@ export function CatalogoAdminPanel() {
         </p>
         <h2 className="mt-2 text-2xl font-black text-[#13315C]">Catálogo multi-tenant</h2>
         <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Alta de comercializadoras y desarrollos. Después de crear, completa producto, sembrado y
-          la ficha en{" "}
+          Comercializadoras y desarrollos. Completa producto y ficha en{" "}
           <a href="/admin/desarrollos" className="font-bold text-[#13315C] underline">
             Desarrollos
-          </a>{" "}
-          (bancarios, cotizador, Drive). Guía: <code className="text-xs">docs/add-desarrollo.md</code>
+          </a>
           .
         </p>
 
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Solo Grupo Investti
-          </p>
-          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-slate-600">
-              Reglas e import del simulador de lotes (no aplica a BBR / Gavia).
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-slate-600">Simulador Investti</p>
             <Link
               href="/admin/investti-simulador"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#13315C]/15 bg-white px-3 py-1.5 text-sm font-semibold text-[#13315C] hover:bg-white"
             >
               <Calculator className="h-4 w-4" />
-              Simulador Investti
+              Abrir
             </Link>
           </div>
         </div>

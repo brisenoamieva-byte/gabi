@@ -194,8 +194,7 @@ export function UsuariosAdminPanel({
           </p>
           <h2 className="mt-2 text-2xl font-black text-[#13315C]">Usuarios admin</h2>
           <p className="mt-3 max-w-3xl text-sm text-slate-500">
-            Invita gerentes y operaciones, y asigna qué desarrollos pueden gestionar en documentos,
-            inventario y asesores.
+            Gerentes y operaciones por desarrollo.
           </p>
           <button
             type="button"

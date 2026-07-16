@@ -157,7 +157,7 @@ export function CrmPlaybookAdminPanel({
   if (!options.length) {
     return (
       <p className="text-sm text-slate-500">
-        No hay desarrollos piloto (Pasaje Álamos / La Vista) en tu alcance.
+        No hay desarrollos en tu alcance.
       </p>
     );
   }
@@ -165,10 +165,7 @@ export function CrmPlaybookAdminPanel({
   return (
     <div className="space-y-5">
       {embedded ? (
-        <p className="max-w-2xl text-sm text-slate-600">
-          Define los pasos obligatorios por etapa y si el CRM bloquea avances sin completar el
-          playbook. Los asesores ven estos pasos en campo.
-        </p>
+        <p className="text-sm text-slate-600">Pasos obligatorios por etapa.</p>
       ) : (
         <>
           <div>

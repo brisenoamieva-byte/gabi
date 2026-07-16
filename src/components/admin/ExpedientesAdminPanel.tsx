@@ -134,9 +134,9 @@ export function ExpedientesAdminPanel({ desarrollos, scopeLabel }: ExpedientesAd
               Post-venta
             </p>
             <h2 className="text-2xl font-black text-gabi-forest">Expedientes de venta</h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Documentos del cliente por operación: contrato, identificación, comprobantes y
-              escritura.{scopeLabel ? ` Alcance: ${scopeLabel}.` : ""}
+            <p className="mt-1 text-sm text-slate-500">
+              Documentos por operación
+              {scopeLabel ? ` · ${scopeLabel}` : ""}
             </p>
           </div>
           <button

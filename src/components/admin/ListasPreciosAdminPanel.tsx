@@ -269,10 +269,8 @@ export function ListasPreciosAdminPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-gabi-forest">Listas de precios</h3>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Versiona precios de {desarrolloNombre}: genera la siguiente lista con un incremento %,
-            revisa/edita el borrador y actívala con fecha de vigencia. Las listas cerradas siguen
-            disponibles al registrar un apartado (sin reactivar el inventario).
+          <p className="mt-1 text-sm text-slate-500">
+            Versiona precios de {desarrolloNombre}.
           </p>
           {activa ? (
             <p className="mt-2 text-sm font-semibold text-emerald-700">
@@ -437,7 +435,7 @@ export function ListasPreciosAdminPanel({
                       >
                         {listaPreciosEstadoLabel[lista.estado]} · {lista.vigencia_desde}
                         {lista.incremento_pct != null ? ` · +${lista.incremento_pct}%` : ""}
-                        {lista.estado === "cerrada" ? " · usable en apartado" : ""}
+                        {lista.estado === "cerrada" ? " · cerrada" : ""}
                       </span>
                     </button>
                   </li>
@@ -458,9 +456,7 @@ export function ListasPreciosAdminPanel({
                       {listaPreciosEstadoLabel[detail.estado]} · vigencia {detail.vigencia_desde}
                       {detail.vigencia_hasta ? ` → ${detail.vigencia_hasta}` : ""} ·{" "}
                       {detail.unidadesCount} unidades
-                      {detail.estado === "cerrada"
-                        ? " · Disponible al registrar apartado"
-                        : ""}
+                      {detail.estado === "cerrada" ? " · cerrada" : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">

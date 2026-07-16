@@ -675,11 +675,9 @@ export function AsesoresAdminPanel({
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
             Catálogo multi-tenant
           </p>
-          <h2 className="mt-2 text-xl font-black text-[#13315C]">Importar catálogo piloto</h2>
+          <h2 className="mt-2 text-xl font-black text-[#13315C]">Importar catálogo desde código</h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Carga comercializadoras, desarrollos, clusters, prototipos e inventario Pasaje Álamos
-            desde el código (equivalente a <code className="text-xs">npm run sync</code> en tu PC).
-            Aplica antes las migraciones en Supabase (<code className="text-xs">npm run db:migrate:hint</code>).
+            Seed / upsert desde el código. Solo para setup o recuperación.
           </p>
           <button
             type="button"
@@ -716,21 +714,9 @@ export function AsesoresAdminPanel({
               </p>
             ) : null}
             <p className="mt-3 max-w-3xl text-sm text-slate-500">
-              {isGerenteComercial ? (
-                <>
-                  Crea accesos comerciales para tu desarrollo.{" "}
-                  <strong>Gerente</strong>, <strong>Coordinador</strong> y <strong>Director</strong>{" "}
-                  tienen permisos amplios en el desarrollo y pueden entrar a{" "}
-                  <strong>/admin</strong> además del PIN en el portal de su comercializadora (ej.{" "}
-                  <strong>/portal/bbr</strong>).
-                </>
-              ) : (
-                <>
-                  Crea accesos comerciales, asigna desarrollos y roles. El PIN de 4 dígitos se genera
-                  automáticamente por comercializadora. Compártelo por canal seguro para entrar en el
-                  portal correspondiente (ej. <strong>/portal/bbr</strong>).
-                </>
-              )}
+              {isGerenteComercial
+                ? "Accesos comerciales de tu desarrollo (PIN y /admin según rol)."
+                : "PIN por comercializadora y roles de campo."}
             </p>
           </>
         ) : (

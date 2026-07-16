@@ -126,9 +126,8 @@ export function GarantiaSlaDashboard({
             Producto comercial
           </p>
           <h2 className="mt-1 text-lg font-black text-gabi-forest">Garantía de seguimiento</h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            SLA contractual + sello semanal. Lunes 08:00 (CDMX) se envía PDF por email y resumen por
-            WhatsApp a gerencia.
+          <p className="mt-1 text-sm text-slate-500">
+            SLA contractual y reporte semanal.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

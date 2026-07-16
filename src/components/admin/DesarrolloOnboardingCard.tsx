@@ -62,10 +62,8 @@ export function DesarrolloOnboardingCard({ desarrolloId }: Props) {
             <Rocket className="h-5 w-5" />
             Checklist operativo
           </h3>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            {onboarding.readyForField
-              ? "Listo para recorrido, disponibilidad y cotizador genérico en campo."
-              : "Completa los pasos obligatorios (★) antes de visitas comerciales."}
+          <p className="mt-1 text-sm text-slate-500">
+            {onboarding.readyForField ? "Listo para campo." : "Completa los pasos ★ pendientes."}
           </p>
           <p className="mt-2 max-w-2xl text-xs leading-relaxed text-slate-400">
             {onboarding.selfServeNote}

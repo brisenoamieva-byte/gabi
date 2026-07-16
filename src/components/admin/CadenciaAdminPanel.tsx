@@ -158,8 +158,7 @@ export function CadenciaAdminPanel({
       {embedded ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="max-w-2xl text-sm text-slate-500">
-            Seguimiento de los 8 días BBR por prospecto: toques pendientes, vencidos y estado por
-            asesor. Los leads en etapa Nuevo sin cadencia se crean al cargar este panel.
+            Toques pendientes y vencidos por asesor.
           </p>
           {actions}
         </div>
@@ -170,9 +169,8 @@ export function CadenciaAdminPanel({
               Perfilamiento
             </p>
             <h1 className="text-2xl font-black tracking-tight text-gabi-forest">Cadencia de contacto</h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Seguimiento de los 8 días BBR por prospecto: toques pendientes, vencidos y estado por
-              asesor. Los leads en etapa Nuevo sin cadencia se crean al cargar este panel.
+            <p className="mt-1 text-sm text-slate-500">
+              Toques pendientes y vencidos
               {scopeLabel ? ` · ${scopeLabel}` : ""}
             </p>
           </div>
