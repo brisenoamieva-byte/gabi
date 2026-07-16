@@ -37,6 +37,7 @@
     "leads:import:xperience": "node scripts/import-xperience-leads.mjs",
     "leads:import:prospectia": "node scripts/import-prospectia-leads.mjs",
     "leads:import:gavia": "node scripts/import-gavia-leads.mjs",
+    "partners:import:bbr": "node scripts/import-partners-convenio-bbr.mjs",
     "leads:backfill:prospectia-visitas": "node scripts/backfill-prospectia-visitas.mjs",
     "leads:assign:prospectia-asesores": "node scripts/assign-prospectia-asesores.mjs",
     "leads:analyze-xperience": "node scripts/analyze-xperience-export.mjs",

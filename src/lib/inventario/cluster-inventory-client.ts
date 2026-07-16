@@ -1,5 +1,6 @@
 import { enrichPasajeInventario } from "@/lib/catalog/pasaje-unidad-detalles";
 import { getDisponibilidadesByCluster, type DisponibilidadUnidad } from "@/lib/data";
+import { filterUnidadesEtapaVendible } from "@/lib/inventario/sembrado-cotizable";
 import {
   OFFLINE_INVENTARIO_MAX_AGE_MS,
   readOfflineInventario,
@@ -15,7 +16,8 @@ export type ClusterInventarioResult = {
 const normalizeUnits = (
   units: DisponibilidadUnidad[],
   desarrolloId: string,
-): DisponibilidadUnidad[] => enrichPasajeInventario(units, desarrolloId);
+): DisponibilidadUnidad[] =>
+  filterUnidadesEtapaVendible(desarrolloId, enrichPasajeInventario(units, desarrolloId));
 
 export async function fetchClusterInventario(
   desarrolloId: string,

@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import {
   activateListaPrecios,
   getListaPreciosDetail,
+  updateListaPreciosDescuentos,
   updateListaPreciosUnidades,
 } from "@/lib/admin/listas-precios-service";
+import type { ListaPrecioEsquemaDescuento } from "@/lib/admin/lista-precios-descuentos";
 import { canAccessDesarrollo, canAccessModule } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
@@ -48,12 +50,25 @@ export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
   try {
     const body = (await request.json()) as {
-      action?: "activar" | "precios";
+      action?: "activar" | "precios" | "descuentos";
       precios?: Array<{ unidadId: string; precioLista: number }>;
+      descuentos?: ListaPrecioEsquemaDescuento[];
     };
 
     if (body.action === "activar") {
       const lista = await activateListaPrecios(id, session.profile);
+      return NextResponse.json({ lista });
+    }
+
+    if (body.action === "descuentos") {
+      if (!body.descuentos?.length) {
+        return NextResponse.json({ error: "descuentos requeridos." }, { status: 400 });
+      }
+      const lista = await updateListaPreciosDescuentos(
+        id,
+        body.descuentos,
+        session.profile,
+      );
       return NextResponse.json({ lista });
     }
 

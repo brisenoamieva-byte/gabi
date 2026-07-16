@@ -11,7 +11,11 @@ import {
   type ProspectoListRow,
 } from "@/lib/admin/prospectos-service";
 import { listPartners } from "@/lib/admin/partners-service";
-import { isProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import {
+  isProspectoEtapa,
+  prospectoEtapaLabel,
+  type ProspectoEtapa,
+} from "@/lib/comercial/prospecto-etapas";
 import {
   buildProspectoTelefonoDuplicadoMessage,
   validateProspectoTelefono,
@@ -20,12 +24,17 @@ import {
   bootstrapCadenciaForProspecto,
   pauseCadenciaForProspecto,
 } from "@/lib/comercial/cadencia-service";
-import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-form-options";
+import {
+  PARTNER_OTRO,
+  resolveMedioPublicitarioFromProspecto,
+} from "@/lib/comercial/apartado-form-options";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 import {
   calificacionFromMotivoDescarte,
   validateMotivoDescarteForPerdido,
 } from "@/lib/comercial/motivo-descarte";
+import { normalizeProximoContactoOn } from "@/lib/comercial/proximo-contacto";
+import { appendProspectoNota } from "@/lib/comercial/prospecto-notas-historial";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
@@ -106,6 +115,8 @@ export type AsesorCreateProspectoInput = {
   telefono?: string;
   medioContacto?: string;
   partnerId?: string;
+  /** Nombre libre cuando el aliado no está en el catálogo (partnerId = PARTNER_OTRO). */
+  partnerNombre?: string;
   notas?: string;
 };
 
@@ -115,6 +126,9 @@ export type AsesorUpdateProspectoInput = {
   assignedAsesorId?: string | null;
   motivoDescarte?: string | null;
   motivoDescarteDetalle?: string | null;
+  /** Fecha AAAA-MM-DD o null para quitar el recordatorio. */
+  proximoContactoOn?: string | null;
+  proximoContactoNota?: string | null;
 };
 
 export const checkProspectoTelefonoForAsesor = async (
@@ -178,19 +192,33 @@ export const createProspectoForAsesor = async (
   let partnerNombre: string | undefined;
   if (esAlianza) {
     const partnerIdRaw = input.partnerId?.trim();
-    if (!partnerIdRaw) {
+    const partnerNombreRaw = input.partnerNombre?.trim();
+    if (!partnerIdRaw && !partnerNombreRaw) {
       throw new Error("Indica qué inmobiliaria o asesor externo trajo el lead.");
     }
-    const partners = await listPartners({
-      desarrolloId: input.desarrolloId,
-      activoOnly: true,
-    });
-    const partner = partners.find((row) => row.id === partnerIdRaw);
-    if (!partner) {
-      throw new Error("Aliado no válido o inactivo. Regístralo en Admin → Alianzas.");
+    if (partnerIdRaw === PARTNER_OTRO || (!partnerIdRaw && partnerNombreRaw)) {
+      if (!partnerNombreRaw) {
+        throw new Error("Escribe el nombre de la inmobiliaria o asesor externo.");
+      }
+      partnerId = undefined;
+      partnerNombre = partnerNombreRaw;
+    } else {
+      if (!partnerIdRaw) {
+        throw new Error("Indica qué inmobiliaria o asesor externo trajo el lead.");
+      }
+      const partners = await listPartners({
+        desarrolloId: input.desarrolloId,
+        activoOnly: true,
+      });
+      const partner = partners.find((row) => row.id === partnerIdRaw);
+      if (!partner) {
+        throw new Error(
+          "Aliado no válido o inactivo. Elige uno del catálogo o usa «Otra» para capturar el nombre.",
+        );
+      }
+      partnerId = partner.id;
+      partnerNombre = partner.nombre;
     }
-    partnerId = partner.id;
-    partnerNombre = partner.nombre;
   }
 
   const duplicate = await findProspectoByTelefonoInDesarrollo(input.desarrolloId, telefono);
@@ -306,6 +334,12 @@ export const updateProspectoForAsesor = async (
   if (input.notas !== undefined) {
     patch.notas = input.notas.trim() || null;
   }
+  if (input.proximoContactoOn !== undefined) {
+    patch.proximo_contacto_on = normalizeProximoContactoOn(input.proximoContactoOn);
+  }
+  if (input.proximoContactoNota !== undefined) {
+    patch.proximo_contacto_nota = input.proximoContactoNota.trim() || null;
+  }
 
   const nextEtapa = (input.etapa ?? existing.etapa) as string;
   if (nextEtapa === "perdido") {
@@ -327,8 +361,15 @@ export const updateProspectoForAsesor = async (
     patch.calificacion = calificacionFromMotivoDescarte(motivoValidation.motivoDescarte);
     patch.es_spam = motivoValidation.motivoDescarte === "datos_falsos";
   } else if (input.etapa !== undefined && existing.etapa === "perdido") {
+    const isLeadership = await isLeadershipAsesorId(asesorId);
+    if (!isLeadership) {
+      throw new Error("Solo gerencia o dirección puede rescatar leads descartados.");
+    }
     patch.motivo_descarte = null;
     patch.motivo_descarte_detalle = null;
+    const destino = prospectoEtapaLabel[input.etapa as ProspectoEtapa] ?? input.etapa;
+    const baseNotas = input.notas !== undefined ? input.notas : existing.notas;
+    patch.notas = appendProspectoNota(baseNotas, `Rescatado del descarte → ${destino}`);
   }
 
   if (input.assignedAsesorId !== undefined) {
@@ -364,6 +405,7 @@ export const updateProspectoForAsesor = async (
 
 export {
   ETAPAS_ASESOR,
+  ETAPA_RESCATE_DEFAULT,
   prospectoAsesorPuedeCotizarOSolicitarApartado,
   prospectoEtapaEditableByAsesor,
 } from "@/lib/asesores/prospectos-client";

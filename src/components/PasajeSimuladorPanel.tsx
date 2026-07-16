@@ -3,6 +3,7 @@
 import { CheckCircle2, Copy, FileDown, UserRound } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { DescuentoEspecialField } from "@/components/cotizador/DescuentoEspecialField";
 import {
   PASAJE_ESQUEMA_LABELS,
   PASAJE_FECHA_ENTREGA,
@@ -40,6 +41,8 @@ export type PasajeSimuladorPanelProps = {
   clienteNombre?: string;
   asesorNombre?: string;
   asesorId?: string;
+  /** Rol del asesor en sesión (gerente/director ven descuento especial). */
+  asesorRol?: string | null;
   prospectoId?: string;
   clienteEmail?: string;
   clienteTelefono?: string;
@@ -347,6 +350,9 @@ const buildResumen = (
     "",
     `Precio lista: ${formatPrice(result.precioLista)}`,
     `Precio contado (−${formatPctShort(result.descuentoContadoPct)}): ${formatPrice(result.precioContado)}`,
+    result.descuentoEspecialPct > 0
+      ? `Descuento especial: ${formatPctShort(result.descuentoEspecialPct)}`
+      : null,
     `Esquema: ${result.esquemaLabel}`,
     `Total cliente: ${formatPrice(result.precioTotal)}`,
     `Descuento efectivo: ${formatPctShort(result.descuentoEfectivoPct)}`,
@@ -392,6 +398,7 @@ export function PasajeSimuladorPanel({
   clienteNombre,
   asesorNombre,
   asesorId,
+  asesorRol,
   prospectoId,
   clienteEmail,
   clienteTelefono,
@@ -421,6 +428,7 @@ export function PasajeSimuladorPanel({
 }: PasajeSimuladorPanelProps) {
   const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [descuentoEspecialPct, setDescuentoEspecialPct] = useState(0);
 
   const cluster = useMemo(
     () => catalog?.clusters.find((item) => item.id === clusterId),
@@ -490,6 +498,7 @@ export function PasajeSimuladorPanel({
         precioLista,
         tipo,
         esquema,
+        descuentoEspecialPct,
         libre: {
           enganchePct: libreEnganche,
           mensualidadesPct: libreMensualidades,
@@ -503,6 +512,7 @@ export function PasajeSimuladorPanel({
         },
       }),
     [
+      descuentoEspecialPct,
       esquema,
       fechaFiniquitoLibre,
       fechaFiniquitoSinMens,
@@ -900,12 +910,23 @@ export function PasajeSimuladorPanel({
           value={formatPrice(resultado.precioLista)}
         />
         <MetricCard
-          label={`Precio contado (−${formatPctShort(resultado.descuentoContadoPct)})`}
+          label={`Precio contado (−${formatPctShort(resultado.descuentoContadoPct)}${
+            resultado.descuentoEspecialPct > 0
+              ? ` · especial ${formatPctShort(resultado.descuentoEspecialPct)}`
+              : ""
+          })`}
           value={formatPrice(resultado.precioContado)}
           variant="accent"
           helper={`Ahorro ${formatPrice(resultado.ahorroContado)}`}
         />
       </section>
+
+      <DescuentoEspecialField
+        asesorRol={asesorRol}
+        value={descuentoEspecialPct}
+        onChange={setDescuentoEspecialPct}
+        accent="pasaje"
+      />
 
       <section>
         <FieldLabel>Esquema de pago</FieldLabel>

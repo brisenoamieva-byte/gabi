@@ -26,6 +26,9 @@ export const EQUIPO_VENTA_OPTIONS = [
 
 export const PROMOTOR_ASESOR_OTRO = "__otro__";
 
+/** Sentinel en selectores de aliado: capturar inmobiliaria/asesor no registrado en Alianzas. */
+export const PARTNER_OTRO = PROMOTOR_ASESOR_OTRO;
+
 const MEDIO_ALIASES: Record<string, string> = {
   "contacto-directo": "Contacto Directo",
   "contacto directo": "Contacto Directo",

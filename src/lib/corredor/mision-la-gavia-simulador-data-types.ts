@@ -3,7 +3,8 @@ export type MisionLaGaviaEsquemaId =
   | "6msi"
   | "12msi"
   | "30-70"
-  | "15-85";
+  | "15-85"
+  | "libre";
 
 export type MisionLaGaviaUnidadRecord = {
   unidad: string;
@@ -32,10 +33,20 @@ export type MisionLaGaviaEsquemaConfig = {
   finiquitoPct: number;
 };
 
+/** Configuración editable del esquema Libre (asesor). */
+export type MisionLaGaviaLibreConfig = {
+  enganchePct: number;
+  mensualidadesPct: number;
+  fechaFiniquito?: Date;
+};
+
 export type MisionLaGaviaSimulacionInput = {
   unidad: MisionLaGaviaUnidadRecord;
   esquema: MisionLaGaviaEsquemaId;
   fechaCotizacion?: Date;
+  libre?: MisionLaGaviaLibreConfig;
+  /** Descuento especial gerente/director (fracción 0–0.015). */
+  descuentoEspecialPct?: number;
 };
 
 export type MisionLaGaviaSimulacionResult = {
@@ -48,6 +59,10 @@ export type MisionLaGaviaSimulacionResult = {
   m2Totales: number;
   precioLista: number;
   precioTotal: number;
+  /** Precio contado (base de capitalización Libre). */
+  precioContado?: number;
+  /** Descuento especial aplicado (fracción 0–0.015). */
+  descuentoEspecialPct?: number;
   descuentoVsListaPct: number;
   enganche: number;
   enganchePct: number;

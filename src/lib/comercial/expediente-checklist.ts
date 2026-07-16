@@ -22,7 +22,7 @@ export const CHECKLIST_LA_CEIBA: ExpedienteChecklistItem[] = [
   { codigo: "OC", etapa: "apartado", parte: "empresa", titulo: "Carta oferta de compra (OC)", requeridoApartado: true, requeridoFormalizacion: false, orden: 1 },
   { codigo: "ANEXO_A_DATOS", etapa: "apartado", parte: "empresa", titulo: "Manifestación de datos generales (ANEXO A)", requeridoApartado: true, requeridoFormalizacion: false, orden: 2 },
   { codigo: "ANEXO_B_PAGO", etapa: "apartado", parte: "empresa", titulo: "Modalidad de pago (ANEXO B)", requeridoApartado: true, requeridoFormalizacion: false, orden: 3 },
-  { codigo: "SIMULADOR", etapa: "apartado", parte: "empresa", titulo: "Simulador de ventas", requeridoApartado: true, requeridoFormalizacion: false, orden: 4 },
+  { codigo: "SIMULADOR", etapa: "apartado", parte: "empresa", titulo: "Cotización autorizada (PDF)", requeridoApartado: true, requeridoFormalizacion: false, orden: 4 },
   { codigo: "ANEXO_C_ESPEC", etapa: "apartado", parte: "empresa", titulo: "Especificaciones del departamento (ANEXO C)", requeridoApartado: true, requeridoFormalizacion: false, orden: 5 },
   { codigo: "ANEXO_D_MANT", etapa: "apartado", parte: "empresa", titulo: "Aceptación cuotas de mantenimiento (ANEXO D)", requeridoApartado: true, requeridoFormalizacion: false, orden: 6 },
   { codigo: "ANEXO_E_PLD", etapa: "apartado", parte: "empresa", titulo: "Carta prevención de lavado de dinero (ANEXO E)", requeridoApartado: true, requeridoFormalizacion: false, orden: 7 },

@@ -25,8 +25,12 @@ import {
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import { MotivoDescarteFields } from "@/components/comercial/MotivoDescarteFields";
 import { ProspectoHistorialComercial } from "@/components/comercial/ProspectoHistorialComercial";
+import { ProspectoNotasHistorialField } from "@/components/comercial/ProspectoNotasHistorialField";
 import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
 import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
+import { ETAPA_RESCATE_DEFAULT } from "@/lib/asesores/prospectos-client";
+import { PARTNER_OTRO } from "@/lib/comercial/apartado-form-options";
+import { formatMotivoDescarte } from "@/lib/comercial/motivo-descarte";
 
 type LeadDetailDrawerProps = {
   prospectoId: string;
@@ -78,10 +82,13 @@ export function LeadDetailDrawer({
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
+  const [proximoContactoOn, setProximoContactoOn] = useState("");
+  const [proximoContactoNota, setProximoContactoNota] = useState("");
   const [motivoDescarte, setMotivoDescarte] = useState("");
   const [motivoDescarteDetalle, setMotivoDescarteDetalle] = useState("");
   const [campanaId, setCampanaId] = useState("");
   const [partnerId, setPartnerId] = useState("");
+  const [partnerNombreLibre, setPartnerNombreLibre] = useState("");
   const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
   const [asesorId, setAsesorId] = useState("");
   const [asesores, setAsesores] = useState<AsesorOption[]>([]);
@@ -92,6 +99,8 @@ export function LeadDetailDrawer({
   const [solicitudApartado, setSolicitudApartado] = useState<SolicitudApartadoRow | null>(null);
   const [compliance, setCompliance] = useState<ProspectoComplianceRow | null>(null);
   const [crmFieldsOpen, setCrmFieldsOpen] = useState(false);
+  const [rescateEtapa, setRescateEtapa] = useState<ProspectoEtapa>(ETAPA_RESCATE_DEFAULT);
+  const [rescatando, setRescatando] = useState(false);
 
   const puedeRegistrarApartado =
     adminMe.canRegisterApartado &&
@@ -126,10 +135,19 @@ export function LeadDetailDrawer({
         const cerrada = ["apartado", "vendido", "cancelado", "perdido"].includes(loadedEtapa);
         setEtapa(intentDiscard && !cerrada ? "perdido" : loadedEtapa);
         setNotas(data.prospecto.notas ?? "");
+        setProximoContactoOn(data.prospecto.proximo_contacto_on?.slice(0, 10) ?? "");
+        setProximoContactoNota(data.prospecto.proximo_contacto_nota ?? "");
         setMotivoDescarte(data.prospecto.motivo_descarte ?? "");
         setMotivoDescarteDetalle(data.prospecto.motivo_descarte_detalle ?? "");
         setCampanaId(data.prospecto.campana_id ?? "");
-        setPartnerId(data.prospecto.partner_id ?? "");
+        const linkedPartnerId = data.prospecto.partner_id ?? "";
+        const nombreLibre =
+          !linkedPartnerId &&
+          (data.prospecto.promotor_nombre?.trim() || data.prospecto.partnerNombre?.trim())
+            ? (data.prospecto.promotor_nombre?.trim() || data.prospecto.partnerNombre?.trim() || "")
+            : "";
+        setPartnerId(linkedPartnerId || (nombreLibre ? PARTNER_OTRO : ""));
+        setPartnerNombreLibre(nombreLibre);
         setNivelInteres(
           data.prospecto.nivel_interes === "sin_interes" ||
             data.prospecto.nivel_interes === "bajo" ||
@@ -200,6 +218,11 @@ export function LeadDetailDrawer({
   }, [puedeRegistrarApartado]);
 
   const handleSave = async () => {
+    if (partnerId === PARTNER_OTRO && !partnerNombreLibre.trim()) {
+      setError("Escribe el nombre de la inmobiliaria o asesor externo.");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -210,10 +233,22 @@ export function LeadDetailDrawer({
         body: JSON.stringify({
           etapa,
           notas,
+          proximoContactoOn: proximoContactoOn || null,
+          proximoContactoNota: proximoContactoOn
+            ? proximoContactoNota.trim() || null
+            : null,
           motivoDescarte: etapa === "perdido" ? motivoDescarte || null : undefined,
           motivoDescarteDetalle: etapa === "perdido" ? motivoDescarteDetalle || null : undefined,
           campanaId: campanaId || null,
-          partnerId: partnerId || null,
+          partnerId: partnerId === PARTNER_OTRO ? null : partnerId || null,
+          promotorNombre:
+            partnerId === PARTNER_OTRO
+              ? partnerNombreLibre.trim() || null
+              : partnerId
+                ? undefined
+                : null,
+          equipoVenta:
+            partnerId === PARTNER_OTRO || partnerId ? "Externo" : undefined,
           nivelInteres: nivelInteres || null,
           ...(adminMe.canReassignProspectos ? { asesorId: asesorId || null } : {}),
         }),
@@ -227,12 +262,66 @@ export function LeadDetailDrawer({
 
       if (data.prospecto) {
         setDetail(data.prospecto);
+        setNotas(data.prospecto.notas ?? "");
       }
       onUpdated();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Error al guardar.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const persistNotas = async (nextNotas: string) => {
+    const response = await fetch(`/api/admin/prospectos/${prospectoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notas: nextNotas }),
+    });
+    const data = (await response.json()) as { prospecto?: ProspectoDetail; error?: string };
+    if (!response.ok) {
+      throw new Error(data.error ?? "No se pudo guardar la nota.");
+    }
+    if (data.prospecto) {
+      setDetail(data.prospecto);
+      setNotas(data.prospecto.notas ?? nextNotas);
+    } else {
+      setNotas(nextNotas);
+    }
+    onUpdated();
+  };
+
+  const handleRescatarDescartado = async () => {
+    if (!detail || detail.etapa !== "perdido") {
+      return;
+    }
+    setRescatando(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/prospectos/${prospectoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          etapa: rescateEtapa,
+          ...(adminMe.canReassignProspectos ? { asesorId: asesorId || null } : {}),
+        }),
+      });
+      const data = (await response.json()) as { prospecto?: ProspectoDetail; error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo rescatar el lead.");
+      }
+      if (data.prospecto) {
+        setDetail(data.prospecto);
+        setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : rescateEtapa);
+        setNotas(data.prospecto.notas ?? "");
+        setMotivoDescarte("");
+        setMotivoDescarteDetalle("");
+      }
+      onUpdated();
+    } catch (rescueError) {
+      setError(rescueError instanceof Error ? rescueError.message : "Error al rescatar.");
+    } finally {
+      setRescatando(false);
     }
   };
 
@@ -360,7 +449,7 @@ export function LeadDetailDrawer({
                 </div>
               ) : null}
 
-              {compliance && compliance.issues.length > 0 ? (
+              {etapa !== "perdido" && compliance && compliance.issues.length > 0 ? (
                 <div
                   className={`rounded-xl border px-4 py-3 text-sm ${
                     compliance.overdueCount > 0
@@ -389,7 +478,7 @@ export function LeadDetailDrawer({
                     Ver Salud CRM del desarrollo
                   </Link>
                 </div>
-              ) : compliance ? (
+              ) : etapa !== "perdido" && compliance ? (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                   Playbook al día · confianza {compliance.confidencePct}%
                 </div>
@@ -422,6 +511,22 @@ export function LeadDetailDrawer({
                     </button>
                   ) : null}
                 </div>
+              ) : puedeRegistrarApartado ? (
+                <div className="rounded-xl border border-gabi-forest/20 bg-gabi-forest/5 px-4 py-4 text-sm text-gabi-forest">
+                  <p className="font-bold">Registrar apartado en sembrado</p>
+                  <p className="mt-1 text-gabi-forest/80">
+                    Necesitas la cotización autorizada en PDF. Captura cliente, precios y pagos en el
+                    formulario (misma estructura que el Excel de sembrado).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setApartadoModalOpen(true)}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gabi-forest px-4 py-2.5 text-sm font-bold text-white"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Registrar apartado
+                  </button>
+                </div>
               ) : null}
 
               {perfilCalificacion ? (
@@ -445,25 +550,6 @@ export function LeadDetailDrawer({
                   </p>
                 </div>
               )}
-
-              {puedeRegistrarApartado ? (
-                <div className="rounded-xl border border-gabi-forest/20 bg-gabi-forest/5 px-4 py-4 text-sm text-gabi-forest">
-                  <p className="font-bold">Registrar apartado en sembrado</p>
-                  <p className="mt-1 text-gabi-forest/80">
-                    Captura cliente, contacto, precios, pagos y fechas en el formulario de apartado
-                    (misma estructura que el Excel de sembrado). Los campos CRM de seguimiento quedan
-                    opcionales abajo.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setApartadoModalOpen(true)}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gabi-forest px-4 py-2.5 text-sm font-bold text-white"
-                  >
-                    <ShoppingBag className="h-4 w-4" />
-                    Registrar apartado
-                  </button>
-                </div>
-              ) : null}
 
               <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
                 <div className="flex justify-between gap-4">
@@ -589,7 +675,57 @@ export function LeadDetailDrawer({
                 </select>
               </Field>
 
-              {etapa === "perdido" ? (
+              {detail.etapa === "perdido" ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+                  <p className="font-semibold">Lead descartado — rescatar</p>
+                  {detail.motivo_descarte ? (
+                    <p className="mt-1 text-xs">
+                      Motivo:{" "}
+                      <span className="font-semibold">
+                        {formatMotivoDescarte(
+                          detail.motivo_descarte,
+                          detail.motivo_descarte_detalle,
+                        )}
+                      </span>
+                    </p>
+                  ) : null}
+                  <div className="mt-3 flex flex-wrap items-end gap-2">
+                    <label className="block min-w-[8rem] flex-1 text-xs">
+                      <span className="mb-1 block font-semibold text-emerald-900">
+                        Volver a etapa
+                      </span>
+                      <select
+                        value={rescateEtapa}
+                        onChange={(event) => setRescateEtapa(event.target.value as ProspectoEtapa)}
+                        className={inputClass}
+                      >
+                        {PROSPECTO_ETAPAS.filter((item) => item !== "perdido").map((item) => (
+                          <option key={item} value={item}>
+                            {prospectoEtapaLabel[item]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      disabled={rescatando || saving}
+                      onClick={() => void handleRescatarDescartado()}
+                      className="inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      {rescatando ? (
+                        <>
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          Rescatando…
+                        </>
+                      ) : (
+                        "Rescatar lead"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {etapa === "perdido" && detail.etapa !== "perdido" ? (
                 <MotivoDescarteFields
                   value={motivoDescarte}
                   detalle={motivoDescarteDetalle}
@@ -618,7 +754,13 @@ export function LeadDetailDrawer({
               <Field label="Aliado (inmobiliaria / asesor externo)">
                 <select
                   value={partnerId}
-                  onChange={(event) => setPartnerId(event.target.value)}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setPartnerId(next);
+                    if (next !== PARTNER_OTRO) {
+                      setPartnerNombreLibre("");
+                    }
+                  }}
                   className={inputClass}
                 >
                   <option value="">Sin aliado</option>
@@ -628,22 +770,62 @@ export function LeadDetailDrawer({
                       {partner.tipo ? ` · ${partnerTipoLabel[partner.tipo]}` : ""}
                     </option>
                   ))}
+                  <option value={PARTNER_OTRO}>Otra (capturar nombre)</option>
                 </select>
-                {detail.partnerNombre && !partnerId ? (
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    Texto legado: {detail.partnerNombre}
-                  </p>
+                {partnerId === PARTNER_OTRO ? (
+                  <input
+                    type="text"
+                    value={partnerNombreLibre}
+                    onChange={(event) => setPartnerNombreLibre(event.target.value)}
+                    className={`${inputClass} mt-2`}
+                    placeholder="Nombre de la inmobiliaria o asesor"
+                    autoComplete="organization"
+                  />
                 ) : null}
               </Field>
 
-              <Field label="Notas">
-                <textarea
-                  value={notas}
-                  onChange={(event) => setNotas(event.target.value)}
-                  className={`${inputClass} min-h-[100px]`}
-                  placeholder="Seguimiento, objeciones, próximo paso…"
+              <Field label="Contactar más adelante">
+                <input
+                  type="date"
+                  value={proximoContactoOn}
+                  onChange={(event) => setProximoContactoOn(event.target.value)}
+                  className={inputClass}
                 />
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Fecha en que el prospecto pidió volver a ser contactado. Ese día se recuerda al
+                  asesor.
+                </p>
+                {proximoContactoOn ? (
+                  <div className="mt-2 space-y-2">
+                    <input
+                      type="text"
+                      value={proximoContactoNota}
+                      onChange={(event) => setProximoContactoNota(event.target.value)}
+                      className={inputClass}
+                      placeholder="Motivo / nota (opcional)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProximoContactoOn("");
+                        setProximoContactoNota("");
+                      }}
+                      className="text-xs font-semibold text-slate-500 underline-offset-2 hover:underline"
+                    >
+                      Quitar recordatorio
+                    </button>
+                  </div>
+                ) : null}
               </Field>
+
+              <ProspectoNotasHistorialField
+                value={notas}
+                onChange={setNotas}
+                onPersist={persistNotas}
+                disabled={saving}
+                inputClassName={inputClass}
+                label="Notas"
+              />
 
               {adminMe.canDeleteProspectos && !solicitudApartado ? (
                 <div className="border-t border-slate-100 pt-4">
@@ -716,16 +898,6 @@ export function LeadDetailDrawer({
 
         {detail ? (
           <div className="space-y-3 border-t border-slate-100 p-5">
-            {puedeRegistrarApartado ? (
-              <button
-                type="button"
-                onClick={() => setApartadoModalOpen(true)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gabi-forest/20 bg-gabi-forest/5 px-4 py-3 text-sm font-bold text-gabi-forest"
-              >
-                <ShoppingBag className="h-4 w-4" />
-                Registrar apartado
-              </button>
-            ) : null}
             <button
               type="button"
               onClick={() => void handleSave()}

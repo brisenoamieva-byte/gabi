@@ -39,11 +39,13 @@ export async function POST(request: Request, context: RouteContext) {
       asesorId?: string;
       stepId?: string;
       stepDate?: string;
+      stepTime?: string;
       perfilamientoVisita?: PerfilamientoVisitaAnswers;
     };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
     const stepId = body.stepId?.trim();
     const stepDate = body.stepDate?.trim();
+    const stepTime = body.stepTime?.trim();
 
     if (!stepId) {
       return NextResponse.json({ error: "stepId requerido." }, { status: 400 });
@@ -55,6 +57,7 @@ export async function POST(request: Request, context: RouteContext) {
       stepId,
       stepDate,
       body.perfilamientoVisita,
+      stepTime,
     );
     return NextResponse.json({ playbook, prospecto });
   } catch (error) {

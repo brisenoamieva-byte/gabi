@@ -28,7 +28,7 @@ import {
   completeCadenciaForProspecto,
   completeCadenciaTouchForPlaybookStep,
 } from "@/lib/comercial/cadencia-service";
-import { normalizePlaybookVisitDate } from "@/lib/comercial/cadencia-perfilamiento";
+import { normalizePlaybookVisitDate, normalizePlaybookVisitTime } from "@/lib/comercial/cadencia-perfilamiento";
 import {
   computePerfilCalificacionLead,
   isPerfilamientoVisitaComplete,
@@ -43,6 +43,7 @@ const PLAYBOOK_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
   "contactado",
   "cita",
+  "visita",
 ]);
 
 type DbPlaybookConfigRow = {
@@ -353,6 +354,7 @@ export const completePlaybookStepForProspecto = async (
   stepId: string,
   stepDate?: string,
   perfilamientoVisita?: PerfilamientoVisitaAnswers,
+  stepTime?: string,
 ): Promise<{ playbook: ProspectoPlaybookState; prospecto: ProspectoListRow }> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -407,14 +409,19 @@ export const completePlaybookStepForProspecto = async (
   }
 
   const visitDate = normalizePlaybookVisitDate(stepId, stepDate);
+  const visitTime = normalizePlaybookVisitTime(stepId, stepTime);
   if (visitDate) {
     const dateField = stepId === "visita-agendada" ? "visita_agendada_on" : "visita_realizada_on";
+    const patch: Record<string, string> = {
+      [dateField]: visitDate,
+      updated_at: new Date().toISOString(),
+    };
+    if (visitTime && stepId === "visita-agendada") {
+      patch.visita_agendada_hora = visitTime;
+    }
     const { error: dateError } = await supabase
       .from("prospectos")
-      .update({
-        [dateField]: visitDate,
-        updated_at: new Date().toISOString(),
-      })
+      .update(patch)
       .eq("id", prospectoId);
 
     if (dateError) {
@@ -445,7 +452,7 @@ export const completePlaybookStepForProspecto = async (
   if (stepId === "recorrido") {
     const currentEtapa =
       normalizeProspectoEtapaValue(prospectoRow.etapa as string) ?? ("nuevo" as ProspectoEtapa);
-    const nextEtapa = mergeProspectoEtapa(currentEtapa, "cita");
+    const nextEtapa = mergeProspectoEtapa(currentEtapa, "visita");
     if (nextEtapa !== currentEtapa) {
       await supabase
         .from("prospectos")

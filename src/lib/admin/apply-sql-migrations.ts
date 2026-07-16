@@ -34,6 +34,10 @@ const AUTO_APPLY_MIGRATION_IDS = new Set([
   "069",
   "070",
   "071",
+  "072",
+  "073",
+  "074",
+  "075",
 ]);
 
 export const getAutoApplyableMigrationIds = (): string[] => Array.from(AUTO_APPLY_MIGRATION_IDS);

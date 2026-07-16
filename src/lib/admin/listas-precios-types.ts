@@ -1,3 +1,7 @@
+import type { ListaPrecioEsquemaDescuento } from "@/lib/admin/lista-precios-descuentos";
+
+export type { ListaPrecioEsquemaDescuento };
+
 export const LISTA_PRECIOS_ESTADOS = ["borrador", "activa", "cerrada"] as const;
 export type ListaPreciosEstado = (typeof LISTA_PRECIOS_ESTADOS)[number];
 
@@ -11,6 +15,7 @@ export type ListaPreciosRecord = {
   estado: ListaPreciosEstado;
   incremento_pct: number | null;
   notas: string | null;
+  descuentos_esquema: ListaPrecioEsquemaDescuento[];
   created_at: string;
   updated_at: string;
 };

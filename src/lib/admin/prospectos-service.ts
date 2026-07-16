@@ -8,6 +8,7 @@ import {
   normalizeProspectoEtapaValue,
   PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO,
   PROSPECTO_ETAPAS_EN_SEGUIMIENTO,
+  prospectoEtapaLabel,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import type { CotizacionRecord, OperacionComercialRecord, ProspectoRecord } from "@/lib/comercial/sembrado-status";
@@ -20,6 +21,8 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import type { VisitaTipo } from "@/lib/visitas/types";
 import { normalizeProspectoTelefono } from "@/lib/comercial/prospecto-telefono";
+import { normalizeProximoContactoOn } from "@/lib/comercial/proximo-contacto";
+import { appendProspectoNota } from "@/lib/comercial/prospecto-notas-historial";
 import { cancelSolicitudesApartadoForProspectos } from "@/lib/comercial/solicitud-apartado-service";
 import { resolvePerfilCalificacionLead } from "@/lib/comercial/perfilamiento-post-visita";
 import {
@@ -77,6 +80,8 @@ export type UpdateProspectoInput = {
   edad?: number | null;
   sexo?: string | null;
   ocupacion?: string | null;
+  proximoContactoOn?: string | null;
+  proximoContactoNota?: string | null;
 };
 
 export type ProspectoInput = {
@@ -119,7 +124,11 @@ const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
     asesorNombre: asesor?.nombre ?? null,
     campanaNombre: campana?.nombre ?? null,
     campanaCanal: campana?.canal ?? null,
-    partnerNombre: partner?.nombre ?? null,
+    partnerNombre:
+      partner?.nombre ??
+      (typeof row.promotor_nombre === "string" && row.promotor_nombre.trim()
+        ? row.promotor_nombre.trim()
+        : null),
     partnerTipo: partner?.tipo ?? null,
   };
 };
@@ -400,6 +409,12 @@ export const updateProspecto = async (
   if (input.notas !== undefined) {
     patch.notas = input.notas.trim() || null;
   }
+  if (input.proximoContactoOn !== undefined) {
+    patch.proximo_contacto_on = normalizeProximoContactoOn(input.proximoContactoOn);
+  }
+  if (input.proximoContactoNota !== undefined) {
+    patch.proximo_contacto_nota = input.proximoContactoNota.trim() || null;
+  }
   if (input.nombre !== undefined) {
     const nombre = input.nombre.trim();
     if (!nombre) {
@@ -528,10 +543,13 @@ export const updateProspecto = async (
       patch.es_spam = motivoValidation.motivoDescarte === "datos_falsos";
     }
   } else if (input.etapa !== undefined && input.etapa !== "perdido") {
-    // Al salir de Descartado, limpiar motivo (opcional: conservar historial — limpiamos para no confundir).
+    // Al salir de Descartado, limpiar motivo y dejar rastro en notas.
     if (existing.etapa === "perdido") {
       patch.motivo_descarte = null;
       patch.motivo_descarte_detalle = null;
+      const destino = prospectoEtapaLabel[input.etapa as ProspectoEtapa] ?? input.etapa;
+      const baseNotas = input.notas !== undefined ? input.notas : existing.notas;
+      patch.notas = appendProspectoNota(baseNotas, `Rescatado del descarte → ${destino}`);
     }
   }
 

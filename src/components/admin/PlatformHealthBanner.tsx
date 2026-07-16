@@ -72,7 +72,7 @@ export function PlatformHealthBanner() {
 
   const pending = health.checks.filter((item) => !item.ok);
   const pendingRecent = pending.filter((item) =>
-    ["065", "066", "067", "068", "042", "043"].includes(item.id),
+    ["073", "072", "069", "070", "071", "065", "066", "067", "068", "042", "043"].includes(item.id),
   );
   const showParseurWarning = !health.parseurSecretConfigured;
   const showQaWarning = !health.qaWebhookSecretConfigured;

@@ -2,6 +2,7 @@ export const PROSPECTO_ETAPAS = [
   "nuevo",
   "contactado",
   "cita",
+  "visita",
   "apartado",
   "vendido",
   "cancelado",
@@ -15,6 +16,7 @@ export const PROSPECTO_ETAPAS_EN_SEGUIMIENTO = [
   "nuevo",
   "contactado",
   "cita",
+  "visita",
 ] as const satisfies readonly ProspectoEtapa[];
 
 /** Sentinel de filtro de listado: solo etapas en seguimiento. */
@@ -24,6 +26,7 @@ export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
   nuevo: "Nuevo / Por Contactar",
   contactado: "Contactado",
   cita: "Cita",
+  visita: "Visita",
   apartado: "Apartado",
   vendido: "Vendido",
   cancelado: "Cancelado",
@@ -34,6 +37,7 @@ export const prospectoEtapaColor: Record<ProspectoEtapa, string> = {
   nuevo: "bg-slate-100 text-slate-700",
   contactado: "bg-sky-100 text-sky-800",
   cita: "bg-violet-100 text-violet-800",
+  visita: "bg-indigo-100 text-indigo-800",
   apartado: "bg-emerald-100 text-emerald-800",
   vendido: "bg-gabi-forest/10 text-gabi-forest",
   cancelado: "bg-amber-100 text-amber-900",
@@ -44,6 +48,7 @@ export const prospectoEtapaDot: Record<ProspectoEtapa, string> = {
   nuevo: "bg-slate-400",
   contactado: "bg-sky-500",
   cita: "bg-violet-500",
+  visita: "bg-indigo-500",
   apartado: "bg-emerald-500",
   vendido: "bg-gabi-forest",
   cancelado: "bg-amber-500",
@@ -69,7 +74,7 @@ const ETAPAS_BLOQUEADAS_VISITA = new Set<ProspectoEtapa>([
 
 export const prospectoEtapaFromVisita = (
   tipo: "lead_registrado" | "recorrido_completado",
-): ProspectoEtapa => (tipo === "recorrido_completado" ? "cita" : "nuevo");
+): ProspectoEtapa => (tipo === "recorrido_completado" ? "visita" : "nuevo");
 
 /** Avanza etapa sin retroceder ni mover apartado/vendido/cancelado/perdido. */
 export const mergeProspectoEtapa = (

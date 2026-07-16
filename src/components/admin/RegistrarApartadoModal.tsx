@@ -189,6 +189,7 @@ export function RegistrarApartadoModal({
   const [error, setError] = useState("");
   const [cotizacionHint, setCotizacionHint] = useState(false);
   const [listasPrecios, setListasPrecios] = useState<ListaPreciosRecord[]>([]);
+  const [cotizacionPdf, setCotizacionPdf] = useState<File | null>(null);
   const asesoresRef = useRef(asesores);
   const unidadesOpcionesRef = useRef(unidadesOpciones);
   const prospectoMedioRef = useRef("");
@@ -595,12 +596,46 @@ export function RegistrarApartadoModal({
     }, 1800);
   };
 
+  const uploadCotizacionAutorizada = async (operacionId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("checklistCodigo", "SIMULADOR");
+    formData.append("etapaChecklist", "apartado");
+    formData.append("nombre", "Cotización autorizada");
+    formData.append("notas", "Subida al registrar el apartado");
+    formData.append("confirmReplace", "true");
+
+    const response = await fetch(`/api/admin/expedientes/${operacionId}`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await response.json()) as { error?: string; message?: string };
+    if (!response.ok) {
+      throw new Error(
+        data.message ?? data.error ?? "El apartado se creó, pero no se pudo subir la cotización PDF.",
+      );
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
 
     try {
+      if (!esAsesor && !cotizacionPdf) {
+        throw new Error("Adjunta el PDF de la cotización autorizada para registrar el apartado.");
+      }
+
+      if (cotizacionPdf) {
+        const isPdf =
+          cotizacionPdf.type === "application/pdf" ||
+          cotizacionPdf.name.toLowerCase().endsWith(".pdf");
+        if (!isPdf) {
+          throw new Error("La cotización autorizada debe ser un archivo PDF.");
+        }
+      }
+
       if (esAsesor && prospectoId && asesorId) {
         const response = await fetch(`/api/asesores/prospectos/${prospectoId}/apartado`, {
           method: "POST",
@@ -675,10 +710,21 @@ export function RegistrarApartadoModal({
         }),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        operacion?: { id: string };
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo registrar el apartado.");
+      }
+
+      if (!data.operacion?.id) {
+        throw new Error("Apartado creado sin ID de operación; no se pudo adjuntar la cotización.");
+      }
+
+      if (cotizacionPdf) {
+        await uploadCotizacionAutorizada(data.operacion.id, cotizacionPdf);
       }
 
       finishApartadoSave();
@@ -730,7 +776,8 @@ export function RegistrarApartadoModal({
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-900">
               <p className="text-base font-black text-emerald-950">Apartado registrado</p>
               <p className="mt-2">
-                La unidad ya está en <strong>sembrado</strong> con estatus Apartado. El gerente la
+                La unidad ya está en <strong>sembrado</strong> con estatus Apartado
+                {!esAsesor ? " y la cotización autorizada quedó en el expediente" : ""}. El gerente la
                 verá en Admin → Sembrado al actualizar la vista.
               </p>
               {esAsesor ? (
@@ -1116,6 +1163,26 @@ export function RegistrarApartadoModal({
             />
           </Field>
 
+          {!esAsesor ? (
+            <Field label="Cotización autorizada (PDF) *">
+              <input
+                required
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={(event) => setCotizacionPdf(event.target.files?.[0] ?? null)}
+                className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-[#201044]/10 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-[#201044]`}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Obligatorio. Se guarda en el expediente del cliente (Drive) al registrar el apartado.
+              </p>
+              {cotizacionPdf ? (
+                <p className="mt-1 text-xs font-semibold text-emerald-800">
+                  Archivo: {cotizacionPdf.name}
+                </p>
+              ) : null}
+            </Field>
+          ) : null}
+
           <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"
@@ -1131,7 +1198,8 @@ export function RegistrarApartadoModal({
                 loadingContext ||
                 loadingUnidadPrefill ||
                 !form.unidadId ||
-                (segmentos.length > 0 && !tipoProducto)
+                (segmentos.length > 0 && !tipoProducto) ||
+                (!esAsesor && !cotizacionPdf)
               }
               className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
             >

@@ -326,6 +326,9 @@ export const getCadenciaDayIndex = (startedAt: Date, now = new Date()): number =
 
 export const PLAYBOOK_STEPS_WITH_VISIT_DATE = new Set(["visita-agendada", "recorrido"]);
 
+/** Solo la cita agendada exige horario; la visita realizada basta con fecha. */
+export const PLAYBOOK_STEPS_WITH_VISIT_TIME = new Set(["visita-agendada"]);
+
 export const normalizePlaybookVisitDate = (stepId: string, stepDate?: string | null): string | null => {
   if (!PLAYBOOK_STEPS_WITH_VISIT_DATE.has(stepId)) {
     return null;
@@ -341,6 +344,33 @@ export const normalizePlaybookVisitDate = (stepId: string, stepDate?: string | n
   }
 
   return trimmed;
+};
+
+export const normalizePlaybookVisitTime = (
+  stepId: string,
+  stepTime?: string | null,
+): string | null => {
+  if (!PLAYBOOK_STEPS_WITH_VISIT_TIME.has(stepId)) {
+    return null;
+  }
+
+  const trimmed = stepTime?.trim();
+  if (!trimmed) {
+    throw new Error("Indica el horario de la cita.");
+  }
+
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) {
+    throw new Error("Horario inválido. Usa el formato HH:MM.");
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || hours > 23 || minutes > 59) {
+    throw new Error("Horario inválido. Usa el formato HH:MM.");
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
 };
 
 export const PLAYBOOK_DEMO_LEAD_EMAIL = "demo.playbook@gabi.mx";

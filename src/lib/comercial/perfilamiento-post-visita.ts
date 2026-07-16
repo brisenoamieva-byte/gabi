@@ -14,26 +14,33 @@ export type PerfilamientoVisitaRecord = {
 
 export const PERFILAMIENTO_VISITA_QUESTIONS: Array<{
   key: keyof PerfilamientoVisitaAnswers;
+  /** Texto completo (accesibilidad / tooltips). */
   label: string;
+  /** Etiqueta corta para UI compacta. */
+  shortLabel: string;
 }> = [
   {
     key: "presupuestoDisponible",
     label:
       "¿El prospecto tiene el presupuesto necesario y disponible para comprar en el desarrollo?",
+    shortLabel: "Presupuesto disponible",
   },
   {
     key: "intencionApartarInmediato",
     label: "¿El prospecto tiene intención de apartar de inmediato?",
+    shortLabel: "Intención de apartar",
   },
   {
     key: "decisorVisita",
     label:
       "¿El prospecto con el que hablas es quien tomará la decisión final de comprar?",
+    shortLabel: "Es el decisor",
   },
   {
     key: "vioPublicidadRedes",
     label:
       "Independientemente del medio de contacto, ¿el prospecto ha visto publicidad del desarrollo en redes sociales?",
+    shortLabel: "Vio publicidad en redes",
   },
 ];
 

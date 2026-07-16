@@ -41,6 +41,9 @@ export type RecorridoState = {
   pasajeLibreSinMensFechaPago?: string;
   pasajeLibreSinMensFechaFiniquito?: string;
   misionLaGaviaEsquema?: import("@/lib/corredor/mision-la-gavia-simulador").MisionLaGaviaEsquemaId;
+  misionLaGaviaLibreEnganche?: number;
+  misionLaGaviaLibreMensualidades?: number;
+  misionLaGaviaLibreFechaFiniquito?: string;
 };
 
 export type StoredContact = {

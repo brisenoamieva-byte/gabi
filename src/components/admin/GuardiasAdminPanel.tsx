@@ -15,6 +15,7 @@ import type { DesarrolloRecord } from "@/lib/catalog/types";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { GuardiasMarcajesHoyPanel } from "@/components/admin/GuardiasMarcajesHoyPanel";
 import {
+  buildAsesorWeekdayDayCounts,
   formatMonthLabel,
   getMonthCalendarGrid,
   getMonthStart,
@@ -77,6 +78,11 @@ export function GuardiasAdminPanel({
     }
     return map;
   }, [month]);
+
+  const asesorWeekdayCounts = useMemo(
+    () => buildAsesorWeekdayDayCounts(month?.asignaciones ?? []),
+    [month],
+  );
 
   const calendarGrid = useMemo(() => getMonthCalendarGrid(monthStart), [monthStart]);
 
@@ -369,12 +375,14 @@ export function GuardiasAdminPanel({
       ) : null}
 
       <div className="flex flex-col gap-5 lg:flex-row">
-        <aside className="w-full shrink-0 lg:w-56">
+        <aside className="w-full shrink-0 lg:w-72">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Equipo · {desarrolloNombre}
             </p>
-            <p className="mt-1 text-[11px] text-slate-400">Arrastra al calendario</p>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Arrastra al calendario · días por semana del mes
+            </p>
 
             {loading ? (
               <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
@@ -386,7 +394,11 @@ export function GuardiasAdminPanel({
             ) : (
               <ul className="mt-3 space-y-2">
                 {asesores.map((asesor) => {
-                  const count = month?.asesorCounts[asesor.id] ?? 0;
+                  const turnos = month?.asesorCounts[asesor.id] ?? 0;
+                  const weekdayCounts = asesorWeekdayCounts[asesor.id] ?? [
+                    0, 0, 0, 0, 0, 0, 0,
+                  ];
+                  const dias = weekdayCounts.reduce((sum, n) => sum + n, 0);
                   const chipStyle = guardiaAsesorChipStyle(asesor.id);
                   return (
                     <li key={asesor.id}>
@@ -397,11 +409,32 @@ export function GuardiasAdminPanel({
                           event.dataTransfer.setData(DRAG_ASESOR_KEY, asesor.id);
                           event.dataTransfer.effectAllowed = "move";
                         }}
-                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold shadow-sm transition hover:opacity-90 active:cursor-grabbing"
+                        className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold shadow-sm transition hover:opacity-90 active:cursor-grabbing"
                         style={chipStyle}
+                        title={`Turnos: ${turnos} · Días: ${dias}`}
                       >
-                        <span className="truncate">{asesor.nombre}</span>
-                        <span className="shrink-0 text-[10px] font-bold opacity-80">{count}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate">{asesor.nombre}</span>
+                          <span className="shrink-0 text-[10px] font-bold opacity-90">
+                            {dias}d · {turnos}t
+                          </span>
+                        </div>
+                        <div className="mt-1.5 grid grid-cols-7 gap-0.5">
+                          {GUARDIA_WEEKDAY_LABELS.map((label, index) => {
+                            const value = weekdayCounts[index] ?? 0;
+                            return (
+                              <span
+                                key={label}
+                                className={`rounded px-0.5 py-0.5 text-center text-[9px] font-bold leading-tight ${
+                                  value > 0 ? "bg-white/25" : "bg-black/10 opacity-60"
+                                }`}
+                              >
+                                <span className="block uppercase opacity-80">{label}</span>
+                                {value}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </button>
                     </li>
                   );

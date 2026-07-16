@@ -2098,7 +2098,7 @@ function RecorridoPageContent() {
                               {unidades.length > 0 ? (
                                 <p className="mt-1 text-xs font-semibold text-slate-500">
                                   {unidades.length}{" "}
-                                  {unidades.length === 1 ? "unidad" : "unidades"} en inventario
+                                  {unidades.length === 1 ? "unidad" : "unidades"} disponibles
                                 </p>
                               ) : null}
                               <p className="mt-3 text-sm text-slate-500">
@@ -2327,12 +2327,25 @@ function RecorridoPageContent() {
                               clienteNombre={state.cliente.nombre}
                               asesorNombre={user?.nombre}
                               asesorId={user?.id}
+                              asesorRol={user?.rol}
                               esquema={state.misionLaGaviaEsquema ?? "contado"}
                               showSelectors
                               showCopy
+                              libreEnganchePct={state.misionLaGaviaLibreEnganche}
+                              libreMensualidadesPct={state.misionLaGaviaLibreMensualidades}
+                              libreFechaFiniquito={state.misionLaGaviaLibreFechaFiniquito}
                               onUnidadChange={(id) => patchState({ unidadId: id ?? "" })}
                               onEsquemaChange={(value) =>
                                 patchState({ misionLaGaviaEsquema: value })
+                              }
+                              onLibreEngancheChange={(value) =>
+                                patchState({ misionLaGaviaLibreEnganche: value })
+                              }
+                              onLibreMensualidadesChange={(value) =>
+                                patchState({ misionLaGaviaLibreMensualidades: value })
+                              }
+                              onLibreFechaFiniquitoChange={(value) =>
+                                patchState({ misionLaGaviaLibreFechaFiniquito: value })
                               }
                               onClienteNombreChange={(nombre) => patchCliente({ nombre })}
                             />
@@ -2621,6 +2634,7 @@ function RecorridoPageContent() {
             prospectoRegistrado={prospectoCotizadorRegistrado}
             asesorNombre={user?.nombre}
             asesorId={user?.id}
+            asesorRol={user?.rol}
             catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
             campoConfig={campoConfig}
             showCopy
@@ -2660,6 +2674,18 @@ function RecorridoPageContent() {
             misionLaGaviaEsquema={state.misionLaGaviaEsquema ?? "contado"}
             onMisionLaGaviaEsquemaChange={(value) =>
               patchState({ misionLaGaviaEsquema: value })
+            }
+            misionLaGaviaLibreEnganche={state.misionLaGaviaLibreEnganche}
+            misionLaGaviaLibreMensualidades={state.misionLaGaviaLibreMensualidades}
+            misionLaGaviaLibreFechaFiniquito={state.misionLaGaviaLibreFechaFiniquito}
+            onMisionLaGaviaLibreEngancheChange={(value) =>
+              patchState({ misionLaGaviaLibreEnganche: value })
+            }
+            onMisionLaGaviaLibreMensualidadesChange={(value) =>
+              patchState({ misionLaGaviaLibreMensualidades: value })
+            }
+            onMisionLaGaviaLibreFechaFiniquitoChange={(value) =>
+              patchState({ misionLaGaviaLibreFechaFiniquito: value })
             }
             onClienteNombreChange={(nombre) => patchCliente({ nombre })}
           />

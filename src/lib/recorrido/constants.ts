@@ -30,7 +30,7 @@ export const confianzaItems = [
 
 export const cierreItems = [
   "¿Qué producto y ubicación se queda?",
-  "¿Anticipo con tarjeta crédito o débito?",
+  "¿Apartado con tarjeta crédito o débito?",
   "¿Formalizamos ahora o dejar pasar promo?",
   "Solicitud de compra generada",
   "Felicitar y agradecer",

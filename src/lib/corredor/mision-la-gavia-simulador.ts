@@ -16,6 +16,10 @@ import {
   pmt,
   startOfMonth,
 } from "@/lib/cotizador/pasaje-simulador";
+import {
+  clampDescuentoEspecialPct,
+  factorDescuentoEspecial,
+} from "@/lib/comercial/descuento-especial";
 import { roundMoney, formatPrice } from "@/lib/format/money";
 import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 import {
@@ -25,6 +29,7 @@ import { MISION_LA_GAVIA_UNIDADES } from "@/lib/corredor/mision-la-gavia-unidade
 import type {
   MisionLaGaviaEsquemaConfig,
   MisionLaGaviaEsquemaId,
+  MisionLaGaviaLibreConfig,
   MisionLaGaviaSimulacionInput,
   MisionLaGaviaSimulacionResult,
   MisionLaGaviaUnidadRecord,
@@ -34,6 +39,7 @@ import type { DisponibilidadUnidad } from "@/lib/data";
 export type {
   MisionLaGaviaEsquemaConfig,
   MisionLaGaviaEsquemaId,
+  MisionLaGaviaLibreConfig,
   MisionLaGaviaSimulacionInput,
   MisionLaGaviaSimulacionResult,
   MisionLaGaviaUnidadRecord,
@@ -42,13 +48,42 @@ export type {
 const round2 = roundMoney;
 const COEF_RENTA = 0.0055;
 
-export const MISION_LA_GAVIA_ESQUEMAS: MisionLaGaviaEsquemaId[] = [
+/**
+ * Entrega comercial oficial etapa 1 (dic 2027).
+ * Las unidades generadas del Excel traen `entregaIso: null` y el workbook
+ * solo aporta `mesesEntregaDefault: 24` (meses desde la cotización), lo cual
+ * desplaza la fecha según el día de la cotización. Usamos la fecha fija.
+ */
+export const MISION_LA_GAVIA_ENTREGA_ETAPA1_ISO = "2027-12-01";
+
+/** Esquemas fijos del Excel (sin Libre editable). */
+export const MISION_LA_GAVIA_ESQUEMAS_FIJOS: MisionLaGaviaEsquemaId[] = [
   "contado",
   "6msi",
   "12msi",
   "30-70",
   "15-85",
 ];
+
+export const MISION_LA_GAVIA_ESQUEMAS: MisionLaGaviaEsquemaId[] = [
+  ...MISION_LA_GAVIA_ESQUEMAS_FIJOS,
+  "libre",
+];
+
+/** Defaults Libre — misma lógica comercial que Pasaje, tasa Gavia 11%. */
+export const MISION_LA_GAVIA_LIBRE_DEFAULTS = {
+  enganchePct: 0.2,
+  mensualidadesPct: 0.15,
+} as const;
+
+const LIBRE_ESQUEMA_CONFIG: MisionLaGaviaEsquemaConfig = {
+  id: "libre",
+  label: "Libre",
+  descuentoPct: 0,
+  enganchePct: MISION_LA_GAVIA_LIBRE_DEFAULTS.enganchePct,
+  meses: "varia",
+  finiquitoPct: 1 - MISION_LA_GAVIA_LIBRE_DEFAULTS.enganchePct - MISION_LA_GAVIA_LIBRE_DEFAULTS.mensualidadesPct,
+};
 
 export function isMisionLaGaviaSimuladorDesarrollo(
   desarrolloId: string | null | undefined,
@@ -57,7 +92,7 @@ export function isMisionLaGaviaSimuladorDesarrollo(
 }
 
 export function getMisionLaGaviaEsquemas(): MisionLaGaviaEsquemaConfig[] {
-  return MISION_LA_GAVIA_SIMULADOR_CONFIG.esquemasPago.map((item) => ({
+  const fromExcel = MISION_LA_GAVIA_SIMULADOR_CONFIG.esquemasPago.map((item) => ({
     id: item.id as MisionLaGaviaEsquemaId,
     label: item.label,
     descuentoPct: item.descuentoPct,
@@ -65,11 +100,15 @@ export function getMisionLaGaviaEsquemas(): MisionLaGaviaEsquemaConfig[] {
     meses: item.meses,
     finiquitoPct: item.finiquitoPct,
   }));
+  return [...fromExcel, LIBRE_ESQUEMA_CONFIG];
 }
 
 export function getMisionLaGaviaEsquemaConfig(
   esquema: MisionLaGaviaEsquemaId,
 ): MisionLaGaviaEsquemaConfig | undefined {
+  if (esquema === "libre") {
+    return LIBRE_ESQUEMA_CONFIG;
+  }
   return getMisionLaGaviaEsquemas().find((item) => item.id === esquema);
 }
 
@@ -141,6 +180,28 @@ export function resolveMisionLaGaviaUnidadFromInventario(
   return applyPrecioListaOverride(base, inventarioPrecio);
 }
 
+/** Escala todos los precios de la unidad por un factor (descuento especial). */
+export function applyDescuentoEspecialUnidad(
+  unidad: MisionLaGaviaUnidadRecord,
+  descuentoEspecialPct: number,
+): MisionLaGaviaUnidadRecord {
+  const factor = factorDescuentoEspecial(descuentoEspecialPct);
+  if (factor >= 1) {
+    return unidad;
+  }
+  const scale = (value: number | null) =>
+    value == null ? null : round2(value * factor);
+
+  return {
+    ...unidad,
+    precioLista: round2(unidad.precioLista * factor),
+    precioContado: round2(unidad.precioContado * factor),
+    precio303040: scale(unidad.precio303040),
+    precio3070: scale(unidad.precio3070),
+    precio1585: scale(unidad.precio1585),
+  };
+}
+
 function parseIsoDate(value: string | null | undefined): Date | undefined {
   if (!value) return undefined;
   const parts = value.split("-").map(Number);
@@ -156,6 +217,12 @@ function resolveFechaEntrega(
   if (fromUnit) {
     return fromUnit;
   }
+
+  const etapa1 = parseIsoDate(MISION_LA_GAVIA_ENTREGA_ETAPA1_ISO);
+  if (etapa1) {
+    return endOfMonth(etapa1, 0);
+  }
+
   const meses = MISION_LA_GAVIA_SIMULADOR_CONFIG.mesesEntregaDefault;
   return endOfMonth(fechaCotizacion, meses);
 }
@@ -234,12 +301,17 @@ export function simularMisionLaGavia(
   const cfg = getMisionLaGaviaEsquemaConfig(input.esquema);
   const fechaCotizacion = input.fechaCotizacion ?? new Date();
   const tasaMensual = MISION_LA_GAVIA_SIMULADOR_CONFIG.tasaAnual / 12;
-  const unidad = input.unidad;
+  const descuentoEspecialPct = clampDescuentoEspecialPct(
+    input.descuentoEspecialPct ?? 0,
+  );
+  const unidadOriginal = input.unidad;
+  const unidad = applyDescuentoEspecialUnidad(unidadOriginal, descuentoEspecialPct);
+  const precioListaRef = unidadOriginal.precioLista;
   const fechaEntrega = resolveFechaEntrega(unidad, fechaCotizacion);
   const entregaLabel = formatMonthYear(fechaEntrega);
-  const rentaMensual = round2(unidad.precioLista * COEF_RENTA);
+  const rentaMensual = round2(precioListaRef * COEF_RENTA);
   const rendimientoRentasAnual =
-    unidad.precioLista > 0 ? (rentaMensual * 12) / unidad.precioLista : 0;
+    precioListaRef > 0 ? (rentaMensual * 12) / precioListaRef : 0;
 
   const base: MisionLaGaviaSimulacionResult = {
     esquema: input.esquema,
@@ -249,8 +321,9 @@ export function simularMisionLaGavia(
     edificio: unidad.edificio,
     lado: unidad.lado,
     m2Totales: unidad.m2Totales,
-    precioLista: unidad.precioLista,
+    precioLista: precioListaRef,
     precioTotal: 0,
+    descuentoEspecialPct,
     descuentoVsListaPct: 0,
     enganche: 0,
     enganchePct: 0,
@@ -264,11 +337,13 @@ export function simularMisionLaGavia(
     return { ...base, error: "Esquema no configurado" };
   }
 
-  if (unidad.precioLista <= 0) {
+  if (precioListaRef <= 0) {
     return { ...base, error: "Precio lista no disponible" };
   }
 
   const esquema = input.esquema;
+  const vsLista = (precioTotal: number) =>
+    precioListaRef > 0 ? 1 - precioTotal / precioListaRef : 0;
 
   if (esquema === "contado") {
     const precioTotal = unidad.precioContado;
@@ -277,7 +352,8 @@ export function simularMisionLaGavia(
       ...base,
       ...plazo,
       precioTotal,
-      descuentoVsListaPct: 1 - precioTotal / unidad.precioLista,
+      precioContado: unidad.precioContado,
+      descuentoVsListaPct: vsLista(precioTotal),
       descripcionPago: `Contado: enganche ${Math.round(cfg.enganchePct * 100)}% + finiquito ${Math.round(cfg.finiquitoPct * 100)}% en ${entregaLabel}`,
     };
   }
@@ -287,7 +363,7 @@ export function simularMisionLaGavia(
     return {
       ...base,
       ...msi,
-      descuentoVsListaPct: 1 - msi.precioTotal / unidad.precioLista,
+      descuentoVsListaPct: vsLista(msi.precioTotal),
     };
   }
 
@@ -299,7 +375,7 @@ export function simularMisionLaGavia(
       ...base,
       ...plazo,
       precioTotal,
-      descuentoVsListaPct: 1 - precioTotal / unidad.precioLista,
+      descuentoVsListaPct: vsLista(precioTotal),
     };
   }
 
@@ -311,19 +387,118 @@ export function simularMisionLaGavia(
       ...base,
       ...plazo,
       precioTotal,
-      descuentoVsListaPct: 1 - precioTotal / unidad.precioLista,
+      descuentoVsListaPct: vsLista(precioTotal),
     };
+  }
+
+  if (esquema === "libre") {
+    return simularLibreMisionLaGavia({
+      unidad,
+      fechaCotizacion,
+      fechaEntrega,
+      tasaMensual,
+      base,
+      libre: input.libre,
+      precioListaRef,
+    });
   }
 
   return { ...base, error: "Esquema no soportado" };
 }
 
+function simularLibreMisionLaGavia(params: {
+  unidad: MisionLaGaviaUnidadRecord;
+  fechaCotizacion: Date;
+  fechaEntrega: Date;
+  tasaMensual: number;
+  base: MisionLaGaviaSimulacionResult;
+  libre?: MisionLaGaviaLibreConfig;
+  precioListaRef: number;
+}): MisionLaGaviaSimulacionResult {
+  const {
+    unidad,
+    fechaCotizacion,
+    fechaEntrega,
+    tasaMensual,
+    base,
+    libre,
+    precioListaRef,
+  } = params;
+  const precioContado = unidad.precioContado;
+  const enganchePct = libre?.enganchePct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.enganchePct;
+  const mensualidadesPct =
+    libre?.mensualidadesPct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.mensualidadesPct;
+  const fechaFiniquito = libre?.fechaFiniquito ?? fechaEntrega;
+  const finiquitoPct = 1 - enganchePct - mensualidadesPct;
+
+  let error: string | undefined;
+  if (precioContado <= 0) {
+    error = "Precio contado no disponible.";
+  } else if (enganchePct < 0.15) {
+    error = "Enganche mínimo 15%.";
+  } else if (enganchePct + mensualidadesPct < 0.3) {
+    error = "Enganche + mensualidades deben sumar al menos 30%.";
+  } else if (finiquitoPct < 0) {
+    error = "Los porcentajes suman más de 100%.";
+  }
+
+  const firstPaymentDate = endOfMonth(fechaCotizacion, 1);
+  const mesesHastaFiniquito = Math.max(
+    1,
+    monthsBetween(startOfMonth(fechaCotizacion), fechaFiniquito),
+  );
+  const numMensualidades = Math.max(1, mesesHastaFiniquito - 1);
+  const fechaUltimoPago = addMonths(firstPaymentDate, numMensualidades - 1);
+
+  const enganche = round2(precioContado * enganchePct);
+  const mensualidadConInteres = pmt(
+    tasaMensual,
+    numMensualidades,
+    -(precioContado * mensualidadesPct),
+  );
+  const finiquitoCapitalizado = fv(
+    tasaMensual,
+    mesesHastaFiniquito,
+    0,
+    -(precioContado * finiquitoPct),
+  );
+  const precioTotal = round2(
+    enganche + mensualidadConInteres * numMensualidades + finiquitoCapitalizado,
+  );
+
+  const mensualidad = round2(
+    numMensualidades > 0 ? (mensualidadesPct * precioTotal) / numMensualidades : 0,
+  );
+  const finiquito = round2(finiquitoPct * precioTotal);
+
+  return {
+    ...base,
+    esquemaLabel: "Libre",
+    precioContado,
+    precioTotal,
+    descuentoVsListaPct:
+      precioListaRef > 0 ? 1 - precioTotal / precioListaRef : 0,
+    enganche,
+    enganchePct,
+    mensualidad,
+    numMensualidades,
+    fechaPrimerPago: firstPaymentDate,
+    fechaUltimoPago,
+    finiquito,
+    finiquitoPct,
+    fechaFiniquito,
+    descripcionPago: `Libre: enganche ${formatPctShort(enganchePct)} + ${numMensualidades} mensualidades (${formatPctShort(mensualidadesPct)}) + finiquito ${formatPctShort(Math.max(0, finiquitoPct))} en ${formatMonthYear(fechaFiniquito)} · capitalizado al ${(MISION_LA_GAVIA_SIMULADOR_CONFIG.tasaAnual * 100).toFixed(0)}% anual`,
+    error,
+  };
+}
+
 export function simularTodosEsquemasMisionLaGavia(
   unidad: MisionLaGaviaUnidadRecord,
   fechaCotizacion?: Date,
+  descuentoEspecialPct?: number,
 ): MisionLaGaviaSimulacionResult[] {
-  return MISION_LA_GAVIA_ESQUEMAS.map((esquema) =>
-    simularMisionLaGavia({ unidad, esquema, fechaCotizacion }),
+  return MISION_LA_GAVIA_ESQUEMAS_FIJOS.map((esquema) =>
+    simularMisionLaGavia({ unidad, esquema, fechaCotizacion, descuentoEspecialPct }),
   );
 }
 
@@ -342,6 +517,9 @@ export function buildMisionLaGaviaSimulacionSummary(
     `Edificio ${result.edificio} (${result.lado}) · ${result.m2Totales.toFixed(1)} m²`,
     "",
     `Precio lista: ${formatPrice(result.precioLista)}`,
+    result.descuentoEspecialPct && result.descuentoEspecialPct > 0
+      ? `Descuento especial: ${formatPctShort(result.descuentoEspecialPct)}`
+      : null,
     `Esquema: ${result.esquemaLabel}`,
     `Total cliente: ${formatPrice(result.precioTotal)}`,
     `Descuento vs lista: ${formatPctShort(result.descuentoVsListaPct)}`,

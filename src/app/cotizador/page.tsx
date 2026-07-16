@@ -19,6 +19,10 @@ import {
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
+import type { MisionLaGaviaEsquemaId } from "@/lib/corredor/mision-la-gavia-simulador";
+import {
+  MISION_LA_GAVIA_LIBRE_DEFAULTS,
+} from "@/lib/corredor/mision-la-gavia-simulador";
 import {
   INVESTTI_GRUPO_LOGO,
   isInvesttiCatalogDesarrollo,
@@ -124,6 +128,17 @@ function CotizadorPageContent() {
   >();
   const [pasajeLibreSinMensFechaFiniquito, setPasajeLibreSinMensFechaFiniquito] =
     useState<string | undefined>();
+  const [misionLaGaviaEsquema, setMisionLaGaviaEsquema] =
+    useState<MisionLaGaviaEsquemaId>("contado");
+  const [misionLaGaviaLibreEnganche, setMisionLaGaviaLibreEnganche] = useState<number>(
+    MISION_LA_GAVIA_LIBRE_DEFAULTS.enganchePct,
+  );
+  const [misionLaGaviaLibreMensualidades, setMisionLaGaviaLibreMensualidades] = useState<number>(
+    MISION_LA_GAVIA_LIBRE_DEFAULTS.mensualidadesPct,
+  );
+  const [misionLaGaviaLibreFechaFiniquito, setMisionLaGaviaLibreFechaFiniquito] = useState<
+    string | undefined
+  >();
   const [clienteNombre, setClienteNombre] = useState<string | undefined>();
   const [clienteEmail, setClienteEmail] = useState<string | undefined>();
   const [clienteTelefono, setClienteTelefono] = useState<string | undefined>();
@@ -518,6 +533,7 @@ function CotizadorPageContent() {
               clienteTelefono={clienteTelefono}
               asesorNombre={user?.nombre}
               asesorId={user?.id}
+              asesorRol={user?.rol}
               prospectoId={prospectoId}
               catalog={catalogMemo}
               campoConfig={campoConfig}
@@ -545,6 +561,14 @@ function CotizadorPageContent() {
               onPasajeLibreSinMensPagoChange={setPasajeLibreSinMensPago}
               onPasajeLibreSinMensFechaPagoChange={setPasajeLibreSinMensFechaPago}
               onPasajeLibreSinMensFechaFiniquitoChange={setPasajeLibreSinMensFechaFiniquito}
+              misionLaGaviaEsquema={misionLaGaviaEsquema}
+              onMisionLaGaviaEsquemaChange={setMisionLaGaviaEsquema}
+              misionLaGaviaLibreEnganche={misionLaGaviaLibreEnganche}
+              misionLaGaviaLibreMensualidades={misionLaGaviaLibreMensualidades}
+              misionLaGaviaLibreFechaFiniquito={misionLaGaviaLibreFechaFiniquito}
+              onMisionLaGaviaLibreEngancheChange={setMisionLaGaviaLibreEnganche}
+              onMisionLaGaviaLibreMensualidadesChange={setMisionLaGaviaLibreMensualidades}
+              onMisionLaGaviaLibreFechaFiniquitoChange={setMisionLaGaviaLibreFechaFiniquito}
               onClienteNombreChange={setClienteNombre}
             />
           </div>

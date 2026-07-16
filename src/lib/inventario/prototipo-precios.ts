@@ -1,7 +1,7 @@
 import type { DisponibilidadUnidad, Prototipo } from "@/lib/data";
 
 export const isUnidadEnVenta = (unit: DisponibilidadUnidad): boolean =>
-  unit.estatus === "disponible" || unit.estatus === "apartado";
+  unit.estatus === "disponible";
 
 export const getUnidadesPorPrototipo = (
   inventario: DisponibilidadUnidad[],

@@ -109,6 +109,39 @@ export const formatMonthLabel = (monthStart: string): string => {
 
 export const GUARDIA_WEEKDAY_LABELS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"] as const;
 
+/** Índice 0=lun … 6=dom a partir de YYYY-MM-DD (fecha local). */
+export const getYmdWeekdayIndexMondayFirst = (ymd: string): number => {
+  const day = parseYmd(ymd).getDay();
+  return day === 0 ? 6 : day - 1;
+};
+
+/**
+ * Días únicos por día de la semana (lun…dom) por asesor.
+ * Si alguien tiene matutino y vespertino el mismo lunes, cuenta 1 lunes.
+ */
+export const buildAsesorWeekdayDayCounts = (
+  asignaciones: Array<{ asesorId: string; fecha: string }>,
+): Record<string, number[]> => {
+  const fechasByAsesor = new Map<string, Set<string>>();
+
+  for (const item of asignaciones) {
+    const set = fechasByAsesor.get(item.asesorId) ?? new Set<string>();
+    set.add(item.fecha);
+    fechasByAsesor.set(item.asesorId, set);
+  }
+
+  const result: Record<string, number[]> = {};
+  for (const [asesorId, fechas] of fechasByAsesor) {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const fecha of fechas) {
+      const idx = getYmdWeekdayIndexMondayFirst(fecha);
+      counts[idx] += 1;
+    }
+    result[asesorId] = counts;
+  }
+  return result;
+};
+
 export type GuardiaCalendarDay = {
   fecha: string;
   inMonth: boolean;

@@ -7,7 +7,6 @@ import {
   Calculator,
   ExternalLink,
   Loader2,
-  MapPinned,
   Pencil,
   ToggleLeft,
   ToggleRight,
@@ -23,15 +22,12 @@ import {
   type SembradoUnidadRow,
 } from "@/lib/comercial/sembrado-status";
 import { hasDisponibilidadPlano } from "@/lib/disponibilidad/planos";
-import {
-  decodeMisionLaGaviaUnidad,
-  isGaviaEdificioCotizable,
-} from "@/lib/disponibilidad/planos/mision-la-gavia";
+import { isUnidadEnEtapaVendible } from "@/lib/inventario/sembrado-cotizable";
 import {
   cotizadorHrefForUnidad,
-  recorridoHrefForUnidad,
 } from "@/lib/disponibilidad/unit-deep-links";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 
 type ViewMode = "plano" | "lista";
 
@@ -273,9 +269,17 @@ export function DisponibilidadPanel({
     }
   };
 
+  /** Lista y contadores: solo etapa vendible (Gavia etapa 1 / cotizables). */
+  const unidadesLista = useMemo(() => {
+    if (!desarrollo?.id) {
+      return unidades;
+    }
+    return unidades.filter((row) => isUnidadEnEtapaVendible(desarrollo.id, row.unidad));
+  }, [desarrollo?.id, unidades]);
+
   const resumen = useMemo(() => {
     const counts = { disponibles: 0, apartados: 0, vendidos: 0, otros: 0 };
-    for (const row of unidades) {
+    for (const row of unidadesLista) {
       if (row.estatusSembrado === "Disponibles") {
         counts.disponibles += 1;
       } else if (row.estatusSembrado.includes("Apartado")) {
@@ -287,7 +291,7 @@ export function DisponibilidadPanel({
       }
     }
     return counts;
-  }, [unidades]);
+  }, [unidadesLista]);
 
   if (!adminChecked || (needsAsesorAuth && !asesorAuthReady) || !catalogReady || !user || !desarrollo) {
     return (
@@ -435,14 +439,23 @@ export function DisponibilidadPanel({
             <div className="border-b border-slate-100 px-4 py-3">
               <p className="text-sm font-semibold">{activeCluster?.nombre ?? "Unidades"}</p>
               <p className="text-xs text-slate-500">
-                {editMode
-                  ? "Misma vista que el asesor, con controles de edición."
-                  : "Estatus en tiempo real desde sembrado (sin datos de clientes)."}
+                {isMisionLaGaviaDesarrollo(desarrollo.id)
+                  ? editMode
+                    ? "Solo etapa 1 (cotizables) · misma vista que el asesor."
+                    : "Solo etapa 1 (edificios cotizables) · estatus en tiempo real."
+                  : editMode
+                    ? "Misma vista que el asesor, con controles de edición."
+                    : "Estatus en tiempo real desde sembrado (sin datos de clientes)."}
               </p>
             </div>
 
             <ul className="divide-y divide-slate-100">
-              {unidades.map((row) => (
+              {unidadesLista.length === 0 ? (
+                <li className="px-4 py-10 text-center text-sm text-slate-500">
+                  No hay departamentos cotizables en este cluster.
+                </li>
+              ) : null}
+              {unidadesLista.map((row) => (
                 <li
                   key={row.unidadId}
                   id={`unidad-${row.unidadId}`}
@@ -465,42 +478,14 @@ export function DisponibilidadPanel({
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
                     {!editMode ? (
-                      <>
-                        {(() => {
-                          const decoded = decodeMisionLaGaviaUnidad(row.unidad);
-                          const canQuote =
-                            !decoded || isGaviaEdificioCotizable(decoded.edificio);
-                          if (!canQuote) {
-                            return (
-                              <span className="px-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                                No cotizable
-                              </span>
-                            );
-                          }
-                          return (
-                            <>
-                              <Link
-                                href={cotizadorHrefForUnidad(row)}
-                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
-                                title={`Cotizar ${row.unidad}`}
-                                aria-label={`Cotizar ${row.unidad}`}
-                              >
-                                <Calculator className="h-4 w-4" strokeWidth={2} />
-                              </Link>
-                              {row.visitable ? (
-                                <Link
-                                  href={recorridoHrefForUnidad(row)}
-                                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
-                                  title={`Recorrido ${row.unidad}`}
-                                  aria-label={`Recorrido ${row.unidad}`}
-                                >
-                                  <MapPinned className="h-4 w-4" strokeWidth={2} />
-                                </Link>
-                              ) : null}
-                            </>
-                          );
-                        })()}
-                      </>
+                      <Link
+                        href={cotizadorHrefForUnidad(row)}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#201044] hover:bg-slate-100"
+                        title={`Cotizar ${row.unidad}`}
+                        aria-label={`Cotizar ${row.unidad}`}
+                      >
+                        <Calculator className="h-4 w-4" strokeWidth={2} />
+                      </Link>
                     ) : null}
                     {editMode ? (
                       <>

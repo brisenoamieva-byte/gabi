@@ -7,7 +7,6 @@ import {
   LayoutList,
   Loader2,
   Plus,
-  RefreshCw,
   Trash2,
   UserRoundCog,
 } from "lucide-react";
@@ -127,7 +126,6 @@ export function LeadsAdminPanel({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [newNombre, setNewNombre] = useState("");
   const [creating, setCreating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [reassigning, setReassigning] = useState(false);
   const [bulkReassignAsesorId, setBulkReassignAsesorId] = useState("");
@@ -469,35 +467,6 @@ export function LeadsAdminPanel({
       prev.map((row) => (row.id === prospectoId ? { ...row, etapa } : row)),
     );
     void loadLeads();
-  };
-
-  const handleSyncInteligencia = async () => {
-    if (!applied.desarrolloId) {
-      return;
-    }
-
-    setSyncing(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/admin/prospectos/sync-inteligencia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ desarrolloId: applied.desarrolloId }),
-      });
-
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo sincronizar.");
-      }
-
-      void loadLeads();
-    } catch (syncError) {
-      setError(syncError instanceof Error ? syncError.message : "Error al sincronizar.");
-    } finally {
-      setSyncing(false);
-    }
   };
 
   const handleCreateLead = async (event: React.FormEvent) => {
@@ -973,15 +942,6 @@ export function LeadsAdminPanel({
                 {resumen?.total ?? 0} en desarrollo · {prospectos.length} en vista
                 {scopeLabel ? ` · ${scopeLabel}` : ""}
               </p>
-              <button
-                type="button"
-                onClick={() => void handleSyncInteligencia()}
-                disabled={syncing}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
-              >
-                <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
-                iScore
-              </button>
             </div>
           </div>
         ) : null}
@@ -1040,6 +1000,7 @@ export function LeadsAdminPanel({
             <div className="min-h-0 flex-1 overflow-auto p-3">
               <LeadsKanbanBoard
                 prospectos={prospectos}
+                canRescatarDescartados
                 onSelect={setSelectedId}
                 onMoveEtapa={handleMoveEtapa}
               />

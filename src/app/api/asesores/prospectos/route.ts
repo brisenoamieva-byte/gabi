@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       telefono: body.telefono,
       medioContacto: body.medioContacto,
       partnerId: body.partnerId,
+      partnerNombre: body.partnerNombre,
       notas: body.notas,
     });
 

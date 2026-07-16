@@ -9,7 +9,6 @@ import {
   ArrowUp,
   Calculator,
   ChevronDown,
-  MapPinned,
   X,
 } from "lucide-react";
 import type { AsesorDisponibilidadRow } from "@/lib/inventario/asesor-disponibilidad";
@@ -39,7 +38,6 @@ import {
 import { resolveGaviaPlantaAssets } from "@/lib/disponibilidad/planos/plantas";
 import {
   cotizadorHrefForUnidad,
-  recorridoHrefForUnidad,
 } from "@/lib/disponibilidad/unit-deep-links";
 
 type DisponibilidadPlanoGaviaProps = {
@@ -123,7 +121,7 @@ export function DisponibilidadPlanoGavia({
             <p className="mb-2 px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500 sm:hidden">
               Desliza el plano →
             </p>
-            <div className="mx-auto min-w-[48rem] max-w-5xl space-y-0">
+            <div className="mx-auto min-w-[56rem] max-w-5xl space-y-0">
               <div className="mb-2 hidden items-center justify-between gap-2 px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500 sm:flex">
                 <span>N ↑</span>
                 <span>Por lado: PB colinda con la calle</span>
@@ -132,7 +130,7 @@ export function DisponibilidadPlanoGavia({
             {/* Fila norte: calle horizontal (flecha ←) */}
             <StreetHorizontal dir="left" label="Calle" />
 
-            <div className="grid grid-cols-[4.25rem_7.5rem_1.75rem_minmax(0,1fr)_1.75rem_7.5rem] gap-0">
+            <div className="grid grid-cols-[4.25rem_10.5rem_1.75rem_minmax(0,1fr)_1.75rem_10.5rem] gap-0">
               {/* Plaza */}
               <div className="row-span-3 flex items-center justify-center border border-[#c5cfc0] bg-[#d8e0c8] px-1 text-center text-[10px] font-semibold uppercase tracking-wide text-[#4d5c42]">
                 Plaza
@@ -359,15 +357,6 @@ export function DisponibilidadPlanoGavia({
                             <Calculator className="h-3.5 w-3.5" strokeWidth={2} />
                             Cotizar
                           </Link>
-                          {row.visitable ? (
-                            <Link
-                              href={recorridoHrefForUnidad(row)}
-                              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#201044] transition hover:bg-slate-50"
-                            >
-                              <MapPinned className="h-3.5 w-3.5" strokeWidth={2} />
-                              Recorrido
-                            </Link>
-                          ) : null}
                         </div>
                       </div>
                     </li>
@@ -460,14 +449,14 @@ function EdificioCell({
 
   return (
     <div
-      className={`rounded-md p-0.5 transition ${tipologiaBg} ${
+      className={`rounded-lg p-1 transition ${tipologiaBg} ${
         cotizable ? "" : "pointer-events-none opacity-35 grayscale-[0.35]"
       }`}
       aria-disabled={!cotizable}
       title={cotizable ? undefined : `Edificio ${edificio.id} · aún no cotizable`}
     >
       <div
-        className={`grid gap-0.5 ${
+        className={`grid gap-1 ${
           apilado || lados.length === 1 ? "grid-cols-1" : "grid-cols-2"
         }`}
       >
@@ -488,15 +477,15 @@ function EdificioCell({
           return (
             <div
               key={lado}
-              className={`rounded border border-black/5 bg-white/40 p-0.5 ${
-                apilado ? "min-w-0" : "min-w-[3.25rem]"
+              className={`rounded-md border border-black/5 bg-white/55 p-1 ${
+                apilado ? "min-w-0" : "min-w-[4.5rem]"
               } ${isActive ? "ring-2 ring-[#201044]/40" : ""}`}
             >
-              <p className="mb-0.5 px-0.5 text-center text-[9px] font-semibold uppercase tracking-wide text-[#201044]/80">
+              <p className="mb-1 px-0.5 text-center text-[10px] font-bold uppercase tracking-wide text-[#201044]">
                 {edificio.id} {lado}
               </p>
               <div
-                className={`grid gap-0.5 ${
+                className={`grid gap-1 ${
                   apilado ? "grid-cols-3" : "grid-cols-1"
                 }`}
               >
@@ -507,6 +496,9 @@ function EdificioCell({
                     ? classifyDisponibilidadStatus(row.estatusSembrado)
                     : "otro";
                   const nivelShort = nivel === 1 ? "PB" : String(nivel);
+                  const unidadShort = row
+                    ? row.unidad.replace(`${edificio.id}-`, "")
+                    : "—";
 
                   return (
                     <button
@@ -526,17 +518,19 @@ function EdificioCell({
                           onSelect(lado);
                         }
                       }}
-                      className={`flex min-h-10 touch-manipulation flex-col items-center justify-center gap-0.5 rounded border px-0.5 py-1 text-center transition sm:min-h-[1.75rem] sm:flex-row sm:justify-between sm:gap-0.5 sm:px-1 sm:py-0.5 sm:text-left ${
+                      className={`flex min-h-12 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-1.5 text-center transition ${
                         PLANO_TONE_CLASS[tone]
                       } ${
                         cotizable
                           ? `active:scale-[0.98] ${row ? "hover:brightness-[0.97]" : "opacity-50"}`
                           : "cursor-not-allowed"
-                      } ${apilado ? "min-w-0" : ""}`}
+                      }`}
                     >
-                      <span className="text-[9px] font-semibold leading-none">{nivelShort}</span>
-                      <span className="truncate text-[8px] font-medium leading-none opacity-80">
-                        {row ? row.unidad.replace(`${edificio.id}-`, "") : "—"}
+                      <span className="text-[10px] font-bold leading-none tracking-wide">
+                        {nivelShort}
+                      </span>
+                      <span className="max-w-full text-[11px] font-semibold leading-tight tabular-nums tracking-tight">
+                        {unidadShort}
                       </span>
                     </button>
                   );

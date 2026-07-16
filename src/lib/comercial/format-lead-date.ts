@@ -25,6 +25,41 @@ export const formatLeadDateOnly = (isoDate: string) => {
   });
 };
 
+/** Normaliza hora de Postgres (`10:00:00`) o input (`10:00`) a `HH:MM`. */
+export const normalizeTimeInputValue = (time?: string | null): string => {
+  const trimmed = time?.trim();
+  if (!trimmed) {
+    return "";
+  }
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) {
+    return "";
+  }
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || hours > 23 || minutes > 59) {
+    return "";
+  }
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+/** Muestra hora en formato corto (10:00). */
+export const formatLeadTimeOnly = (time?: string | null): string =>
+  normalizeTimeInputValue(time);
+
+/** Fecha + hora de cita agendada. */
+export const formatLeadVisitSchedule = (
+  date?: string | null,
+  time?: string | null,
+): string => {
+  if (!date) {
+    return "—";
+  }
+  const dateLabel = formatLeadDateOnly(date);
+  const timeLabel = formatLeadTimeOnly(time);
+  return timeLabel ? `${dateLabel} · ${timeLabel}` : dateLabel;
+};
+
 export const formatLeadActivity = (iso: string) => {
   const date = new Date(iso);
   const diffMs = Date.now() - date.getTime();

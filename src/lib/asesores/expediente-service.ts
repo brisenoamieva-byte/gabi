@@ -1,4 +1,7 @@
-import { uploadExpedienteDocumento } from "@/lib/admin/expediente-service";
+import {
+  ensureExpedienteDriveFolderForOperacion,
+  uploadExpedienteDocumento,
+} from "@/lib/admin/expediente-service";
 import type { AdminProfile } from "@/lib/admin/types";
 import {
   assertAsesorDesarrollo,
@@ -111,14 +114,17 @@ export const getExpedienteSummaryForProspecto = async (
 
   const requeridos = items.filter((item) => item.requerido);
   const completados = requeridos.filter((item) => item.subido).length;
+  const ensuredFolder = await ensureExpedienteDriveFolderForOperacion(operacion.id as string);
 
   return {
     operacionId: operacion.id as string,
     clienteNombre: (operacion.cliente_nombre as string) ?? prospecto.nombre,
     unidadNumero: (unidad?.unidad as string) ?? "—",
-    driveFolderUrl: operacion.drive_folder_id
-      ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
-      : null,
+    driveFolderUrl:
+      ensuredFolder?.folderUrl ??
+      (operacion.drive_folder_id
+        ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
+        : null),
     driveConfigured: await isGoogleDriveConfiguredForDesarrolloAsync(desarrolloId),
     progresoApartadoCliente: {
       completados,

@@ -21,7 +21,9 @@ import {
 import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import type { CadenciaHoyItem, AsesorCadenciaBrief } from "@/lib/comercial/cadencia-service";
+import type { ProximoContactoHoyItem } from "@/lib/comercial/proximo-contacto";
 import { AsesorCadenciaHoyPanel } from "@/components/asesor/AsesorCadenciaHoyPanel";
+import { AsesorProximosContactosPanel } from "@/components/asesor/AsesorProximosContactosPanel";
 
 type AsesorDashboardCrmHeroProps = {
   asesorId: string;
@@ -33,6 +35,7 @@ const ETAPA_ACCENT: Partial<Record<ProspectoEtapa, string>> = {
   nuevo: "bg-sky-500/15 text-sky-100",
   contactado: "bg-violet-500/15 text-violet-100",
   cita: "bg-violet-500/15 text-violet-100",
+  visita: "bg-indigo-500/15 text-indigo-100",
   apartado: "bg-emerald-500/15 text-emerald-100",
   vendido: "bg-white/10 text-white/80",
 };
@@ -51,6 +54,7 @@ export function AsesorDashboardCrmHero({
   const [overdueCount, setOverdueCount] = useState(0);
   const [topExceptions, setTopExceptions] = useState<ProspectoComplianceRow[]>([]);
   const [cadenciaHoy, setCadenciaHoy] = useState<CadenciaHoyItem[]>([]);
+  const [proximosContactos, setProximosContactos] = useState<ProximoContactoHoyItem[]>([]);
   const [cadenciaBrief, setCadenciaBrief] = useState<AsesorCadenciaBrief | null>(null);
 
   const playbookEnabledHook = useCrmPlaybookEnabled(asesorId, desarrolloId);
@@ -77,11 +81,9 @@ export function AsesorDashboardCrmHero({
               `/api/asesores/crm-compliance/summary?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
             )
           : Promise.resolve(null),
-        playbookEnabledHook
-          ? fetch(
-              `/api/asesores/cadencia/hoy?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
-            )
-          : Promise.resolve(null),
+        fetch(
+          `/api/asesores/cadencia/hoy?asesorId=${encodeURIComponent(asesorId)}&desarrolloId=${encodeURIComponent(desarrolloId)}`,
+        ),
       ]);
 
       const leadsData = (await leadsRes.json()) as {
@@ -123,9 +125,13 @@ export function AsesorDashboardCrmHero({
       }
 
       if (cadenciaRes) {
-        const cadenciaData = (await cadenciaRes.json()) as { items?: CadenciaHoyItem[] };
+        const cadenciaData = (await cadenciaRes.json()) as {
+          items?: CadenciaHoyItem[];
+          proximosContactos?: ProximoContactoHoyItem[];
+        };
         if (cadenciaRes.ok) {
           setCadenciaHoy(cadenciaData.items ?? []);
+          setProximosContactos(cadenciaData.proximosContactos ?? []);
         }
       }
     } catch {
@@ -136,6 +142,7 @@ export function AsesorDashboardCrmHero({
       setOverdueCount(0);
       setTopExceptions([]);
       setCadenciaHoy([]);
+      setProximosContactos([]);
       setCadenciaBrief(null);
     } finally {
       setLoading(false);
@@ -265,6 +272,8 @@ export function AsesorDashboardCrmHero({
                 <ArrowRight className="h-4 w-4 shrink-0 text-amber-200/80" />
               </Link>
             ) : null}
+
+            <AsesorProximosContactosPanel items={proximosContactos} />
 
             {playbookEnabled ? (
               <AsesorCadenciaHoyPanel

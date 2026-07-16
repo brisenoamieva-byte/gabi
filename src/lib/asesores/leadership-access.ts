@@ -15,6 +15,9 @@ export const canAsesorManageAllProspectos = (rol: AsesorRol) => isLeadershipAses
 
 export const canAsesorReassignProspectos = (rol: AsesorRol) => isLeadershipAsesorRol(rol);
 
+/** Gerencia / dirección / coordinación pueden devolver un lead descartado al funnel. */
+export const canAsesorRescatarDescartados = (rol: AsesorRol) => isLeadershipAsesorRol(rol);
+
 export const loadAsesorSessionOrThrow = async (asesorId: string): Promise<AsesorSession> => {
   const session = await getAsesorSessionById(asesorId);
   if (!session) {

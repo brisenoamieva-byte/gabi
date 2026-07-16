@@ -1,6 +1,11 @@
 import { listSembradoUnidades } from "@/lib/admin/operaciones-service";
+import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 import type { SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
 import type { DisponibilidadUnidad } from "@/lib/data";
+import {
+  decodeMisionLaGaviaUnidad,
+  isGaviaEdificioCotizable,
+} from "@/lib/disponibilidad/planos/mision-la-gavia";
 
 /** Unidad cotizable = sin operación activa y estatus inventario disponible (sembrado). */
 export function isUnidadCotizableSembrado(row: SembradoUnidadRow): boolean {
@@ -8,6 +13,24 @@ export function isUnidadCotizableSembrado(row: SembradoUnidadRow): boolean {
     return false;
   }
   return row.estatusInventario === "disponible";
+}
+
+/**
+ * En Misión La Gavia solo se cotizan/venden edificios marcados `cotizable`
+ * (etapa comercial abierta). Alineado a plano y simulador.
+ */
+export function isUnidadEnEtapaVendible(
+  desarrolloId: string,
+  unidadCodigo: string,
+): boolean {
+  if (!isMisionLaGaviaDesarrollo(desarrolloId)) {
+    return true;
+  }
+  const decoded = decodeMisionLaGaviaUnidad(unidadCodigo);
+  if (!decoded) {
+    return false;
+  }
+  return isGaviaEdificioCotizable(decoded.edificio);
 }
 
 export function mapSembradoRowToDisponibilidadUnidad(row: SembradoUnidadRow): DisponibilidadUnidad {
@@ -45,5 +68,19 @@ export async function listUnidadesCotizablesSembrado(
   clusterId?: string,
 ): Promise<DisponibilidadUnidad[]> {
   const rows = await listSembradoUnidades({ desarrolloId, clusterId });
-  return rows.filter(isUnidadCotizableSembrado).map(mapSembradoRowToDisponibilidadUnidad);
+  return rows
+    .filter(isUnidadCotizableSembrado)
+    .filter((row) => isUnidadEnEtapaVendible(desarrolloId, row.unidad))
+    .map(mapSembradoRowToDisponibilidadUnidad);
+}
+
+/** Filtra inventario ya mapeado a la etapa/edificio vendible del desarrollo. */
+export function filterUnidadesEtapaVendible(
+  desarrolloId: string,
+  units: DisponibilidadUnidad[],
+): DisponibilidadUnidad[] {
+  if (!isMisionLaGaviaDesarrollo(desarrolloId)) {
+    return units;
+  }
+  return units.filter((unit) => isUnidadEnEtapaVendible(desarrolloId, unit.unidad));
 }

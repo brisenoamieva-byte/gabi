@@ -51,6 +51,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       assignedAsesorId: body.assignedAsesorId,
       motivoDescarte: body.motivoDescarte,
       motivoDescarteDetalle: body.motivoDescarteDetalle,
+      proximoContactoOn: body.proximoContactoOn,
+      proximoContactoNota: body.proximoContactoNota,
     });
 
     const playbook = await getProspectoPlaybookState(prospecto);

@@ -8,11 +8,67 @@ import {
   isPerfilamientoVisitaComplete,
   PERFILAMIENTO_VISITA_QUESTIONS,
   perfilCalificacionLeadBannerClass,
-  perfilCalificacionLeadDescription,
   resolvePerfilCalificacionLead,
   type PerfilamientoVisitaAnswers,
   type PerfilamientoVisitaRecord,
 } from "@/lib/comercial/perfilamiento-post-visita";
+
+function SiNoToggle({
+  value,
+  shortLabel,
+  fullLabel,
+  disabled,
+  onChange,
+}: {
+  value: boolean | undefined;
+  shortLabel: string;
+  fullLabel: string;
+  disabled?: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between gap-2 border-b border-slate-100 py-1.5 last:border-b-0"
+      title={fullLabel}
+    >
+      <span className="min-w-0 flex-1 text-[11px] font-medium leading-snug text-slate-700">
+        {shortLabel}
+      </span>
+      <div
+        role="group"
+        aria-label={fullLabel}
+        className="inline-flex shrink-0 rounded-md border border-slate-200 bg-slate-50 p-0.5"
+      >
+        <button
+          type="button"
+          disabled={disabled}
+          aria-pressed={value === true}
+          onClick={() => onChange(true)}
+          className={`min-h-8 min-w-10 rounded px-2 text-[11px] font-bold transition ${
+            value === true
+              ? "bg-[#201044] text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Sí
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-pressed={value === false}
+          onClick={() => onChange(false)}
+          className={`min-h-8 min-w-10 rounded px-2 text-[11px] font-bold transition ${
+            value === false
+              ? "bg-[#201044] text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          No
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type PerfilamientoVisitaFormProps = {
   loading: boolean;
@@ -25,7 +81,7 @@ export function PerfilamientoVisitaForm({
   loading,
   initial,
   onSubmit,
-  className = "mt-2 space-y-3",
+  className = "space-y-2",
 }: PerfilamientoVisitaFormProps) {
   const [answers, setAnswers] = useState<Partial<PerfilamientoVisitaAnswers>>(() => ({
     presupuestoDisponible: initial?.presupuestoDisponible ?? undefined,
@@ -40,42 +96,25 @@ export function PerfilamientoVisitaForm({
 
   return (
     <div className={className}>
-      {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
-        <fieldset key={question.key} className="rounded-lg border border-slate-200 bg-slate-50/80 p-2">
-          <legend className="px-1 text-xs leading-snug text-slate-700">{question.label}</legend>
-          <div className="mt-1 flex gap-4">
-            <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#201044]">
-              <input
-                type="radio"
-                name={question.key}
-                checked={answers[question.key] === true}
-                onChange={() =>
-                  setAnswers((current) => ({ ...current, [question.key]: true }))
-                }
-                className="accent-[#201044]"
-              />
-              Sí
-            </label>
-            <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#201044]">
-              <input
-                type="radio"
-                name={question.key}
-                checked={answers[question.key] === false}
-                onChange={() =>
-                  setAnswers((current) => ({ ...current, [question.key]: false }))
-                }
-                className="accent-[#201044]"
-              />
-              No
-            </label>
-          </div>
-        </fieldset>
-      ))}
+      <div className="rounded-lg border border-slate-200 bg-white px-2.5">
+        {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
+          <SiNoToggle
+            key={question.key}
+            shortLabel={question.shortLabel}
+            fullLabel={question.label}
+            value={answers[question.key]}
+            disabled={loading}
+            onChange={(next) =>
+              setAnswers((current) => ({ ...current, [question.key]: next }))
+            }
+          />
+        ))}
+      </div>
       <button
         type="button"
         disabled={loading || !allAnswered}
         onClick={() => onSubmit(answers as PerfilamientoVisitaAnswers)}
-        className="inline-flex items-center gap-1 rounded-lg bg-[#201044] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+        className="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[#201044] px-3 text-xs font-bold text-white disabled:opacity-50 sm:w-auto"
       >
         {loading ? (
           <>
@@ -83,7 +122,7 @@ export function PerfilamientoVisitaForm({
             Guardando…
           </>
         ) : (
-          "Guardar perfilamiento"
+          "Guardar"
         )}
       </button>
     </div>
@@ -97,7 +136,7 @@ type PerfilamientoVisitaSummaryProps = {
 
 export function PerfilamientoVisitaSummary({
   record,
-  className = "mt-2 space-y-2",
+  className = "space-y-2",
 }: PerfilamientoVisitaSummaryProps) {
   const calificacion = resolvePerfilCalificacionLead({
     perfil_presupuesto_disponible: record.presupuestoDisponible,
@@ -109,27 +148,26 @@ export function PerfilamientoVisitaSummary({
     <div className={className}>
       {calificacion ? (
         <div
-          className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${perfilCalificacionLeadBannerClass[calificacion]}`}
+          className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${perfilCalificacionLeadBannerClass[calificacion]}`}
         >
-          <PerfilCalificacionLeadBadge calificacion={calificacion} size="md" />
-          <div>
-            <p className="text-xs font-bold">Calificación {calificacion}</p>
-            <p className="text-[11px] leading-snug opacity-90">
-              {perfilCalificacionLeadDescription[calificacion]}
-            </p>
-          </div>
+          <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
+          <p className="text-[11px] font-semibold">Lead {calificacion}</p>
         </div>
       ) : null}
-      <dl className="space-y-2 rounded-lg bg-slate-50 p-2">
+      <div className="grid grid-cols-2 gap-1.5">
         {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
-          <div key={question.key}>
-            <dt className="text-[11px] leading-snug text-slate-500">{question.label}</dt>
-            <dd className="text-xs font-bold text-[#201044]">
+          <div
+            key={question.key}
+            className="rounded-md bg-slate-50 px-2 py-1.5"
+            title={question.label}
+          >
+            <p className="text-[10px] leading-tight text-slate-500">{question.shortLabel}</p>
+            <p className="text-xs font-bold text-[#201044]">
               {formatPerfilamientoSiNo(record[question.key])}
-            </dd>
+            </p>
           </div>
         ))}
-      </dl>
+      </div>
     </div>
   );
 }
@@ -141,7 +179,7 @@ type PerfilamientoVisitaPanelProps = {
   desarrolloHint?: string | null;
 };
 
-/** Bloque siempre visible en el detalle del lead (cualquier etapa). */
+/** Bloque compacto de perfilamiento en el detalle del lead. */
 export function PerfilamientoVisitaPanel({
   record,
   loading,
@@ -151,31 +189,28 @@ export function PerfilamientoVisitaPanel({
   const complete = isPerfilamientoVisitaComplete(record);
 
   return (
-    <div className="rounded-xl border border-[#201044]/15 bg-white p-4">
-      <div className="mb-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#201044]/70">
-          Perfilamiento
-        </p>
-        <p className="mt-1 text-sm font-semibold text-[#201044]">
-          Necesidades y perfil documentados
-          {!complete ? <span className="text-rose-500"> *</span> : null}
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          Presupuesto, intención de apartar, decisor y publicidad en redes. Puede capturarse en
-          cualquier momento del funnel.
-          {desarrolloHint ? ` ${desarrolloHint}` : null}
-        </p>
+    <div className="rounded-xl border border-[#201044]/12 bg-white p-3">
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#201044]/65">
+            Perfilamiento
+            {!complete ? <span className="text-rose-500"> *</span> : null}
+          </p>
+          {desarrolloHint ? (
+            <p className="mt-0.5 truncate text-[10px] text-slate-400" title={desarrolloHint}>
+              {desarrolloHint}
+            </p>
+          ) : null}
+        </div>
+        {!complete ? (
+          <p className="shrink-0 text-[10px] font-medium text-slate-400">4 Sí/No</p>
+        ) : null}
       </div>
 
       {complete ? (
-        <PerfilamientoVisitaSummary record={record} className="space-y-2" />
+        <PerfilamientoVisitaSummary record={record} />
       ) : (
-        <PerfilamientoVisitaForm
-          loading={loading}
-          initial={record}
-          onSubmit={onSubmit}
-          className="space-y-3"
-        />
+        <PerfilamientoVisitaForm loading={loading} initial={record} onSubmit={onSubmit} />
       )}
     </div>
   );

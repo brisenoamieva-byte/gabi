@@ -7,15 +7,19 @@ import {
   getUnidadesCotizables,
   type CotizadorCatalog,
 } from "@/lib/cotizador";
+import { DescuentoEspecialField } from "@/components/cotizador/DescuentoEspecialField";
 import { calcDescuentoPct, saveCotizacionClient } from "@/lib/comercial/save-cotizacion-client";
 import { formatAreaM2, formatPrice } from "@/lib/format/money";
-import { formatMonthYear } from "@/lib/cotizador/pasaje-simulador";
+import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
+import { endOfMonth, formatMonthYear } from "@/lib/cotizador/pasaje-simulador";
 import { downloadMisionLaGaviaSimuladorPdf } from "@/lib/cotizador/mision-la-gavia-simulador-pdf";
 import { MISION_LA_GAVIA_UNIDADES } from "@/lib/corredor/mision-la-gavia-unidades.generated";
 import {
   buildMisionLaGaviaSimulacionSummary,
   formatPctShort,
   getMisionLaGaviaEsquemas,
+  MISION_LA_GAVIA_ENTREGA_ETAPA1_ISO,
+  MISION_LA_GAVIA_LIBRE_DEFAULTS,
   resolveMisionLaGaviaUnidadFromInventario,
   simularMisionLaGavia,
   simularTodosEsquemasMisionLaGavia,
@@ -24,8 +28,7 @@ import {
 } from "@/lib/corredor/mision-la-gavia-simulador";
 import {
   decodeMisionLaGaviaUnidad,
-  isGaviaEdificioCotizable,
-  type GaviaEdificioId,
+  MISION_LA_GAVIA_EDIFICIOS,
   type GaviaTipologia,
 } from "@/lib/disponibilidad/planos/mision-la-gavia";
 import { resolveGaviaPlantaAssets } from "@/lib/disponibilidad/planos/plantas";
@@ -44,6 +47,8 @@ export type MisionLaGaviaSimuladorPanelProps = {
   clienteNombre?: string;
   asesorNombre?: string;
   asesorId?: string;
+  /** Rol del asesor en sesión (gerente/director ven descuento especial). */
+  asesorRol?: string | null;
   prospectoId?: string;
   clienteEmail?: string;
   clienteTelefono?: string;
@@ -51,10 +56,16 @@ export type MisionLaGaviaSimuladorPanelProps = {
   showSelectors?: boolean;
   showCopy?: boolean;
   showPdf?: boolean;
+  libreEnganchePct?: number;
+  libreMensualidadesPct?: number;
+  libreFechaFiniquito?: string;
   onClusterChange?: (clusterId: string) => void;
   onPrototipoChange?: (prototipoId: string | undefined) => void;
   onUnidadChange?: (unidadId: string | undefined) => void;
   onEsquemaChange?: (esquema: MisionLaGaviaEsquemaId) => void;
+  onLibreEngancheChange?: (value: number) => void;
+  onLibreMensualidadesChange?: (value: number) => void;
+  onLibreFechaFiniquitoChange?: (value: string) => void;
   onClienteNombreChange?: (value: string) => void;
 };
 
@@ -106,6 +117,129 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+const toISODate = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const parseISODate = (value: string | undefined): Date | undefined => {
+  if (!value) return undefined;
+  const parts = value.split("-").map((part) => Number(part));
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return undefined;
+  return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+};
+
+function PercentSlider({
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  label,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange?: (value: number) => void;
+  label: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          {label}
+        </span>
+        <span className="text-base font-black tabular-nums text-[#14453D]">
+          {formatPctShort(value)}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange?.(Number(event.target.value))}
+        disabled={!onChange}
+        className="mt-2 h-2 w-full cursor-pointer accent-[#5B8A7D] disabled:cursor-not-allowed disabled:opacity-40"
+      />
+    </div>
+  );
+}
+
+function MoneyAmountInput({
+  label,
+  amount,
+  onAmountChange,
+  helper,
+}: {
+  label: string;
+  amount: number;
+  onAmountChange?: (amount: number) => void;
+  helper?: string;
+}) {
+  const [draft, setDraft] = useState(() => formatAmountInput(amount));
+
+  useEffect(() => {
+    setDraft(formatAmountInput(amount));
+  }, [amount]);
+
+  const handleChange = (raw: string) => {
+    const parsed = parseMoneyInput(raw);
+    if (parsed === null) {
+      setDraft(raw.replace(/[^\d,.\s$]/g, ""));
+      return;
+    }
+    setDraft(formatAmountInput(parsed));
+  };
+
+  const commit = () => {
+    if (!onAmountChange) {
+      setDraft(formatAmountInput(amount));
+      return;
+    }
+    const parsed = parseMoneyInput(draft);
+    if (parsed === null) {
+      setDraft(formatAmountInput(amount));
+      return;
+    }
+    onAmountChange(parsed);
+    setDraft(formatAmountInput(parsed));
+  };
+
+  return (
+    <label className="block">
+      <FieldLabel>{label}</FieldLabel>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+          $
+        </span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={draft}
+          onChange={(event) => handleChange(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+          }}
+          disabled={!onAmountChange}
+          className="input-cotizador pl-7 tabular-nums disabled:cursor-not-allowed disabled:opacity-60"
+        />
+      </div>
+      {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
+    </label>
+  );
+}
+
 function resolveUnidadRecord(
   inventario: DisponibilidadUnidad[] | undefined,
   unidadId: string | undefined,
@@ -143,6 +277,7 @@ export function MisionLaGaviaSimuladorPanel({
   clienteNombre,
   asesorNombre,
   asesorId,
+  asesorRol,
   prospectoId,
   clienteEmail,
   clienteTelefono,
@@ -150,8 +285,14 @@ export function MisionLaGaviaSimuladorPanel({
   showSelectors = false,
   showCopy = false,
   showPdf = false,
+  libreEnganchePct,
+  libreMensualidadesPct,
+  libreFechaFiniquito,
   onUnidadChange,
   onEsquemaChange,
+  onLibreEngancheChange,
+  onLibreMensualidadesChange,
+  onLibreFechaFiniquitoChange,
   onClienteNombreChange,
 }: MisionLaGaviaSimuladorPanelProps) {
   const [copied, setCopied] = useState(false);
@@ -160,6 +301,7 @@ export function MisionLaGaviaSimuladorPanel({
   const [unidadCode, setUnidadCode] = useState("");
   const [esquemaLocal, setEsquemaLocal] = useState<MisionLaGaviaEsquemaId>(esquema);
   const [plantasOpen, setPlantasOpen] = useState(false);
+  const [descuentoEspecialPct, setDescuentoEspecialPct] = useState(0);
 
   useEffect(() => {
     setEsquemaLocal(esquema);
@@ -171,52 +313,93 @@ export function MisionLaGaviaSimuladorPanel({
     [clusterId, inventarioUnidades],
   );
 
-  const edificios = useMemo(
-    () =>
-      Array.from(new Set(MISION_LA_GAVIA_UNIDADES.map((item) => item.edificio)))
-        .filter((id) => isGaviaEdificioCotizable(id as GaviaEdificioId))
-        .sort(),
-    [],
-  );
+  const edificios = useMemo(() => {
+    const ids = new Set<string>(
+      MISION_LA_GAVIA_EDIFICIOS.filter((item) => item.cotizable).map((item) => item.id),
+    );
+    for (const unit of unidadesInventario) {
+      const decoded = decodeMisionLaGaviaUnidad(unit.unidad);
+      if (decoded) {
+        ids.add(decoded.edificio);
+      }
+    }
+    if (unidadId && inventarioUnidades?.length) {
+      const selected = inventarioUnidades.find((item) => item.id === unidadId);
+      const decoded = selected?.unidad
+        ? decodeMisionLaGaviaUnidad(selected.unidad)
+        : null;
+      if (decoded) {
+        ids.add(decoded.edificio);
+      }
+    }
+    return Array.from(ids).sort();
+  }, [inventarioUnidades, unidadId, unidadesInventario]);
 
   const unidadesEdificio = useMemo(() => {
     if (!edificio) return [];
-    return MISION_LA_GAVIA_UNIDADES.filter((item) => item.edificio === edificio).sort((a, b) =>
-      a.unidad.localeCompare(b.unidad, "es", { numeric: true }),
+    const fromCatalog = MISION_LA_GAVIA_UNIDADES.filter((item) => item.edificio === edificio);
+    const fromInventarioCodes = new Set(
+      unidadesInventario
+        .filter((item) => {
+          const decoded = decodeMisionLaGaviaUnidad(item.unidad);
+          return decoded?.edificio === edificio;
+        })
+        .map((item) => item.unidad),
     );
-  }, [edificio]);
+    // Preferir unidades presentes en inventario vivo; si no hay, catálogo del edificio.
+    const filtered = fromInventarioCodes.size
+      ? fromCatalog.filter((item) => fromInventarioCodes.has(item.unidad))
+      : fromCatalog;
+    return filtered.sort((a, b) => a.unidad.localeCompare(b.unidad, "es", { numeric: true }));
+  }, [edificio, unidadesInventario]);
 
+  // Al elegir unidad en el recorrido (o URL), sincronizar selectores del simulador.
   useEffect(() => {
-    if (unidadId && inventarioUnidades?.length) {
-      const inv = inventarioUnidades.find((item) => item.id === unidadId);
-      if (inv?.unidad) {
-        const [torre] = inv.unidad.split("-");
-        if (torre && isGaviaEdificioCotizable(torre as GaviaEdificioId)) {
-          setEdificio(torre);
-          setUnidadCode(inv.unidad);
-        }
-      }
+    if (!unidadId) {
+      return;
     }
-  }, [unidadId, inventarioUnidades]);
+    const inv =
+      inventarioUnidades?.find((item) => item.id === unidadId) ??
+      unidadesInventario.find((item) => item.id === unidadId);
+    if (!inv?.unidad) {
+      return;
+    }
+    const decoded = decodeMisionLaGaviaUnidad(inv.unidad);
+    const torre = decoded?.edificio ?? inv.unidad.split("-")[0]?.toUpperCase();
+    if (!torre) {
+      return;
+    }
+    setEdificio(torre);
+    setUnidadCode(inv.unidad);
+  }, [unidadId, inventarioUnidades, unidadesInventario]);
 
   useEffect(() => {
     if (!edificio && edificios.length) {
       setEdificio(edificios[0] ?? "");
       return;
     }
-    if (edificio && !edificios.includes(edificio as (typeof edificios)[number]) && edificios.length) {
+    // No pisar la torre si viene de una unidad ya elegida en el recorrido.
+    if (
+      !unidadId &&
+      edificio &&
+      !edificios.includes(edificio) &&
+      edificios.length
+    ) {
       setEdificio(edificios[0] ?? "");
       setUnidadCode("");
     }
-  }, [edificio, edificios]);
+  }, [edificio, edificios, unidadId]);
 
   useEffect(() => {
+    if (unidadId) {
+      return;
+    }
     if (!unidadCode && unidadesEdificio.length) {
       const preferida =
         unidadesEdificio.find((item) => item.estatus === "disponible") ?? unidadesEdificio[0];
       setUnidadCode(preferida?.unidad ?? "");
     }
-  }, [unidadCode, unidadesEdificio]);
+  }, [unidadCode, unidadesEdificio, unidadId]);
 
   const unidadRecord = useMemo(() => {
     return resolveUnidadRecord(inventarioUnidades, unidadId, edificio, unidadCode);
@@ -238,15 +421,82 @@ export function MisionLaGaviaSimuladorPanel({
     setPlantasOpen(false);
   }, [unidadRecord?.unidad]);
 
+  const libreEnganche = libreEnganchePct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.enganchePct;
+  const libreMensualidades =
+    libreMensualidadesPct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.mensualidadesPct;
+
+  const fechaEntregaDefault = useMemo(() => {
+    if (unidadRecord?.entregaIso) {
+      return parseISODate(unidadRecord.entregaIso) ?? parseISODate(MISION_LA_GAVIA_ENTREGA_ETAPA1_ISO)!;
+    }
+    return parseISODate(MISION_LA_GAVIA_ENTREGA_ETAPA1_ISO) ?? endOfMonth(new Date(2027, 11, 1), 0);
+  }, [unidadRecord?.entregaIso]);
+
   const simulacion = useMemo(() => {
     if (!unidadRecord) return null;
-    return simularMisionLaGavia({ unidad: unidadRecord, esquema: esquemaLocal });
-  }, [esquemaLocal, unidadRecord]);
+    const fechaFiniquito =
+      parseISODate(libreFechaFiniquito) ?? fechaEntregaDefault;
+    return simularMisionLaGavia({
+      unidad: unidadRecord,
+      esquema: esquemaLocal,
+      descuentoEspecialPct,
+      libre:
+        esquemaLocal === "libre"
+          ? {
+              enganchePct: libreEnganche,
+              mensualidadesPct: libreMensualidades,
+              fechaFiniquito,
+            }
+          : undefined,
+    });
+  }, [
+    descuentoEspecialPct,
+    esquemaLocal,
+    fechaEntregaDefault,
+    libreEnganche,
+    libreFechaFiniquito,
+    libreMensualidades,
+    unidadRecord,
+  ]);
 
   const comparativo = useMemo(() => {
     if (!unidadRecord) return [];
-    return simularTodosEsquemasMisionLaGavia(unidadRecord);
-  }, [unidadRecord]);
+    return simularTodosEsquemasMisionLaGavia(unidadRecord, undefined, descuentoEspecialPct);
+  }, [descuentoEspecialPct, unidadRecord]);
+
+  const puedeEditarMontosLibre =
+    esquemaLocal === "libre" &&
+    Boolean(onLibreEngancheChange && onLibreMensualidadesChange);
+
+  const syncLibreEngancheFromAmount = (amount: number) => {
+    const base = simulacion?.precioContado ?? unidadRecord?.precioContado ?? 0;
+    if (!onLibreEngancheChange || base <= 0) {
+      return;
+    }
+    onLibreEngancheChange(clamp(amount / base, 0.15, 0.5));
+  };
+
+  const syncLibreMensualidadFromAmount = (monthlyAmount: number) => {
+    if (!onLibreMensualidadesChange || !simulacion || simulacion.precioTotal <= 0) {
+      return;
+    }
+    const numMeses = simulacion.numMensualidades ?? 1;
+    onLibreMensualidadesChange(
+      clamp((monthlyAmount * numMeses) / simulacion.precioTotal, 0.05, 0.5),
+    );
+  };
+
+  const syncLibreFiniquitoFromAmount = (amount: number) => {
+    if (!onLibreMensualidadesChange || !simulacion || simulacion.precioTotal <= 0) {
+      return;
+    }
+    const finiquitoPct = clamp(
+      amount / simulacion.precioTotal,
+      0,
+      1 - libreEnganche - 0.05,
+    );
+    onLibreMensualidadesChange(clamp(1 - libreEnganche - finiquitoPct, 0.05, 0.5));
+  };
 
   const handleEsquema = (value: MisionLaGaviaEsquemaId) => {
     setEsquemaLocal(value);
@@ -444,37 +694,43 @@ export function MisionLaGaviaSimuladorPanel({
             />
           </button>
           {plantasOpen ? (
-            <div className="mt-3 space-y-3">
-              <figure className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <figcaption className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+            <div
+              className={`mt-3 grid gap-3 ${
+                plantasAssets.roofSrc ? "sm:grid-cols-2" : "justify-items-center"
+              }`}
+            >
+              <figure className="w-full max-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:max-w-[240px]">
+                <figcaption className="border-b border-slate-100 bg-white px-2.5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                   Planta · {simulacion.unidad}
                 </figcaption>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={plantasAssets.plantaSrc}
-                  alt={`Planta arquitectónica ${simulacion.unidad}`}
-                  className="h-auto w-full object-contain"
-                  loading="lazy"
-                />
-              </figure>
-              {plantasAssets.roofSrc ? (
-                <figure className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                  <figcaption className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                    Roof garden
-                  </figcaption>
+                <div className="flex h-44 items-center justify-center p-2 sm:h-48">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={plantasAssets.roofSrc}
-                    alt={`Roof garden ${simulacion.unidad}`}
-                    className="h-auto w-full object-contain"
+                    src={plantasAssets.plantaSrc}
+                    alt={`Planta arquitectónica ${simulacion.unidad}`}
+                    className="max-h-full max-w-full object-contain"
                     loading="lazy"
+                    decoding="async"
                   />
+                </div>
+              </figure>
+              {plantasAssets.roofSrc ? (
+                <figure className="w-full max-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:max-w-[240px] sm:justify-self-stretch">
+                  <figcaption className="border-b border-slate-100 bg-white px-2.5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Roof garden
+                  </figcaption>
+                  <div className="flex h-44 items-center justify-center p-2 sm:h-48">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={plantasAssets.roofSrc}
+                      alt={`Roof garden ${simulacion.unidad}`}
+                      className="max-h-full max-w-full object-contain"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
                 </figure>
-              ) : (
-                <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs text-slate-400">
-                  Roof garden: N/A en este nivel
-                </p>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -500,6 +756,72 @@ export function MisionLaGaviaSimuladorPanel({
         </div>
       </div>
 
+      <DescuentoEspecialField
+        asesorRol={asesorRol}
+        value={descuentoEspecialPct}
+        onChange={setDescuentoEspecialPct}
+        accent="gavia"
+      />
+
+      {esquemaLocal === "libre" ? (
+        <div className="grid gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-[#5B8A7D]/20 sm:grid-cols-2">
+          <div className="space-y-3">
+            <PercentSlider
+              label="Enganche"
+              value={libreEnganche}
+              min={0.15}
+              max={0.5}
+              step={0.01}
+              onChange={onLibreEngancheChange}
+            />
+            <MoneyAmountInput
+              label="Monto enganche"
+              amount={simulacion.enganche}
+              onAmountChange={puedeEditarMontosLibre ? syncLibreEngancheFromAmount : undefined}
+            />
+          </div>
+          <div className="space-y-3">
+            <PercentSlider
+              label="Mensualidades"
+              value={libreMensualidades}
+              min={0.05}
+              max={0.5}
+              step={0.01}
+              onChange={onLibreMensualidadesChange}
+            />
+            {simulacion.mensualidad ? (
+              <MoneyAmountInput
+                label="Monto mensualidad"
+                amount={simulacion.mensualidad}
+                onAmountChange={
+                  puedeEditarMontosLibre ? syncLibreMensualidadFromAmount : undefined
+                }
+              />
+            ) : null}
+          </div>
+          <label className="block sm:col-span-2">
+            <FieldLabel>Fecha de finiquito</FieldLabel>
+            <input
+              type="date"
+              min={toISODate(new Date())}
+              max={toISODate(fechaEntregaDefault)}
+              value={libreFechaFiniquito ?? toISODate(fechaEntregaDefault)}
+              onChange={(event) => onLibreFechaFiniquitoChange?.(event.target.value)}
+              disabled={!onLibreFechaFiniquitoChange}
+              className="input-cotizador"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <MoneyAmountInput
+              label={`Finiquito (${formatPctShort(Math.max(0, 1 - libreEnganche - libreMensualidades))})`}
+              amount={simulacion.finiquito ?? 0}
+              onAmountChange={puedeEditarMontosLibre ? syncLibreFiniquitoFromAmount : undefined}
+              helper="Mínimos: enganche 15%, enganche + mensualidades 30%. El descuento se recalcula capitalizando al 11% anual desde el precio contado."
+            />
+          </div>
+        </div>
+      ) : null}
+
       {simulacion.error ? (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {simulacion.error}
@@ -511,6 +833,11 @@ export function MisionLaGaviaSimuladorPanel({
         <MetricCard
           label="Descuento vs lista"
           value={formatPctShort(simulacion.descuentoVsListaPct)}
+          helper={
+            descuentoEspecialPct > 0
+              ? `Incluye especial ${formatPctShort(descuentoEspecialPct)}`
+              : undefined
+          }
         />
       </div>
 

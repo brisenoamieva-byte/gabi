@@ -33,6 +33,7 @@ const COMPLIANCE_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",
   "contactado",
   "cita",
+  "visita",
 ]);
 
 export type ProspectoComplianceRow = {

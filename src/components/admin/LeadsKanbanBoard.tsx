@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { GripVertical, Phone, Trash2, UserRound, X } from "lucide-react";
+import { GripVertical, Phone, RotateCcw, Trash2, UserRound, X } from "lucide-react";
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
+import { ETAPA_RESCATE_DEFAULT } from "@/lib/asesores/prospectos-client";
 import { prospectoContactoOHistorialLabel } from "@/lib/comercial/apartado-cancelado-historial";
 import { formatMotivoDescarte } from "@/lib/comercial/motivo-descarte";
 import { resolvePerfilCalificacionLead } from "@/lib/comercial/perfilamiento-post-visita";
@@ -19,6 +20,8 @@ type LeadsKanbanBoardProps = {
   prospectos: ProspectoListRow[];
   etapas?: readonly ProspectoEtapa[];
   movableEtapas?: readonly ProspectoEtapa[];
+  /** Gerencia / admin: botón Rescatar en bandeja de descartados. */
+  canRescatarDescartados?: boolean;
   /** Al soltar en Apartado, abre flujo de registro (no cambia etapa solo con PATCH). */
   onReportApartado?: (prospectoId: string) => void;
   onSelect: (id: string) => void;
@@ -33,6 +36,7 @@ export function LeadsKanbanBoard({
   prospectos,
   etapas = PROSPECTO_ETAPAS,
   movableEtapas = PROSPECTO_ETAPAS,
+  canRescatarDescartados = false,
   onReportApartado,
   onSelect,
   onMoveEtapa,
@@ -309,21 +313,38 @@ export function LeadsKanbanBoard({
               <ul className="space-y-1">
                 {descartados.map((row) => (
                   <li key={row.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRecycleOpen(false);
-                        onSelect(row.id);
-                      }}
-                      className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-red-50/80"
-                    >
-                      <p className="truncate text-sm font-semibold text-[#201044]">{row.nombre}</p>
-                      <p className="truncate text-[11px] text-slate-500">
-                        {row.motivo_descarte
-                          ? formatMotivoDescarte(row.motivo_descarte, row.motivo_descarte_detalle)
-                          : "Sin motivo"}
-                      </p>
-                    </button>
+                    <div className="rounded-xl px-3 py-2 transition hover:bg-red-50/80">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRecycleOpen(false);
+                          onSelect(row.id);
+                        }}
+                        className="w-full text-left"
+                      >
+                        <p className="truncate text-sm font-semibold text-[#201044]">{row.nombre}</p>
+                        <p className="truncate text-[11px] text-slate-500">
+                          {row.motivo_descarte
+                            ? formatMotivoDescarte(row.motivo_descarte, row.motivo_descarte_detalle)
+                            : "Sin motivo"}
+                        </p>
+                      </button>
+                      {canRescatarDescartados ? (
+                        <button
+                          type="button"
+                          disabled={movingId === row.id}
+                          onClick={() => {
+                            void handleDrop(ETAPA_RESCATE_DEFAULT, row.id).then(() => {
+                              setRecycleOpen(false);
+                            });
+                          }}
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-700 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-50"
+                        >
+                          <RotateCcw className="h-3 w-3" strokeWidth={2.5} />
+                          {movingId === row.id ? "…" : "Rescatar"}
+                        </button>
+                      ) : null}
+                    </div>
                   </li>
                 ))}
               </ul>

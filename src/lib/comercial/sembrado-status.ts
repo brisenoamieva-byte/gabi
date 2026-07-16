@@ -191,7 +191,13 @@ export type ProspectoRecord = {
   adryo_url: string | null;
   activo: boolean;
   visita_agendada_on: string | null;
+  /** Hora local de la cita (HH:MM:SS desde Postgres). */
+  visita_agendada_hora?: string | null;
   visita_realizada_on: string | null;
+  /** Fecha en que el prospecto pidió ser contactado de nuevo. */
+  proximo_contacto_on?: string | null;
+  /** Nota opcional del contacto diferido. */
+  proximo_contacto_nota?: string | null;
   perfil_presupuesto_disponible: boolean | null;
   perfil_intencion_apartar: boolean | null;
   perfil_decisor_visita: boolean | null;

@@ -452,7 +452,19 @@ export async function downloadPasajeSimuladorPdf(
     color: GREEN_DEEP,
     maxW: discW,
   });
-  if (ahorroEsquema > 0) {
+  if (r.descuentoEspecialPct > 0) {
+    text(
+      doc,
+      `Incluye especial ${formatPctShort(r.descuentoEspecialPct)}`,
+      discX,
+      y + 17.5,
+      {
+        size: 6.5,
+        color: MUTED,
+        maxW: discW,
+      },
+    );
+  } else if (ahorroEsquema > 0) {
     text(doc, `Ahorro ${formatPrice(ahorroEsquema)}`, discX, y + 17.5, {
       size: 7,
       color: MUTED,

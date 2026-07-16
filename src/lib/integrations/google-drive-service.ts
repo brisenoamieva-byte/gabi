@@ -219,23 +219,12 @@ export const ensureOperacionDriveFolder = async (input: {
     `${input.unidadNumero} ${input.clienteNombre}`,
   );
 
-  const { data } = await drive.files.create({
-    requestBody: {
-      name: folderName,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentFolderId],
-    },
-    fields: "id,name,webViewLink",
-    ...driveParams,
-  });
-
-  if (!data.id) {
-    throw new Error("No se pudo crear la carpeta en Drive.");
-  }
+  // Si la carpeta ya existía y faltaba guardar `drive_folder_id`, recupérala en vez de duplicarla.
+  const folderId = await ensureChildFolder(drive, parentFolderId, folderName);
 
   return {
-    folderId: data.id,
-    folderUrl: data.webViewLink ?? getGoogleDriveOperacionFolderUrl(data.id),
+    folderId,
+    folderUrl: getGoogleDriveOperacionFolderUrl(folderId),
   };
 };
 

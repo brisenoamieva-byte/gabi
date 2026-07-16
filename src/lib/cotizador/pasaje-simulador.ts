@@ -14,6 +14,10 @@
  * El interés se aplica solo a los esquemas con financiamiento.
  */
 
+import {
+  clampDescuentoEspecialPct,
+  factorDescuentoEspecial,
+} from "@/lib/comercial/descuento-especial";
 import { roundMoney } from "@/lib/format/money";
 
 export type PasajeUnidadTipo = "departamento" | "oficina";
@@ -174,6 +178,8 @@ export type PasajeSimuladorInput = {
   config?: Partial<PasajeSimuladorConfig>;
   libre?: PasajeLibreConfig;
   libreSinMens?: PasajeLibreSinMensConfig;
+  /** Descuento especial gerente/director (fracción 0–0.015), sobre precio contado. */
+  descuentoEspecialPct?: number;
 };
 
 export type PasajeSimuladorResultado = {
@@ -183,6 +189,8 @@ export type PasajeSimuladorResultado = {
   precioContado: number;
   precioTotal: number;
   descuentoContadoPct: number;
+  /** Descuento especial aplicado (fracción 0–0.015). */
+  descuentoEspecialPct: number;
   descuentoEfectivoPct: number;
   ahorroContado: number;
   enganche: number;
@@ -222,7 +230,13 @@ export const computePasajeSimulador = (
   const fechaCotizacion = input.fechaCotizacion ?? new Date();
 
   const precioLista = Math.max(0, input.precioLista || 0);
-  const precioContado = round2(precioLista * (1 - config.descuentoContadoPct));
+  const descuentoEspecialPct = clampDescuentoEspecialPct(
+    input.descuentoEspecialPct ?? 0,
+  );
+  const precioContadoBase = round2(precioLista * (1 - config.descuentoContadoPct));
+  const precioContado = round2(
+    precioContadoBase * factorDescuentoEspecial(descuentoEspecialPct),
+  );
   const tasaMensual = config.tasaAnual / 12;
   const mesesHastaEntrega = monthsBetween(
     startOfMonth(fechaCotizacion),
@@ -233,6 +247,8 @@ export const computePasajeSimulador = (
   const rendimientoRentasAnual =
     precioLista > 0 ? (rentaMensual * 12) / precioLista : 0;
   const rendimientoTotalAnual = rendimientoRentasAnual + config.plusvaliaAnual;
+  const descuentoEfectivoBase =
+    precioLista > 0 ? 1 - precioContado / precioLista : config.descuentoContadoPct;
 
   const baseResult: PasajeSimuladorResultado = {
     esquema: input.esquema,
@@ -241,7 +257,8 @@ export const computePasajeSimulador = (
     precioContado,
     precioTotal: precioContado,
     descuentoContadoPct: config.descuentoContadoPct,
-    descuentoEfectivoPct: config.descuentoContadoPct,
+    descuentoEspecialPct,
+    descuentoEfectivoPct: descuentoEfectivoBase,
     ahorroContado: round2(precioLista - precioContado),
     enganche: 0,
     enganchePct: 0,

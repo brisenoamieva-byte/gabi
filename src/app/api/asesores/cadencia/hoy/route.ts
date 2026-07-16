@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listCadenciaHoyForAsesor } from "@/lib/comercial/cadencia-service";
+import { listProximosContactosDueForAsesor } from "@/lib/comercial/proximo-contacto";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 export async function GET(request: Request) {
@@ -12,8 +13,16 @@ export async function GET(request: Request) {
 
   try {
     const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
-    const items = await listCadenciaHoyForAsesor(asesorId, desarrolloId);
-    return NextResponse.json({ items, count: items.length });
+    const [items, proximosContactos] = await Promise.all([
+      listCadenciaHoyForAsesor(asesorId, desarrolloId),
+      listProximosContactosDueForAsesor(asesorId, desarrolloId),
+    ]);
+    return NextResponse.json({
+      items,
+      count: items.length,
+      proximosContactos,
+      proximosContactosCount: proximosContactos.length,
+    });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {

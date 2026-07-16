@@ -38,7 +38,10 @@ import {
   isGoogleDriveConfiguredForDesarrolloAsync,
   assertGoogleDriveRequiredForDesarrolloAsync,
 } from "@/lib/integrations/google-drive-config";
-import { uploadExpedienteToGoogleDrive } from "@/lib/integrations/google-drive-service";
+import {
+  ensureOperacionDriveFolder,
+  uploadExpedienteToGoogleDrive,
+} from "@/lib/integrations/google-drive-service";
 
 const BUCKET = "gabi-expedientes";
 const SIGNED_URL_TTL_SECONDS = 60 * 15;
@@ -278,6 +281,9 @@ export const getExpedienteDetail = async (
 
   const prospecto = (prospectoResult.data as ProspectoRecord | null) ?? null;
   const op = operacion as OperacionComercialRecord;
+  const ensuredFolder = await ensureExpedienteDriveFolderForOperacionRecord(op, {
+    unidadNumero: (unidad?.unidad as string) ?? "—",
+  });
   const kyc = mergeKycPrefill(op.cliente_kyc, prospecto);
   const planPago = normalizePlanPago(op.plan_pago);
 
@@ -292,13 +298,96 @@ export const getExpedienteDetail = async (
     documentos: docs,
     progreso,
     checklist: getExpedienteChecklist(operacion.desarrollo_id as string),
-    driveFolderUrl: (operacion.drive_folder_id as string | null)
-      ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
-      : null,
+    driveFolderUrl:
+      ensuredFolder?.folderUrl ??
+      ((operacion.drive_folder_id as string | null)
+        ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
+        : null),
     driveConfigured: await isGoogleDriveConfiguredForDesarrolloAsync(
       operacion.desarrollo_id as string,
     ),
   };
+};
+
+const ensureExpedienteDriveFolderForOperacionRecord = async (
+  operacion: OperacionComercialRecord,
+  options?: { unidadNumero?: string | null },
+): Promise<{ folderId: string; folderUrl: string } | null> => {
+  if (!(await isGoogleDriveConfiguredForDesarrolloAsync(operacion.desarrollo_id))) {
+    return null;
+  }
+
+  const unidadNumero =
+    options?.unidadNumero ??
+    (() => {
+      throw new Error("Falta unidad para crear carpeta Drive del expediente.");
+    })();
+
+  const existingFolderId = (operacion as { drive_folder_id?: string | null }).drive_folder_id ?? null;
+  const ensured = await ensureOperacionDriveFolder({
+    desarrolloId: operacion.desarrollo_id,
+    operacionId: operacion.id,
+    clienteNombre: operacion.cliente_nombre,
+    unidadNumero,
+    existingFolderId,
+  });
+
+  if (ensured.folderId && ensured.folderId !== existingFolderId) {
+    const supabase = createSupabaseServiceClient();
+    if (!supabase) {
+      throw new Error("Supabase no configurado.");
+    }
+    const { error } = await supabase
+      .from("operaciones_comerciales")
+      .update({
+        drive_folder_id: ensured.folderId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", operacion.id);
+    if (error && !error.message.includes("drive_folder_id")) {
+      throw new Error(error.message);
+    }
+  }
+
+  return ensured;
+};
+
+export const ensureExpedienteDriveFolderForOperacion = async (
+  operacionId: string,
+): Promise<{ folderId: string; folderUrl: string } | null> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: operacion, error: operacionError } = await supabase
+    .from("operaciones_comerciales")
+    .select("id, desarrollo_id, cliente_nombre, unidad_id, drive_folder_id")
+    .eq("id", operacionId)
+    .maybeSingle();
+
+  if (operacionError) {
+    throw new Error(operacionError.message);
+  }
+  if (!operacion) {
+    return null;
+  }
+
+  const { data: unidad, error: unidadError } = await supabase
+    .from("disponibilidad_unidades")
+    .select("unidad")
+    .eq("id", operacion.unidad_id as string)
+    .maybeSingle();
+  if (unidadError) {
+    throw new Error(unidadError.message);
+  }
+
+  const unidadNumero = (unidad?.unidad as string | null) ?? "—";
+
+  return ensureExpedienteDriveFolderForOperacionRecord(
+    operacion as OperacionComercialRecord,
+    { unidadNumero },
+  );
 };
 
 const deactivatePreviousForCodigo = async (

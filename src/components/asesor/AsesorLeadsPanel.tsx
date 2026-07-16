@@ -24,14 +24,17 @@ import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { PerfilamientoVisitaPanel } from "@/components/asesor/PerfilamientoVisitaPanel";
 import { AsesorCadenciaLeadPanel } from "@/components/asesor/AsesorCadenciaLeadPanel";
 import { ProspectoHistorialComercial } from "@/components/comercial/ProspectoHistorialComercial";
+import { ProspectoNotasHistorialField } from "@/components/comercial/ProspectoNotasHistorialField";
 import { MotivoDescarteFields } from "@/components/comercial/MotivoDescarteFields";
 import { formatPrice } from "@/lib/data";
 import { prospectoContactoOHistorialLabel } from "@/lib/comercial/apartado-cancelado-historial";
+import { PARTNER_OTRO } from "@/lib/comercial/apartado-form-options";
 import { formatMotivoDescarte } from "@/lib/comercial/motivo-descarte";
 import type { ProspectoDetail, ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { prefillCotizadorFromProspecto } from "@/lib/asesores/prefill-cotizador-client";
 import {
   ETAPAS_ASESOR,
+  ETAPA_RESCATE_DEFAULT,
   prospectoAsesorPuedeCotizarOSolicitarApartado,
   prospectoEtapaEditableByAsesor,
 } from "@/lib/asesores/prospectos-client";
@@ -45,6 +48,7 @@ import {
   formatLeadActivity,
   formatLeadDate,
   formatLeadDateOnly,
+  formatLeadVisitSchedule,
   leadPeriodToRange,
   type LeadPeriodFilter,
 } from "@/lib/comercial/format-lead-date";
@@ -141,6 +145,8 @@ function AsesorLeadDrawer({
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
+  const [proximoContactoOn, setProximoContactoOn] = useState("");
+  const [proximoContactoNota, setProximoContactoNota] = useState("");
   const [motivoDescarte, setMotivoDescarte] = useState("");
   const [motivoDescarteDetalle, setMotivoDescarteDetalle] = useState("");
   const [assignedAsesorId, setAssignedAsesorId] = useState("");
@@ -150,6 +156,8 @@ function AsesorLeadDrawer({
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
   const [solicitudPendiente, setSolicitudPendiente] = useState(false);
   const [tieneOperacionActiva, setTieneOperacionActiva] = useState(false);
+  const [rescateEtapa, setRescateEtapa] = useState<ProspectoEtapa>(ETAPA_RESCATE_DEFAULT);
+  const [rescatando, setRescatando] = useState(false);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -180,6 +188,8 @@ function AsesorLeadDrawer({
         const cerrada = ["apartado", "vendido", "cancelado", "perdido"].includes(loadedEtapa);
         setEtapa(intentDiscard && !cerrada ? "perdido" : loadedEtapa);
         setNotas(data.prospecto.notas ?? "");
+        setProximoContactoOn(data.prospecto.proximo_contacto_on?.slice(0, 10) ?? "");
+        setProximoContactoNota(data.prospecto.proximo_contacto_nota ?? "");
         setMotivoDescarte(data.prospecto.motivo_descarte ?? "");
         setMotivoDescarteDetalle(data.prospecto.motivo_descarte_detalle ?? "");
         setAssignedAsesorId(data.prospecto.asesor_id ?? "");
@@ -237,7 +247,11 @@ function AsesorLeadDrawer({
     void loadDetail();
   }, [loadDetail]);
 
-  const etapaEditable = detail ? prospectoEtapaEditableByAsesor(detail.etapa) : false;
+  const etapaEditable = detail
+    ? prospectoEtapaEditableByAsesor(detail.etapa, { leadership: canReassignProspectos })
+    : false;
+  const puedeRescatarDescartado =
+    canReassignProspectos && detail?.etapa === "perdido";
   const puedeAccionesComerciales =
     detail != null &&
     prospectoAsesorPuedeCotizarOSolicitarApartado(detail.etapa) &&
@@ -254,10 +268,55 @@ function AsesorLeadDrawer({
     return canAdvancePlaybookEtapa(playbook.config, current, target, completedIds).ok;
   };
 
+  const handleRescatarDescartado = async () => {
+    if (!puedeRescatarDescartado) {
+      return;
+    }
+    setRescatando(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          asesorId,
+          etapa: rescateEtapa,
+          assignedAsesorId: canReassignProspectos ? assignedAsesorId || null : undefined,
+        }),
+      });
+      const data = (await response.json()) as {
+        prospecto?: ProspectoDetail;
+        playbook?: ProspectoPlaybookState;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo rescatar el prospecto.");
+      }
+      if (data.prospecto) {
+        setDetail(data.prospecto);
+        setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : rescateEtapa);
+        setNotas(data.prospecto.notas ?? "");
+        setMotivoDescarte("");
+        setMotivoDescarteDetalle("");
+      }
+      if (data.playbook) {
+        setPlaybook(data.playbook);
+      }
+      onUpdated();
+    } catch (rescueError) {
+      setError(
+        rescueError instanceof Error ? rescueError.message : "Error al rescatar el prospecto.",
+      );
+    } finally {
+      setRescatando(false);
+    }
+  };
+
   const handleCompleteStep = async (
     stepId: string,
     stepDate?: string,
     perfilamientoVisita?: PerfilamientoVisitaAnswers,
+    stepTime?: string,
   ) => {
     setCompletingStepId(stepId);
     setError("");
@@ -266,7 +325,7 @@ function AsesorLeadDrawer({
       const response = await fetch(`/api/asesores/prospectos/${prospectoId}/playbook`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asesorId, stepId, stepDate, perfilamientoVisita }),
+        body: JSON.stringify({ asesorId, stepId, stepDate, stepTime, perfilamientoVisita }),
       });
 
       const data = (await response.json()) as {
@@ -303,6 +362,11 @@ function AsesorLeadDrawer({
           asesorId,
           etapa: etapaEditable ? etapa : undefined,
           notas,
+          proximoContactoOn: etapa === "perdido" ? null : proximoContactoOn || null,
+          proximoContactoNota:
+            etapa === "perdido" || !proximoContactoOn
+              ? null
+              : proximoContactoNota.trim() || null,
           motivoDescarte: etapa === "perdido" ? motivoDescarte || null : undefined,
           motivoDescarteDetalle: etapa === "perdido" ? motivoDescarteDetalle || null : undefined,
           assignedAsesorId: canReassignProspectos ? assignedAsesorId || null : undefined,
@@ -321,6 +385,7 @@ function AsesorLeadDrawer({
 
       if (data.prospecto) {
         setDetail(data.prospecto);
+        setNotas(data.prospecto.notas ?? "");
       }
       if (data.playbook) {
         setPlaybook(data.playbook);
@@ -331,6 +396,28 @@ function AsesorLeadDrawer({
     } finally {
       setSaving(false);
     }
+  };
+
+  const persistNotas = async (nextNotas: string) => {
+    const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asesorId, notas: nextNotas }),
+    });
+    const data = (await response.json()) as {
+      prospecto?: ProspectoDetail;
+      error?: string;
+    };
+    if (!response.ok) {
+      throw new Error(data.error ?? "No se pudo guardar la nota.");
+    }
+    if (data.prospecto) {
+      setDetail((current) => (current ? { ...current, ...data.prospecto! } : data.prospecto!));
+      setNotas(data.prospecto.notas ?? nextNotas);
+    } else {
+      setNotas(nextNotas);
+    }
+    onUpdated();
   };
 
   return (
@@ -345,7 +432,7 @@ function AsesorLeadDrawer({
               <h3 className="text-lg font-semibold tracking-tight text-[#201044] md:text-xl">
                 {detail?.nombre ?? "Cargando…"}
               </h3>
-              {perfilCalificacion ? (
+              {perfilCalificacion && etapa !== "perdido" ? (
                 <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
               ) : null}
             </div>
@@ -376,6 +463,149 @@ function AsesorLeadDrawer({
 
           {detail ? (
             <div className="space-y-5">
+              {etapa === "perdido" ? (
+                <>
+                  {puedeRescatarDescartado ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+                      <p className="font-semibold">Lead descartado — puedes rescatarlo</p>
+                      <p className="mt-1 text-xs text-emerald-900/80">
+                        Vuelve al funnel sin perder historial. El motivo de descarte se limpia y queda
+                        registro en notas.
+                      </p>
+                      {detail.motivo_descarte ? (
+                        <p className="mt-2 text-xs">
+                          Motivo:{" "}
+                          <span className="font-semibold">
+                            {formatMotivoDescarte(
+                              detail.motivo_descarte,
+                              detail.motivo_descarte_detalle,
+                            )}
+                          </span>
+                        </p>
+                      ) : null}
+                      <div className="mt-3 flex flex-wrap items-end gap-2">
+                        <label className="block min-w-[8rem] flex-1 text-xs">
+                          <span className="mb-1 block font-semibold text-emerald-900">
+                            Volver a etapa
+                          </span>
+                          <select
+                            value={rescateEtapa}
+                            onChange={(event) =>
+                              setRescateEtapa(event.target.value as ProspectoEtapa)
+                            }
+                            className={inputClass}
+                          >
+                            {ETAPAS_ASESOR.filter((item) => item !== "perdido").map((item) => (
+                              <option key={item} value={item}>
+                                {prospectoEtapaLabel[item]}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          disabled={rescatando || saving}
+                          onClick={() => void handleRescatarDescartado()}
+                          className="inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-50"
+                        >
+                          {rescatando ? (
+                            <>
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              Rescatando…
+                            </>
+                          ) : (
+                            "Rescatar lead"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900">
+                      <p className="font-semibold">
+                        {detail.etapa === "perdido"
+                          ? "Prospecto descartado"
+                          : "Descartar prospecto"}
+                      </p>
+                      <p className="mt-1 text-xs text-red-800/80">
+                        {detail.etapa === "perdido"
+                          ? "Solo gerencia o dirección puede devolverlo al funnel."
+                          : "Solo indica el motivo de descarte. No se requiere playbook ni perfilamiento."}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Teléfono</span>
+                      <span>{detail.telefono ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Email</span>
+                      <span className="font-medium">{detail.email ?? "—"}</span>
+                    </div>
+                  </div>
+
+                  {detail.etapa !== "perdido" ? (
+                    <>
+                      <label className="block text-sm">
+                        <span className="mb-1 block font-semibold text-slate-600">Etapa</span>
+                        <select
+                          value={etapa}
+                          disabled={!etapaEditable}
+                          onChange={(event) => setEtapa(event.target.value as ProspectoEtapa)}
+                          className={inputClass}
+                        >
+                          {ETAPAS_ASESOR.map((item) => (
+                            <option key={item} value={item} disabled={!isEtapaOptionAllowed(item)}>
+                              {prospectoEtapaLabel[item]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <MotivoDescarteFields
+                        value={motivoDescarte}
+                        detalle={motivoDescarteDetalle}
+                        onChange={setMotivoDescarte}
+                        onDetalleChange={setMotivoDescarteDetalle}
+                        disabled={!etapaEditable}
+                        inputClassName={inputClass}
+                      />
+                    </>
+                  ) : null}
+
+                  {canReassignProspectos ? (
+                    <label className="block text-sm">
+                      <span className="mb-1 block font-semibold text-slate-600">
+                        Asesor asignado
+                      </span>
+                      <select
+                        value={assignedAsesorId}
+                        onChange={(event) => setAssignedAsesorId(event.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="">Sin asesor</option>
+                        {equipoAsesores.map((asesor) => (
+                          <option key={asesor.id} value={asesor.id}>
+                            {asesor.nombre} · {asesorRolLabel[asesor.rol]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+
+                  <ProspectoNotasHistorialField
+                    value={notas}
+                    onChange={setNotas}
+                    onPersist={persistNotas}
+                    disabled={saving}
+                    inputClassName={inputClass}
+                    label="Notas"
+                    placeholder="Contexto…"
+                  />
+                </>
+              ) : (
+                <>
               {perfilCalificacion ? (
                 <div
                   className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${perfilCalificacionLeadBannerClass[perfilCalificacion]}`}
@@ -421,7 +651,12 @@ function AsesorLeadDrawer({
                 {detail.visita_agendada_on ? (
                   <div className="flex justify-between gap-4">
                     <span className="text-slate-500">Visita agendada</span>
-                    <span className="font-medium">{formatLeadDateOnly(detail.visita_agendada_on)}</span>
+                    <span className="font-medium">
+                      {formatLeadVisitSchedule(
+                        detail.visita_agendada_on,
+                        detail.visita_agendada_hora,
+                      )}
+                    </span>
                   </div>
                 ) : null}
                 {detail.visita_realizada_on ? (
@@ -524,10 +759,11 @@ function AsesorLeadDrawer({
                     asesorNombre,
                   }}
                   visitaAgendadaOn={detail.visita_agendada_on}
+                  visitaAgendadaHora={detail.visita_agendada_hora}
                   visitaRealizadaOn={detail.visita_realizada_on}
                   perfilamientoVisita={readPerfilamientoVisitaFromProspecto(detail)}
-                  onCompleteStep={(stepId, stepDate, perfilamientoVisita) =>
-                    void handleCompleteStep(stepId, stepDate, perfilamientoVisita)
+                  onCompleteStep={(stepId, stepDate, perfilamientoVisita, stepTime) =>
+                    void handleCompleteStep(stepId, stepDate, perfilamientoVisita, stepTime)
                   }
                 />
               ) : null}
@@ -559,16 +795,7 @@ function AsesorLeadDrawer({
                 ) : null}
               </label>
 
-              {etapa === "perdido" ? (
-                <MotivoDescarteFields
-                  value={motivoDescarte}
-                  detalle={motivoDescarteDetalle}
-                  onChange={setMotivoDescarte}
-                  onDetalleChange={setMotivoDescarteDetalle}
-                  disabled={!etapaEditable}
-                  inputClassName={inputClass}
-                />
-              ) : detail.etapa === "perdido" && detail.motivo_descarte ? (
+              {detail.etapa === "perdido" && detail.motivo_descarte ? (
                 <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900">
                   Motivo de descarte:{" "}
                   <strong>
@@ -580,15 +807,58 @@ function AsesorLeadDrawer({
                 </p>
               ) : null}
 
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-slate-600">Notas de seguimiento</span>
-                <textarea
-                  value={notas}
-                  onChange={(event) => setNotas(event.target.value)}
-                  className={`${inputClass} min-h-[120px]`}
-                  placeholder="Próximo paso, objeciones, recordatorios…"
-                />
-              </label>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+                <p className="text-sm font-semibold text-slate-700">Contactar más adelante</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Si el prospecto pide que lo contactes después, registra la fecha. Ese día
+                  aparecerá en tu recordatorio del inicio.
+                </p>
+                <label className="mt-3 block text-sm">
+                  <span className="mb-1 block font-semibold text-slate-600">
+                    Fecha de recontacto
+                  </span>
+                  <input
+                    type="date"
+                    value={proximoContactoOn}
+                    onChange={(event) => setProximoContactoOn(event.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+                {proximoContactoOn ? (
+                  <>
+                    <label className="mt-3 block text-sm">
+                      <span className="mb-1 block font-semibold text-slate-600">
+                        Motivo / nota (opcional)
+                      </span>
+                      <input
+                        type="text"
+                        value={proximoContactoNota}
+                        onChange={(event) => setProximoContactoNota(event.target.value)}
+                        className={inputClass}
+                        placeholder="Ej. Viaja hasta el 20; llamar sobre depa 2R"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProximoContactoOn("");
+                        setProximoContactoNota("");
+                      }}
+                      className="mt-2 text-xs font-semibold text-slate-500 underline-offset-2 hover:underline"
+                    >
+                      Quitar recordatorio
+                    </button>
+                  </>
+                ) : null}
+              </div>
+
+              <ProspectoNotasHistorialField
+                value={notas}
+                onChange={setNotas}
+                onPersist={persistNotas}
+                disabled={saving}
+                inputClassName={inputClass}
+              />
 
               <div>
                 <ProspectoHistorialComercial
@@ -650,13 +920,15 @@ function AsesorLeadDrawer({
                   <p className="text-sm text-slate-500">Sin cotizaciones aún.</p>
                 )}
               </div>
+                </>
+              )}
             </div>
           ) : null}
         </div>
 
         {detail ? (
           <div className="space-y-2 border-t border-slate-100 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-            {puedeSolicitarApartado ? (
+            {etapa !== "perdido" && puedeSolicitarApartado ? (
               <button
                 type="button"
                 onClick={() => setApartadoModalOpen(true)}
@@ -665,12 +937,14 @@ function AsesorLeadDrawer({
                 <ShoppingBag className="h-4 w-4" strokeWidth={2} />
                 Solicitar apartado a gerencia
               </button>
-            ) : solicitudPendiente && puedeAccionesComerciales ? (
+            ) : etapa !== "perdido" &&
+              solicitudPendiente &&
+              puedeAccionesComerciales ? (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm font-medium text-amber-900">
                 Solicitud de apartado pendiente — gerencia la registrará en sembrado.
               </p>
             ) : null}
-            {puedeAccionesComerciales ? (
+            {etapa !== "perdido" && puedeAccionesComerciales ? (
               <Link
                 href="/cotizador"
                 onClick={() => prefillCotizadorFromProspecto(detail)}
@@ -742,6 +1016,7 @@ export function AsesorLeadsPanel({
   const [checkingTelefono, setCheckingTelefono] = useState(false);
   const [newMedioContacto, setNewMedioContacto] = useState("contacto-directo");
   const [newPartnerId, setNewPartnerId] = useState("");
+  const [newPartnerNombre, setNewPartnerNombre] = useState("");
   const [partners, setPartners] = useState<Array<{ id: string; nombre: string; tipo: PartnerTipo }>>(
     [],
   );
@@ -938,6 +1213,7 @@ export function AsesorLeadsPanel({
     setNewTelefonoError("");
     setNewMedioContacto("contacto-directo");
     setNewPartnerId("");
+    setNewPartnerNombre("");
     setNewNotas("");
   };
 
@@ -976,9 +1252,15 @@ export function AsesorLeadsPanel({
       return;
     }
 
-    if (newMedioContacto === "inmobiliaria-externo" && !newPartnerId) {
-      setError("Selecciona la inmobiliaria o asesor externo que trajo el lead.");
-      return;
+    if (newMedioContacto === "inmobiliaria-externo") {
+      if (!newPartnerId) {
+        setError("Selecciona la inmobiliaria o asesor externo que trajo el lead.");
+        return;
+      }
+      if (newPartnerId === PARTNER_OTRO && !newPartnerNombre.trim()) {
+        setError("Escribe el nombre de la inmobiliaria o asesor externo.");
+        return;
+      }
     }
 
     const telefonoValidation = validateProspectoTelefono(newTelefono);
@@ -1007,6 +1289,10 @@ export function AsesorLeadsPanel({
           medioContacto: newMedioContacto,
           partnerId:
             newMedioContacto === "inmobiliaria-externo" ? newPartnerId || undefined : undefined,
+          partnerNombre:
+            newMedioContacto === "inmobiliaria-externo" && newPartnerId === PARTNER_OTRO
+              ? newPartnerNombre.trim()
+              : undefined,
           notas: newNotas.trim() || undefined,
         }),
       });
@@ -1294,6 +1580,7 @@ export function AsesorLeadsPanel({
             prospectos={visibleProspectos}
             etapas={PROSPECTO_ETAPAS}
             movableEtapas={ETAPAS_ASESOR}
+            canRescatarDescartados={canManageAllProspectos}
             formatActivity={formatLeadActivity}
             onSelect={setSelectedId}
             onMoveEtapa={handleMoveEtapa}
@@ -1330,14 +1617,22 @@ export function AsesorLeadsPanel({
                           : ""}
                       </p>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium ${
-                        prospectoEtapaColor[row.etapa as ProspectoEtapa] ??
-                        "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {prospectoEtapaLabel[row.etapa as ProspectoEtapa] ?? row.etapa}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
+                          prospectoEtapaColor[row.etapa as ProspectoEtapa] ??
+                          "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {prospectoEtapaLabel[row.etapa as ProspectoEtapa] ?? row.etapa}
+                      </span>
+                      {row.proximo_contacto_on ? (
+                        <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-800 ring-1 ring-sky-100">
+                          Recontacto{" "}
+                          {row.proximo_contacto_on.slice(5).split("-").reverse().join("/")}
+                        </span>
+                      ) : null}
+                    </div>
                   </button>
                 </li>
               );
@@ -1450,6 +1745,7 @@ export function AsesorLeadsPanel({
                   setNewMedioContacto(next);
                   if (next !== "inmobiliaria-externo") {
                     setNewPartnerId("");
+                    setNewPartnerNombre("");
                   }
                 }}
                 className={inputClass}
@@ -1462,36 +1758,62 @@ export function AsesorLeadsPanel({
               </select>
             </label>
             {newMedioContacto === "inmobiliaria-externo" ? (
-              <label className="mt-3 block text-sm">
-                <span className="mb-1 block font-semibold text-slate-600">
-                  Inmobiliaria / asesor externo *
-                </span>
-                <select
-                  required
-                  value={newPartnerId}
-                  onChange={(event) => setNewPartnerId(event.target.value)}
-                  className={inputClass}
-                  disabled={loadingPartners}
-                >
-                  <option value="">
-                    {loadingPartners ? "Cargando aliados…" : "Selecciona aliado"}
-                  </option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>
-                      {partner.nombre} · {partnerTipoLabel[partner.tipo]}
+              <div className="mt-3 space-y-2">
+                <label className="block text-sm">
+                  <span className="mb-1 block font-semibold text-slate-600">
+                    Inmobiliaria / asesor externo *
+                  </span>
+                  <select
+                    required
+                    value={newPartnerId}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setNewPartnerId(next);
+                      if (next !== PARTNER_OTRO) {
+                        setNewPartnerNombre("");
+                      }
+                    }}
+                    className={inputClass}
+                    disabled={loadingPartners}
+                  >
+                    <option value="">
+                      {loadingPartners ? "Cargando aliados…" : "Selecciona aliado"}
                     </option>
-                  ))}
-                </select>
-                {!loadingPartners && partners.length === 0 ? (
-                  <p className="mt-1 text-xs text-amber-700">
-                    No hay aliados activos. Regístralos en Admin → Alianzas (por comercializadora).
-                  </p>
-                ) : (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Obligatorio para leads de inmobiliaria o externo. Gerencia da el seguimiento.
-                  </p>
-                )}
-              </label>
+                    {partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>
+                        {partner.nombre} · {partnerTipoLabel[partner.tipo]}
+                      </option>
+                    ))}
+                    <option value={PARTNER_OTRO}>Otra (capturar nombre)</option>
+                  </select>
+                  {!loadingPartners && partners.length === 0 && newPartnerId !== PARTNER_OTRO ? (
+                    <p className="mt-1 text-xs text-amber-700">
+                      No hay aliados en el catálogo. Elige «Otra» para escribir el nombre, o
+                      regístralos en Admin → Alianzas.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Obligatorio para leads de inmobiliaria o externo. Gerencia da el seguimiento.
+                    </p>
+                  )}
+                </label>
+                {newPartnerId === PARTNER_OTRO ? (
+                  <label className="block text-sm">
+                    <span className="mb-1 block font-semibold text-slate-600">
+                      Nombre de la inmobiliaria / asesor *
+                    </span>
+                    <input
+                      required
+                      type="text"
+                      value={newPartnerNombre}
+                      onChange={(event) => setNewPartnerNombre(event.target.value)}
+                      className={inputClass}
+                      placeholder="Ej. Inmobiliaria XYZ, Juan Pérez…"
+                      autoComplete="organization"
+                    />
+                  </label>
+                ) : null}
+              </div>
             ) : null}
             <label className="mt-3 block text-sm">
               <span className="mb-1 block font-semibold text-slate-600">Notas</span>
@@ -1517,7 +1839,8 @@ export function AsesorLeadsPanel({
                   checkingTelefono ||
                   Boolean(newTelefonoError) ||
                   (newMedioContacto === "inmobiliaria-externo" &&
-                    (!newPartnerId || partners.length === 0))
+                    (!newPartnerId ||
+                      (newPartnerId === PARTNER_OTRO && !newPartnerNombre.trim())))
                 }
                 className="rounded-lg bg-[#201044] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
               >

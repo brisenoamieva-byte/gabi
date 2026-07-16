@@ -49,6 +49,7 @@ export type CotizadorPanelProps = {
   clienteNombre?: string;
   asesorNombre?: string;
   asesorId?: string;
+  asesorRol?: string | null;
   prospectoId?: string;
   clienteEmail?: string;
   clienteTelefono?: string;
@@ -84,6 +85,12 @@ export type CotizadorPanelProps = {
   /** Estado del simulador Misión La Gavia. */
   misionLaGaviaEsquema?: MisionLaGaviaEsquemaId;
   onMisionLaGaviaEsquemaChange?: MisionLaGaviaSimuladorPanelProps["onEsquemaChange"];
+  misionLaGaviaLibreEnganche?: number;
+  misionLaGaviaLibreMensualidades?: number;
+  misionLaGaviaLibreFechaFiniquito?: string;
+  onMisionLaGaviaLibreEngancheChange?: MisionLaGaviaSimuladorPanelProps["onLibreEngancheChange"];
+  onMisionLaGaviaLibreMensualidadesChange?: MisionLaGaviaSimuladorPanelProps["onLibreMensualidadesChange"];
+  onMisionLaGaviaLibreFechaFiniquitoChange?: MisionLaGaviaSimuladorPanelProps["onLibreFechaFiniquitoChange"];
 };
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -200,6 +207,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         clienteNombre={props.clienteNombre}
         asesorNombre={props.asesorNombre}
         asesorId={props.asesorId}
+        asesorRol={props.asesorRol}
         prospectoId={props.prospectoId}
         clienteEmail={props.clienteEmail}
         clienteTelefono={props.clienteTelefono}
@@ -245,6 +253,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         clienteNombre={props.clienteNombre}
         asesorNombre={props.asesorNombre}
         asesorId={props.asesorId}
+        asesorRol={props.asesorRol}
         prospectoId={props.prospectoId}
         clienteEmail={props.clienteEmail}
         clienteTelefono={props.clienteTelefono}
@@ -252,10 +261,16 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         showSelectors={props.showSelectors ?? true}
         showCopy={props.showCopy}
         showPdf={props.showPdf ?? props.showCopy}
+        libreEnganchePct={props.misionLaGaviaLibreEnganche}
+        libreMensualidadesPct={props.misionLaGaviaLibreMensualidades}
+        libreFechaFiniquito={props.misionLaGaviaLibreFechaFiniquito}
         onClusterChange={props.onClusterChange}
         onPrototipoChange={props.onPrototipoChange}
         onUnidadChange={props.onUnidadChange}
         onEsquemaChange={props.onMisionLaGaviaEsquemaChange}
+        onLibreEngancheChange={props.onMisionLaGaviaLibreEngancheChange}
+        onLibreMensualidadesChange={props.onMisionLaGaviaLibreMensualidadesChange}
+        onLibreFechaFiniquitoChange={props.onMisionLaGaviaLibreFechaFiniquitoChange}
         onClienteNombreChange={props.onClienteNombreChange}
       />
     );

@@ -262,6 +262,74 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta motivo_descarte — aplica 071.",
   });
 
+  // 072: etapa visita — probe insert+delete (valida check constraint).
+  let etapaVisitaOk = false;
+  {
+    const supabase = createSupabaseServiceClient();
+    if (supabase) {
+      const probeNombre = `__gabi_probe_etapa_visita__`;
+      const { data: probeRow, error: probeErr } = await supabase
+        .from("prospectos")
+        .insert({
+          desarrollo_id: "mision-la-gavia",
+          nombre: probeNombre,
+          etapa: "visita",
+          activo: false,
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (!probeErr && probeRow?.id) {
+        etapaVisitaOk = true;
+        await supabase.from("prospectos").delete().eq("id", probeRow.id);
+      } else if (probeErr?.code === "23514") {
+        etapaVisitaOk = false;
+      }
+    }
+  }
+  checks.push({
+    id: "072",
+    label: "Etapa visita CRM",
+    migrationFile: "072_etapa_visita.sql",
+    ok: etapaVisitaOk,
+    detail: etapaVisitaOk
+      ? "Etapa visita en prospectos OK."
+      : "Falta etapa visita — aplica 072.",
+  });
+
+  const proximoContactoOk = await probeTable("prospectos", "proximo_contacto_on");
+  checks.push({
+    id: "073",
+    label: "Próximo contacto CRM",
+    migrationFile: "073_proximo_contacto.sql",
+    ok: proximoContactoOk,
+    detail: proximoContactoOk
+      ? "proximo_contacto_on en prospectos OK."
+      : "Falta proximo_contacto_on — aplica 073.",
+  });
+
+  const visitaHoraOk = await probeTable("prospectos", "visita_agendada_hora");
+  checks.push({
+    id: "074",
+    label: "Horario cita agendada",
+    migrationFile: "074_visita_agendada_hora.sql",
+    ok: visitaHoraOk,
+    detail: visitaHoraOk
+      ? "visita_agendada_hora en prospectos OK."
+      : "Falta visita_agendada_hora — aplica 074.",
+  });
+
+  const descuentosEsquemaOk = await probeTable("listas_precios", "descuentos_esquema");
+  checks.push({
+    id: "075",
+    label: "Descuentos por esquema (listas de precios)",
+    migrationFile: "075_lista_precios_descuentos.sql",
+    ok: descuentosEsquemaOk,
+    detail: descuentosEsquemaOk
+      ? "descuentos_esquema en listas_precios OK."
+      : "Falta descuentos_esquema — aplica 075.",
+  });
+
   const expedienteOk = await probeTable("expediente_documentos");
   checks.push({
     id: "022",

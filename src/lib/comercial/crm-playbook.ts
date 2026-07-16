@@ -69,7 +69,8 @@ const basePasos = (): PlaybookStep[] => [
   {
     id: "datos-completos",
     etapa: "nuevo",
-    label: "Email y teléfono registrados",
+    label: "Teléfono registrado",
+    hint: "Con el teléfono basta para avanzar a Contactado. El email es opcional.",
     kind: "contacto",
     required: true,
     order: 30,
@@ -78,7 +79,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "visita-agendada",
     etapa: "contactado",
     label: "Cita agendada en el desarrollo",
-    hint: "Programa la visita con el prospecto e indica la fecha. Próximamente: horarios según disponibilidad del asesor.",
+    hint: "Programa la visita con el prospecto: fecha y horario.",
     kind: "manual",
     required: true,
     order: 40,
@@ -87,14 +88,14 @@ const basePasos = (): PlaybookStep[] => [
     id: "recorrido",
     etapa: "cita",
     label: "Visita al desarrollo realizada",
-    hint: "Confirma que el prospecto recorrió el desarrollo e indica la fecha de la visita.",
+    hint: "Confirma que el prospecto recorrió el desarrollo e indica la fecha. Al completar, el lead pasa a etapa Visita.",
     kind: "manual",
     required: true,
     order: 50,
   },
   {
     id: "necesidades-perfiladas",
-    etapa: "cita",
+    etapa: "visita",
     label: "Necesidades y perfil documentados",
     hint: "Presupuesto, intención de apartar, decisor y publicidad en redes. Puede capturarse en cualquier momento del funnel.",
     kind: "manual",
@@ -103,7 +104,7 @@ const basePasos = (): PlaybookStep[] => [
   },
   {
     id: "cotizacion",
-    etapa: "cita",
+    etapa: "visita",
     label: "Cotización enviada al cliente",
     hint: "Acción obligatoria del playbook (no es una etapa). Marca cuando el cliente recibió la cotización o al usar el cotizador.",
     kind: "manual",
@@ -112,9 +113,9 @@ const basePasos = (): PlaybookStep[] => [
   },
   {
     id: "seguimiento-post-cotizacion",
-    etapa: "cita",
+    etapa: "visita",
     label: "Seguimiento documentado en notas",
-    hint: "Próximo contacto, objeciones y decisión (negociación dentro de la etapa cita).",
+    hint: "Próximo contacto, objeciones y decisión (negociación dentro de la etapa visita).",
     kind: "manual",
     required: true,
     order: 80,
@@ -180,17 +181,20 @@ export const mergePlaybookConfigWithDefaults = (
 
   const merged = defaults.map((def) => {
     const storedStep = storedById.get(def.id);
-    return storedStep
-      ? {
-          ...def,
-          ...storedStep,
-          id: def.id,
-          etapa: def.etapa,
-          required: def.required,
-          kind: def.kind,
-          hint: def.hint ?? storedStep.hint,
-        }
-      : def;
+    if (!storedStep) {
+      return def;
+    }
+    const preferCodeCopy = def.id === "datos-completos";
+    return {
+      ...def,
+      ...storedStep,
+      id: def.id,
+      etapa: def.etapa,
+      required: def.required,
+      kind: def.kind,
+      label: preferCodeCopy ? def.label : storedStep.label,
+      hint: preferCodeCopy ? def.hint ?? storedStep.hint : def.hint ?? storedStep.hint,
+    };
   });
 
   for (const step of stored) {
@@ -246,7 +250,7 @@ export const PLAYBOOK_CONTACT_ACTION_STEP_IDS = new Set(["whatsapp-inicial", "ll
 
 export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignals): Set<string> => {
   const done = new Set<string>();
-  if (signals.email?.trim() && signals.telefono?.trim()) {
+  if (signals.telefono?.trim()) {
     done.add("datos-completos");
   }
   if (signals.recorridoCompletado) {
@@ -259,7 +263,7 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
     done.add("necesidades-perfiladas");
     done.add("necesidades");
   }
-  if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("cita")) {
+  if (signals.notas?.trim() && etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("visita")) {
     done.add("seguimiento-post-cotizacion");
     done.add("seguimiento");
   }
@@ -429,5 +433,8 @@ export const getAllPendingRequiredUpToEtapa = (
   return pending;
 };
 
-export const hasCompleteContactData = (email: string | null, telefono: string | null): boolean =>
-  Boolean(email?.trim() && telefono?.trim());
+/** Datos mínimos de contacto: basta con teléfono (email opcional). */
+export const hasCompleteContactData = (
+  _email: string | null,
+  telefono: string | null,
+): boolean => Boolean(telefono?.trim());

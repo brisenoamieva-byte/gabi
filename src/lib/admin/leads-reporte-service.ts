@@ -382,6 +382,7 @@ export const getLeadsReporte = async (
     "nuevo",
     "contactado",
     "cita",
+    "visita",
     "apartado",
     "vendido",
     "cancelado",

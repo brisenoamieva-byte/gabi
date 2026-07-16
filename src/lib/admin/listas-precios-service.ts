@@ -1,5 +1,10 @@
 import { assertDesarrolloAccess, canAccessDesarrollo } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
+import {
+  getDefaultDescuentosEsquema,
+  normalizeDescuentosEsquema,
+  type ListaPrecioEsquemaDescuento,
+} from "@/lib/admin/lista-precios-descuentos";
 import type {
   ListaPrecioPreviewRow,
   ListaPreciosDetail,
@@ -37,7 +42,10 @@ const slugCodigo = (nombre: string, orden: number) => {
   return base || `lista-${orden}`;
 };
 
-const mapLista = (row: Record<string, unknown>): ListaPreciosRecord => ({
+const mapLista = (
+  row: Record<string, unknown>,
+  descuentosFallback: ListaPrecioEsquemaDescuento[] = [],
+): ListaPreciosRecord => ({
   id: row.id as string,
   desarrollo_id: row.desarrollo_id as string,
   nombre: row.nombre as string,
@@ -47,6 +55,12 @@ const mapLista = (row: Record<string, unknown>): ListaPreciosRecord => ({
   estado: row.estado as ListaPreciosRecord["estado"],
   incremento_pct: row.incremento_pct != null ? Number(row.incremento_pct) : null,
   notas: (row.notas as string | null) ?? null,
+  descuentos_esquema: normalizeDescuentosEsquema(
+    row.descuentos_esquema,
+    descuentosFallback.length
+      ? descuentosFallback
+      : getDefaultDescuentosEsquema(row.desarrollo_id as string),
+  ),
   created_at: row.created_at as string,
   updated_at: row.updated_at as string,
 });
@@ -259,6 +273,12 @@ export const createListaFromIncremento = async (
     codigo = `${codigo}-${Date.now().toString(36)}`;
   }
 
+  const activa = await getListaPreciosActiva(input.desarrolloId);
+  const descuentos =
+    activa?.descuentos_esquema?.length
+      ? activa.descuentos_esquema
+      : getDefaultDescuentosEsquema(input.desarrolloId);
+
   const { data: lista, error } = await supabase
     .from("listas_precios")
     .insert({
@@ -269,6 +289,7 @@ export const createListaFromIncremento = async (
       estado: "borrador",
       incremento_pct: input.incrementoPct,
       notas: input.notas?.trim() || null,
+      descuentos_esquema: descuentos,
     })
     .select("*")
     .single();
@@ -346,6 +367,7 @@ export const createListaFromInventario = async (
       estado: "borrador",
       incremento_pct: null,
       notas: input.notas?.trim() || "Seed desde inventario vigente.",
+      descuentos_esquema: getDefaultDescuentosEsquema(input.desarrolloId),
     })
     .select("*")
     .single();
@@ -414,6 +436,51 @@ export const updateListaPreciosUnidades = async (
     .from("listas_precios")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", listaId);
+
+  const updated = await getListaPreciosDetail(listaId, profile);
+  if (!updated) {
+    throw new Error("No se pudo recargar la lista.");
+  }
+  return updated;
+};
+
+export const updateListaPreciosDescuentos = async (
+  listaId: string,
+  descuentos: ListaPrecioEsquemaDescuento[],
+  profile?: AdminProfile,
+): Promise<ListaPreciosDetail> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const detail = await getListaPreciosDetail(listaId, profile);
+  if (!detail) {
+    throw new Error("Lista no encontrada.");
+  }
+  if (detail.estado === "cerrada") {
+    throw new Error("No se pueden editar descuentos en una lista cerrada.");
+  }
+
+  const normalized = normalizeDescuentosEsquema(descuentos);
+  if (!normalized.length) {
+    throw new Error("Agrega al menos un esquema con descuento.");
+  }
+
+  const { error } = await supabase
+    .from("listas_precios")
+    .update({
+      descuentos_esquema: normalized,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", listaId);
+
+  if (error) {
+    if (error.message.includes("descuentos_esquema") || error.code === "PGRST204") {
+      throw new Error("Falta aplicar la migración 075_lista_precios_descuentos.sql en Supabase.");
+    }
+    throw new Error(error.message);
+  }
 
   const updated = await getListaPreciosDetail(listaId, profile);
   if (!updated) {

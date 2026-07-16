@@ -9,15 +9,18 @@ import {
   PLAYBOOK_PERFILAMIENTO_OBJETIVO,
   type PlaybookStep,
 } from "@/lib/comercial/crm-playbook";
-import { PLAYBOOK_STEPS_WITH_VISIT_DATE } from "@/lib/comercial/cadencia-perfilamiento";
 import {
   buildCadenciaLlamadaGuion,
   buildCadenciaTelUrl,
   buildCadenciaWhatsAppUrl,
+  PLAYBOOK_STEPS_WITH_VISIT_DATE,
+  PLAYBOOK_STEPS_WITH_VISIT_TIME,
 } from "@/lib/comercial/cadencia-perfilamiento";
 import {
   formatLeadDateOnly,
+  formatLeadVisitSchedule,
   getMexicoCityDateInput,
+  normalizeTimeInputValue,
 } from "@/lib/comercial/format-lead-date";
 import {
   PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
@@ -40,12 +43,14 @@ type CrmPlaybookChecklistProps = {
   completingStepId: string | null;
   contactContext?: PlaybookContactContext;
   visitaAgendadaOn?: string | null;
+  visitaAgendadaHora?: string | null;
   visitaRealizadaOn?: string | null;
   perfilamientoVisita?: PerfilamientoVisitaRecord;
   onCompleteStep: (
     stepId: string,
     stepDate?: string,
     perfilamientoVisita?: PerfilamientoVisitaAnswers,
+    stepTime?: string,
   ) => void;
 };
 
@@ -55,6 +60,7 @@ export function CrmPlaybookChecklist({
   completingStepId,
   contactContext,
   visitaAgendadaOn,
+  visitaAgendadaHora,
   visitaRealizadaOn,
   perfilamientoVisita,
   onCompleteStep,
@@ -101,6 +107,7 @@ export function CrmPlaybookChecklist({
               : step.id === "recorrido"
                 ? visitaRealizadaOn
                 : null;
+          const visitTime = step.id === "visita-agendada" ? visitaAgendadaHora : null;
 
           return (
             <PlaybookStepRow
@@ -108,10 +115,13 @@ export function CrmPlaybookChecklist({
               step={step}
               done={done}
               visitDate={visitDate}
+              visitTime={visitTime}
               loading={completingStepId === step.id}
               contactContext={contactContext}
               perfilamientoVisita={perfilamientoVisita}
-              onComplete={(stepDate, answers) => onCompleteStep(step.id, stepDate, answers)}
+              onComplete={(stepDate, answers, stepTime) =>
+                onCompleteStep(step.id, stepDate, answers, stepTime)
+              }
             />
           );
         })}
@@ -124,6 +134,7 @@ function PlaybookStepRow({
   step,
   done,
   visitDate,
+  visitTime,
   loading,
   contactContext,
   perfilamientoVisita,
@@ -132,27 +143,35 @@ function PlaybookStepRow({
   step: PlaybookStep;
   done: boolean;
   visitDate?: string | null;
+  visitTime?: string | null;
   loading: boolean;
   contactContext?: PlaybookContactContext;
   perfilamientoVisita?: PerfilamientoVisitaRecord;
-  onComplete: (stepDate?: string, perfilamientoVisita?: PerfilamientoVisitaAnswers) => void;
+  onComplete: (
+    stepDate?: string,
+    perfilamientoVisita?: PerfilamientoVisitaAnswers,
+    stepTime?: string,
+  ) => void;
 }) {
   const needsVisitDate = PLAYBOOK_STEPS_WITH_VISIT_DATE.has(step.id);
+  const needsVisitTime = PLAYBOOK_STEPS_WITH_VISIT_TIME.has(step.id);
   const isPerfilamientoForm = PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(step.id);
   const isManualCompletable =
     (step.kind === "manual" || step.id === "recorrido" || step.id === "visita-agendada") &&
     !isPerfilamientoForm;
   const [stepDate, setStepDate] = useState(() => getMexicoCityDateInput());
+  const [stepTime, setStepTime] = useState(() => normalizeTimeInputValue(visitTime) || "");
   const [showGuion, setShowGuion] = useState(false);
 
   const isContactAction = PLAYBOOK_CONTACT_ACTION_STEP_IDS.has(step.id);
   const telefono = contactContext?.telefono?.trim() || null;
   const [editingVisitDate, setEditingVisitDate] = useState(false);
-  const visitDateInputValue =
-    visitDate?.slice(0, 10) || stepDate;
+  const visitDateInputValue = visitDate?.slice(0, 10) || stepDate;
+  const canSubmitVisit =
+    Boolean(stepDate) && (!needsVisitTime || Boolean(stepTime));
 
-  const submitVisitDate = (date: string) => {
-    onComplete(date);
+  const submitVisitSchedule = (date: string, time?: string) => {
+    onComplete(date, undefined, needsVisitTime ? time : undefined);
     setEditingVisitDate(false);
   };
 
@@ -193,38 +212,56 @@ function PlaybookStepRow({
         {done && visitDate && !editingVisitDate ? (
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="text-xs font-medium text-emerald-800">
-              Fecha: {formatLeadDateOnly(visitDate)}
+              {needsVisitTime
+                ? formatLeadVisitSchedule(visitDate, visitTime)
+                : `Fecha: ${formatLeadDateOnly(visitDate)}`}
             </p>
             {needsVisitDate ? (
               <button
                 type="button"
                 onClick={() => {
                   setStepDate(visitDate.slice(0, 10));
+                  setStepTime(normalizeTimeInputValue(visitTime));
                   setEditingVisitDate(true);
                 }}
                 className="text-xs font-bold text-[#201044] underline-offset-2 hover:underline"
               >
-                Cambiar fecha
+                {needsVisitTime ? "Cambiar" : "Cambiar fecha"}
               </button>
             ) : null}
           </div>
         ) : null}
         {done && needsVisitDate && editingVisitDate ? (
           <div className="mt-2 space-y-2">
-            <label className="block text-xs text-slate-600">
-              <span className="font-semibold text-[#201044]">Nueva fecha de visita</span>
-              <input
-                type="date"
-                value={visitDateInputValue}
-                onChange={(event) => setStepDate(event.target.value)}
-                className="mt-1 block w-full max-w-[11rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
-              />
-            </label>
+            <div className="flex flex-wrap gap-2">
+              <label className="block text-xs text-slate-600">
+                <span className="font-semibold text-[#201044]">
+                  {needsVisitTime ? "Nueva fecha" : "Nueva fecha de visita"}
+                </span>
+                <input
+                  type="date"
+                  value={visitDateInputValue}
+                  onChange={(event) => setStepDate(event.target.value)}
+                  className="mt-1 block w-full max-w-[11rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
+                />
+              </label>
+              {needsVisitTime ? (
+                <label className="block text-xs text-slate-600">
+                  <span className="font-semibold text-[#201044]">Horario</span>
+                  <input
+                    type="time"
+                    value={stepTime}
+                    onChange={(event) => setStepTime(event.target.value)}
+                    className="mt-1 block w-full max-w-[8rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
+                  />
+                </label>
+              ) : null}
+            </div>
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                disabled={loading || !stepDate}
-                onClick={() => submitVisitDate(stepDate)}
+                disabled={loading || !canSubmitVisit}
+                onClick={() => submitVisitSchedule(stepDate, stepTime)}
                 className="text-xs font-bold text-[#201044] underline-offset-2 hover:underline disabled:opacity-50"
               >
                 {loading ? (
@@ -233,7 +270,7 @@ function PlaybookStepRow({
                     Guardando…
                   </span>
                 ) : (
-                  "Guardar fecha"
+                  "Guardar"
                 )}
               </button>
               <button
@@ -327,20 +364,41 @@ function PlaybookStepRow({
         {!done && isManualCompletable ? (
           <div className="mt-2 space-y-2">
             {needsVisitDate ? (
-              <label className="block text-xs text-slate-600">
-                <span className="font-semibold text-[#201044]">Fecha de visita</span>
-                <input
-                  type="date"
-                  value={stepDate}
-                  onChange={(event) => setStepDate(event.target.value)}
-                  className="mt-1 block w-full max-w-[11rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
-                />
-              </label>
+              <div className="flex flex-wrap gap-2">
+                <label className="block text-xs text-slate-600">
+                  <span className="font-semibold text-[#201044]">
+                    {needsVisitTime ? "Fecha" : "Fecha de visita"}
+                  </span>
+                  <input
+                    type="date"
+                    value={stepDate}
+                    onChange={(event) => setStepDate(event.target.value)}
+                    className="mt-1 block w-full max-w-[11rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
+                  />
+                </label>
+                {needsVisitTime ? (
+                  <label className="block text-xs text-slate-600">
+                    <span className="font-semibold text-[#201044]">Horario</span>
+                    <input
+                      type="time"
+                      value={stepTime}
+                      onChange={(event) => setStepTime(event.target.value)}
+                      className="mt-1 block w-full max-w-[8rem] rounded-md border border-slate-200 px-2 py-1 text-sm text-[#201044]"
+                    />
+                  </label>
+                ) : null}
+              </div>
             ) : null}
             <button
               type="button"
-              disabled={loading || (needsVisitDate && !stepDate)}
-              onClick={() => onComplete(needsVisitDate ? stepDate : undefined)}
+              disabled={loading || (needsVisitDate && !canSubmitVisit)}
+              onClick={() =>
+                onComplete(
+                  needsVisitDate ? stepDate : undefined,
+                  undefined,
+                  needsVisitTime ? stepTime : undefined,
+                )
+              }
               className="text-xs font-bold text-[#201044] underline-offset-2 hover:underline disabled:opacity-50"
             >
               {loading ? (
@@ -357,7 +415,7 @@ function PlaybookStepRow({
 
         {!done && step.kind === "contacto" && !isContactAction ? (
           <p className="mt-1 text-[11px] text-slate-400">
-            Se completa automáticamente al registrar email y teléfono del prospecto.
+            Se completa automáticamente al registrar el teléfono del prospecto.
           </p>
         ) : null}
       </div>
