@@ -96,6 +96,7 @@ export function LeadsAdminPanel({
   const [campanaFilter, setCampanaFilter] = useState("");
   const [partnerFilter, setPartnerFilter] = useState("");
   const [interesFilter, setInteresFilter] = useState("");
+  const [calificacionFilter, setCalificacionFilter] = useState("");
   const [desde, setDesde] = useState(initialDesde ?? monthDefault.desde);
   const [hasta, setHasta] = useState(initialHasta ?? monthDefault.hasta);
 
@@ -106,6 +107,7 @@ export function LeadsAdminPanel({
     campanaFilter: "",
     partnerFilter: "",
     interesFilter: "",
+    calificacionFilter: "",
     desde: initialDesde ?? monthDefault.desde,
     hasta: initialHasta ?? monthDefault.hasta,
     leadTab: "leads" as LeadTab,
@@ -287,6 +289,9 @@ export function LeadsAdminPanel({
       if (active.interesFilter) {
         params.set("nivelInteres", active.interesFilter);
       }
+      if (active.calificacionFilter) {
+        params.set("calificacionLead", active.calificacionFilter);
+      }
       params.set("spam", active.leadTab === "spam" ? "only" : "exclude");
       params.set(
         "duplicados",
@@ -408,6 +413,7 @@ export function LeadsAdminPanel({
       campanaFilter,
       partnerFilter,
       interesFilter,
+      calificacionFilter,
       desde,
       hasta,
       leadTab,
@@ -913,6 +919,21 @@ export function LeadsAdminPanel({
                       {nivelInteresLabel[nivel]}
                     </option>
                   ))}
+                </select>
+              </label>
+
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Calificación</span>
+                <select
+                  value={calificacionFilter}
+                  onChange={(event) => setCalificacionFilter(event.target.value)}
+                  className={filterInputClass}
+                >
+                  <option value="">Todas</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="sin">Sin calificar</option>
                 </select>
               </label>
 

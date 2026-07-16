@@ -21,6 +21,7 @@ import { validateAsesorForVisita } from "@/lib/visitas/service";
 import type { VisitaTipo } from "@/lib/visitas/types";
 import { normalizeProspectoTelefono } from "@/lib/comercial/prospecto-telefono";
 import { cancelSolicitudesApartadoForProspectos } from "@/lib/comercial/solicitud-apartado-service";
+import { resolvePerfilCalificacionLead } from "@/lib/comercial/perfilamiento-post-visita";
 
 export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
@@ -137,6 +138,8 @@ export const listProspectos = async (
     spam?: "exclude" | "only" | "include";
     duplicados?: "exclude" | "only" | "include";
     nivelInteres?: string;
+    /** Calificación A/B/C del perfilamiento (incluye cómputo si no está guardada). */
+    calificacionLead?: "A" | "B" | "C" | "sin";
   },
   profile?: AdminProfile,
 ): Promise<ProspectoListRow[]> => {
@@ -226,6 +229,16 @@ export const listProspectos = async (
     );
   }
 
+  if (filters.calificacionLead) {
+    rows = rows.filter((row) => {
+      const calificacion = resolvePerfilCalificacionLead(row);
+      if (filters.calificacionLead === "sin") {
+        return calificacion == null;
+      }
+      return calificacion === filters.calificacionLead;
+    });
+  }
+
   return rows;
 };
 
@@ -243,6 +256,7 @@ export const getProspectosResumen = async (
     spam?: "exclude" | "only" | "include";
     duplicados?: "exclude" | "only" | "include";
     nivelInteres?: string;
+    calificacionLead?: "A" | "B" | "C" | "sin";
   },
 ): Promise<ProspectosResumen> => {
   const prospectos = await listProspectos({ desarrolloId, ...filters }, profile);

@@ -31,6 +31,14 @@ export async function GET(request: Request) {
   const spam = searchParams.get("spam") as "exclude" | "only" | "include" | null;
   const duplicados = searchParams.get("duplicados") as "exclude" | "only" | "include" | null;
   const nivelInteres = searchParams.get("nivelInteres") ?? undefined;
+  const calificacionLeadRaw = searchParams.get("calificacionLead") ?? undefined;
+  const calificacionLead =
+    calificacionLeadRaw === "A" ||
+    calificacionLeadRaw === "B" ||
+    calificacionLeadRaw === "C" ||
+    calificacionLeadRaw === "sin"
+      ? calificacionLeadRaw
+      : undefined;
   const withResumen = searchParams.get("resumen") === "1";
 
   if (!desarrolloId) {
@@ -44,13 +52,15 @@ export async function GET(request: Request) {
     hasta,
     campanaId,
     partnerId,
+    nivelInteres,
     spam: spam ?? "exclude",
     duplicados: duplicados ?? "exclude",
+    calificacionLead,
   };
 
   try {
     const [prospectos, resumen] = await Promise.all([
-      listProspectos({ desarrolloId, etapa, nivelInteres, ...sharedFilters }, session.profile),
+      listProspectos({ desarrolloId, etapa, ...sharedFilters }, session.profile),
       withResumen
         ? getProspectosResumen(desarrolloId, session.profile, sharedFilters)
         : Promise.resolve(null),
