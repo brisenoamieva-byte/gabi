@@ -38,9 +38,10 @@ Después abre la app una vez online, instálala desde el navegador y prueba modo
 3. Usa los defaults de Next.js:
    - Build command: `npm run build`
    - Output: automático
-4. Agrega variables de entorno si se va a sincronizar CRM:
-   - `HUBSPOT_PRIVATE_APP_TOKEN`
-5. Publica y valida la URL temporal antes de conectar dominio.
+4. Configura secretos de producción (ver [docs/ops-go-live.md](docs/ops-go-live.md)).
+5. Publica y valida:
+   - `https://www.gabi.mx/api/health` → `status: "ok"`
+6. CI en GitHub Actions (`lint` + `build`) corre en cada push/PR a `main`.
 
 ## Validación Antes De Publicar
 
@@ -48,3 +49,5 @@ Después abre la app una vez online, instálala desde el navegador y prueba modo
 npm run lint
 npm run build
 ```
+
+Checklist de confiabilidad para clientes: [docs/ops-go-live.md](docs/ops-go-live.md).

@@ -3,21 +3,41 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const ASESOR_SESSION_COOKIE = "gabi_asesor_session";
 export const ASESOR_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
-const getSecret = () =>
-  process.env.ASESOR_SESSION_SECRET?.trim() ??
-  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ??
-  "asesor-session-dev-secret";
+const resolveSecret = (): string | null => {
+  const fromEnv = process.env.ASESOR_SESSION_SECRET?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
+  return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "asesor-session-dev-secret";
+};
 
 export const signAsesorSession = (asesorId: string) => {
+  const secret = resolveSecret();
+  if (!secret) {
+    throw new Error(
+      "ASESOR_SESSION_SECRET es obligatorio en producción. Configúralo en Vercel.",
+    );
+  }
+
   const id = asesorId.trim();
   const exp = Date.now() + ASESOR_SESSION_MS;
   const payload = `${id}.${exp}`;
-  const sig = createHmac("sha256", getSecret()).update(payload).digest("base64url");
+  const sig = createHmac("sha256", secret).update(payload).digest("base64url");
   return `${payload}.${sig}`;
 };
 
 export const verifyAsesorSessionValue = (value: string | undefined | null): string | null => {
   if (!value) {
+    return null;
+  }
+
+  const secret = resolveSecret();
+  if (!secret) {
     return null;
   }
 
@@ -33,7 +53,7 @@ export const verifyAsesorSessionValue = (value: string | undefined | null): stri
   }
 
   const payload = `${asesorId}.${expStr}`;
-  const expected = createHmac("sha256", getSecret()).update(payload).digest("base64url");
+  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
 
   try {
     if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
