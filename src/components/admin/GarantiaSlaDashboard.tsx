@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Download,
+  FileText,
   Loader2,
   RefreshCw,
+  Send,
   ShieldCheck,
   Target,
 } from "lucide-react";
 import type { GarantiaSlaReport, SlaStatus } from "@/lib/comercial/garantia-sla";
+import { GARANTIA_SLA_CONTRACT } from "@/lib/comercial/garantia-sla";
 import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 
 type Props = {
@@ -75,6 +80,43 @@ export function GarantiaSlaDashboard({
   canConfigurePlaybook,
 }: Props) {
   const SealIcon = report ? sealStyles[report.seal].icon : ShieldCheck;
+  const [sending, setSending] = useState(false);
+  const [actionMsg, setActionMsg] = useState("");
+
+  const downloadPdf = () => {
+    if (!desarrolloId) return;
+    window.open(
+      `/api/admin/crm-compliance/garantia/report?desarrolloId=${encodeURIComponent(desarrolloId)}&format=pdf`,
+      "_blank",
+    );
+  };
+
+  const sendWeekly = async () => {
+    if (!desarrolloId) return;
+    setSending(true);
+    setActionMsg("");
+    try {
+      const res = await fetch("/api/admin/crm-compliance/garantia/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ desarrolloId, force: true }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        result?: { emailsSent: number; whatsappSent: number; errors: string[] };
+      };
+      if (!res.ok) throw new Error(data.error ?? "No se pudo enviar.");
+      const r = data.result;
+      setActionMsg(
+        `Enviado: ${r?.emailsSent ?? 0} email(s), ${r?.whatsappSent ?? 0} WhatsApp.` +
+          (r?.errors?.length ? ` · ${r.errors.slice(0, 2).join("; ")}` : ""),
+      );
+    } catch (sendError) {
+      setActionMsg(sendError instanceof Error ? sendError.message : "Error al enviar.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -85,19 +127,42 @@ export function GarantiaSlaDashboard({
           </p>
           <h2 className="mt-1 text-lg font-black text-gabi-ink">Garantía de seguimiento</h2>
           <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
-            SLA que puedes mostrar al dueño del desarrollo: el CRM no solo existe — se cumple.
+            SLA contractual + sello semanal. Lunes 08:00 (CDMX) se envía PDF por email y resumen por
+            WhatsApp a gerencia.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={loading || !desarrolloId}
-          className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Actualizar
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={downloadPdf}
+            disabled={!desarrolloId || !report?.playbookEnabled}
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            PDF semanal
+          </button>
+          <button
+            type="button"
+            onClick={() => void sendWeekly()}
+            disabled={sending || !desarrolloId || !report?.playbookEnabled}
+            className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Enviar ahora
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading || !desarrolloId}
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Actualizar
+          </button>
+        </div>
       </div>
+
+      {actionMsg ? <p className="text-xs font-semibold text-gabi-sand">{actionMsg}</p> : null}
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -166,6 +231,29 @@ export function GarantiaSlaDashboard({
 
           {report.playbookEnabled ? (
             <>
+              <section className="rounded-2xl border border-gabi-cream-dark bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <FileText className="mt-0.5 h-5 w-5 text-gabi-sand" />
+                  <div>
+                    <h3 className="text-sm font-bold text-gabi-ink">
+                      {GARANTIA_SLA_CONTRACT.planLabelDefault} · v{GARANTIA_SLA_CONTRACT.version}
+                    </h3>
+                    <p className="mt-1 text-xs text-gabi-sand">
+                      Cláusulas operativas del contrato. Configura destinatarios del reporte en la
+                      ficha del desarrollo (Cotizador, bancarios y Drive → Garantía).
+                    </p>
+                    <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-600">
+                      {GARANTIA_SLA_CONTRACT.clauses.map((clause) => (
+                        <li key={clause.slice(0, 32)} className="flex gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gabi-forest" />
+                          <span>{clause}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {report.checks.map((check) => (
                   <article

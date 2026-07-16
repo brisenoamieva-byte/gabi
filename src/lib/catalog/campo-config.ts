@@ -15,6 +15,23 @@ export type DesarrolloCampoConfig = {
   datosBancarios?: Partial<DatosBancarios> | null;
   /** ID de carpeta raíz en Google Drive (alternativa a env GOOGLE_DRIVE_*_FOLDER_ID). */
   driveFolderId?: string | null;
+  /** Contrato comercial Garantía SLA + destinatarios del reporte semanal. */
+  garantiaContrato?: GarantiaContratoConfig | null;
+};
+
+export type GarantiaContratoConfig = {
+  /** Activa el producto/contrato de garantía para este desarrollo. */
+  enabled?: boolean;
+  /** Envía reporte semanal automático (email + WhatsApp). Default true si enabled. */
+  weeklyReportEnabled?: boolean;
+  /** Nombre del plan en el PDF/contrato. */
+  planLabel?: string;
+  /** Correos del dueño / gerencia del desarrollador (además de gerentes Gabi). */
+  recipientEmails?: string[];
+  /** Teléfonos WhatsApp (+52…) para el resumen semanal. */
+  recipientPhones?: string[];
+  /** Notas visibles en el PDF contractual. */
+  notes?: string;
 };
 
 export const defaultCampoCotizadorRules: CampoCotizadorRules = {
@@ -94,6 +111,36 @@ export const normalizeCampoConfig = (raw: unknown): DesarrolloCampoConfig => {
       }
     : undefined;
 
+  const garantiaRaw = asRecord(root.garantiaContrato);
+  const emailsRaw = garantiaRaw?.recipientEmails;
+  const phonesRaw = garantiaRaw?.recipientPhones;
+  const recipientEmails = Array.isArray(emailsRaw)
+    ? emailsRaw
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean)
+    : undefined;
+  const recipientPhones = Array.isArray(phonesRaw)
+    ? phonesRaw
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const garantiaContrato = garantiaRaw
+    ? {
+        enabled: typeof garantiaRaw.enabled === "boolean" ? garantiaRaw.enabled : undefined,
+        weeklyReportEnabled:
+          typeof garantiaRaw.weeklyReportEnabled === "boolean"
+            ? garantiaRaw.weeklyReportEnabled
+            : undefined,
+        planLabel: asString(garantiaRaw.planLabel),
+        recipientEmails,
+        recipientPhones,
+        notes: asString(garantiaRaw.notes),
+      }
+    : undefined;
+
   return {
     cotizador: cotizador && Object.values(cotizador).some((v) => v !== undefined) ? cotizador : undefined,
     datosBancarios:
@@ -101,6 +148,16 @@ export const normalizeCampoConfig = (raw: unknown): DesarrolloCampoConfig => {
         ? datosBancarios
         : undefined,
     driveFolderId: asString(root.driveFolderId) ?? null,
+    garantiaContrato:
+      garantiaContrato &&
+      (garantiaContrato.enabled !== undefined ||
+        garantiaContrato.weeklyReportEnabled !== undefined ||
+        garantiaContrato.planLabel ||
+        (garantiaContrato.recipientEmails?.length ?? 0) > 0 ||
+        (garantiaContrato.recipientPhones?.length ?? 0) > 0 ||
+        garantiaContrato.notes)
+        ? garantiaContrato
+        : undefined,
   };
 };
 
@@ -181,5 +238,23 @@ export const serializeCampoConfig = (config: DesarrolloCampoConfig): DesarrolloC
     out.driveFolderId = normalized.driveFolderId;
   }
 
+  if (normalized.garantiaContrato) {
+    out.garantiaContrato = { ...normalized.garantiaContrato };
+  }
+
   return out;
+};
+
+export const isGarantiaContratoEnabled = (
+  config: DesarrolloCampoConfig | null | undefined,
+): boolean => Boolean(config?.garantiaContrato?.enabled);
+
+export const isGarantiaWeeklyReportEnabled = (
+  config: DesarrolloCampoConfig | null | undefined,
+): boolean => {
+  const contrato = config?.garantiaContrato;
+  if (!contrato?.enabled) {
+    return false;
+  }
+  return contrato.weeklyReportEnabled !== false;
 };

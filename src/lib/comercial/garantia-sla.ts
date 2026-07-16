@@ -82,6 +82,19 @@ export const GARANTIA_SLA_TARGETS = {
   cadenciaOverdueRiskMax: 10,
 } as const;
 
+/** Texto contractual del plan (PDF + demos comerciales). */
+export const GARANTIA_SLA_CONTRACT = {
+  planLabelDefault: "Gabi Garantía de seguimiento",
+  version: "2026.1",
+  clauses: [
+    "Gabi mide semanalmente el cumplimiento del playbook CRM y la cadencia de contacto sobre leads activos (nuevo, contactado, cita).",
+    "Compromiso operativo: ≥95% de leads activos sin pasos vencidos; calidad de datos ≥80%; pipeline confiable ≥90%; 0 pasos críticos vencidos; 0 toques de cadencia vencidos.",
+    "Si el sello semanal queda en rojo (fuera de SLA), Gabi alerta a gerencia el mismo ciclo y prioriza excepciones hasta recuperar verde o riesgo controlado.",
+    "La garantía cubre el proceso de seguimiento en plataforma (registro, alertas, bloqueos y reportes). No garantiza cierre de ventas ni calidad del inventario/tráfico de medios.",
+    "El cliente (desarrollador/comercializadora) se compromete a mantener asesores activos, playbook encendido y datos de contacto mínimos en cada lead.",
+  ],
+} as const;
+
 const statusForHigherIsBetter = (
   actual: number,
   metMin: number,

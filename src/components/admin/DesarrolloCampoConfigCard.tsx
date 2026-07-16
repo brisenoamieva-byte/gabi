@@ -33,6 +33,12 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
   const [descuentoStep, setDescuentoStep] = useState("5000");
   const [bancarios, setBancarios] = useState<DatosBancarios>(emptyBancarios);
   const [driveFolderId, setDriveFolderId] = useState("");
+  const [garantiaEnabled, setGarantiaEnabled] = useState(false);
+  const [garantiaWeekly, setGarantiaWeekly] = useState(true);
+  const [garantiaPlanLabel, setGarantiaPlanLabel] = useState("");
+  const [garantiaEmails, setGarantiaEmails] = useState("");
+  const [garantiaPhones, setGarantiaPhones] = useState("");
+  const [garantiaNotes, setGarantiaNotes] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +65,12 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
         ...config.datosBancarios,
       });
       setDriveFolderId(config.driveFolderId ?? "");
+      setGarantiaEnabled(Boolean(config.garantiaContrato?.enabled));
+      setGarantiaWeekly(config.garantiaContrato?.weeklyReportEnabled !== false);
+      setGarantiaPlanLabel(config.garantiaContrato?.planLabel ?? "");
+      setGarantiaEmails((config.garantiaContrato?.recipientEmails ?? []).join(", "));
+      setGarantiaPhones((config.garantiaContrato?.recipientPhones ?? []).join(", "));
+      setGarantiaNotes(config.garantiaContrato?.notes ?? "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
     } finally {
@@ -85,6 +97,20 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
         },
         datosBancarios: bancarios,
         driveFolderId: driveFolderId.trim() || null,
+        garantiaContrato: {
+          enabled: garantiaEnabled,
+          weeklyReportEnabled: garantiaWeekly,
+          planLabel: garantiaPlanLabel.trim() || undefined,
+          recipientEmails: garantiaEmails
+            .split(/[,;\n]+/)
+            .map((item) => item.trim().toLowerCase())
+            .filter(Boolean),
+          recipientPhones: garantiaPhones
+            .split(/[,;\n]+/)
+            .map((item) => item.trim())
+            .filter(Boolean),
+          notes: garantiaNotes.trim() || undefined,
+        },
       };
 
       const res = await fetch(
@@ -243,6 +269,80 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
               </code>
               . La cuenta de servicio debe tener acceso a la carpeta.
             </p>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+              Garantía SLA (contrato)
+            </p>
+            <div className="mt-2 space-y-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={garantiaEnabled}
+                  disabled={!canEdit}
+                  onChange={(e) => setGarantiaEnabled(e.target.checked)}
+                />
+                Contrato de garantía activo
+              </label>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={garantiaWeekly}
+                  disabled={!canEdit || !garantiaEnabled}
+                  onChange={(e) => setGarantiaWeekly(e.target.checked)}
+                />
+                Reporte semanal automático (lunes)
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs font-semibold text-slate-500">
+                  Nombre del plan
+                </span>
+                <input
+                  value={garantiaPlanLabel}
+                  disabled={!canEdit}
+                  onChange={(e) => setGarantiaPlanLabel(e.target.value)}
+                  className="input-cotizador"
+                  placeholder="Gabi Garantía de seguimiento"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs font-semibold text-slate-500">
+                  Emails reporte (dueño / gerencia)
+                </span>
+                <input
+                  value={garantiaEmails}
+                  disabled={!canEdit}
+                  onChange={(e) => setGarantiaEmails(e.target.value)}
+                  className="input-cotizador"
+                  placeholder="dueño@desarrollo.com, gerente@…"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs font-semibold text-slate-500">
+                  WhatsApp reporte (+52…)
+                </span>
+                <input
+                  value={garantiaPhones}
+                  disabled={!canEdit}
+                  onChange={(e) => setGarantiaPhones(e.target.value)}
+                  className="input-cotizador"
+                  placeholder="+5255…"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs font-semibold text-slate-500">
+                  Notas en PDF contractual
+                </span>
+                <textarea
+                  value={garantiaNotes}
+                  disabled={!canEdit}
+                  onChange={(e) => setGarantiaNotes(e.target.value)}
+                  className="input-cotizador min-h-[72px]"
+                  placeholder="Excepciones acordadas, alcance del piloto…"
+                />
+              </label>
+            </div>
           </div>
         </div>
       )}
