@@ -4,9 +4,11 @@ import type { drive_v3 } from "googleapis";
 import {
   getGoogleDriveFileViewUrl,
   getGoogleDriveOperacionFolderUrl,
+  resolveDriveExpedientesSubfolderName,
   resolveGoogleDriveRootFolderId,
   isGoogleDriveConfiguredForDesarrolloAsync,
 } from "@/lib/integrations/google-drive-config";
+import { DRIVE_EXPEDIENTES_SUBFOLDER_ALIASES } from "@/lib/integrations/google-drive-env";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
 
@@ -45,6 +47,92 @@ const driveParams = {
 
 const sanitizeFolderName = (value: string) =>
   value.replace(/[/\\?*:|"<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 180);
+
+const normalizeFolderNameKey = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const escapeDriveQueryValue = (value: string) => value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
+const findChildFolderByNames = async (
+  drive: drive_v3.Drive,
+  parentId: string,
+  candidates: string[],
+): Promise<string | null> => {
+  const wanted = new Set(candidates.map(normalizeFolderNameKey).filter(Boolean));
+  if (!wanted.size) {
+    return null;
+  }
+
+  const { data } = await drive.files.list({
+    q: `'${escapeDriveQueryValue(parentId)}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: "files(id,name)",
+    pageSize: 200,
+    spaces: "drive",
+    corpora: "allDrives",
+    ...driveParams,
+  });
+
+  for (const file of data.files ?? []) {
+    if (!file.id || !file.name) continue;
+    if (wanted.has(normalizeFolderNameKey(file.name))) {
+      return file.id;
+    }
+  }
+
+  return null;
+};
+
+const ensureChildFolder = async (
+  drive: drive_v3.Drive,
+  parentId: string,
+  folderName: string,
+  aliases: string[] = [],
+): Promise<string> => {
+  const preferred = sanitizeFolderName(folderName);
+  const candidates = Array.from(
+    new Set([preferred, ...aliases.map(sanitizeFolderName)].filter(Boolean)),
+  );
+  const existing = await findChildFolderByNames(drive, parentId, candidates);
+  if (existing) {
+    return existing;
+  }
+
+  const { data } = await drive.files.create({
+    requestBody: {
+      name: preferred,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [parentId],
+    },
+    fields: "id",
+    ...driveParams,
+  });
+
+  if (!data.id) {
+    throw new Error(`No se pudo crear la carpeta «${preferred}» en Drive.`);
+  }
+
+  return data.id;
+};
+
+const resolveExpedientesParentFolderId = async (
+  drive: drive_v3.Drive,
+  desarrolloId: string,
+  rootFolderId: string,
+): Promise<string> => {
+  const subfolderName = await resolveDriveExpedientesSubfolderName(desarrolloId);
+  if (!subfolderName) {
+    return rootFolderId;
+  }
+
+  return ensureChildFolder(drive, rootFolderId, subfolderName, [
+    ...DRIVE_EXPEDIENTES_SUBFOLDER_ALIASES,
+  ]);
+};
 
 export type GoogleDriveUploadResult = {
   fileId: string;
@@ -121,15 +209,21 @@ export const ensureOperacionDriveFolder = async (input: {
     throw new Error("Credenciales de Google Drive incompletas.");
   }
 
+  const parentFolderId = await resolveExpedientesParentFolderId(
+    drive,
+    input.desarrolloId,
+    rootFolderId,
+  );
+
   const folderName = sanitizeFolderName(
-    `${input.clienteNombre} — Unidad ${input.unidadNumero}`,
+    `${input.unidadNumero} ${input.clienteNombre}`,
   );
 
   const { data } = await drive.files.create({
     requestBody: {
       name: folderName,
       mimeType: "application/vnd.google-apps.folder",
-      parents: [rootFolderId],
+      parents: [parentFolderId],
     },
     fields: "id,name,webViewLink",
     ...driveParams,

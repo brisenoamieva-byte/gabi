@@ -10,22 +10,29 @@ import {
 import {
   buildExpedienteDocContext,
   expedienteDocxMime,
-  renderExpedienteDocx,
-  resolveExpedienteTemplatePath,
+  mergeKycPrefill,
+  renderExpedienteDocxFromBuffer,
 } from "@/lib/comercial/expediente-doc-generator";
 import {
   canGenerateApartadoPack,
   getApartadoTemplateDefs,
   getExpedienteTemplateBaseDir,
 } from "@/lib/comercial/expediente-template-map";
+import {
+  normalizeClienteKyc,
+  normalizePlanPago,
+  type ClienteKycDatos,
+  type PlanPagoDatos,
+} from "@/lib/comercial/expediente-oferta-types";
+import { loadExpedienteTemplateBuffer } from "@/lib/admin/expediente-templates-service";
 import type {
   CotizacionRecord,
   OperacionComercialRecord,
   ProspectoRecord,
 } from "@/lib/comercial/sembrado-status";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
-import { desarrollos } from "@/lib/data";
-import { existsSync } from "node:fs";
+import { desarrollos, getDatosBancarios } from "@/lib/data";
+import { normalizeCampoConfig } from "@/lib/catalog/campo-config";
 import {
   getGoogleDriveOperacionFolderUrl,
   isGoogleDriveConfiguredForDesarrolloAsync,
@@ -41,6 +48,7 @@ const ALLOWED_MIME = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
 export type ExpedienteDocumentoRecord = {
@@ -83,6 +91,11 @@ export type ExpedienteListRow = {
 export type ExpedienteDetail = {
   operacion: OperacionComercialRecord;
   unidadNumero: string;
+  unidadTipo: string | null;
+  unidadPrototipoId: string | null;
+  prospecto: ProspectoRecord | null;
+  kyc: ClienteKycDatos;
+  planPago: PlanPagoDatos;
   documentos: ExpedienteDocumentoRecord[];
   progreso: ReturnType<typeof computeChecklistProgreso>;
   checklist: ReturnType<typeof getExpedienteChecklist>;
@@ -95,11 +108,13 @@ const assertMime = (file: File) => {
     file.type ||
     (file.name.toLowerCase().endsWith(".pdf")
       ? "application/pdf"
-      : file.name.toLowerCase().endsWith(".png")
-        ? "image/png"
-        : file.name.toLowerCase().endsWith(".webp")
-          ? "image/webp"
-          : "image/jpeg");
+      : file.name.toLowerCase().endsWith(".docx")
+        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        : file.name.toLowerCase().endsWith(".png")
+          ? "image/png"
+          : file.name.toLowerCase().endsWith(".webp")
+            ? "image/webp"
+            : "image/jpeg");
 
   if (!ALLOWED_MIME.has(mime)) {
     throw new Error("Formato no permitido. Usa PDF, JPG, PNG o WEBP.");
@@ -226,19 +241,27 @@ export const getExpedienteDetail = async (
 
   assertDesarrolloAccess(profile, operacion.desarrollo_id as string);
 
-  const [{ data: unidad }, { data: documentos, error: documentosError }] = await Promise.all([
-    supabase
-      .from("disponibilidad_unidades")
-      .select("unidad")
-      .eq("id", operacion.unidad_id as string)
-      .maybeSingle(),
-    supabase
-      .from("expediente_documentos")
-      .select("*")
-      .eq("operacion_id", operacionId)
-      .eq("activo", true)
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: unidad }, { data: documentos, error: documentosError }, prospectoResult] =
+    await Promise.all([
+      supabase
+        .from("disponibilidad_unidades")
+        .select("unidad, tipo, prototipo_id")
+        .eq("id", operacion.unidad_id as string)
+        .maybeSingle(),
+      supabase
+        .from("expediente_documentos")
+        .select("*")
+        .eq("operacion_id", operacionId)
+        .eq("activo", true)
+        .order("created_at", { ascending: false }),
+      operacion.prospecto_id
+        ? supabase
+            .from("prospectos")
+            .select("*")
+            .eq("id", operacion.prospecto_id as string)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   if (documentosError) {
     if (documentosError.message.includes("expediente_documentos")) {
@@ -253,9 +276,19 @@ export const getExpedienteDetail = async (
     personaMoral: Boolean(operacion.persona_moral),
   });
 
+  const prospecto = (prospectoResult.data as ProspectoRecord | null) ?? null;
+  const op = operacion as OperacionComercialRecord;
+  const kyc = mergeKycPrefill(op.cliente_kyc, prospecto);
+  const planPago = normalizePlanPago(op.plan_pago);
+
   return {
-    operacion: operacion as OperacionComercialRecord,
+    operacion: op,
     unidadNumero: (unidad?.unidad as string) ?? "—",
+    unidadTipo: (unidad?.tipo as string | null) ?? null,
+    unidadPrototipoId: (unidad?.prototipo_id as string | null) ?? null,
+    prospecto,
+    kyc,
+    planPago,
     documentos: docs,
     progreso,
     checklist: getExpedienteChecklist(operacion.desarrollo_id as string),
@@ -509,6 +542,50 @@ export const setEngancheCubierto = async (
   }
 };
 
+export const updateExpedienteOfertaDatos = async (
+  operacionId: string,
+  input: { clienteKyc?: ClienteKycDatos; planPago?: PlanPagoDatos },
+  profile: AdminProfile,
+): Promise<ExpedienteDetail> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const detail = await getExpedienteDetail(operacionId, profile);
+  if (!detail) {
+    throw new Error("Operación no encontrada.");
+  }
+
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.clienteKyc !== undefined) {
+    patch.cliente_kyc = normalizeClienteKyc(input.clienteKyc);
+  }
+  if (input.planPago !== undefined) {
+    patch.plan_pago = normalizePlanPago(input.planPago);
+  }
+
+  const { error } = await supabase
+    .from("operaciones_comerciales")
+    .update(patch)
+    .eq("id", operacionId);
+
+  if (error) {
+    if (error.message.includes("cliente_kyc") || error.message.includes("plan_pago")) {
+      throw new Error("Falta aplicar la migración 068_expediente_oferta_datos.sql en Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
+  const updated = await getExpedienteDetail(operacionId, profile);
+  if (!updated) {
+    throw new Error("Operación no encontrada tras guardar.");
+  }
+  return updated;
+};
+
 export const getExpedienteDocumentoSignedUrl = async (
   documentoId: string,
   profile: AdminProfile,
@@ -630,16 +707,6 @@ export const generateApartadoPack = async (
     throw new Error("Supabase no configurado.");
   }
 
-  let prospecto: ProspectoRecord | null = null;
-  if (detail.operacion.prospecto_id) {
-    const { data } = await supabase
-      .from("prospectos")
-      .select("*")
-      .eq("id", detail.operacion.prospecto_id)
-      .maybeSingle();
-    prospecto = (data as ProspectoRecord | null) ?? null;
-  }
-
   let cotizacion: CotizacionRecord | null = null;
   if (detail.operacion.cotizacion_id) {
     const { data } = await supabase
@@ -650,14 +717,34 @@ export const generateApartadoPack = async (
     cotizacion = (data as CotizacionRecord | null) ?? null;
   }
 
+  const { data: desarrolloRow } = await supabase
+    .from("desarrollos_catalog")
+    .select("campo_config")
+    .eq("id", desarrolloId)
+    .maybeSingle();
+  const campoConfig = normalizeCampoConfig(desarrolloRow?.campo_config);
+  const datosBancarios = getDatosBancarios(desarrolloId, campoConfig);
   const desarrolloNombre = desarrollos.find((d) => d.id === desarrolloId)?.nombre ?? desarrolloId;
 
+  const operacionWithKyc: OperacionComercialRecord = {
+    ...detail.operacion,
+    cliente_kyc: detail.kyc,
+    plan_pago: detail.planPago,
+  };
+
   const context = buildExpedienteDocContext({
-    operacion: detail.operacion,
-    unidadNumero: detail.unidadNumero,
+    operacion: operacionWithKyc,
+    unidad: {
+      unidadNumero: detail.unidadNumero,
+      tipo: detail.unidadTipo,
+      prototipoId: detail.unidadPrototipoId,
+    },
     desarrolloNombre,
-    prospecto,
+    prospecto: detail.prospecto,
     cotizacion,
+    datosBancarios,
+    cuotaMantenimiento: campoConfig.cuotaMantenimiento ?? null,
+    apartadoDefault: campoConfig.cotizador?.apartado ?? null,
   });
 
   const generated: ExpedienteDocumentoRecord[] = [];
@@ -667,14 +754,14 @@ export const generateApartadoPack = async (
   const safeCliente = detail.operacion.cliente_nombre.replace(/[^\w.\-() ]+/g, "_").slice(0, 40);
 
   for (const tpl of getApartadoTemplateDefs(desarrolloId)) {
-    const templatePath = resolveExpedienteTemplatePath(baseDir, tpl.fileName);
-    if (!existsSync(templatePath)) {
+    const loaded = await loadExpedienteTemplateBuffer(desarrolloId, tpl.fileName);
+    if (!loaded) {
       missingTemplates.push(tpl.fileName);
       continue;
     }
 
     try {
-      const buffer = renderExpedienteDocx(templatePath, context);
+      const buffer = renderExpedienteDocxFromBuffer(loaded.buffer, context);
       const fileName = `${tpl.codigo}-${safeCliente}.docx`;
       const file = new File([new Uint8Array(buffer)], fileName, { type: expedienteDocxMime });
 

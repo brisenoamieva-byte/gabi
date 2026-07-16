@@ -3,6 +3,7 @@ import {
   getExpedienteDetail,
   setEngancheCubierto,
   setPersonaMoralOperacion,
+  updateExpedienteOfertaDatos,
   uploadExpedienteDocumento,
 } from "@/lib/admin/expediente-service";
 import { getComisionContext } from "@/lib/admin/comision-service";
@@ -147,13 +148,26 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { operacionId } = await context.params;
 
   try {
-    const body = (await request.json()) as { engancheCubierto?: boolean; personaMoral?: boolean };
+    const body = (await request.json()) as {
+      engancheCubierto?: boolean;
+      personaMoral?: boolean;
+      clienteKyc?: import("@/lib/comercial/expediente-oferta-types").ClienteKycDatos;
+      planPago?: import("@/lib/comercial/expediente-oferta-types").PlanPagoDatos;
+    };
 
     if (typeof body.engancheCubierto === "boolean") {
       await setEngancheCubierto(operacionId, body.engancheCubierto, session.profile, session.userId);
     }
     if (typeof body.personaMoral === "boolean") {
       await setPersonaMoralOperacion(operacionId, body.personaMoral, session.profile);
+    }
+    if (body.clienteKyc !== undefined || body.planPago !== undefined) {
+      const expediente = await updateExpedienteOfertaDatos(
+        operacionId,
+        { clienteKyc: body.clienteKyc, planPago: body.planPago },
+        session.profile,
+      );
+      return NextResponse.json({ expediente });
     }
 
     const expediente = await getExpedienteDetail(operacionId, session.profile);

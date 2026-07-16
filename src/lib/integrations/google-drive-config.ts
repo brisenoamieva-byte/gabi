@@ -1,6 +1,7 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { normalizeCampoConfig } from "@/lib/catalog/campo-config";
 import {
+  DEFAULT_DRIVE_EXPEDIENTES_SUBFOLDER,
   genericDriveEnvKey,
   LEGACY_DRIVE_FOLDER_ENV,
 } from "@/lib/integrations/google-drive-env";
@@ -61,6 +62,40 @@ export const resolveGoogleDriveRootFolderId = async (
     return fromEnv;
   }
   return loadDriveFolderIdFromCampoConfig(desarrolloId);
+};
+
+const loadDriveExpedientesSubfolderFromCampoConfig = async (
+  desarrolloId: string,
+): Promise<string | null> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("campo_config")
+    .eq("id", desarrolloId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return normalizeCampoConfig(data.campo_config).driveExpedientesSubfolder?.trim() || null;
+};
+
+/**
+ * Nombre de la carpeta donde se crean los expedientes de cliente
+ * (hija de la raíz del desarrollo). Null = crear directo en la raíz.
+ */
+export const resolveDriveExpedientesSubfolderName = async (
+  desarrolloId: string,
+): Promise<string | null> => {
+  const fromCampo = await loadDriveExpedientesSubfolderFromCampoConfig(desarrolloId);
+  if (fromCampo) {
+    return fromCampo;
+  }
+  return DEFAULT_DRIVE_EXPEDIENTES_SUBFOLDER[desarrolloId] ?? null;
 };
 
 export const hasGoogleDriveServiceAccount = (): boolean =>

@@ -7,6 +7,7 @@ import type { ExpedienteListRow } from "@/lib/admin/expediente-service";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { ComisionesAdminPanel } from "@/components/admin/ComisionesAdminPanel";
 import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
+import { ExpedienteTemplatesAdminCard } from "@/components/admin/ExpedienteTemplatesAdminCard";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import { formatLeadDate } from "@/lib/comercial/format-lead-date";
 
@@ -189,6 +190,12 @@ export function ExpedientesAdminPanel({ desarrollos, scopeLabel }: ExpedientesAd
             {resumen.pendientes} con documentos pendientes
           </span>
         </div>
+
+        {desarrolloId ? (
+          <div className="mt-4">
+            <ExpedienteTemplatesAdminCard desarrolloId={desarrolloId} />
+          </div>
+        ) : null}
       </div>
 
       {error ? (

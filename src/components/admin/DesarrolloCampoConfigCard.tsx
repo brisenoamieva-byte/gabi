@@ -33,6 +33,7 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
   const [descuentoStep, setDescuentoStep] = useState("5000");
   const [bancarios, setBancarios] = useState<DatosBancarios>(emptyBancarios);
   const [driveFolderId, setDriveFolderId] = useState("");
+  const [cuotaMantenimiento, setCuotaMantenimiento] = useState("1800");
   const [garantiaEnabled, setGarantiaEnabled] = useState(false);
   const [garantiaWeekly, setGarantiaWeekly] = useState(true);
   const [garantiaPlanLabel, setGarantiaPlanLabel] = useState("");
@@ -65,6 +66,9 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
         ...config.datosBancarios,
       });
       setDriveFolderId(config.driveFolderId ?? "");
+      setCuotaMantenimiento(
+        String(config.cuotaMantenimiento ?? (desarrolloId === "mision-la-gavia" ? 1800 : "")),
+      );
       setGarantiaEnabled(Boolean(config.garantiaContrato?.enabled));
       setGarantiaWeekly(config.garantiaContrato?.weeklyReportEnabled !== false);
       setGarantiaPlanLabel(config.garantiaContrato?.planLabel ?? "");
@@ -97,6 +101,9 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
         },
         datosBancarios: bancarios,
         driveFolderId: driveFolderId.trim() || null,
+        cuotaMantenimiento: cuotaMantenimiento.trim()
+          ? Number(cuotaMantenimiento) || null
+          : null,
         garantiaContrato: {
           enabled: garantiaEnabled,
           weeklyReportEnabled: garantiaWeekly,
@@ -266,8 +273,22 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
               <code className="rounded bg-slate-100 px-1 font-mono text-[11px]">
                 {genericDriveEnvKey(desarrolloId)}
               </code>
-              . La cuenta de servicio debe tener acceso a la carpeta.
+              . En La Gavia, las carpetas de cliente se crean dentro de{" "}
+              <span className="font-medium text-slate-500">3. Expediente Clientes</span>.
             </p>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block text-xs font-semibold text-slate-500">
+                Cuota mantenimiento mensual (Anexo D)
+              </span>
+              <input
+                type="number"
+                value={cuotaMantenimiento}
+                disabled={!canEdit}
+                onChange={(e) => setCuotaMantenimiento(e.target.value)}
+                className="input-cotizador"
+                placeholder="1800"
+              />
+            </label>
           </div>
 
           <div>

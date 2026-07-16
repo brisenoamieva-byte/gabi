@@ -107,6 +107,8 @@ export type OperacionComercialRecord = {
   enganche_cubierto_at?: string | null;
   enganche_cubierto_por?: string | null;
   persona_moral?: boolean;
+  cliente_kyc?: import("@/lib/comercial/expediente-oferta-types").ClienteKycDatos | null;
+  plan_pago?: import("@/lib/comercial/expediente-oferta-types").PlanPagoDatos | null;
   created_at: string;
   updated_at: string;
 };

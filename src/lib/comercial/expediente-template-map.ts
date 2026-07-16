@@ -14,6 +14,11 @@ const GAVIA_APARTADO_TEMPLATES: ExpedienteTemplateDef[] = [
     titulo: "Manifestación de datos generales (ANEXO A)",
   },
   {
+    codigo: "ANEXO_B_PAGO",
+    fileName: "anexo-b-pago.docx",
+    titulo: "Modalidad de pago (ANEXO B)",
+  },
+  {
     codigo: "ANEXO_D_MANT",
     fileName: "anexo-d-mantenimiento.docx",
     titulo: "Aceptación cuotas de mantenimiento (ANEXO D)",

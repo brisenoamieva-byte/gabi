@@ -29,6 +29,7 @@ import {
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import { canGenerateApartadoPack } from "@/lib/comercial/expediente-template-map";
 import { desarrollos, formatPrice } from "@/lib/data";
+import { ExpedienteOfertaDatosForm } from "@/components/admin/ExpedienteOfertaDatosForm";
 
 type ExpedienteDrawerProps = {
   operacionId: string;
@@ -567,6 +568,19 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
                   ) : null}
                 </div>
               </div>
+
+              {canGenerateApartadoPack(detail.operacion.desarrollo_id) ? (
+                <ExpedienteOfertaDatosForm
+                  operacionId={operacionId}
+                  initialKyc={detail.kyc}
+                  initialPlan={detail.planPago}
+                  precioVenta={detail.operacion.precio_venta}
+                  onSaved={() => {
+                    void loadDetail();
+                    onUpdated?.();
+                  }}
+                />
+              ) : null}
 
               <div className="rounded-2xl border border-gabi-forest/10 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

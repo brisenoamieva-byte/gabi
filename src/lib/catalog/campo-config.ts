@@ -15,6 +15,13 @@ export type DesarrolloCampoConfig = {
   datosBancarios?: Partial<DatosBancarios> | null;
   /** ID de carpeta raíz en Google Drive (alternativa a env GOOGLE_DRIVE_*_FOLDER_ID). */
   driveFolderId?: string | null;
+  /**
+   * Nombre de la carpeta hija de expedientes (ej. "3. Expediente Clientes").
+   * Si se omite, algunos desarrollos usan un default de producto.
+   */
+  driveExpedientesSubfolder?: string | null;
+  /** Cuota mensual aproximada de mantenimiento (Anexo D). */
+  cuotaMantenimiento?: number | null;
   /** Contrato comercial Garantía SLA + destinatarios del reporte semanal. */
   garantiaContrato?: GarantiaContratoConfig | null;
 };
@@ -148,6 +155,8 @@ export const normalizeCampoConfig = (raw: unknown): DesarrolloCampoConfig => {
         ? datosBancarios
         : undefined,
     driveFolderId: asString(root.driveFolderId) ?? null,
+    driveExpedientesSubfolder: asString(root.driveExpedientesSubfolder) ?? null,
+    cuotaMantenimiento: asNumber(root.cuotaMantenimiento) ?? null,
     garantiaContrato:
       garantiaContrato &&
       (garantiaContrato.enabled !== undefined ||
@@ -236,6 +245,14 @@ export const serializeCampoConfig = (config: DesarrolloCampoConfig): DesarrolloC
 
   if (normalized.driveFolderId) {
     out.driveFolderId = normalized.driveFolderId;
+  }
+
+  if (normalized.driveExpedientesSubfolder) {
+    out.driveExpedientesSubfolder = normalized.driveExpedientesSubfolder;
+  }
+
+  if (normalized.cuotaMantenimiento != null && Number.isFinite(normalized.cuotaMantenimiento)) {
+    out.cuotaMantenimiento = normalized.cuotaMantenimiento;
   }
 
   if (normalized.garantiaContrato) {

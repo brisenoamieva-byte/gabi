@@ -23,6 +23,8 @@
     "db:apply:065": "node scripts/apply-sql-migrations.mjs 065",
     "db:apply:066": "node scripts/apply-sql-migrations.mjs 066",
     "db:apply:067": "node scripts/apply-sql-migrations.mjs 067",
+    "db:apply:068": "node scripts/apply-sql-migrations.mjs 068",
+    "templates:gavia:build": "node scripts/build-gavia-oferta-templates.mjs",
     "listas:seed:gavia": "node scripts/seed-lista-precios.mjs mision-la-gavia --activate",
     "analyze:cdv-sembrado": "node scripts/analyze-cdv-sembrado-temporal.mjs",
     "generate:investti-sembrado-promedios": "node scripts/generate-investti-sembrado-promedios.mjs",
