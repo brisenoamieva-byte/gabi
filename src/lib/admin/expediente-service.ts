@@ -27,8 +27,8 @@ import { desarrollos } from "@/lib/data";
 import { existsSync } from "node:fs";
 import {
   getGoogleDriveOperacionFolderUrl,
-  isGoogleDriveConfiguredForDesarrollo,
-  assertGoogleDriveRequiredForDesarrollo,
+  isGoogleDriveConfiguredForDesarrolloAsync,
+  assertGoogleDriveRequiredForDesarrolloAsync,
 } from "@/lib/integrations/google-drive-config";
 import { uploadExpedienteToGoogleDrive } from "@/lib/integrations/google-drive-service";
 
@@ -261,7 +261,9 @@ export const getExpedienteDetail = async (
     driveFolderUrl: (operacion.drive_folder_id as string | null)
       ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
       : null,
-    driveConfigured: isGoogleDriveConfiguredForDesarrollo(operacion.desarrollo_id as string),
+    driveConfigured: await isGoogleDriveConfiguredForDesarrolloAsync(
+      operacion.desarrollo_id as string,
+    ),
   };
 };
 
@@ -332,7 +334,7 @@ export const uploadExpedienteDocumento = async (input: {
     throw new Error("Operación no encontrada.");
   }
 
-  assertGoogleDriveRequiredForDesarrollo(detail.operacion.desarrollo_id);
+  await assertGoogleDriveRequiredForDesarrolloAsync(detail.operacion.desarrollo_id);
 
   const codigo = input.checklistCodigo.trim().toUpperCase();
   const mimeType = assertMime(input.file);
@@ -356,7 +358,7 @@ export const uploadExpedienteDocumento = async (input: {
   let driveFolderId: string | null =
     (detail.operacion as { drive_folder_id?: string | null }).drive_folder_id ?? null;
 
-  if (isGoogleDriveConfiguredForDesarrollo(detail.operacion.desarrollo_id)) {
+  if (await isGoogleDriveConfiguredForDesarrolloAsync(detail.operacion.desarrollo_id)) {
     try {
       const driveResult = await uploadExpedienteToGoogleDrive({
         desarrolloId: detail.operacion.desarrollo_id,

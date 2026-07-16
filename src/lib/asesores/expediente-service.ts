@@ -5,8 +5,10 @@ import {
   getProspectoForAsesor,
 } from "@/lib/asesores/prospectos-service";
 import { getChecklistItem, getExpedienteChecklist } from "@/lib/comercial/expediente-checklist";
-import { isGoogleDriveConfiguredForDesarrollo } from "@/lib/integrations/google-drive-config";
-import { getGoogleDriveOperacionFolderUrl } from "@/lib/integrations/google-drive-config";
+import {
+  getGoogleDriveOperacionFolderUrl,
+  isGoogleDriveConfiguredForDesarrolloAsync,
+} from "@/lib/integrations/google-drive-config";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type AsesorExpedienteSummary = {
@@ -117,7 +119,7 @@ export const getExpedienteSummaryForProspecto = async (
     driveFolderUrl: operacion.drive_folder_id
       ? getGoogleDriveOperacionFolderUrl(operacion.drive_folder_id as string)
       : null,
-    driveConfigured: isGoogleDriveConfiguredForDesarrollo(desarrolloId),
+    driveConfigured: await isGoogleDriveConfiguredForDesarrolloAsync(desarrolloId),
     progresoApartadoCliente: {
       completados,
       requeridos: requeridos.length,

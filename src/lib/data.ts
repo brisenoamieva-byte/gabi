@@ -1654,20 +1654,39 @@ export const datosBancariosMisionLaGavia: DatosBancarios = {
   reportarA: 'cobranza@bbrhabitarea.com',
 }
 
-/** @deprecated Usar getDatosBancarios(desarrolloId) */
+/** @deprecated Usar getDatosBancarios(desarrolloId, campoConfig) */
 export const datosBancarios = datosBancariosLaVista
 
-export const getDatosBancarios = (desarrolloId?: string | null): DatosBancarios => {
+export const getDatosBancarios = (
+  desarrolloId?: string | null,
+  campoConfig?: {
+    datosBancarios?: Partial<DatosBancarios> | null
+  } | null,
+): DatosBancarios => {
+  let fallback: DatosBancarios = datosBancariosLaVista
   if (desarrolloId === 'pasaje-alamos') {
-    return datosBancariosPasajeAlamos
+    fallback = datosBancariosPasajeAlamos
+  } else if (desarrolloId === 'mision-la-gavia') {
+    fallback = datosBancariosMisionLaGavia
+  } else if (desarrolloId && INVESTTI_DESARROLLO_IDS.includes(desarrolloId)) {
+    fallback = datosBancariosPasajeAlamos
   }
-  if (desarrolloId === 'mision-la-gavia') {
-    return datosBancariosMisionLaGavia
+
+  const override = campoConfig?.datosBancarios
+  if (!override) {
+    return fallback
   }
-  if (desarrolloId && INVESTTI_DESARROLLO_IDS.includes(desarrolloId)) {
-    return datosBancariosPasajeAlamos
+
+  return {
+    razonSocial: override.razonSocial ?? fallback.razonSocial,
+    rfc: override.rfc ?? fallback.rfc,
+    banco: override.banco ?? fallback.banco,
+    sucursal: override.sucursal ?? fallback.sucursal,
+    cuenta: override.cuenta ?? fallback.cuenta,
+    clabe: override.clabe ?? fallback.clabe,
+    concepto: override.concepto ?? fallback.concepto,
+    reportarA: override.reportarA ?? fallback.reportarA,
   }
-  return datosBancariosLaVista
 }
 
 export const contactosClaveLaVista: ContactoClave[] = [

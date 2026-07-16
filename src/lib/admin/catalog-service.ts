@@ -2,6 +2,11 @@ import { getDefaultRecorridoContenido } from "@/lib/catalog/recorrido-content";
 import type { RecorridoContenido } from "@/lib/catalog/recorrido-content";
 import { assertCatalogId } from "@/lib/catalog/slug";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
+import {
+  normalizeCampoConfig,
+  serializeCampoConfig,
+  type DesarrolloCampoConfig,
+} from "@/lib/catalog/campo-config";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type ComercializadoraAdminRecord = {
@@ -603,4 +608,62 @@ export const updateRecorridoContenido = async (
   if (error) {
     throw new Error(error.message);
   }
+};
+
+export const getDesarrolloCampoConfig = async (
+  desarrolloId: string,
+): Promise<DesarrolloCampoConfig> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("campo_config")
+    .eq("id", desarrolloId)
+    .maybeSingle();
+
+  if (error) {
+    if (error.message.includes("campo_config")) {
+      throw new Error("Falta migración 064_desarrollo_campo_config.sql — aplícala en Supabase.");
+    }
+    throw new Error(error.message);
+  }
+  if (!data) {
+    throw new Error("Desarrollo no encontrado.");
+  }
+
+  return normalizeCampoConfig(data.campo_config);
+};
+
+export const updateDesarrolloCampoConfig = async (
+  desarrolloId: string,
+  config: DesarrolloCampoConfig,
+): Promise<DesarrolloCampoConfig> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const serialized = serializeCampoConfig(config);
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .update({
+      campo_config: serialized,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", desarrolloId)
+    .select("campo_config")
+    .single();
+
+  if (error) {
+    if (error.message.includes("campo_config")) {
+      throw new Error("Falta migración 064_desarrollo_campo_config.sql — aplícala en Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
+  return normalizeCampoConfig(data.campo_config);
 };

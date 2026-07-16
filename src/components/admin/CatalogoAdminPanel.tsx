@@ -376,8 +376,13 @@ export function CatalogoAdminPanel() {
         </p>
         <h2 className="mt-2 text-2xl font-black text-[#13315C]">Catálogo multi-tenant</h2>
         <p className="mt-3 max-w-3xl text-sm text-slate-500">
-          Alta de comercializadoras y desarrollos. Después de crear una comercializadora, configura
-          su contraseña de portal en Vercel y continúa con documentos, inventario y asesores.
+          Alta de comercializadoras y desarrollos. Después de crear, completa producto, sembrado y
+          la ficha en{" "}
+          <a href="/admin/desarrollos" className="font-bold text-[#13315C] underline">
+            Desarrollos
+          </a>{" "}
+          (bancarios, cotizador, Drive). Guía: <code className="text-xs">docs/add-desarrollo.md</code>
+          .
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2">

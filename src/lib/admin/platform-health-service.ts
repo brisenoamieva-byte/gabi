@@ -128,6 +128,17 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
         : "Falta columna prospectos.partner_id — aplica 063.",
   });
 
+  const campoConfigOk = await probeTable("desarrollos_catalog", "campo_config");
+  checks.push({
+    id: "064",
+    label: "Config de campo por desarrollo",
+    migrationFile: "064_desarrollo_campo_config.sql",
+    ok: campoConfigOk,
+    detail: campoConfigOk
+      ? "campo_config editable en admin (cotizador, bancarios, Drive)."
+      : "Falta columna desarrollos_catalog.campo_config — aplica 064.",
+  });
+
   const expedienteOk = await probeTable("expediente_documentos");
   checks.push({
     id: "022",

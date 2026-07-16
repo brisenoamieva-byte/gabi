@@ -26,6 +26,7 @@ import {
   type DesarrolloRecord,
   type PrototipoRecord,
 } from "@/lib/catalog/types";
+import { normalizeCampoConfig } from "@/lib/catalog/campo-config";
 
 const LA_VISTA_ID = "la-vista-residencial";
 
@@ -86,6 +87,7 @@ const toDesarrollo = (row: {
   crm: Desarrollo["crm"] | null;
   recorrido_etapas: string[] | null;
   recorrido_version: number | null;
+  campo_config?: unknown;
   activo?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -114,6 +116,7 @@ const toDesarrollo = (row: {
       : [...DEFAULT_RECORRIDO_ETAPAS],
     recorridoVersion: row.recorrido_version ?? 2,
     catalogActivo: row.activo ?? true,
+    campoConfig: normalizeCampoConfig(row.campo_config),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });

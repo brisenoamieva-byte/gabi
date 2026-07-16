@@ -53,6 +53,8 @@ export type CotizadorPanelProps = {
   clienteEmail?: string;
   clienteTelefono?: string;
   catalog?: CotizadorCatalog;
+  /** Override admin (desarrollos_catalog.campo_config). */
+  campoConfig?: import("@/lib/catalog/campo-config").DesarrolloCampoConfig | null;
   showSelectors?: boolean;
   showCopy?: boolean;
   showPdf?: boolean;
@@ -277,6 +279,7 @@ function GenericCotizadorPanel({
   clienteEmail,
   clienteTelefono,
   catalog,
+  campoConfig,
   showSelectors = false,
   showCopy = false,
   onClusterChange,
@@ -286,7 +289,7 @@ function GenericCotizadorPanel({
   onEsquemaChange,
 }: CotizadorPanelProps) {
   const [copied, setCopied] = useState(false);
-  const rules = getCotizadorRules(desarrolloId);
+  const rules = getCotizadorRules(desarrolloId, campoConfig);
   const clusters = catalog?.clusters ?? [];
 
   const cotizacion = useMemo(
@@ -300,8 +303,10 @@ function GenericCotizadorPanel({
         esquema,
         inventarioUnidades,
         catalog,
+        campoConfig,
       }),
     [
+      campoConfig,
       catalog,
       clusterId,
       descuento,

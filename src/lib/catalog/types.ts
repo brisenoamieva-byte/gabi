@@ -1,4 +1,5 @@
 import type { Cluster, Desarrollo, Prototipo } from "@/lib/data";
+import type { DesarrolloCampoConfig } from "@/lib/catalog/campo-config";
 
 export type ComercializadoraRecord = {
   id: string;
@@ -17,6 +18,8 @@ export type DesarrolloRecord = Desarrollo & {
   recorridoVersion: number;
   /** Operativo en catálogo (false = pausado, sin automatizaciones CRM). */
   catalogActivo?: boolean;
+  /** Config comercial editable en admin (cotizador, bancarios, Drive). */
+  campoConfig?: DesarrolloCampoConfig;
   createdAt?: string;
   updatedAt?: string;
 };

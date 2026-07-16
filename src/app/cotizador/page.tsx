@@ -24,6 +24,7 @@ import {
   isInvesttiCatalogDesarrollo,
 } from "@/lib/catalog/investti-desarrollos";
 import { getDatosBancarios, type Cluster, type Desarrollo, type Prototipo } from "@/lib/data";
+import type { DesarrolloCampoConfig } from "@/lib/catalog/campo-config";
 import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
 import {
   readCotizadorProspectoId,
@@ -104,6 +105,7 @@ function CotizadorPageContent() {
   const { authReady, user, desarrollo, portal } = useRequireAsesorSession();
   const [catalogStatus, setCatalogStatus] = useState<CatalogStatus>("idle");
   const [catalog, setCatalog] = useState<CotizadorCatalog>({ clusters: [], prototipos: [] });
+  const [campoConfig, setCampoConfig] = useState<DesarrolloCampoConfig | null>(null);
   const [clusterId, setClusterId] = useState("");
   const [prototipoId, setPrototipoId] = useState<string | undefined>();
   const [unidadId, setUnidadId] = useState<string | undefined>();
@@ -152,7 +154,7 @@ function CotizadorPageContent() {
           `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(desarrollo.id)}`,
         );
         const catalogData = (await catalogResponse.json()) as {
-          desarrollo?: Desarrollo;
+          desarrollo?: Desarrollo & { campoConfig?: DesarrolloCampoConfig };
           clusters?: Cluster[];
           prototipos?: Prototipo[];
         };
@@ -177,6 +179,7 @@ function CotizadorPageContent() {
         const defaultCluster = resolveDefaultCluster(recorrido, loadedCatalog);
 
         setCatalog(loadedCatalog);
+        setCampoConfig(selectedDevelopment.campoConfig ?? null);
         setClusterId(defaultCluster);
         setPrototipoId(resolveDefaultPrototipo(defaultCluster, recorrido, loadedCatalog));
         setDescuento(recorrido?.descuento ?? 0);
@@ -307,8 +310,8 @@ function CotizadorPageContent() {
   }, [catalogStatus, inventarioUnidades, searchParams, unidadId]);
 
   const activeDatosBancarios = useMemo(
-    () => getDatosBancarios(desarrollo?.id),
-    [desarrollo?.id],
+    () => getDatosBancarios(desarrollo?.id, campoConfig),
+    [campoConfig, desarrollo?.id],
   );
 
   const copyBankData = async () => {
@@ -509,6 +512,7 @@ function CotizadorPageContent() {
               asesorId={user?.id}
               prospectoId={prospectoId}
               catalog={catalogMemo}
+              campoConfig={campoConfig}
               showSelectors
               showCopy
               showPdf

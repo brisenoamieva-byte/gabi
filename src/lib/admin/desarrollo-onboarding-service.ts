@@ -1,9 +1,18 @@
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import {
+  hasCotizadorRulesConfig,
+  hasDatosBancariosConfig,
+  normalizeCampoConfig,
+} from "@/lib/catalog/campo-config";
+import {
   getSembradoSegmentsForDesarrollo,
   hasSegmentedReporteSemanal,
 } from "@/lib/catalog/desarrollos-registry";
+import {
+  getGoogleDriveRootFolderIdFromEnv,
+  hasGoogleDriveServiceAccount,
+} from "@/lib/integrations/google-drive-config";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type OnboardingCheck = {
@@ -11,6 +20,10 @@ export type OnboardingCheck = {
   label: string;
   done: boolean;
   detail: string;
+  /** Obligatorios para “listo para campo”. */
+  required?: boolean;
+  /** Ruta admin relativa para completar el paso. */
+  href?: string;
 };
 
 export type DesarrolloOnboardingResult = {
@@ -19,6 +32,8 @@ export type DesarrolloOnboardingResult = {
   checks: OnboardingCheck[];
   progressPct: number;
   readyForField: boolean;
+  /** Qué se arma en Gabi vs qué sigue requiriendo ingeniería. */
+  selfServeNote: string;
 };
 
 export async function getDesarrolloOnboarding(
@@ -42,12 +57,16 @@ export async function getDesarrolloOnboarding(
           label: "Backend",
           done: false,
           detail: "Supabase no configurado.",
+          required: true,
         },
       ],
       progressPct: 0,
       readyForField: false,
+      selfServeNote: "Configura Supabase para operar desde el admin de Gabi.",
     };
   }
+
+  const hubQs = `desarrollo=${encodeURIComponent(desarrolloId)}`;
 
   const [
     desarrolloRow,
@@ -57,10 +76,12 @@ export async function getDesarrolloOnboarding(
     campanasCount,
     documentosCount,
     objetivosCount,
+    asesoresCount,
+    playbookCount,
   ] = await Promise.all([
     supabase
       .from("desarrollos_catalog")
-      .select("id, recorrido_contenido")
+      .select("id, recorrido_contenido, campo_config")
       .eq("id", desarrolloId)
       .maybeSingle(),
     supabase
@@ -87,6 +108,15 @@ export async function getDesarrolloOnboarding(
       .select("id", { count: "exact", head: true })
       .eq("desarrollo_id", desarrolloId)
       .eq("anio", anio),
+    supabase
+      .from("asesores")
+      .select("id", { count: "exact", head: true })
+      .contains("desarrollos_ids", [desarrolloId])
+      .eq("activo", true),
+    supabase
+      .from("crm_playbook_configs")
+      .select("id", { count: "exact", head: true })
+      .eq("desarrollo_id", desarrolloId),
   ]);
 
   const recorrido = desarrolloRow.data?.recorrido_contenido as Record<string, unknown> | null;
@@ -96,6 +126,21 @@ export async function getDesarrolloOnboarding(
       Boolean(recorrido?.zona) ||
       (Array.isArray(recorrido?.etapas) && recorrido.etapas.length > 0));
 
+  const campoConfig = normalizeCampoConfig(desarrolloRow.data?.campo_config);
+  const hasBancarios =
+    hasDatosBancariosConfig(campoConfig) ||
+    desarrolloId === "mision-la-gavia" ||
+    desarrolloId === "pasaje-alamos" ||
+    desarrolloId === "la-vista-residencial";
+  const hasCotizador =
+    hasCotizadorRulesConfig(campoConfig) ||
+    desarrolloId === "mision-la-gavia" ||
+    desarrolloId === "pasaje-alamos" ||
+    desarrolloId === "la-vista-residencial";
+  const driveFromEnv = Boolean(getGoogleDriveRootFolderIdFromEnv(desarrolloId));
+  const hasDrive = Boolean(campoConfig.driveFolderId?.trim()) || driveFromEnv;
+  const driveReady = hasDrive && hasGoogleDriveServiceAccount();
+
   const needsObjetivos = hasSegmentedReporteSemanal(desarrolloId);
   const segmentCount = getSembradoSegmentsForDesarrollo(desarrolloId).length;
 
@@ -104,43 +149,100 @@ export async function getDesarrolloOnboarding(
       id: "catalogo",
       label: "Catálogo desarrollo",
       done: Boolean(desarrolloRow.data),
-      detail: desarrolloRow.data ? "Registrado en Supabase." : "Falta fila en desarrollos_catalog.",
+      detail: desarrolloRow.data ? "Registrado en Supabase." : "Crea el desarrollo en Catálogo.",
+      required: true,
+      href: "/admin/catalogo",
     },
     {
       id: "clusters",
-      label: "Clusters",
+      label: "Clusters / producto",
       done: (clustersCount.count ?? 0) > 0,
-      detail: `${clustersCount.count ?? 0} cluster(s)${segmentCount ? ` · ${segmentCount} segmento(s) comercial` : ""}.`,
+      detail: `${clustersCount.count ?? 0} cluster(s)${segmentCount ? ` · ${segmentCount} segmento(s)` : ""}.`,
+      required: true,
+      href: "/admin/catalogo",
     },
     {
       id: "prototipos",
       label: "Prototipos",
       done: (prototiposCount.count ?? 0) > 0,
       detail: `${prototiposCount.count ?? 0} prototipo(s).`,
+      required: true,
+      href: "/admin/catalogo",
     },
     {
       id: "sembrado",
       label: "Inventario sembrado",
       done: (unidadesCount.count ?? 0) > 0,
       detail: `${unidadesCount.count ?? 0} unidad(es) activas.`,
+      required: true,
+      href: "/admin/sembrado",
     },
     {
       id: "recorrido",
-      label: "Contenido recorrido",
+      label: "Guión / recorrido",
       done: hasRecorrido,
-      detail: hasRecorrido ? "Narrativa configurada." : "Recorrido vacío — configura en catálogo.",
+      detail: hasRecorrido ? "Narrativa configurada." : "Edita el guión comercial.",
+      href: "/admin/guion",
+    },
+    {
+      id: "bancarios",
+      label: "Datos bancarios",
+      done: hasBancarios,
+      detail: hasBancarios
+        ? "Listos para apartado / cotización."
+        : "Captura CLABE y razon social en este hub.",
+      href: `/admin/desarrollos?${hubQs}`,
+    },
+    {
+      id: "cotizador",
+      label: "Reglas cotizador",
+      done: hasCotizador,
+      detail: hasCotizador
+        ? "Enganche / apartado configurados."
+        : "Define % enganche y apartado (cotizador genérico).",
+      href: `/admin/desarrollos?${hubQs}`,
     },
     {
       id: "documentos",
       label: "Documentos PDF",
       done: (documentosCount.count ?? 0) > 0,
       detail: `${documentosCount.count ?? 0} documento(s).`,
+      href: "/admin/documentos",
     },
     {
       id: "campanas",
       label: "Campañas activas",
       done: (campanasCount.count ?? 0) > 0,
-      detail: `${campanasCount.count ?? 0} campaña(s) — recomendado para atribución digital.`,
+      detail: `${campanasCount.count ?? 0} campaña(s) — atribución digital.`,
+      href: "/admin/campanas",
+    },
+    {
+      id: "asesores",
+      label: "Asesores asignados",
+      done: (asesoresCount.count ?? 0) > 0,
+      detail: `${asesoresCount.count ?? 0} asesor(es) activos con acceso.`,
+      href: "/admin/asesores",
+    },
+    {
+      id: "playbook",
+      label: "Playbook CRM",
+      done: (playbookCount.count ?? 0) > 0,
+      detail:
+        (playbookCount.count ?? 0) > 0
+          ? "Configuración de cadencia/playbook."
+          : "Opcional — se puede copiar desde otro desarrollo.",
+      href: "/admin/crm-playbook",
+    },
+    {
+      id: "drive",
+      label: "Google Drive expedientes",
+      done: driveReady,
+      detail: driveReady
+        ? "Carpeta + cuenta de servicio OK."
+        : hasDrive
+          ? "Falta cuenta de servicio en Vercel."
+          : "Opcional — ID de carpeta en este hub o env GOOGLE_DRIVE_<ID>_FOLDER_ID.",
+      href: `/admin/desarrollos?${hubQs}`,
     },
     {
       id: "objetivos",
@@ -149,6 +251,7 @@ export async function getDesarrolloOnboarding(
       detail: needsObjetivos
         ? `${objetivosCount.count ?? 0} segmento(s) con meta.`
         : "Opcional para este desarrollo.",
+      href: `/admin/desarrollos?${hubQs}`,
     },
   ];
 
@@ -157,5 +260,13 @@ export async function getDesarrolloOnboarding(
   const progressPct = Math.round((doneCount / checks.length) * 100);
   const readyForField = requiredForField.every((id) => checks.find((c) => c.id === id)?.done);
 
-  return { desarrolloId, anio, checks, progressPct, readyForField };
+  return {
+    desarrolloId,
+    anio,
+    checks,
+    progressPct,
+    readyForField,
+    selfServeNote:
+      "Campo listo (recorrido, disponibilidad, cotizador genérico, leads) se arma 100% en Gabi. Simulador propio, plano interactivo y plantas tipológicas aún requieren ingeniería — como La Gavia.",
+  };
 }

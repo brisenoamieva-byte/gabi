@@ -4,8 +4,8 @@ import type { drive_v3 } from "googleapis";
 import {
   getGoogleDriveFileViewUrl,
   getGoogleDriveOperacionFolderUrl,
-  getGoogleDriveRootFolderId,
-  isGoogleDriveConfiguredForDesarrollo,
+  resolveGoogleDriveRootFolderId,
+  isGoogleDriveConfiguredForDesarrolloAsync,
 } from "@/lib/integrations/google-drive-config";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
@@ -56,7 +56,7 @@ export type GoogleDriveUploadResult = {
 export const testGoogleDriveConnection = async (
   desarrolloId = "pasaje-alamos",
 ): Promise<{ ok: true; folderName: string; folderId: string }> => {
-  const rootFolderId = getGoogleDriveRootFolderId(desarrolloId);
+  const rootFolderId = await resolveGoogleDriveRootFolderId(desarrolloId);
   if (!rootFolderId) {
     throw new Error(`No hay carpeta Drive configurada para ${desarrolloId}.`);
   }
@@ -100,7 +100,7 @@ export const ensureOperacionDriveFolder = async (input: {
   unidadNumero: string;
   existingFolderId?: string | null;
 }): Promise<{ folderId: string; folderUrl: string }> => {
-  if (!isGoogleDriveConfiguredForDesarrollo(input.desarrolloId)) {
+  if (!(await isGoogleDriveConfiguredForDesarrolloAsync(input.desarrolloId))) {
     throw new Error("Google Drive no configurado para este desarrollo.");
   }
 
@@ -111,7 +111,7 @@ export const ensureOperacionDriveFolder = async (input: {
     };
   }
 
-  const rootFolderId = getGoogleDriveRootFolderId(input.desarrolloId);
+  const rootFolderId = await resolveGoogleDriveRootFolderId(input.desarrolloId);
   if (!rootFolderId) {
     throw new Error("Carpeta raíz de Drive no configurada.");
   }

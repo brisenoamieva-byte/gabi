@@ -176,6 +176,7 @@ function RecorridoPageContent() {
   const [state, setState] = useState<RecorridoState>(initialRecorridoState);
   const [loaded, setLoaded] = useState(false);
   const [activeDesarrollo, setActiveDesarrollo] = useState<Desarrollo | null>(null);
+  const [campoConfig, setCampoConfig] = useState<import("@/lib/catalog/campo-config").DesarrolloCampoConfig | null>(null);
   const [activeContenido, setActiveContenido] = useState<RecorridoContenido>(defaultContenido);
   const [masterPlanPdf, setMasterPlanPdf] = useState<{ url: string; nombre: string } | null>(
     null,
@@ -684,7 +685,9 @@ function RecorridoPageContent() {
           `/api/catalog/recorrido?desarrolloId=${encodeURIComponent(desarrolloId)}`,
         );
         const data = (await response.json()) as {
-          desarrollo?: Desarrollo;
+          desarrollo?: Desarrollo & {
+            campoConfig?: import("@/lib/catalog/campo-config").DesarrolloCampoConfig;
+          };
           clusters?: Cluster[];
           prototipos?: Prototipo[];
           recorridoEtapas?: string[];
@@ -694,8 +697,10 @@ function RecorridoPageContent() {
 
         if (data.desarrollo) {
           setActiveDesarrollo(enrichDesarrolloFromStatic(data.desarrollo));
+          setCampoConfig(data.desarrollo.campoConfig ?? null);
         } else {
           setActiveDesarrollo(desarrollos.find((item) => item.id === desarrolloId) ?? null);
+          setCampoConfig(null);
         }
 
         if (data.recorridoContenido) {
@@ -1099,8 +1104,8 @@ function RecorridoPageContent() {
   };
 
   const activeDatosBancarios = useMemo(
-    () => getDatosBancarios(activeDesarrollo?.id),
-    [activeDesarrollo?.id],
+    () => getDatosBancarios(activeDesarrollo?.id, campoConfig),
+    [activeDesarrollo?.id, campoConfig],
   );
 
   const copyBankData = async () => {
@@ -2564,6 +2569,7 @@ function RecorridoPageContent() {
             asesorNombre={user?.nombre}
             asesorId={user?.id}
             catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
+            campoConfig={campoConfig}
             showCopy
             showPdf
             onDescuentoChange={(value) => patchState({ descuento: value })}

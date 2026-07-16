@@ -9,7 +9,13 @@ import {
   type Prototipo,
 } from "@/lib/data";
 import { roundMoney } from "@/lib/format/money";
-import { getRegistryCotizadorRules } from "@/lib/catalog/desarrollos-registry";
+import {
+  getRegistryCotizadorRules,
+} from "@/lib/catalog/desarrollos-registry";
+import {
+  resolveCotizadorRulesFromCampo,
+  type DesarrolloCampoConfig,
+} from "@/lib/catalog/campo-config";
 
 export type CotizadorCatalog = {
   clusters: Cluster[];
@@ -43,6 +49,8 @@ export type CotizacionInput = {
   inventarioUnidades?: DisponibilidadUnidad[];
   /** Catálogo del desarrollo (Supabase o fallback). */
   catalog?: CotizadorCatalog;
+  /** Override desde desarrollos_catalog.campo_config. */
+  campoConfig?: DesarrolloCampoConfig | null;
 };
 
 export type CotizacionResult = {
@@ -60,8 +68,14 @@ export type CotizacionResult = {
   entrega?: string;
 };
 
-export const getCotizadorRules = (desarrolloId: string): CotizadorRules =>
-  getRegistryCotizadorRules(desarrolloId) ?? defaultCotizadorRules;
+export const getCotizadorRules = (
+  desarrolloId: string,
+  campoConfig?: DesarrolloCampoConfig | null,
+): CotizadorRules => {
+  const registryFallback =
+    getRegistryCotizadorRules(desarrolloId) ?? defaultCotizadorRules;
+  return resolveCotizadorRulesFromCampo(campoConfig, registryFallback);
+};
 
 const findCluster = (clusterId: string, catalog?: CotizadorCatalog) =>
   catalog?.clusters.find((item) => item.id === clusterId) ??
@@ -109,7 +123,7 @@ export const computeCotizacion = (input: CotizacionInput): CotizacionResult | nu
     return null;
   }
 
-  const rules = getCotizadorRules(input.desarrolloId);
+  const rules = getCotizadorRules(input.desarrolloId, input.campoConfig);
   const descuento = roundMoney(Math.min(Math.max(0, input.descuento), bonoMaximo));
   const precioFinal = roundMoney(Math.max(0, precioLista - descuento));
   const enganche = roundMoney(precioFinal * rules.enganchePct);
@@ -179,8 +193,9 @@ export const buildCotizacionSummary = (
   desarrolloNombre: string,
   clienteNombre?: string,
   desarrolloId = "la-vista-residencial",
+  campoConfig?: DesarrolloCampoConfig | null,
 ) => {
-  const rules = getCotizadorRules(desarrolloId);
+  const rules = getCotizadorRules(desarrolloId, campoConfig);
   const lines = [
     `Cotización gabi · ${desarrolloNombre}`,
     clienteNombre ? `Cliente: ${clienteNombre}` : null,

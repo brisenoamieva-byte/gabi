@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CampanasAdminPanel } from "@/components/admin/CampanasAdminPanel";
+import { DesarrolloCampoConfigCard } from "@/components/admin/DesarrolloCampoConfigCard";
 import { DesarrolloHubCard } from "@/components/admin/DesarrolloHubCard";
 import { DesarrolloOnboardingCard } from "@/components/admin/DesarrolloOnboardingCard";
 import { DesarrolloOperativoCard } from "@/components/admin/DesarrolloOperativoCard";
@@ -450,6 +451,14 @@ export function DesarrollosHubPanel({
         </div>
 
         <DesarrolloOnboardingCard desarrolloId={selectedDesarrollo.id} />
+
+        <DesarrolloCampoConfigCard
+          desarrolloId={selectedDesarrollo.id}
+          canEdit={isSuperAdmin}
+          onSaved={() => {
+            void loadStats(selectedDesarrollo.id);
+          }}
+        />
 
         <DesarrolloOperativoCard
           desarrolloId={selectedDesarrollo.id}

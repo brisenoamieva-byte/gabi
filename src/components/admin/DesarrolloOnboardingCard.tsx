@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Circle, Loader2, Rocket } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, Loader2, Rocket } from "lucide-react";
 import type { DesarrolloOnboardingResult } from "@/lib/admin/desarrollo-onboarding-service";
 
 type Props = {
@@ -55,16 +56,19 @@ export function DesarrolloOnboardingCard({ desarrolloId }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
-            Integración
+            Integración sin Cursor
           </p>
           <h3 className="mt-1 flex items-center gap-2 text-lg font-black text-gabi-forest">
             <Rocket className="h-5 w-5" />
             Checklist operativo
           </h3>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
             {onboarding.readyForField
-              ? "Listo para recorrido y cotizador en campo."
-              : "Completa los pasos obligatorios antes de visitas comerciales."}
+              ? "Listo para recorrido, disponibilidad y cotizador genérico en campo."
+              : "Completa los pasos obligatorios (★) antes de visitas comerciales."}
+          </p>
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-slate-400">
+            {onboarding.selfServeNote}
           </p>
         </div>
         <div className="text-right">
@@ -97,9 +101,23 @@ export function DesarrolloOnboardingCard({ desarrolloId }: Props) {
             ) : (
               <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
             )}
-            <div>
-              <p className="font-bold text-slate-800">{check.label}</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-slate-800">
+                {check.label}
+                {check.required ? (
+                  <span className="ml-1 text-[10px] font-black text-amber-600">★</span>
+                ) : null}
+              </p>
               <p className="text-xs text-slate-500">{check.detail}</p>
+              {check.href && !check.done ? (
+                <Link
+                  href={check.href}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-gabi-forest hover:underline"
+                >
+                  Completar
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              ) : null}
             </div>
           </li>
         ))}
