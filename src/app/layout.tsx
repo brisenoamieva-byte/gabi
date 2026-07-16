@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { DevServiceWorkerCleanup } from "@/components/DevServiceWorkerCleanup";
 import { OfflineStatus } from "@/components/OfflineStatus";
+import { ObservabilityInit } from "@/components/ObservabilityInit";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -47,6 +48,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <ObservabilityInit />
         {process.env.NODE_ENV === "development" ? <DevServiceWorkerCleanup /> : null}
         <OfflineStatus />
       </body>
