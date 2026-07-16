@@ -110,6 +110,9 @@ export function OperacionDetailDrawer({
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [prospectoEtapaPostCancel, setProspectoEtapaPostCancel] = useState<"cita" | "cancelado">(
+    "cancelado",
+  );
   const [error, setError] = useState("");
 
   const loadDetail = useCallback(async () => {
@@ -238,7 +241,7 @@ export function OperacionDetailDrawer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           motivo: motivoCancelacion.trim() || undefined,
-          prospectoEtapa: "cita",
+          prospectoEtapa: prospectoEtapaPostCancel,
         }),
       });
 
@@ -270,6 +273,20 @@ export function OperacionDetailDrawer({
             </h3>
             {detail ? (
               <p className="mt-1 text-sm text-slate-500">{detail.operacion.cliente_nombre}</p>
+            ) : null}
+            {detail?.operacion.cancelada ? (
+              <p className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
+                Cancelada ·{" "}
+                {(detail.operacion.cancelada_en_etapa ??
+                  (detail.operacion.estatus_sembrado?.startsWith("Vendid")
+                    ? "venta"
+                    : "apartado")) === "venta"
+                  ? "en venta"
+                  : "en apartado"}
+                {detail.operacion.cancelada_at
+                  ? ` · ${detail.operacion.cancelada_at.slice(0, 10)}`
+                  : ""}
+              </p>
             ) : null}
           </div>
           <button
@@ -488,8 +505,8 @@ export function OperacionDetailDrawer({
                   ) : (
                     <div className="space-y-3">
                       <p className="text-sm font-semibold text-red-800">
-                        La unidad volverá a disponible. El historial del apartado se conserva para
-                        reportes (cliente, fechas, cobranza, medio).
+                        La unidad volverá a disponible. El historial del apartado queda registrado
+                        en el prospecto (Apartó y canceló) para CRM y reportes.
                       </p>
                       <Field label="Motivo (opcional)">
                         <textarea
@@ -499,12 +516,32 @@ export function OperacionDetailDrawer({
                           placeholder="Ej. cliente desistió, cambió de unidad, no pasó crédito…"
                         />
                       </Field>
+                      <Field label="Prospecto en CRM">
+                        <select
+                          value={prospectoEtapaPostCancel}
+                          onChange={(event) =>
+                            setProspectoEtapaPostCancel(
+                              event.target.value === "cita" ? "cita" : "cancelado",
+                            )
+                          }
+                          className={inputClass}
+                        >
+                          <option value="cancelado">Marcar como Cancelado</option>
+                          <option value="cita">Reactivar seguimiento (Cita)</option>
+                        </select>
+                      </Field>
+                      <p className="text-xs text-red-700/80">
+                        {prospectoEtapaPostCancel === "cancelado"
+                          ? "Queda en etapa Cancelado (estadística de apartado/venta cancelada; distinto de Descartado)."
+                          : "Volverá a Cita para re-seguimiento; el historial del apartado se conserva."}
+                      </p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             setConfirmCancel(false);
                             setMotivoCancelacion("");
+                            setProspectoEtapaPostCancel("cancelado");
                           }}
                           className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600"
                         >

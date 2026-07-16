@@ -22,6 +22,10 @@ import {
 } from "@/lib/comercial/cadencia-service";
 import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-form-options";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
+import {
+  calificacionFromMotivoDescarte,
+  validateMotivoDescarteForPerdido,
+} from "@/lib/comercial/motivo-descarte";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
@@ -109,6 +113,8 @@ export type AsesorUpdateProspectoInput = {
   etapa?: string;
   notas?: string;
   assignedAsesorId?: string | null;
+  motivoDescarte?: string | null;
+  motivoDescarteDetalle?: string | null;
 };
 
 export const checkProspectoTelefonoForAsesor = async (
@@ -300,6 +306,31 @@ export const updateProspectoForAsesor = async (
   if (input.notas !== undefined) {
     patch.notas = input.notas.trim() || null;
   }
+
+  const nextEtapa = (input.etapa ?? existing.etapa) as string;
+  if (nextEtapa === "perdido") {
+    const motivoValidation = validateMotivoDescarteForPerdido({
+      motivoDescarte:
+        input.motivoDescarte !== undefined
+          ? input.motivoDescarte
+          : existing.motivo_descarte,
+      motivoDescarteDetalle:
+        input.motivoDescarteDetalle !== undefined
+          ? input.motivoDescarteDetalle
+          : existing.motivo_descarte_detalle,
+    });
+    if (!motivoValidation.ok) {
+      throw new Error(motivoValidation.error);
+    }
+    patch.motivo_descarte = motivoValidation.motivoDescarte;
+    patch.motivo_descarte_detalle = motivoValidation.motivoDescarteDetalle;
+    patch.calificacion = calificacionFromMotivoDescarte(motivoValidation.motivoDescarte);
+    patch.es_spam = motivoValidation.motivoDescarte === "datos_falsos";
+  } else if (input.etapa !== undefined && existing.etapa === "perdido") {
+    patch.motivo_descarte = null;
+    patch.motivo_descarte_detalle = null;
+  }
+
   if (input.assignedAsesorId !== undefined) {
     const canReassign = await isLeadershipAsesorId(asesorId);
     if (!canReassign) {
@@ -321,7 +352,7 @@ export const updateProspectoForAsesor = async (
   }
 
   if (input.etapa !== undefined && input.etapa !== existing.etapa) {
-    if (input.etapa === "perdido") {
+    if (input.etapa === "perdido" || input.etapa === "cancelado") {
       await pauseCadenciaForProspecto(prospectoId, `Etapa cambiada a ${input.etapa}`);
     } else if (existing.etapa === "nuevo" && input.etapa !== "nuevo") {
       await pauseCadenciaForProspecto(prospectoId, `Prospecto avanzó a ${input.etapa}`);

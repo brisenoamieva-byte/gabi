@@ -58,6 +58,7 @@ import {
   resolveAvailabilityConfig,
 } from "@/lib/availability";
 import {
+  getPrecioDesdeCluster,
   getPrecioDesdePrototipo,
   getUnidadesPorPrototipo,
   prototipoMuestraPrecioDesde,
@@ -95,7 +96,6 @@ import {
   cierreItems,
   initialRecorridoState,
   medioContactoOptions,
-  migrateLegacyRecorridoEtapa,
   RECORRIDO_VERSION,
 } from "@/lib/recorrido/constants";
 import {
@@ -392,17 +392,37 @@ function RecorridoPageContent() {
     getClusterInventario,
   ]);
 
+  const clusterPrecioDesdeLive = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const cluster of activeClusters) {
+      const prototiposCluster = activePrototipos.filter(
+        (prototipo) => prototipo.clusterId === cluster.id,
+      );
+      map.set(
+        cluster.id,
+        getPrecioDesdeCluster(
+          cluster.precioDesde,
+          prototiposCluster,
+          getClusterInventario(cluster.id),
+        ),
+      );
+    }
+    return map;
+  }, [activeClusters, activePrototipos, getClusterInventario]);
+
   const filteredClusters = useMemo(
     () =>
       activeClusters.filter((cluster) => {
         const productMatches = filteredPrototiposByCluster.get(cluster.id)?.length;
+        const precioDesde =
+          clusterPrecioDesdeLive.get(cluster.id) ?? cluster.precioDesde;
         const terrainMatches =
           (selectedProductTypes.includes("todos") ||
             selectedProductTypes.includes("terreno")) &&
           selectedRooms.includes("cualquiera") &&
           hasTerrenos(cluster) &&
-          cluster.precioDesde >= state.precioMinimo &&
-          cluster.precioDesde <= state.precioMaximo;
+          precioDesde >= state.precioMinimo &&
+          precioDesde <= state.precioMaximo;
 
         return Boolean(productMatches || terrainMatches);
       }),
@@ -413,6 +433,7 @@ function RecorridoPageContent() {
       selectedProductTypes,
       selectedRooms,
       activeClusters,
+      clusterPrecioDesdeLive,
     ],
   );
 
@@ -564,9 +585,6 @@ function RecorridoPageContent() {
   const selectedAvailabilityRecommendation = recommendedAvailability.find(
     (item) => item.unit.id === selectedAvailability?.id,
   );
-  const precioFinal = selectedPrototipo
-    ? selectedPrototipo.precioBase - state.descuento
-    : 0;
 
   const pasajeSimuladorResult = useMemo(() => {
     if (getCotizadorKind(activeDesarrollo?.id ?? "") !== "pasaje") return null;
@@ -643,6 +661,21 @@ function RecorridoPageContent() {
     state.misionLaGaviaEsquema,
     state.unidadId,
   ]);
+
+  // Precio de solicitud/cierre: lista de la unidad (o mínimo del prototipo), no precioBase de catálogo.
+  const precioListaReferencia =
+    (selectedAvailability?.precio && selectedAvailability.precio > 0
+      ? selectedAvailability.precio
+      : undefined) ??
+    (precioDesdePrototipoSeleccionado > 0
+      ? precioDesdePrototipoSeleccionado
+      : undefined) ??
+    selectedPrototipo?.precioBase ??
+    0;
+  const precioFinal =
+    pasajeSimuladorResult?.precioTotal ??
+    misionLaGaviaSimuladorResult?.precioTotal ??
+    Math.max(0, precioListaReferencia - (state.descuento || 0));
 
   const tags = useMemo(() => {
     const list: { label: string; className: string }[] = [];
@@ -763,7 +796,9 @@ function RecorridoPageContent() {
         setState({
           ...initialRecorridoState,
           ...parsed,
-          etapa: migrateLegacyRecorridoEtapa(parsed.etapa ?? 0, parsed),
+          // Nuevo recorrido siempre inicia en Confianza (etapa 0).
+          // La etapa guardada no se reanuda; deep links a unidad van a Producto aparte.
+          etapa: 0,
           recorridoVersion: RECORRIDO_VERSION,
           productoTipo: normalizeProductoTipo(parsed.productoTipo),
           recamarasFiltro: normalizeRecamarasFiltro(parsed.recamarasFiltro),
@@ -790,19 +825,25 @@ function RecorridoPageContent() {
 
     const clusterFromUrl = searchParams.get("clusterId")?.trim() || undefined;
     const prototipoFromUrl = searchParams.get("prototipoId")?.trim() || undefined;
+    const productoEtapaIndex = Math.max(
+      0,
+      recorridoEtapas.findIndex((label) => label.toLowerCase().includes("producto")),
+    );
+    const etapaProducto = productoEtapaIndex >= 0 ? productoEtapaIndex : 3;
 
     setState((current) => ({
       ...current,
       ...(clusterFromUrl ? { clusterId: clusterFromUrl } : {}),
       ...(prototipoFromUrl ? { prototipoId: prototipoFromUrl } : {}),
       unidadId: unidadFromUrl,
+      etapa: etapaProducto,
     }));
     setSelectedAvailabilityId(unidadFromUrl);
     if (clusterFromUrl) {
       setAvailabilityClusterId(clusterFromUrl);
     }
     setShowAvailability(true);
-  }, [loaded, searchParams]);
+  }, [loaded, searchParams, recorridoEtapas]);
 
   useEffect(() => {
     if (loaded) {
@@ -1943,7 +1984,11 @@ function RecorridoPageContent() {
                                 {cluster.descripcion}
                               </p>
                               <p className="mt-4 text-lg font-black text-[#6CC24A]">
-                                Desde {formatRecorridoMoney(cluster.precioDesde)}
+                                Desde{" "}
+                                {formatRecorridoMoney(
+                                  clusterPrecioDesdeLive.get(cluster.id) ??
+                                    cluster.precioDesde,
+                                )}
                               </p>
                               <div className="mt-2 min-h-[4.75rem] rounded-2xl bg-slate-50 p-3">
                                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">

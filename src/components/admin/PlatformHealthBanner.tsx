@@ -71,7 +71,9 @@ export function PlatformHealthBanner() {
   }
 
   const pending = health.checks.filter((item) => !item.ok);
-  const pendingCompliance = pending.filter((item) => item.id === "042" || item.id === "043");
+  const pendingRecent = pending.filter((item) =>
+    ["065", "066", "067", "068", "042", "043"].includes(item.id),
+  );
   const showParseurWarning = !health.parseurSecretConfigured;
   const showQaWarning = !health.qaWebhookSecretConfigured;
   const showCronWarning = !health.cronSecretConfigured;
@@ -154,8 +156,8 @@ export function PlatformHealthBanner() {
               {pending.length ? (
                 <>
                   Algunas funciones pueden fallar hasta aplicar el SQL en Supabase.
-                  {pendingCompliance.length
-                    ? " Digest CRM / Salud CRM requieren migraciones 042+043."
+                  {pendingRecent.length
+                    ? ` Prioridad: ${pendingRecent.map((item) => item.id).join(", ")}.`
                     : null}
                   {showParseurWarning ? " En producción configura PARSEUR_WEBHOOK_SECRET." : null}
                   {showQaWarning ? " Para ADRYO configura QA_WEBHOOK_SECRET." : null}
@@ -217,16 +219,19 @@ export function PlatformHealthBanner() {
               </span>
             </li>
           ))}
-          {pendingCompliance.length > 0 ? (
-            <li className="pt-2">
-              <button
-                type="button"
-                onClick={() => void copyMigrationSql("042-043")}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-800/30 bg-white px-3 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100/50"
-              >
-                Copiar SQL 042 + 043 (digest CRM)
-              </button>
-              <p className="mt-1 text-[10px] opacity-80">
+          {pendingRecent.length > 0 ? (
+            <li className="flex flex-wrap gap-2 pt-2">
+              {pendingRecent.slice(0, 4).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => void copyMigrationSql(item.id)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-amber-800/30 bg-white px-3 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100/50"
+                >
+                  Copiar SQL {item.id}
+                </button>
+              ))}
+              <p className="basis-full text-[10px] opacity-80">
                 Supabase → SQL Editor → Run. Luego recarga este panel.
               </p>
             </li>

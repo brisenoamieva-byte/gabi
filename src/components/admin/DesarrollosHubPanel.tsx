@@ -40,7 +40,12 @@ type HubPermissions = {
   metricas: boolean;
 };
 
-type HubTab = "desarrollos" | "marcas" | "campanas";
+type HubTab = "desarrollos" | "marcas";
+
+const HUB_TABS: Array<{ id: HubTab; label: string }> = [
+  { id: "desarrollos", label: "Desarrollos" },
+  { id: "marcas", label: "Marcas" },
+];
 
 type DesarrollosHubPanelProps = {
   desarrollos: DesarrolloRecord[];
@@ -99,12 +104,6 @@ const topEtapas = (porEtapa: Record<string, number>, limit = 3) =>
     .filter(([, count]) => count > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit);
-
-const HUB_TABS: Array<{ id: HubTab; label: string }> = [
-  { id: "desarrollos", label: "Desarrollos" },
-  { id: "marcas", label: "Marcas" },
-  { id: "campanas", label: "Grupos de campañas" },
-];
 
 export function DesarrollosHubPanel({
   desarrollos,
@@ -740,17 +739,7 @@ export function DesarrollosHubPanel({
         </div>
       ) : null}
 
-      {hubTab === "campanas" && permissions.leads ? (
-        <div className="rounded-2xl border border-gabi-forest/10 bg-white p-5 shadow-sm md:p-6">
-          <CampanasAdminPanel desarrollos={desarrollosState} scopeLabel={scopeLabel} />
-        </div>
-      ) : null}
-
-      {hubTab === "campanas" && !permissions.leads ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
-          No tienes permiso para administrar campañas.
-        </div>
-      ) : null}
+      {/* Campañas: usar /admin/campanas o el panel embebido en la ficha del desarrollo */}
     </div>
   );
 }

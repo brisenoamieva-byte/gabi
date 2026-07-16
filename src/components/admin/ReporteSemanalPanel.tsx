@@ -132,7 +132,11 @@ function OperacionesTable({
                 <td className="px-4 py-2">{row.asesor ?? "—"}</td>
                 <td className="px-4 py-2 whitespace-nowrap">{row.fecha ?? "—"}</td>
                 <td className="px-4 py-2">{row.medio ?? "—"}</td>
-                <td className="px-4 py-2">{row.estatus}</td>
+                <td className="px-4 py-2">
+                  {row.canceladaEnEtapa
+                    ? `${row.estatus} · ${row.canceladaEnEtapa === "venta" ? "Canceló en venta" : "Canceló en apartado"}`
+                    : row.estatus}
+                </td>
               </tr>
             ))}
           </tbody>

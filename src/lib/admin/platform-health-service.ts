@@ -139,6 +139,129 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
       : "Falta columna desarrollos_catalog.campo_config — aplica 064.",
   });
 
+  const listasPreciosOk = await probeTable("listas_precios");
+  checks.push({
+    id: "065",
+    label: "Listas de precios versionadas",
+    migrationFile: "065_listas_precios.sql",
+    ok: listasPreciosOk,
+    detail: listasPreciosOk
+      ? "Tablas listas_precios OK."
+      : "Falta listas_precios — aplica 065.",
+  });
+
+  const origenCaptacionOk = await probeColumn("prospectos", "origen_captacion", {
+    desarrollo_id: desarrolloId,
+    nombre: "__gabi_health_probe__",
+    etapa: "nuevo",
+  });
+  checks.push({
+    id: "066",
+    label: "Captación / perfil sembrado",
+    migrationFile: "066_sembrado_captacion_perfil.sql",
+    ok: origenCaptacionOk,
+    detail: origenCaptacionOk
+      ? "origen_captacion y perfil en prospectos OK."
+      : "Falta origen_captacion — aplica 066.",
+  });
+
+  const partnersConvenioOk = await probeTable("partners", "convenio_storage_path");
+  checks.push({
+    id: "067",
+    label: "Convenio digital (alianzas)",
+    migrationFile: "067_partners_convenio.sql",
+    ok: Boolean(partnersOk && partnersConvenioOk),
+    detail: !partnersOk
+      ? "Requiere 063 (partners) primero."
+      : partnersConvenioOk
+        ? "Columnas de convenio en partners OK."
+        : "Falta convenio_storage_path — aplica 067.",
+  });
+
+  const ofertaDatosOk = await probeTable("operaciones_comerciales", "cliente_kyc");
+  checks.push({
+    id: "068",
+    label: "Oferta / KYC en operaciones",
+    migrationFile: "068_expediente_oferta_datos.sql",
+    ok: ofertaDatosOk,
+    detail: ofertaDatosOk
+      ? "cliente_kyc y plan_pago en operaciones OK."
+      : "Falta cliente_kyc/plan_pago — aplica 068.",
+  });
+
+  // 069: etapa cancelado — probe insert+delete (valida check constraint).
+  let etapaCanceladoOk = false;
+  {
+    const supabase = createSupabaseServiceClient();
+    if (supabase) {
+      const probeNombre = `__gabi_probe_etapa_cancelado__`;
+      const { data: probeRow, error: probeErr } = await supabase
+        .from("prospectos")
+        .insert({
+          desarrollo_id: "mision-la-gavia",
+          nombre: probeNombre,
+          etapa: "cancelado",
+          activo: false,
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (!probeErr && probeRow?.id) {
+        etapaCanceladoOk = true;
+        await supabase.from("prospectos").delete().eq("id", probeRow.id);
+      } else if (probeErr?.code === "23514") {
+        etapaCanceladoOk = false;
+      } else {
+        // Desarrollo inexistente u otro error: fallback por filas pendientes de migrar.
+        const { count } = await supabase
+          .from("prospectos")
+          .select("id", { count: "exact", head: true })
+          .eq("etapa", "perdido")
+          .or(
+            "calificacion.eq.Descartado / Canceló apartado,notas.ilike.%[Apartó y canceló%",
+          );
+        const { count: cancelados } = await supabase
+          .from("prospectos")
+          .select("id", { count: "exact", head: true })
+          .eq("etapa", "cancelado");
+        etapaCanceladoOk = (count ?? 0) === 0 && (cancelados ?? 0) >= 0 && !probeErr?.message?.includes("schema");
+        if ((count ?? 0) > 0) etapaCanceladoOk = false;
+        if ((cancelados ?? 0) > 0) etapaCanceladoOk = true;
+      }
+    }
+  }
+  checks.push({
+    id: "069",
+    label: "Etapa CRM Cancelado",
+    migrationFile: "069_etapa_cancelado.sql",
+    ok: etapaCanceladoOk,
+    detail: etapaCanceladoOk
+      ? "Etapa cancelado disponible (distinta de Descartado)."
+      : "Falta etapa cancelado — aplica 069.",
+  });
+
+  const canceladaEnEtapaOk = await probeTable("operaciones_comerciales", "cancelada_en_etapa");
+  checks.push({
+    id: "070",
+    label: "Cancelación apartado vs venta",
+    migrationFile: "070_cancelada_en_etapa.sql",
+    ok: canceladaEnEtapaOk,
+    detail: canceladaEnEtapaOk
+      ? "cancelada_en_etapa en operaciones OK."
+      : "Falta cancelada_en_etapa — aplica 070.",
+  });
+
+  const motivoDescarteOk = await probeTable("prospectos", "motivo_descarte");
+  checks.push({
+    id: "071",
+    label: "Motivo de descarte CRM",
+    migrationFile: "071_motivo_descarte.sql",
+    ok: motivoDescarteOk,
+    detail: motivoDescarteOk
+      ? "motivo_descarte en prospectos OK."
+      : "Falta motivo_descarte — aplica 071.",
+  });
+
   const expedienteOk = await probeTable("expediente_documentos");
   checks.push({
     id: "022",
@@ -245,7 +368,7 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
     migrationFile: "038_crm_playbook.sql",
     ok: playbookOk,
     detail: playbookOk
-      ? "Siguiente paso y bloqueo de etapa en desarrollos piloto."
+      ? "Siguiente paso y bloqueo de etapa en playbook CRM."
       : "Falta crm_playbook_configs — aplica 038.",
   });
 

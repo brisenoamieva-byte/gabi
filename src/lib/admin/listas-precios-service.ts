@@ -574,6 +574,41 @@ export const getPrecioListaActivaForUnidad = async (
   return getPrecioListaForUnidad(activa.id, unidadId);
 };
 
+/** Mapa unidad_id → precio de la lista activa (una query). Para overlay en sembrado/campo. */
+export const getPreciosMapListaActiva = async (
+  desarrolloId: string,
+): Promise<{ lista: ListaPreciosRecord; precios: Map<string, number> } | null> => {
+  const activa = await getListaPreciosActiva(desarrolloId);
+  if (!activa) {
+    return null;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("lista_precios_unidades")
+    .select("unidad_id, precio_lista")
+    .eq("lista_id", activa.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const precios = new Map<string, number>();
+  for (const row of data ?? []) {
+    const unidadId = row.unidad_id as string;
+    const precio = Number(row.precio_lista);
+    if (unidadId && Number.isFinite(precio) && precio >= 0) {
+      precios.set(unidadId, precio);
+    }
+  }
+
+  return { lista: activa, precios };
+};
+
 export const resolveListaForApartado = async (
   desarrolloId: string,
   listaPreciosId?: string | null,

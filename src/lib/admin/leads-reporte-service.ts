@@ -3,6 +3,7 @@ import type { AdminProfile } from "@/lib/admin/types";
 import { calificacionLabel } from "@/lib/comercial/xperience-leads";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { prospectoEtapaLabel, normalizeProspectoEtapaValue, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
+import { motivoDescarteLabel } from "@/lib/comercial/motivo-descarte";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { fetchLeadsQaResumen, type LeadsQaResumen } from "@/lib/admin/qa-satisfaccion-service";
@@ -75,6 +76,13 @@ export type LeadsEmbudoEtapa = {
   pctDelTotal: number;
 };
 
+export type LeadsReporteMotivoDescarte = {
+  motivoId: string;
+  label: string;
+  total: number;
+  pctDeDescartados: number;
+};
+
 export type LeadsReporte = {
   totalBruto: number;
   total: number;
@@ -86,6 +94,8 @@ export type LeadsReporte = {
   interacciones: LeadsInteraccionesResumen;
   embudo: LeadsEmbudoEtapa[];
   porEtapa: Record<string, number>;
+  porMotivoDescarte: LeadsReporteMotivoDescarte[];
+  descartadosTotal: number;
   porCalificacion: Record<string, number>;
   porInteres: Record<string, number>;
   porDia: LeadsReporteDia[];
@@ -178,6 +188,7 @@ export const getLeadsReporte = async (
   const embudoMap: Record<string, number> = {};
   const porCalificacion: Record<string, number> = {};
   const porInteres: Record<string, number> = {};
+  const porMotivoDescarteMap = new Map<string, number>();
   const porDiaMap = new Map<string, { total: number; validos: number; duplicados: number }>();
   const porMesMap = new Map<string, { total: number; validos: number; duplicados: number }>();
   const porAsesorMap = new Map<string, LeadsReporteAsesor>();
@@ -191,6 +202,7 @@ export const getLeadsReporte = async (
   let validos = 0;
   let calificados = 0;
   let noCalificados = 0;
+  let descartadosTotal = 0;
 
   const interacciones: LeadsInteraccionesResumen = {
     conCorreo: 0,
@@ -205,6 +217,12 @@ export const getLeadsReporte = async (
   for (const prospecto of prospectos) {
     const etapa = normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa;
     porEtapa[etapa] = (porEtapa[etapa] ?? 0) + 1;
+
+    if (etapa === "perdido") {
+      descartadosTotal += 1;
+      const motivoKey = prospecto.motivo_descarte?.trim() || "__sin_motivo__";
+      porMotivoDescarteMap.set(motivoKey, (porMotivoDescarteMap.get(motivoKey) ?? 0) + 1);
+    }
 
     const esValido = !prospecto.es_spam && !prospecto.es_duplicado;
     if (esValido) {
@@ -366,6 +384,8 @@ export const getLeadsReporte = async (
     "cita",
     "apartado",
     "vendido",
+    "cancelado",
+    "perdido",
   ];
 
   const embudo: LeadsEmbudoEtapa[] = embudoEtapas.map((etapa) => {
@@ -377,6 +397,21 @@ export const getLeadsReporte = async (
       pctDelTotal: validos > 0 ? Math.round((total / validos) * 100) : 0,
     };
   });
+
+  const porMotivoDescarte: LeadsReporteMotivoDescarte[] = Array.from(
+    porMotivoDescarteMap.entries(),
+  )
+    .map(([motivoId, total]) => ({
+      motivoId,
+      label:
+        motivoId === "__sin_motivo__"
+          ? "Sin motivo registrado"
+          : motivoDescarteLabel(motivoId),
+      total,
+      pctDeDescartados:
+        descartadosTotal > 0 ? Math.round((total / descartadosTotal) * 100) : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
 
   const qa = await fetchLeadsQaResumen({
     desarrolloId: filters.desarrolloId,
@@ -400,6 +435,8 @@ export const getLeadsReporte = async (
     interacciones,
     embudo,
     porEtapa,
+    porMotivoDescarte,
+    descartadosTotal,
     porCalificacion,
     porInteres,
     porDia,

@@ -466,7 +466,7 @@ export function DocumentosAdminPanel({
 
       <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
-          Paso 1 · Subir documento
+          Documentos comerciales
         </p>
         <h2 className="mt-2 text-2xl font-black text-[#13315C]">Publicar PDF comercial</h2>
         {scopeLabel ? (

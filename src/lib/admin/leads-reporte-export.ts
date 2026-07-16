@@ -55,6 +55,15 @@ export const exportLeadsReporteCsv = (
       ["Asesor", "Total"],
       ...reporte.porAsesor.map((item) => [item.asesorNombre, item.total]),
     ]),
+    section("Motivos de descarte", [
+      ["Motivo", "Total", "% de descartados"],
+      ["Descartados (total)", reporte.descartadosTotal, "100"],
+      ...reporte.porMotivoDescarte.map((item) => [
+        item.label,
+        item.total,
+        item.pctDeDescartados,
+      ]),
+    ]),
     section("Por region", [
       ["Region", "Total"],
       ...reporte.porRegion.map((item) => [item.region, item.total]),

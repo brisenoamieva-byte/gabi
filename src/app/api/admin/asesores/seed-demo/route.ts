@@ -3,6 +3,9 @@ import { canAccessModule } from "@/lib/admin/permissions";
 import { seedDemoAsesores } from "@/lib/admin/asesores-service";
 import { getAdminSession } from "@/lib/admin/session";
 
+const seedsAllowed =
+  process.env.NODE_ENV !== "production" || process.env.GABI_ADMIN_SEEDS === "1";
+
 export async function POST() {
   const session = await getAdminSession();
   if (!session) {
@@ -11,6 +14,13 @@ export async function POST() {
 
   if (!canAccessModule(session.profile, "asesores")) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  }
+
+  if (!seedsAllowed) {
+    return NextResponse.json(
+      { error: "Demo BBR deshabilitada en producción. Usa GABI_ADMIN_SEEDS=1 si es necesario." },
+      { status: 403 },
+    );
   }
 
   try {

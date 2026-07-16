@@ -10,7 +10,7 @@ import {
   PROSPECTO_ETAPAS_EN_SEGUIMIENTO,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
-import type { CotizacionRecord, ProspectoRecord } from "@/lib/comercial/sembrado-status";
+import type { CotizacionRecord, OperacionComercialRecord, ProspectoRecord } from "@/lib/comercial/sembrado-status";
 import {
   computeIscore,
   computeSellerScore,
@@ -22,6 +22,10 @@ import type { VisitaTipo } from "@/lib/visitas/types";
 import { normalizeProspectoTelefono } from "@/lib/comercial/prospecto-telefono";
 import { cancelSolicitudesApartadoForProspectos } from "@/lib/comercial/solicitud-apartado-service";
 import { resolvePerfilCalificacionLead } from "@/lib/comercial/perfilamiento-post-visita";
+import {
+  calificacionFromMotivoDescarte,
+  validateMotivoDescarteForPerdido,
+} from "@/lib/comercial/motivo-descarte";
 
 export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
@@ -31,8 +35,13 @@ export type ProspectoListRow = ProspectoRecord & {
   partnerTipo: string | null;
 };
 
+export type ProspectoOperacionHistorial = OperacionComercialRecord & {
+  unidad: string | null;
+};
+
 export type ProspectoDetail = ProspectoListRow & {
   cotizaciones: CotizacionRecord[];
+  operaciones: ProspectoOperacionHistorial[];
 };
 
 export type ProspectosResumen = {
@@ -57,6 +66,8 @@ export type UpdateProspectoInput = {
   campanaId?: string | null;
   partnerId?: string | null;
   calificacion?: string;
+  motivoDescarte?: string | null;
+  motivoDescarteDetalle?: string | null;
   nivelInteres?: string | null;
   iscore?: number | null;
   sellerScore?: number | null;
@@ -315,21 +326,48 @@ export const getProspectoById = async (
     throw new Error("No tienes permiso para este prospecto.");
   }
 
-  const { data: cotizaciones, error: cotizacionesError } = await supabase
-    .from("cotizaciones")
-    .select("*")
-    .eq("prospecto_id", id)
-    .order("created_at", { ascending: false });
+  const [{ data: cotizaciones, error: cotizacionesError }, { data: operaciones, error: operacionesError }] =
+    await Promise.all([
+      supabase
+        .from("cotizaciones")
+        .select("*")
+        .eq("prospecto_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("operaciones_comerciales")
+        .select("*, unidad:disponibilidad_unidades(unidad)")
+        .eq("prospecto_id", id)
+        .order("updated_at", { ascending: false }),
+    ]);
 
   if (cotizacionesError) {
     throw new Error(cotizacionesError.message);
   }
+  if (operacionesError) {
+    throw new Error(operacionesError.message);
+  }
 
   const mapped = mapProspectoRow(data as Record<string, unknown>);
+
+  const operacionesMapped: ProspectoOperacionHistorial[] = (operaciones ?? []).map((row) => {
+    const record = row as Record<string, unknown>;
+    const unidadJoin = record.unidad as
+      | { unidad?: string }
+      | { unidad?: string }[]
+      | null;
+    const unidad = Array.isArray(unidadJoin) ? unidadJoin[0] : unidadJoin;
+    const rest = { ...record };
+    delete rest.unidad;
+    return {
+      ...(rest as unknown as OperacionComercialRecord),
+      unidad: unidad?.unidad ?? null,
+    };
+  });
 
   return {
     ...mapped,
     cotizaciones: (cotizaciones ?? []) as CotizacionRecord[],
+    operaciones: operacionesMapped,
   };
 };
 
@@ -443,6 +481,12 @@ export const updateProspecto = async (
     patch.calificacion = input.calificacion.trim() || null;
     patch.es_spam = input.calificacion.trim().toLowerCase().startsWith("descartado");
   }
+  if (input.motivoDescarte !== undefined) {
+    patch.motivo_descarte = input.motivoDescarte?.trim() || null;
+  }
+  if (input.motivoDescarteDetalle !== undefined) {
+    patch.motivo_descarte_detalle = input.motivoDescarteDetalle?.trim() || null;
+  }
   if (input.nivelInteres !== undefined) {
     patch.nivel_interes = input.nivelInteres || null;
   }
@@ -460,6 +504,35 @@ export const updateProspecto = async (
   }
   if (input.esDuplicado !== undefined) {
     patch.es_duplicado = input.esDuplicado;
+  }
+
+  const nextEtapa = (input.etapa ?? existing.etapa) as string;
+  if (nextEtapa === "perdido") {
+    const motivoValidation = validateMotivoDescarteForPerdido({
+      motivoDescarte:
+        input.motivoDescarte !== undefined
+          ? input.motivoDescarte
+          : existing.motivo_descarte,
+      motivoDescarteDetalle:
+        input.motivoDescarteDetalle !== undefined
+          ? input.motivoDescarteDetalle
+          : existing.motivo_descarte_detalle,
+    });
+    if (!motivoValidation.ok) {
+      throw new Error(motivoValidation.error);
+    }
+    patch.motivo_descarte = motivoValidation.motivoDescarte;
+    patch.motivo_descarte_detalle = motivoValidation.motivoDescarteDetalle;
+    if (input.calificacion === undefined && !existing.calificacion?.toLowerCase().startsWith("descartado")) {
+      patch.calificacion = calificacionFromMotivoDescarte(motivoValidation.motivoDescarte);
+      patch.es_spam = motivoValidation.motivoDescarte === "datos_falsos";
+    }
+  } else if (input.etapa !== undefined && input.etapa !== "perdido") {
+    // Al salir de Descartado, limpiar motivo (opcional: conservar historial — limpiamos para no confundir).
+    if (existing.etapa === "perdido") {
+      patch.motivo_descarte = null;
+      patch.motivo_descarte_detalle = null;
+    }
   }
 
   if (input.calificacion !== undefined || input.etapa !== undefined || input.esDuplicado !== undefined || input.nivelInteres !== undefined) {

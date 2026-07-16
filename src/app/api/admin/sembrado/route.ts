@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSembradoResumen, listSembradoUnidades } from "@/lib/admin/operaciones-service";
+import {
+  getSembradoResumen,
+  listOperacionesCanceladas,
+  listSembradoUnidades,
+} from "@/lib/admin/operaciones-service";
 import { canAccessModule } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 
@@ -23,15 +27,16 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [filas, resumen] = await Promise.all([
+    const [filas, resumen, canceladas] = await Promise.all([
       listSembradoUnidades(
         { desarrolloId, clusterId, estatusSembrado },
         session.profile,
       ),
       getSembradoResumen(desarrolloId, session.profile, clusterId),
+      listOperacionesCanceladas({ desarrolloId, clusterId }, session.profile),
     ]);
 
-    return NextResponse.json({ filas, resumen });
+    return NextResponse.json({ filas, resumen, canceladas });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al cargar sembrado." },

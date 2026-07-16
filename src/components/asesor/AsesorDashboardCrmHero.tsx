@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
+import { prospectoContactoOHistorialLabel } from "@/lib/comercial/apartado-cancelado-historial";
 import {
   type CrmPlaybookConfig,
   type PlaybookQueueItem,
@@ -348,7 +349,7 @@ export function AsesorDashboardCrmHero({
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{lead.nombre}</p>
                               <p className="truncate text-xs text-white/40">
-                                {lead.telefono || lead.email || "Sin contacto"}
+                                {prospectoContactoOHistorialLabel(lead)}
                               </p>
                             </div>
                           </div>

@@ -483,6 +483,34 @@ export function LeadsReportePanel({
                   )}
                 </div>
               </div>
+
+              <div className="rounded-2xl border border-gabi-forest/10 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-black text-gabi-forest">Motivos de descarte</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Descartados en el periodo: {reporte.descartadosTotal}. Distinto de Cancelado
+                  (apartó/vendió y luego canceló).
+                </p>
+                {reporte.porMotivoDescarte.length ? (
+                  <div className="mt-4 space-y-2">
+                    {reporte.porMotivoDescarte.map((item) => (
+                      <div
+                        key={item.motivoId}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3"
+                      >
+                        <span className="text-sm font-semibold text-gabi-forest">{item.label}</span>
+                        <span className="shrink-0 text-sm font-bold text-gabi-sand">
+                          {item.total}
+                          <span className="ml-2 font-medium text-slate-400">
+                            {item.pctDeDescartados}%
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-500">Sin descartados en el periodo.</p>
+                )}
+              </div>
             </>
           ) : null}
 

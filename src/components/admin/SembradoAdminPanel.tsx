@@ -26,7 +26,10 @@ import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer";
 import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
 import {
+  canceladaEnEtapaLabel,
   estatusSembradoLabel,
+  resolveCanceladaEnEtapa,
+  type OperacionCanceladaRow,
   type SembradoUnidadRow,
 } from "@/lib/comercial/sembrado-status";
 import {
@@ -47,7 +50,121 @@ type SembradoVista = "sembrado" | "curacion" | "listas";
 type Resumen = {
   total: number;
   porEstatus: Record<string, number>;
+  canceladasCount?: number;
 };
+
+const CANCELADOS_FILTER = "Cancelados";
+
+function CanceladosTable({
+  filas,
+  onVerOperacion,
+  dense = false,
+}: {
+  filas: OperacionCanceladaRow[];
+  onVerOperacion: (operacionId: string) => void;
+  dense?: boolean;
+}) {
+  const cellPad = dense ? "px-3 py-1.5" : "px-4 py-3";
+
+  if (!filas.length) {
+    return (
+      <p className="px-6 py-12 text-center text-sm text-slate-500">
+        No hay operaciones canceladas en este segmento.
+      </p>
+    );
+  }
+
+  return (
+    <table className="min-w-full text-left text-sm">
+      <thead className="bg-amber-50 text-xs uppercase tracking-wide text-amber-900/70">
+        <tr>
+          <th className={cellPad}>Unidad</th>
+          <th className={cellPad}>Canceló en</th>
+          <th className={cellPad}>Estatus al cancelar</th>
+          <th className={cellPad}>Cliente</th>
+          <th className={cellPad}>Apartó</th>
+          <th className={cellPad}>Canceló</th>
+          <th className={cellPad}>Lista</th>
+          <th className={cellPad}>Precio lista</th>
+          <th className={cellPad}>Precio venta</th>
+          <th className={cellPad}>Cobrado</th>
+          <th className={cellPad}>Medio</th>
+          <th className={cellPad}>Motivo / notas</th>
+          <th className={cellPad}>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filas.map((row) => {
+          const op = row.operacion;
+          const enEtapa =
+            op.cancelada_en_etapa ?? resolveCanceladaEnEtapa(op.estatus_sembrado);
+          const motivo =
+            op.observaciones
+              ?.split("\n")
+              .reverse()
+              .find((line) => line.includes("[Cancelado"))
+              ?.replace(/^\[Cancelado[^\]]*\]\s*/, "")
+              .trim() || op.observaciones || "—";
+
+          return (
+            <tr key={op.id} className="border-t border-amber-100 bg-white hover:bg-amber-50/40">
+              <td className={cellPad}>
+                <p className="font-bold text-gabi-forest">{row.unidad}</p>
+                <p className="text-xs text-slate-400">{row.tipo}</p>
+              </td>
+              <td className={cellPad}>
+                <span
+                  className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                    enEtapa === "venta"
+                      ? "bg-orange-100 text-orange-900"
+                      : "bg-amber-100 text-amber-900"
+                  }`}
+                >
+                  {canceladaEnEtapaLabel[enEtapa]}
+                </span>
+              </td>
+              <td className={cellPad}>
+                {estatusSembradoLabel[op.estatus_sembrado] ?? op.estatus_sembrado}
+              </td>
+              <td className={cellPad}>{op.cliente_nombre}</td>
+              <td className={`${cellPad} tabular-nums text-slate-600`}>
+                {op.fecha_apartado ?? "—"}
+              </td>
+              <td className={`${cellPad} tabular-nums text-slate-600`}>
+                {op.cancelada_at ? op.cancelada_at.slice(0, 10) : "—"}
+              </td>
+              <td className={`${cellPad} text-slate-600`}>{op.lista_precios ?? "—"}</td>
+              <td className={`${cellPad} tabular-nums`}>
+                {op.precio_lista != null ? formatPrice(Number(op.precio_lista)) : "—"}
+              </td>
+              <td className={`${cellPad} tabular-nums`}>
+                {op.precio_venta != null ? formatPrice(Number(op.precio_venta)) : "—"}
+              </td>
+              <td className={`${cellPad} tabular-nums`}>
+                {row.totalCobrado ? formatPrice(row.totalCobrado) : "—"}
+              </td>
+              <td className={`${cellPad} text-slate-600`}>
+                {op.medio_publicitario ?? "—"}
+              </td>
+              <td className={`${cellPad} max-w-[14rem] truncate text-slate-600`} title={motivo}>
+                {motivo}
+              </td>
+              <td className={cellPad}>
+                <button
+                  type="button"
+                  onClick={() => onVerOperacion(op.id)}
+                  className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Ver operación
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
 
 function SembradoTable({
   filas,
@@ -249,7 +366,9 @@ function ResumenCards({
           >
             <p className="text-2xl font-black text-gabi-forest">{count}</p>
             <p className="text-xs font-semibold text-slate-500">
-              {estatusSembradoLabel[estatus] ?? estatus}
+              {estatus === CANCELADOS_FILTER
+                ? "Cancelados"
+                : (estatusSembradoLabel[estatus] ?? estatus)}
             </p>
           </button>
         ))}
@@ -282,6 +401,7 @@ export function SembradoAdminPanel({
   const [estatusFilter, setEstatusFilter] = useState("");
   const [showAllUnits, setShowAllUnits] = useState(true);
   const [filas, setFilas] = useState<SembradoUnidadRow[]>([]);
+  const [canceladas, setCanceladas] = useState<OperacionCanceladaRow[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -373,6 +493,7 @@ export function SembradoAdminPanel({
       const response = await fetch(`/api/admin/sembrado?${params.toString()}`);
       const data = (await response.json()) as {
         filas?: SembradoUnidadRow[];
+        canceladas?: OperacionCanceladaRow[];
         resumen?: Resumen;
         error?: string;
       };
@@ -382,10 +503,12 @@ export function SembradoAdminPanel({
       }
 
       setFilas(data.filas ?? []);
+      setCanceladas(data.canceladas ?? []);
       setResumen(data.resumen ?? null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Error al cargar.");
       setFilas([]);
+      setCanceladas([]);
       setResumen(null);
     } finally {
       setLoading(false);
@@ -416,20 +539,24 @@ export function SembradoAdminPanel({
     icon: segmentIcons[index % segmentIcons.length] ?? Home,
   }));
 
+  const showingCancelados = estatusFilter === CANCELADOS_FILTER;
+
   const sembradoTitle =
     tieneSegmentos && segmentoConfig ? `Sembrado — ${segmentoConfig.label}` : "Sembrado";
 
   const sembradoSubtitle = resumen
-    ? `${resumen.total} unidades · ${filas.filter((row) => row.operacion).length} con operación activa${
-        unidadesPendientes.length
-          ? ` · ${unidadesPendientes.length} apartado${unidadesPendientes.length === 1 ? "" : "s"} pendiente${unidadesPendientes.length === 1 ? "" : "s"}`
-          : ""
-      }`
+    ? showingCancelados
+      ? `${canceladas.length} operación${canceladas.length === 1 ? "" : "es"} cancelada${canceladas.length === 1 ? "" : "s"} (historial)`
+      : `${resumen.total} unidades · ${filas.filter((row) => row.operacion).length} con operación activa${
+          unidadesPendientes.length
+            ? ` · ${unidadesPendientes.length} apartado${unidadesPendientes.length === 1 ? "" : "s"} pendiente${unidadesPendientes.length === 1 ? "" : "s"}`
+            : ""
+        }${canceladas.length ? ` · ${canceladas.length} cancelada${canceladas.length === 1 ? "" : "s"}` : ""}`
     : null;
 
   const sembradoTableProps = {
     filas,
-    estatusFilter,
+    estatusFilter: showingCancelados ? "" : estatusFilter,
     showAllUnits,
     onRegistrarApartado: (unidadId: string) => openApartadoModal(unidadId, "registrar"),
     onCompletarApartado: (unidadId: string) => openApartadoModal(unidadId, "completar"),
@@ -441,14 +568,21 @@ export function SembradoAdminPanel({
     dense?: boolean;
     stickyHeader?: boolean;
     stickyFirstColumn?: boolean;
-  }) => (
-    <SembradoTable
-      {...sembradoTableProps}
-      dense={options?.dense}
-      stickyHeader={options?.stickyHeader}
-      stickyFirstColumn={options?.stickyFirstColumn}
-    />
-  );
+  }) =>
+    showingCancelados ? (
+      <CanceladosTable
+        filas={canceladas}
+        onVerOperacion={setOperacionId}
+        dense={options?.dense}
+      />
+    ) : (
+      <SembradoTable
+        {...sembradoTableProps}
+        dense={options?.dense}
+        stickyHeader={options?.stickyHeader}
+        stickyFirstColumn={options?.stickyFirstColumn}
+      />
+    );
 
   return (
     <div className="space-y-6">

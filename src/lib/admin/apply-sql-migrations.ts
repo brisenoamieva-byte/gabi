@@ -4,7 +4,37 @@ import { resolveSupabaseDbUrl } from "@/lib/admin/resolve-supabase-db-url";
 
 const MIGRATIONS_DIR = join(process.cwd(), "supabase/migrations");
 
-const AUTO_APPLY_MIGRATION_IDS = new Set(["037", "038", "039", "040", "041", "042", "043", "044", "045", "046", "047", "048", "049", "050", "051", "052", "053", "063", "064"]);
+const AUTO_APPLY_MIGRATION_IDS = new Set([
+  "037",
+  "038",
+  "039",
+  "040",
+  "041",
+  "042",
+  "043",
+  "044",
+  "045",
+  "046",
+  "047",
+  "048",
+  "049",
+  "050",
+  "051",
+  "052",
+  "053",
+  "060",
+  "061",
+  "062",
+  "063",
+  "064",
+  "065",
+  "066",
+  "067",
+  "068",
+  "069",
+  "070",
+  "071",
+]);
 
 export const getAutoApplyableMigrationIds = (): string[] => Array.from(AUTO_APPLY_MIGRATION_IDS);
 

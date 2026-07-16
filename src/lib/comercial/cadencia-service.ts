@@ -507,7 +507,7 @@ const expireCadenciaIfNoResponse = async (cadenciaId: string) => {
     .eq("id", cadencia.prospecto_id)
     .maybeSingle();
 
-  if (!prospecto || prospecto.etapa === "perdido") {
+  if (!prospecto || prospecto.etapa === "perdido" || prospecto.etapa === "cancelado") {
     return;
   }
 
@@ -558,7 +558,7 @@ const applyContactoResultadoToProspecto = async (
   };
 
   const etapa = prospecto.etapa as string;
-  if (resultado === "cita" && etapa !== "vendido" && etapa !== "perdido" && etapa !== "apartado") {
+  if (resultado === "cita" && etapa !== "vendido" && etapa !== "perdido" && etapa !== "apartado" && etapa !== "cancelado") {
     patch.etapa = "cita";
   } else if (
     (resultado === "respondio" || resultado === "mensaje_enviado") &&

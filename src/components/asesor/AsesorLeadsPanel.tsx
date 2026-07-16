@@ -23,7 +23,11 @@ import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { PerfilamientoVisitaPanel } from "@/components/asesor/PerfilamientoVisitaPanel";
 import { AsesorCadenciaLeadPanel } from "@/components/asesor/AsesorCadenciaLeadPanel";
+import { ProspectoHistorialComercial } from "@/components/comercial/ProspectoHistorialComercial";
+import { MotivoDescarteFields } from "@/components/comercial/MotivoDescarteFields";
 import { formatPrice } from "@/lib/data";
+import { prospectoContactoOHistorialLabel } from "@/lib/comercial/apartado-cancelado-historial";
+import { formatMotivoDescarte } from "@/lib/comercial/motivo-descarte";
 import type { ProspectoDetail, ProspectoListRow, ProspectosResumen } from "@/lib/admin/prospectos-service";
 import { prefillCotizadorFromProspecto } from "@/lib/asesores/prefill-cotizador-client";
 import {
@@ -113,6 +117,7 @@ function AsesorLeadDrawer({
   desarrolloNombre,
   canReassignProspectos,
   prospectoId,
+  intentDiscard = false,
   onClose,
   onUpdated,
 }: {
@@ -122,6 +127,8 @@ function AsesorLeadDrawer({
   desarrolloNombre: string;
   canReassignProspectos: boolean;
   prospectoId: string;
+  /** Si viene de la bandeja de reciclaje, preselecciona Descartado. */
+  intentDiscard?: boolean;
   onClose: () => void;
   onUpdated: () => void;
 }) {
@@ -134,6 +141,8 @@ function AsesorLeadDrawer({
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
+  const [motivoDescarte, setMotivoDescarte] = useState("");
+  const [motivoDescarteDetalle, setMotivoDescarteDetalle] = useState("");
   const [assignedAsesorId, setAssignedAsesorId] = useState("");
   const [equipoAsesores, setEquipoAsesores] = useState<Array<{ id: string; nombre: string; rol: AsesorRol }>>(
     [],
@@ -165,8 +174,14 @@ function AsesorLeadDrawer({
         setDetail(data.prospecto);
         setPlaybook(data.playbook ?? null);
         setCadenciaStatus(data.cadencia?.status ?? null);
-        setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
+        const loadedEtapa = isProspectoEtapa(data.prospecto.etapa)
+          ? data.prospecto.etapa
+          : "nuevo";
+        const cerrada = ["apartado", "vendido", "cancelado", "perdido"].includes(loadedEtapa);
+        setEtapa(intentDiscard && !cerrada ? "perdido" : loadedEtapa);
         setNotas(data.prospecto.notas ?? "");
+        setMotivoDescarte(data.prospecto.motivo_descarte ?? "");
+        setMotivoDescarteDetalle(data.prospecto.motivo_descarte_detalle ?? "");
         setAssignedAsesorId(data.prospecto.asesor_id ?? "");
       }
 
@@ -194,7 +209,7 @@ function AsesorLeadDrawer({
     } finally {
       setLoading(false);
     }
-  }, [asesorId, prospectoId]);
+  }, [asesorId, intentDiscard, prospectoId]);
 
   useEffect(() => {
     if (!canReassignProspectos) {
@@ -288,6 +303,8 @@ function AsesorLeadDrawer({
           asesorId,
           etapa: etapaEditable ? etapa : undefined,
           notas,
+          motivoDescarte: etapa === "perdido" ? motivoDescarte || null : undefined,
+          motivoDescarteDetalle: etapa === "perdido" ? motivoDescarteDetalle || null : undefined,
           assignedAsesorId: canReassignProspectos ? assignedAsesorId || null : undefined,
         }),
       });
@@ -475,6 +492,9 @@ function AsesorLeadDrawer({
                   >
                     Marcar como {prospectoEtapaLabel.perdido}
                   </button>
+                  <p className="mt-1 text-[11px] text-amber-800">
+                    Deberás indicar el motivo de descarte antes de guardar.
+                  </p>
                 </div>
               ) : null}
 
@@ -539,6 +559,27 @@ function AsesorLeadDrawer({
                 ) : null}
               </label>
 
+              {etapa === "perdido" ? (
+                <MotivoDescarteFields
+                  value={motivoDescarte}
+                  detalle={motivoDescarteDetalle}
+                  onChange={setMotivoDescarte}
+                  onDetalleChange={setMotivoDescarteDetalle}
+                  disabled={!etapaEditable}
+                  inputClassName={inputClass}
+                />
+              ) : detail.etapa === "perdido" && detail.motivo_descarte ? (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900">
+                  Motivo de descarte:{" "}
+                  <strong>
+                    {formatMotivoDescarte(
+                      detail.motivo_descarte,
+                      detail.motivo_descarte_detalle,
+                    )}
+                  </strong>
+                </p>
+              ) : null}
+
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-slate-600">Notas de seguimiento</span>
                 <textarea
@@ -548,6 +589,13 @@ function AsesorLeadDrawer({
                   placeholder="Próximo paso, objeciones, recordatorios…"
                 />
               </label>
+
+              <div>
+                <ProspectoHistorialComercial
+                  operaciones={detail.operaciones}
+                  accentClassName="text-[#201044]"
+                />
+              </div>
 
               <div>
                 <h4 className="mb-3 text-sm font-bold text-[#201044]">
@@ -683,6 +731,7 @@ export function AsesorLeadsPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [discardIntentId, setDiscardIntentId] = useState<string | null>(null);
   const [kanbanApartadoProspectoId, setKanbanApartadoProspectoId] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -857,6 +906,12 @@ export function AsesorLeadsPanel({
   }, [asesorId, desarrolloId, newTelefono, showNewLead]);
 
   const handleMoveEtapa = async (prospectoId: string, etapa: ProspectoEtapa) => {
+    if (etapa === "perdido") {
+      setDiscardIntentId(prospectoId);
+      setSelectedId(prospectoId);
+      throw new Error("Motivo de descarte requerido.");
+    }
+
     const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -1266,7 +1321,7 @@ export function AsesorLeadsPanel({
                         ) : null}
                       </div>
                       <p className="truncate text-sm text-slate-500">
-                        {row.email ?? row.telefono ?? "Sin contacto"}
+                        {prospectoContactoOHistorialLabel(row)}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-400">
                         {formatLeadActivity(row.updated_at)}
@@ -1299,8 +1354,13 @@ export function AsesorLeadsPanel({
           desarrolloNombre={desarrolloNombre}
           canReassignProspectos={canManageAllProspectos}
           prospectoId={selectedId}
-          onClose={() => setSelectedId(null)}
+          intentDiscard={discardIntentId === selectedId}
+          onClose={() => {
+            setSelectedId(null);
+            setDiscardIntentId(null);
+          }}
           onUpdated={() => {
+            setDiscardIntentId(null);
             void loadLeads();
             void loadPlaybookQueue();
           }}

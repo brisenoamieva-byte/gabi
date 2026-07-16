@@ -1,6 +1,9 @@
 import { enrichPasajeInventario } from "@/lib/catalog/pasaje-unidad-detalles";
 import { getDisponibilidadesByCluster, type DisponibilidadUnidad } from "@/lib/data";
-import { readOfflineInventario } from "@/lib/offline/inventario-store";
+import {
+  OFFLINE_INVENTARIO_MAX_AGE_MS,
+  readOfflineInventario,
+} from "@/lib/offline/inventario-store";
 
 export type ClusterInventarioSource = "sembrado" | "supabase" | "local" | "offline-cache";
 
@@ -22,12 +25,20 @@ export async function fetchClusterInventario(
     getDisponibilidadesByCluster(clusterId),
     desarrolloId,
   );
-  const offlineUnits = readOfflineInventario(desarrolloId, clusterId);
+  const isOnline = typeof navigator === "undefined" || navigator.onLine;
+
+  // Offline: aceptar cache aunque sea viejo (mejor stale que nada).
+  // Online: solo como fallback si está fresco.
+  const offlineUnits = readOfflineInventario(
+    desarrolloId,
+    clusterId,
+    isOnline ? { maxAgeMs: OFFLINE_INVENTARIO_MAX_AGE_MS } : undefined,
+  );
   const offlineNormalized = offlineUnits
     ? normalizeUnits(offlineUnits, desarrolloId)
     : undefined;
 
-  if (typeof navigator !== "undefined" && !navigator.onLine && offlineNormalized) {
+  if (!isOnline && offlineNormalized) {
     return { units: offlineNormalized, source: "offline-cache" };
   }
 

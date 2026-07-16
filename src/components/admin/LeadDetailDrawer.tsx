@@ -23,11 +23,14 @@ import {
   resolvePerfilCalificacionLead,
 } from "@/lib/comercial/perfilamiento-post-visita";
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
+import { MotivoDescarteFields } from "@/components/comercial/MotivoDescarteFields";
+import { ProspectoHistorialComercial } from "@/components/comercial/ProspectoHistorialComercial";
 import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
 import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
 
 type LeadDetailDrawerProps = {
   prospectoId: string;
+  intentDiscard?: boolean;
   onClose: () => void;
   onUpdated: () => void;
 };
@@ -61,7 +64,12 @@ type AdminMe = {
   canRegisterApartado?: boolean;
 };
 
-export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetailDrawerProps) {
+export function LeadDetailDrawer({
+  prospectoId,
+  intentDiscard = false,
+  onClose,
+  onUpdated,
+}: LeadDetailDrawerProps) {
   const [detail, setDetail] = useState<ProspectoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,6 +78,8 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [error, setError] = useState("");
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
+  const [motivoDescarte, setMotivoDescarte] = useState("");
+  const [motivoDescarteDetalle, setMotivoDescarteDetalle] = useState("");
   const [campanaId, setCampanaId] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
@@ -86,7 +96,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const puedeRegistrarApartado =
     adminMe.canRegisterApartado &&
     detail != null &&
-    !["apartado", "vendido", "perdido"].includes(detail.etapa);
+    !["apartado", "vendido", "cancelado", "perdido"].includes(detail.etapa);
 
   const perfilCalificacion = detail ? resolvePerfilCalificacionLead(detail) : null;
 
@@ -110,8 +120,14 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
 
       if (data.prospecto) {
         setDetail(data.prospecto);
-        setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
+        const loadedEtapa = isProspectoEtapa(data.prospecto.etapa)
+          ? data.prospecto.etapa
+          : "nuevo";
+        const cerrada = ["apartado", "vendido", "cancelado", "perdido"].includes(loadedEtapa);
+        setEtapa(intentDiscard && !cerrada ? "perdido" : loadedEtapa);
         setNotas(data.prospecto.notas ?? "");
+        setMotivoDescarte(data.prospecto.motivo_descarte ?? "");
+        setMotivoDescarteDetalle(data.prospecto.motivo_descarte_detalle ?? "");
         setCampanaId(data.prospecto.campana_id ?? "");
         setPartnerId(data.prospecto.partner_id ?? "");
         setNivelInteres(
@@ -173,7 +189,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
     } finally {
       setLoading(false);
     }
-  }, [prospectoId]);
+  }, [intentDiscard, prospectoId]);
 
   useEffect(() => {
     void loadDetail();
@@ -194,6 +210,8 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         body: JSON.stringify({
           etapa,
           notas,
+          motivoDescarte: etapa === "perdido" ? motivoDescarte || null : undefined,
+          motivoDescarteDetalle: etapa === "perdido" ? motivoDescarteDetalle || null : undefined,
           campanaId: campanaId || null,
           partnerId: partnerId || null,
           nivelInteres: nivelInteres || null,
@@ -571,6 +589,16 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                 </select>
               </Field>
 
+              {etapa === "perdido" ? (
+                <MotivoDescarteFields
+                  value={motivoDescarte}
+                  detalle={motivoDescarteDetalle}
+                  onChange={setMotivoDescarte}
+                  onDetalleChange={setMotivoDescarteDetalle}
+                  inputClassName={inputClass}
+                />
+              ) : null}
+
               <Field label="Campaña">
                 <select
                   value={campanaId}
@@ -634,6 +662,10 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
               ) : null}
                   </div>
                 ) : null}
+              </div>
+
+              <div>
+                <ProspectoHistorialComercial operaciones={detail.operaciones} />
               </div>
 
               <div>

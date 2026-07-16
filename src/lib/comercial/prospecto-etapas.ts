@@ -4,6 +4,7 @@ export const PROSPECTO_ETAPAS = [
   "cita",
   "apartado",
   "vendido",
+  "cancelado",
   "perdido",
 ] as const;
 
@@ -25,6 +26,7 @@ export const prospectoEtapaLabel: Record<ProspectoEtapa, string> = {
   cita: "Cita",
   apartado: "Apartado",
   vendido: "Vendido",
+  cancelado: "Cancelado",
   perdido: "Descartado",
 };
 
@@ -34,6 +36,7 @@ export const prospectoEtapaColor: Record<ProspectoEtapa, string> = {
   cita: "bg-violet-100 text-violet-800",
   apartado: "bg-emerald-100 text-emerald-800",
   vendido: "bg-gabi-forest/10 text-gabi-forest",
+  cancelado: "bg-amber-100 text-amber-900",
   perdido: "bg-red-100 text-red-700",
 };
 
@@ -43,6 +46,7 @@ export const prospectoEtapaDot: Record<ProspectoEtapa, string> = {
   cita: "bg-violet-500",
   apartado: "bg-emerald-500",
   vendido: "bg-gabi-forest",
+  cancelado: "bg-amber-500",
   perdido: "bg-red-500",
 };
 
@@ -56,13 +60,18 @@ export const normalizeProspectoEtapaValue = (value: string): ProspectoEtapa | nu
   return isProspectoEtapa(normalized) ? normalized : null;
 };
 
-const ETAPAS_BLOQUEADAS_VISITA = new Set<ProspectoEtapa>(["apartado", "vendido", "perdido"]);
+const ETAPAS_BLOQUEADAS_VISITA = new Set<ProspectoEtapa>([
+  "apartado",
+  "vendido",
+  "cancelado",
+  "perdido",
+]);
 
 export const prospectoEtapaFromVisita = (
   tipo: "lead_registrado" | "recorrido_completado",
 ): ProspectoEtapa => (tipo === "recorrido_completado" ? "cita" : "nuevo");
 
-/** Avanza etapa sin retroceder ni mover apartado/vendido/perdido. */
+/** Avanza etapa sin retroceder ni mover apartado/vendido/cancelado/perdido. */
 export const mergeProspectoEtapa = (
   current: string,
   target: ProspectoEtapa,
@@ -82,7 +91,7 @@ export const mergeProspectoEtapa = (
   return PROSPECTO_ETAPAS[Math.max(currentIndex, targetIndex)];
 };
 
-/** Avanza etapa por visita sin retroceder ni mover apartado/vendido/perdido. */
+/** Avanza etapa por visita sin retroceder ni mover etapas cerradas. */
 export const mergeProspectoEtapaFromVisita = (
   current: string,
   tipo: "lead_registrado" | "recorrido_completado",
@@ -101,7 +110,7 @@ export const prospectoEtapaFromSembrado = (
   cancelada = false,
 ): ProspectoEtapa | null => {
   if (cancelada) {
-    return "perdido";
+    return "cancelado";
   }
 
   const estatus = estatusSembrado.trim();

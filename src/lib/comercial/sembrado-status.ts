@@ -72,6 +72,42 @@ export const estatusSembradoLabel: Record<string, string> = {
   "Vendidas Desarrollador": "Vendida desarrollador",
 };
 
+/** Etapa comercial en la que se canceló (apartado vs venta). */
+export type CanceladaEnEtapa = "apartado" | "venta";
+
+export const canceladaEnEtapaLabel: Record<CanceladaEnEtapa, string> = {
+  apartado: "En apartado",
+  venta: "En venta",
+};
+
+/** Infere si la cancelación ocurrió en apartado o ya en venta, según el estatus al cancelar. */
+export const resolveCanceladaEnEtapa = (estatusSembrado: string): CanceladaEnEtapa => {
+  const e = String(estatusSembrado ?? "").trim();
+  if (
+    e === "Apartado" ||
+    e === "Apartado pendiente" ||
+    e === "Cancelado" ||
+    e === "Disponibles" ||
+    e === "Asignado" ||
+    e === "Bloqueado" ||
+    !e
+  ) {
+    return "apartado";
+  }
+  if (e.startsWith("Vendido") || e.startsWith("Vendidas")) {
+    return "venta";
+  }
+  return "apartado";
+};
+
+export type OperacionCanceladaRow = {
+  operacion: OperacionComercialRecord;
+  unidad: string;
+  clusterId: string;
+  tipo: string;
+  totalCobrado: number;
+};
+
 export type OperacionComercialRecord = {
   id: string;
   desarrollo_id: string;
@@ -102,6 +138,8 @@ export type OperacionComercialRecord = {
   contrato_firmado_at?: string | null;
   cancelada: boolean;
   cancelada_at: string | null;
+  /** Momento de cancelación: apartado (pre-venta) o venta. Null si no cancelada. */
+  cancelada_en_etapa?: "apartado" | "venta" | null;
   comprobacion: number | null;
   enganche_cubierto?: boolean;
   enganche_cubierto_at?: string | null;
@@ -138,6 +176,8 @@ export type ProspectoRecord = {
   xperience_id: number | null;
   producto_nombre: string | null;
   calificacion: string | null;
+  motivo_descarte?: string | null;
+  motivo_descarte_detalle?: string | null;
   nivel_interes: string | null;
   iscore: number | null;
   seller_score: number | null;

@@ -121,6 +121,7 @@ export function LeadsAdminPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [discardIntentId, setDiscardIntentId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showNewLead, setShowNewLead] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -447,6 +448,12 @@ export function LeadsAdminPanel({
   const dateRangeLabel = formatLeadsDateRangeLabel(applied.desde, applied.hasta);
 
   const handleMoveEtapa = async (prospectoId: string, etapa: ProspectoEtapa) => {
+    if (etapa === "perdido") {
+      setDiscardIntentId(prospectoId);
+      setSelectedId(prospectoId);
+      throw new Error("Motivo de descarte requerido.");
+    }
+
     const response = await fetch(`/api/admin/prospectos/${prospectoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -1054,11 +1061,14 @@ export function LeadsAdminPanel({
       {selectedId ? (
         <LeadDetailDrawer
           prospectoId={selectedId}
+          intentDiscard={discardIntentId === selectedId}
           onClose={() => {
             setSelectedId(null);
+            setDiscardIntentId(null);
             void loadSolicitudesApartado();
           }}
           onUpdated={() => {
+            setDiscardIntentId(null);
             void loadLeads();
             void loadSolicitudesApartado();
           }}

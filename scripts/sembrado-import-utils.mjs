@@ -72,6 +72,72 @@ export const parseDate = (value) => {
   return null;
 };
 
+const MES_ES = {
+  enero: 0,
+  ene: 0,
+  febrero: 1,
+  feb: 1,
+  marzo: 2,
+  mar: 2,
+  abril: 3,
+  abr: 3,
+  mayo: 4,
+  may: 4,
+  junio: 5,
+  jun: 5,
+  julio: 6,
+  jul: 6,
+  agosto: 7,
+  ago: 7,
+  septiembre: 8,
+  setiembre: 8,
+  sep: 8,
+  sept: 8,
+  octubre: 9,
+  oct: 9,
+  noviembre: 10,
+  nov: 10,
+  diciembre: 11,
+  dic: 11,
+};
+
+/**
+ * Fecha de cancelación desde observaciones ("Cancela en Abril") o fallback a apartado.
+ * @returns {string|null} ISO date YYYY-MM-DD
+ */
+export const parseCanceladaAt = (observaciones, fechaApartado) => {
+  const text = String(observaciones ?? "").trim();
+  const yearFromApartado = fechaApartado
+    ? Number(String(fechaApartado).slice(0, 4))
+    : new Date().getFullYear();
+  const year = Number.isFinite(yearFromApartado) ? yearFromApartado : new Date().getFullYear();
+
+  const matchMes = text.match(
+    /cancel[ao](?:da)?\s+en\s+([a-záéíóúñ]+)/i,
+  );
+  if (matchMes) {
+    const mesKey = matchMes[1]
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    const month = MES_ES[mesKey];
+    if (month != null) {
+      // Último día del mes indicado (fecha de corte típica en sembrado).
+      const lastDay = new Date(year, month + 1, 0);
+      const y = lastDay.getFullYear();
+      const m = String(lastDay.getMonth() + 1).padStart(2, "0");
+      const d = String(lastDay.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+  }
+
+  const isoInText = text.match(/(\d{4}-\d{2}-\d{2})/);
+  if (isoInText) return isoInText[1];
+
+  if (fechaApartado) return String(fechaApartado).slice(0, 10);
+  return null;
+};
+
 export const parseBoolCell = (value) => {
   if (value === true || value === 1) return true;
   if (value === false || value === 0 || value == null || value === "") return false;
@@ -96,7 +162,7 @@ export const parseEdad = (value) => {
 };
 
 export const prospectoEtapaFromSembrado = (estatus, cancelada) => {
-  if (cancelada) return "perdido";
+  if (cancelada) return "cancelado";
   const e = String(estatus ?? "").trim();
   if (e === "Apartado") return "apartado";
   if (
@@ -307,6 +373,12 @@ export const parseSembradoSheetRows = (rows, options) => {
       hasOp,
       pagos: parsePagosFromRow(headers, row),
       cancelada,
+      canceladaAt: cancelada
+        ? parseCanceladaAt(
+            idx("observaciones") >= 0 ? row[idx("observaciones")] : null,
+            idx("apartado") >= 0 ? parseDate(row[idx("apartado")]) : null,
+          )
+        : null,
     });
   }
 

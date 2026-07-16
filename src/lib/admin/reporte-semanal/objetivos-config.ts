@@ -37,14 +37,6 @@ export function getObjetivosSegmentoSeed(
   return PASAJE_OBJETIVOS[segmentoId] ?? null;
 }
 
-/** @deprecated Usar loadObjetivosAnualesMap — fallback síncrono seed local. */
-export function getObjetivosSegmento(
-  desarrolloId: string,
-  segmentoId: string,
-): ReporteObjetivosAnuales | null {
-  return getObjetivosSegmentoSeed(desarrolloId, segmentoId);
-}
-
 /** Objetivo prorrateado al mes calendario del periodo. */
 export function objetivoMes(obj: ReporteObjetivosAnuales): number {
   return obj.ingresosMes;

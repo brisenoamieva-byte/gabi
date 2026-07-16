@@ -231,7 +231,7 @@ export async function getDesarrolloOnboarding(
         (playbookCount.count ?? 0) > 0
           ? "Configuración de cadencia/playbook."
           : "Opcional — se puede copiar desde otro desarrollo.",
-      href: "/admin/crm-playbook",
+      href: "/admin/crm-compliance?tab=config",
     },
     {
       id: "drive",

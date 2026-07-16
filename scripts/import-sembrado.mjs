@@ -32,8 +32,9 @@ const loadSheetRows = (wb, sheetName) => {
 
 const collectRows = (wb, config) => {
   const byKey = new Map();
+  const cancelledExtra = [];
 
-  const upsert = (row) => {
+  const upsertActive = (row) => {
     const key =
       config.unitLookupMode === "unidad|tipo"
         ? `${row.unidad}|${row.tipoProducto}`
@@ -49,24 +50,26 @@ const collectRows = (wb, config) => {
       pagos: row.pagos?.length ? row.pagos : prev.pagos,
       cancelada: Boolean(row.cancelada || prev.cancelada),
       hasOp: Boolean(row.hasOp || prev.hasOp),
+      canceladaAt: row.canceladaAt || prev.canceladaAt || null,
     });
   };
 
   for (const sheet of config.sheets) {
     const rows = loadSheetRows(wb, sheet.name);
     for (const parsed of parseSembradoSheetRows(rows, sheet)) {
-      upsert(parsed);
+      upsertActive(parsed);
     }
   }
 
+  // Cancelados: historial aparte (no pisan el estatus actual del sembrado activo).
   for (const sheet of config.cancelSheets ?? []) {
     const rows = loadSheetRows(wb, sheet.name);
     for (const parsed of parseSembradoSheetRows(rows, { ...sheet, cancelada: true })) {
-      upsert(parsed);
+      cancelledExtra.push(parsed);
     }
   }
 
-  return [...byKey.values()];
+  return [...byKey.values(), ...cancelledExtra];
 };
 
 const main = async () => {
@@ -181,7 +184,7 @@ const main = async () => {
     if (row.cliente) {
       const { data: existingProspecto } = await supabase
         .from("prospectos")
-        .select("id")
+        .select("id, notas")
         .eq("desarrollo_id", config.desarrolloId)
         .ilike("nombre", row.cliente)
         .eq("activo", true)
@@ -205,6 +208,17 @@ const main = async () => {
         prospectoPatch.ocupacion = row.ocupacion;
       }
 
+      if (row.cancelada) {
+        const fechaHist = row.canceladaAt || row.fechaApartado || new Date().toISOString().slice(0, 10);
+        const historialLine = row.observaciones
+          ? `[Apartó y canceló ${fechaHist}] Unidad ${row.unidad} · ${row.observaciones}`
+          : `[Apartó y canceló ${fechaHist}] Unidad ${row.unidad}`;
+        const prevNotas = existingProspecto?.notas?.trim() ?? "";
+        if (!prevNotas.includes(`[Apartó y canceló`) || !prevNotas.includes(row.unidad)) {
+          prospectoPatch.notas = prevNotas ? `${prevNotas}\n${historialLine}` : historialLine;
+        }
+      }
+
       if (existingProspecto?.id) {
         prospectoId = existingProspecto.id;
         await supabase.from("prospectos").update(prospectoPatch).eq("id", prospectoId);
@@ -213,10 +227,12 @@ const main = async () => {
           desarrollo_id: config.desarrolloId,
           nombre: row.cliente,
           ...prospectoPatch,
-          notas: row.origenCaptacion
-            ? `Origen sembrado: ${row.origenCaptacion}`
-            : null,
         };
+        if (!insertRow.notas) {
+          insertRow.notas = row.origenCaptacion
+            ? `Origen sembrado: ${row.origenCaptacion}`
+            : null;
+        }
         delete insertRow.updated_at;
 
         const { data: prospecto, error: prospectoError } = await supabase
@@ -234,18 +250,55 @@ const main = async () => {
       }
     }
 
-    const { data: existingOp } = await supabase
-      .from("operaciones_comerciales")
-      .select("id")
-      .eq("unidad_id", unit.id)
-      .eq("cancelada", false)
-      .maybeSingle();
+    let existingOp = null;
+    if (row.cancelada) {
+      let q = supabase
+        .from("operaciones_comerciales")
+        .select("id")
+        .eq("unidad_id", unit.id)
+        .eq("cancelada", true)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      if (row.cliente) {
+        q = q.ilike("cliente_nombre", row.cliente);
+      }
+      const { data: cancelledMatch } = await q.maybeSingle();
+      existingOp = cancelledMatch;
+    } else {
+      const { data: activeOp } = await supabase
+        .from("operaciones_comerciales")
+        .select("id")
+        .eq("unidad_id", unit.id)
+        .eq("cancelada", false)
+        .maybeSingle();
+      existingOp = activeOp;
+    }
+
+    const canceladaAtIso = row.cancelada
+      ? row.canceladaAt
+        ? `${row.canceladaAt}T12:00:00.000Z`
+        : new Date().toISOString()
+      : null;
+
+    let observacionesOp = row.observaciones ?? null;
+    if (row.cancelada) {
+      const fechaTag = row.canceladaAt || new Date().toISOString().slice(0, 10);
+      const tagLine = row.observaciones
+        ? `[Cancelado ${fechaTag}] ${row.observaciones}`
+        : `[Cancelado ${fechaTag}]`;
+      observacionesOp =
+        row.observaciones?.includes("[Cancelado") ? row.observaciones : tagLine;
+    }
 
     const opPayload = {
       desarrollo_id: config.desarrolloId,
       unidad_id: unit.id,
       prospecto_id: prospectoId,
-      estatus_sembrado: row.cancelada ? "Cancelado" : row.estatus,
+      estatus_sembrado: row.cancelada
+        ? row.estatus === "Cancelado"
+          ? "Apartado"
+          : row.estatus
+        : row.estatus,
       cliente_nombre: row.cliente || "Sin nombre",
       origen_ciudad: row.origenCiudad || null,
       equipo_venta: row.equipoVenta || null,
@@ -260,11 +313,12 @@ const main = async () => {
       fecha_cierre: row.fechaCierre,
       medio_publicitario: row.medioPublicitario,
       observaciones_pagos: row.observacionesPagos,
-      observaciones: row.observaciones,
+      observaciones: observacionesOp,
       entregado: Boolean(row.entregado),
       escriturado: Boolean(row.escriturado),
       cancelada: Boolean(row.cancelada),
-      cancelada_at: row.cancelada ? new Date().toISOString() : null,
+      cancelada_at: canceladaAtIso,
+      cancelada_en_etapa: row.cancelada ? "apartado" : null,
       comprobacion: row.comprobacion,
       updated_at: new Date().toISOString(),
     };
@@ -303,7 +357,7 @@ const main = async () => {
       operacionesCreadas += 1;
     }
 
-    if (operacionId && row.pagos?.length && !row.cancelada) {
+    if (operacionId && row.pagos?.length) {
       const { error: pagosError } = await supabase.from("cobranza_mensual").insert(
         row.pagos.map((p) => ({
           operacion_id: operacionId,

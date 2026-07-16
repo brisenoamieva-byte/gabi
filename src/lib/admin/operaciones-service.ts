@@ -4,6 +4,7 @@ import { listAsesores } from "@/lib/admin/asesores-service";
 import {
   getPrecioListaActivaForUnidad,
   getPrecioListaForUnidad,
+  getPreciosMapListaActiva,
   resolveListaForApartado,
 } from "@/lib/admin/listas-precios-service";
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
@@ -14,7 +15,9 @@ import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-
 import { markSolicitudApartadoAtendida } from "@/lib/comercial/solicitud-apartado-service";
 import { resolveUnidadEstatus } from "@/lib/comercial/unidad-disponibilidad";
 import {
+  resolveCanceladaEnEtapa,
   sembradoToInventarioEstatus,
+  type OperacionCanceladaRow,
   type OperacionComercialRecord,
   type SembradoUnidadRow,
   type UnidadCuracionInput,
@@ -125,6 +128,8 @@ export const listSembradoUnidades = async (
     }
   }
 
+  const listaActiva = await getPreciosMapListaActiva(filters.desarrolloId);
+
   const rows: SembradoUnidadRow[] = [];
 
   for (const unit of (unidades ?? []) as ProductoRecomendadoRecord[]) {
@@ -137,13 +142,25 @@ export const listSembradoUnidades = async (
       }
     }
 
+    const precioListaActiva = listaActiva?.precios.get(unit.id);
+    // Operación con precio gana (venta en curso); si no, lista activa oficial; si no, denormalizado.
+    const precio =
+      operacion?.precio_lista != null
+        ? Number(operacion.precio_lista)
+        : (precioListaActiva ?? unit.precio ?? null);
+    const listaPrecios =
+      operacion?.lista_precios ??
+      (precioListaActiva != null ? listaActiva!.lista.nombre : null) ??
+      unit.lista_precios ??
+      null;
+
     rows.push({
       unidadId: unit.id,
       unidad: unit.unidad,
       tipo: unit.tipo,
       clusterId: unit.cluster_id,
-      listaPrecios: unit.lista_precios ?? operacion?.lista_precios ?? null,
-      precio: unit.precio ?? operacion?.precio_lista ?? null,
+      listaPrecios,
+      precio,
       prototipoId: unit.prototipo_id ?? null,
       superficieTerrenoM2: unit.superficie_terreno_m2 ?? null,
       superficieConstruccionM2: unit.superficie_construccion_m2 ?? null,
@@ -166,12 +183,110 @@ export const listSembradoUnidades = async (
   return rows;
 };
 
+/** Operaciones canceladas del desarrollo (historial; la unidad ya puede estar disponible de nuevo). */
+export const listOperacionesCanceladas = async (
+  filters: { desarrolloId: string; clusterId?: string },
+  profile?: AdminProfile,
+): Promise<OperacionCanceladaRow[]> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return [];
+  }
+
+  if (profile && !canAccessDesarrollo(profile, filters.desarrolloId)) {
+    throw new Error("No tienes permiso para este desarrollo.");
+  }
+
+  let opQuery = supabase
+    .from("operaciones_comerciales")
+    .select("*")
+    .eq("desarrollo_id", filters.desarrolloId)
+    .eq("cancelada", true)
+    .order("cancelada_at", { ascending: false });
+
+  const { data: operaciones, error: opError } = await opQuery;
+  if (opError) {
+    throw new Error(opError.message);
+  }
+
+  const ops = (operaciones ?? []) as OperacionComercialRecord[];
+  if (!ops.length) {
+    return [];
+  }
+
+  const unidadIds = Array.from(new Set(ops.map((op) => op.unidad_id)));
+  let unidadesQuery = supabase
+    .from("disponibilidad_unidades")
+    .select("id, unidad, tipo, cluster_id")
+    .in("id", unidadIds);
+
+  if (filters.clusterId) {
+    unidadesQuery = unidadesQuery.eq("cluster_id", filters.clusterId);
+  }
+
+  const [{ data: unidades, error: unidadesError }, cobranzaResult] = await Promise.all([
+    unidadesQuery,
+    supabase.from("cobranza_mensual").select("operacion_id, monto").in(
+      "operacion_id",
+      ops.map((op) => op.id),
+    ),
+  ]);
+
+  if (unidadesError) {
+    throw new Error(unidadesError.message);
+  }
+  if (cobranzaResult.error) {
+    throw new Error(cobranzaResult.error.message);
+  }
+
+  const unitById = new Map(
+    (unidades ?? []).map((u) => [
+      u.id as string,
+      {
+        unidad: u.unidad as string,
+        tipo: u.tipo as string,
+        clusterId: u.cluster_id as string,
+      },
+    ]),
+  );
+
+  const cobranzaByOperacion = new Map<string, number>();
+  for (const row of cobranzaResult.data ?? []) {
+    const current = cobranzaByOperacion.get(row.operacion_id) ?? 0;
+    cobranzaByOperacion.set(row.operacion_id, current + Number(row.monto ?? 0));
+  }
+
+  const result: OperacionCanceladaRow[] = [];
+  for (const op of ops) {
+    const unit = unitById.get(op.unidad_id);
+    if (!unit) {
+      continue;
+    }
+    result.push({
+      operacion: {
+        ...op,
+        cancelada_en_etapa:
+          op.cancelada_en_etapa ?? resolveCanceladaEnEtapa(op.estatus_sembrado),
+      },
+      unidad: unit.unidad,
+      clusterId: unit.clusterId,
+      tipo: unit.tipo,
+      totalCobrado: cobranzaByOperacion.get(op.id) ?? 0,
+    });
+  }
+
+  return result;
+};
+
 export const getSembradoResumen = async (
   desarrolloId: string,
   profile?: AdminProfile,
   clusterId?: string,
 ) => {
-  const rows = await listSembradoUnidades({ desarrolloId, clusterId }, profile);
+  const [rows, canceladas] = await Promise.all([
+    listSembradoUnidades({ desarrolloId, clusterId }, profile),
+    listOperacionesCanceladas({ desarrolloId, clusterId }, profile),
+  ]);
   const resumen: Record<string, number> = { Disponibles: 0 };
 
   for (const row of rows) {
@@ -181,9 +296,14 @@ export const getSembradoResumen = async (
     resumen[key] = (resumen[key] ?? 0) + 1;
   }
 
+  if (canceladas.length) {
+    resumen.Cancelados = canceladas.length;
+  }
+
   return {
     total: rows.length,
     porEstatus: resumen,
+    canceladasCount: canceladas.length,
   };
 };
 
@@ -454,7 +574,10 @@ const syncProspectoEtapaFromOperacion = async (
     return;
   }
 
-  if (prospecto.etapa === "perdido" && !params.cancelada) {
+  if (
+    (prospecto.etapa === "perdido" || prospecto.etapa === "cancelado") &&
+    !params.cancelada
+  ) {
     return;
   }
 
@@ -1076,8 +1199,12 @@ const ESTATUS_NO_CANCELABLES = new Set(["Vendidas Cobradas"]);
 
 export type CancelOperacionInput = {
   motivo?: string;
-  /** Etapa CRM del prospecto tras cancelar (default: cita para reactivar seguimiento). */
-  prospectoEtapa?: "cita" | "perdido";
+  /**
+   * Etapa CRM tras cancelar.
+   * Default: cancelado (estadística de apartado/venta cancelada).
+   * cita = reactivar seguimiento.
+   */
+  prospectoEtapa?: "cita" | "cancelado";
 };
 
 export const cancelOperacionComercial = async (
@@ -1115,12 +1242,14 @@ export const cancelOperacionComercial = async (
     throw new Error("No se puede cancelar una venta cerrada y cobrada.");
   }
 
+  const canceladaEnEtapa = resolveCanceladaEnEtapa(operacion.estatus_sembrado);
   const canceladaAt = new Date().toISOString();
   const fecha = canceladaAt.slice(0, 10);
   const motivo = input.motivo?.trim();
+  const etapaLabel = canceladaEnEtapa === "venta" ? "venta" : "apartado";
   const notaCancelacion = motivo
-    ? `[Cancelado ${fecha}] ${motivo}`
-    : `[Cancelado ${fecha}]`;
+    ? `[Cancelado ${fecha} · ${etapaLabel}] ${motivo}`
+    : `[Cancelado ${fecha} · ${etapaLabel}]`;
   const observaciones = operacion.observaciones?.trim()
     ? `${operacion.observaciones.trim()}\n${notaCancelacion}`
     : notaCancelacion;
@@ -1130,6 +1259,8 @@ export const cancelOperacionComercial = async (
     .update({
       cancelada: true,
       cancelada_at: canceladaAt,
+      cancelada_en_etapa: canceladaEnEtapa,
+      // Conserva estatus_sembrado original (Apartado / Vendidas…) para historial y reportes.
       observaciones,
       updated_at: canceladaAt,
     })
@@ -1152,20 +1283,44 @@ export const cancelOperacionComercial = async (
   }
 
   if (operacion.prospecto_id) {
-    const nextEtapa = input.prospectoEtapa ?? "cita";
-    await supabase
+    const nextEtapa = input.prospectoEtapa ?? "cancelado";
+
+    const { data: unidadRow } = await supabase
+      .from("disponibilidad_unidades")
+      .select("unidad")
+      .eq("id", operacion.unidad_id)
+      .maybeSingle();
+
+    const unidadLabel =
+      (unidadRow?.unidad as string | undefined)?.trim() ||
+      operacion.unidad_id.slice(0, 8);
+    const historialLine = motivo
+      ? `[Apartó y canceló ${fecha}] Unidad ${unidadLabel} · ${etapaLabel} · ${motivo}`
+      : `[Apartó y canceló ${fecha}] Unidad ${unidadLabel} · ${etapaLabel}`;
+
+    const { data: prospectoRow } = await supabase
       .from("prospectos")
-      .update({
-        etapa: nextEtapa,
-        updated_at: canceladaAt,
-      })
-      .eq("id", operacion.prospecto_id);
+      .select("notas")
+      .eq("id", operacion.prospecto_id)
+      .maybeSingle();
+
+    const notasPrevias = (prospectoRow?.notas as string | null)?.trim() ?? "";
+    const notas = notasPrevias ? `${notasPrevias}\n${historialLine}` : historialLine;
+
+    const prospectoPatch: Record<string, unknown> = {
+      etapa: nextEtapa,
+      notas,
+      updated_at: canceladaAt,
+    };
+
+    await supabase.from("prospectos").update(prospectoPatch).eq("id", operacion.prospecto_id);
   }
 
   return {
     ...(operacion as OperacionComercialRecord),
     cancelada: true,
     cancelada_at: canceladaAt,
+    cancelada_en_etapa: canceladaEnEtapa,
     observaciones,
   };
 };

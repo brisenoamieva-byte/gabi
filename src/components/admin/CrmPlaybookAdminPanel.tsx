@@ -177,7 +177,7 @@ export function CrmPlaybookAdminPanel({
           </div>
 
           <label className="block max-w-md text-sm">
-            <span className="mb-1 block font-semibold text-slate-600">Desarrollo piloto</span>
+            <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
             <select
               value={desarrolloId}
               onChange={(event) => setDesarrolloId(event.target.value)}

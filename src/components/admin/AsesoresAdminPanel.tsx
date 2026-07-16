@@ -40,6 +40,11 @@ import {
 } from "@/lib/asesores/types";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
+/** Seeds de catálogo/demo: solo en local o con NEXT_PUBLIC_GABI_ADMIN_SEEDS=1. */
+const SHOW_ADMIN_SEEDS =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_GABI_ADMIN_SEEDS === "1";
+
 type AsesoresAdminPanelProps = {
   desarrollos: Desarrollo[];
   scopeLabel?: string;
@@ -670,14 +675,15 @@ export function AsesoresAdminPanel({
 
   return (
     <div className="space-y-6">
-      {isSuperAdmin ? (
+      {isSuperAdmin && SHOW_ADMIN_SEEDS ? (
         <div className="rounded-2xl border border-[#13315C]/8 bg-white p-6 shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
-            Catálogo multi-tenant
+            Setup / recuperación
           </p>
           <h2 className="mt-2 text-xl font-black text-[#13315C]">Importar catálogo desde código</h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Seed / upsert desde el código. Solo para setup o recuperación.
+            Seed / upsert desde el código. Solo visible fuera de producción (o con
+            NEXT_PUBLIC_GABI_ADMIN_SEEDS=1).
           </p>
           <button
             type="button"
@@ -705,7 +711,7 @@ export function AsesoresAdminPanel({
         {!embedded ? (
           <>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2DD4BF]">
-              Paso 3 · Asesores
+              Equipo comercial
             </p>
             <h2 className="mt-2 text-2xl font-black text-[#13315C]">Accesos al portal comercial</h2>
             {scopeLabel ? (
@@ -740,7 +746,7 @@ export function AsesoresAdminPanel({
               ))}
             </select>
           </label>
-          {!isGerenteComercial ? (
+          {!isGerenteComercial && SHOW_ADMIN_SEEDS ? (
             <button
               type="button"
               onClick={() => void handleImportDemo()}
@@ -827,12 +833,12 @@ export function AsesoresAdminPanel({
           </span>
         </div>
 
-        {!isGerenteComercial ? (
+        {!isGerenteComercial && SHOW_ADMIN_SEEDS ? (
           <p className="mt-4 max-w-3xl text-xs text-slate-500">
-            <strong>Importar demo BBR</strong> carga Ricardo (PIN 1234) y Rodrigo (PIN 5678) en
-            Supabase con PIN hasheado. Solo se crean si aún no existen.
+            <strong>Importar demo BBR</strong> carga asesores de prueba en Supabase (solo setup
+            local).
           </p>
-        ) : selectedDesarrollo ? (
+        ) : selectedDesarrollo && isGerenteComercial ? (
           <p className="mt-4 max-w-3xl text-xs text-slate-500">
             Comercializadora: <strong>{selectedDesarrollo.comercializador}</strong>. Roles
             disponibles: Gerente, Coordinador, Director y Asesor.

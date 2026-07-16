@@ -45,7 +45,19 @@ export async function POST(request: Request, context: RouteContext) {
     const prospecto = await getProspectoForAsesor(asesorId, id);
 
     if (prospecto.etapa === "vendido" || prospecto.etapa === "perdido") {
-      return NextResponse.json({ error: "Este prospecto está cerrado." }, { status: 400 });
+      return NextResponse.json(
+        { error: "No puedes solicitar apartado de un prospecto cerrado (vendido o descartado)." },
+        { status: 400 },
+      );
+    }
+    if (prospecto.etapa === "cancelado") {
+      return NextResponse.json(
+        {
+          error:
+            "Este prospecto está en Cancelado. Reactívalo a Cita antes de solicitar un nuevo apartado.",
+        },
+        { status: 400 },
+      );
     }
 
     const cotizacion = body.cotizacionId

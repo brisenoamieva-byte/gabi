@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 import type { ComplianceGateLevel } from "@/lib/comercial/crm-compliance-config";
 import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
@@ -13,7 +13,7 @@ type RecorridoComplianceGateProps = {
   threshold: number;
   pauseThreshold?: number;
   level?: ComplianceGateLevel;
-  shouldBlock: boolean;
+  shouldBlock?: boolean;
   allowContinue?: boolean;
   title?: string;
   message: string;
@@ -27,33 +27,21 @@ export function RecorridoComplianceGate({
   overdueCount,
   pendingCount,
   threshold,
-  pauseThreshold = 6,
   level: levelProp,
-  shouldBlock,
-  allowContinue: allowContinueProp,
   title,
   message,
   topExceptions,
   onContinue,
   onBack,
 }: RecorridoComplianceGateProps) {
-  const level = levelProp ?? (shouldBlock ? "pause" : "nudge");
-  const allowContinue = allowContinueProp ?? !shouldBlock;
+  const level = levelProp === "coach" ? "coach" : "nudge";
   const resolvedTitle =
     title ||
-    (level === "pause"
-      ? "Pausa breve: limpia vencidos"
-      : level === "coach"
-        ? "Ordena tu CRM y sigue vendiendo"
-        : "Un toque a tu pipeline");
+    (level === "coach" ? "Ordena tu CRM y sigue vendiendo" : "Un toque a tu pipeline");
 
-  const Icon = level === "pause" ? AlertTriangle : level === "coach" ? ShieldCheck : Sparkles;
+  const Icon = level === "coach" ? ShieldCheck : Sparkles;
   const iconWrap =
-    level === "pause"
-      ? "bg-red-100 text-red-700"
-      : level === "coach"
-        ? "bg-amber-100 text-amber-700"
-        : "bg-emerald-100 text-emerald-700";
+    level === "coach" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F2F0E9] px-5 py-10 text-[#1e293b]">
@@ -82,12 +70,8 @@ export function RecorridoComplianceGate({
             <p className="text-2xl font-black tabular-nums text-amber-700">{pendingCount}</p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-            <p className="text-[10px] font-bold uppercase text-slate-400">
-              {level === "pause" ? "Pausa" : "Coach"}
-            </p>
-            <p className="text-2xl font-black tabular-nums text-[#201044]">
-              {level === "pause" ? pauseThreshold : threshold}
-            </p>
+            <p className="text-[10px] font-bold uppercase text-slate-400">Aviso</p>
+            <p className="text-2xl font-black tabular-nums text-[#201044]">{threshold}</p>
           </div>
         </div>
 
@@ -120,9 +104,7 @@ export function RecorridoComplianceGate({
         ) : null}
 
         <p className="mt-4 text-xs leading-relaxed text-slate-500">
-          {level === "pause"
-            ? "No es un castigo: es proteger tu embudo. Mis prospectos sigue abierto para que registres WhatsApp en segundos."
-            : "Diseñado para asesores independientes: te avisamos sin frenarte de más."}
+          Te avisamos del CRM sin frenar al prospecto en campo: puedes continuar y ordenar vencidos cuando puedas.
         </p>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -133,23 +115,17 @@ export function RecorridoComplianceGate({
             Ir a mis prospectos
             <ArrowRight className="h-4 w-4" />
           </Link>
-          {allowContinue ? (
-            <button
-              type="button"
-              onClick={onContinue}
-              className={`inline-flex flex-1 items-center justify-center rounded-xl px-4 py-3 text-sm font-bold ${
-                level === "coach"
-                  ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                  : "bg-[#6cc24a] text-[#201044]"
-              }`}
-            >
-              {level === "coach" ? "Continuar hoy (me comprometo)" : "Continuar recorrido"}
-            </button>
-          ) : (
-            <p className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-red-200 bg-red-50 px-3 py-3 text-center text-xs font-semibold text-red-800">
-              Recorrido/cotizador nuevos se liberan al bajar de {pauseThreshold} vencidos
-            </p>
-          )}
+          <button
+            type="button"
+            onClick={onContinue}
+            className={`inline-flex flex-1 items-center justify-center rounded-xl px-4 py-3 text-sm font-bold ${
+              level === "coach"
+                ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                : "bg-[#6cc24a] text-[#201044]"
+            }`}
+          >
+            {level === "coach" ? "Continuar (atiendo al prospecto)" : "Continuar recorrido"}
+          </button>
           <button
             type="button"
             onClick={onBack}

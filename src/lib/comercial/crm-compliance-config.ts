@@ -3,8 +3,9 @@
  * motivación y claridad, no castigo.
  *
  * nudge  → recordatorio amable (sigue trabajando)
- * coach  → pausa consciente: ve a limpiar 1–2 leads, puedes continuar hoy
- * pause  → solo entonces se frena recorrido/cotizador nuevo (mis-leads siempre libre)
+ * coach  → invita a limpiar 1–2 leads, pero siempre puedes continuar
+ *
+ * No hay bloqueo de recorrido/cotizador: el prospecto nuevo es prioridad.
  */
 
 export type ComplianceGateLevel = "ok" | "nudge" | "coach" | "pause";
@@ -16,7 +17,7 @@ export const getComplianceNudgeThreshold = (): number => {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
 };
 
-/** Antes se usaba como único umbral de “bloqueo” UI (default 3). Ahora es nivel coach. */
+/** Umbral a partir del cual el mensaje pasa de nudge a coach (sigue permitiendo continuar). */
 export const getComplianceRecorridoBlockThreshold = (): number => {
   const raw = process.env.COMPLIANCE_RECORRIDO_BLOCK_OVERDUE?.trim();
   if (!raw) return 3;
@@ -24,7 +25,10 @@ export const getComplianceRecorridoBlockThreshold = (): number => {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 3;
 };
 
-/** Pause duro: solo con muchos vencidos. Default 6 — evita frustrar al asesor. */
+/**
+ * @deprecated Ya no se usa para bloquear. Se mantiene por env/compat;
+ * el gate máximo efectivo es "coach" con continuar siempre permitido.
+ */
 export const getCompliancePauseThreshold = (): number => {
   const raw = process.env.COMPLIANCE_PAUSE_OVERDUE?.trim();
   if (!raw) return 6;
@@ -40,8 +44,8 @@ export const isComplianceServerEnforced = (): boolean =>
 export const resolveComplianceGateLevel = (overdueCount: number): ComplianceGateLevel => {
   if (overdueCount <= 0) return "ok";
   if (overdueCount < getComplianceRecorridoBlockThreshold()) return "nudge";
-  if (overdueCount < getCompliancePauseThreshold()) return "coach";
-  return "pause";
+  // Nunca "pause": no limitamos atender prospectos nuevos por trabajo pendiente.
+  return "coach";
 };
 
 export type ContactoResultadoRapido =

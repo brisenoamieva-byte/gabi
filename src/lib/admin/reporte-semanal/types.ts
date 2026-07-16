@@ -31,6 +31,8 @@ export type ReporteSemanalOperacionLinea = {
   fecha: string | null;
   medio: string | null;
   estatus: string;
+  /** Solo cancelados: apartado | venta */
+  canceladaEnEtapa?: "apartado" | "venta" | null;
 };
 
 export type ReporteSemanalMatrizCelda = {

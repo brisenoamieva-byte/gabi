@@ -528,8 +528,7 @@ export function CatalogoAdminPanel() {
               ))}
               {!comercializadoras.length ? (
                 <p className="py-8 text-center text-sm text-slate-500">
-                  No hay comercializadoras. Crea la primera o importa el catálogo piloto desde
-                  Asesores.
+                  No hay comercializadoras. Crea la primera desde este catálogo.
                 </p>
               ) : null}
             </div>

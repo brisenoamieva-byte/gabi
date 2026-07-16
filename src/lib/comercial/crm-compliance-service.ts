@@ -458,8 +458,9 @@ export const getRecorridoComplianceGate = async (
   }
 
   const level = resolveComplianceGateLevel(summary.overdueCount);
-  const shouldBlock = level === "pause";
-  const allowContinue = level !== "pause";
+  // Nunca bloquear recorrido/cotizador: el prospecto en campo es prioridad.
+  const shouldBlock = false;
+  const allowContinue = true;
 
   let title = "";
   let message = "";
@@ -468,10 +469,7 @@ export const getRecorridoComplianceGate = async (
     message = `Tienes ${summary.overdueCount} seguimiento(s) vencido(s). Dos minutos en Mis prospectos protegen tu comisión — luego sigues con el recorrido.`;
   } else if (level === "coach") {
     title = "Ordena tu CRM y sigue vendiendo";
-    message = `Llevas ${summary.overdueCount} paso(s) vencido(s). Atiende 1 o 2 leads clave (WhatsApp rápido) y regresas. Tu embudo es tu ingreso.`;
-  } else if (level === "pause") {
-    title = "Pausa breve: limpia vencidos";
-    message = `Hay ${summary.overdueCount} seguimientos vencidos (umbral ${pauseThreshold}). Cierra los más urgentes en Mis prospectos; el recorrido y cotizador nuevos se liberan al bajar de ${pauseThreshold}. Mis prospectos siempre está abierto.`;
+    message = `Llevas ${summary.overdueCount} paso(s) vencido(s). Atiende 1 o 2 leads clave cuando puedas (WhatsApp rápido). El prospecto nuevo no se detiene.`;
   }
 
   return {

@@ -43,6 +43,31 @@ export const getPrecioDesdePrototipo = (
   return prototipo.precioFinal || prototipo.precioBase;
 };
 
+/** Precio “desde” de un cluster: mínimo vivo del inventario cotizable, con fallback al catálogo. */
+export const getPrecioDesdeCluster = (
+  precioDesdeCatalogo: number,
+  prototipos: Prototipo[],
+  inventario: DisponibilidadUnidad[],
+): number => {
+  const desdePrototipos = prototipos
+    .map((prototipo) =>
+      getPrecioDesdePrototipo(prototipo, getUnidadesPorPrototipo(inventario, prototipo.id)),
+    )
+    .filter((precio) => Number.isFinite(precio) && precio > 0);
+
+  const desdeUnidades = inventario
+    .filter(isUnidadEnVenta)
+    .map((unit) => unit.precio)
+    .filter((precio): precio is number => typeof precio === "number" && precio > 0);
+
+  const precios = [...desdePrototipos, ...desdeUnidades];
+  if (precios.length) {
+    return Math.min(...precios);
+  }
+
+  return precioDesdeCatalogo;
+};
+
 export const prototipoTieneVariosPrecios = (unidades: DisponibilidadUnidad[]): boolean => {
   const precios = new Set(
     unidades

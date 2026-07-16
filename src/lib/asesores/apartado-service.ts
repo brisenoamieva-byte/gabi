@@ -17,6 +17,11 @@ const assertProspectoPuedeApartar = (etapa: string) => {
   if (etapa === "perdido") {
     throw new Error("No puedes apartar un prospecto marcado como descartado.");
   }
+  if (etapa === "cancelado") {
+    throw new Error(
+      "Este prospecto está en Cancelado. Reactívalo a Cita antes de registrar un nuevo apartado.",
+    );
+  }
 };
 
 const assertSinOperacionActiva = async (prospectoId: string) => {

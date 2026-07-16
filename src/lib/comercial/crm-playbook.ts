@@ -310,7 +310,7 @@ export const canAdvancePlaybookEtapa = (
     return { ok: true };
   }
 
-  if (targetEtapa === "perdido") {
+  if (targetEtapa === "perdido" || targetEtapa === "cancelado") {
     return { ok: true };
   }
 

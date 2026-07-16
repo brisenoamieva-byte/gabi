@@ -157,9 +157,15 @@ function toOperacionLinea(
     lista: listas.resolveForOperacion(operacion),
     plazo: operacion.esquema_pago,
     asesor: operacion.promotor_nombre ?? operacion.equipo_venta,
-    fecha: operacion.fecha_apartado ?? operacion.fecha_cierre,
+    fecha: operacion.cancelada
+      ? (operacion.cancelada_at?.slice(0, 10) ?? operacion.fecha_apartado)
+      : (operacion.fecha_apartado ?? operacion.fecha_cierre),
     medio: operacion.medio_publicitario,
     estatus: estatusSembradoLabel[operacion.estatus_sembrado] ?? operacion.estatus_sembrado,
+    canceladaEnEtapa: operacion.cancelada
+      ? (operacion.cancelada_en_etapa ??
+        (operacion.estatus_sembrado?.startsWith("Vendid") ? "venta" : "apartado"))
+      : null,
   };
 }
 
@@ -459,7 +465,9 @@ function buildSeguimiento(
   prospectosMes: Awaited<ReturnType<typeof listProspectos>>,
   cancelacionesSemana: number,
 ): ReporteSemanalSeguimiento[] {
-  const bucket = (p: (typeof prospectosSemana)[number]): string => {
+  const bucket = (p: (typeof prospectosSemana)[number]): string | null => {
+    // Cancelaciones de apartado/venta se cuentan por operación (cancelacionesSemana).
+    if (p.etapa === "cancelado") return null;
     if (p.etapa === "perdido") return "No comprará";
     if (p.etapa === "apartado" || p.etapa === "vendido") return "Apartó / Compró / Asignaciones";
     if (p.etapa === "cita" || p.etapa === "cotizo" || p.etapa === "negociacion") return "En seguimiento";
@@ -477,11 +485,17 @@ function buildSeguimiento(
   for (const p of prospectosSemana) {
     if (p.es_spam || p.es_duplicado) continue;
     const key = bucket(p);
+    if (!key) continue;
     semanaMap.set(key, (semanaMap.get(key) ?? 0) + 1);
   }
   for (const p of prospectosMes) {
     if (p.es_spam || p.es_duplicado) continue;
+    if (p.etapa === "cancelado") {
+      mesMap.set("Canceló", (mesMap.get("Canceló") ?? 0) + 1);
+      continue;
+    }
     const key = bucket(p);
+    if (!key) continue;
     mesMap.set(key, (mesMap.get(key) ?? 0) + 1);
   }
 

@@ -3,6 +3,9 @@ import { isSuperAdmin } from "@/lib/admin/permissions";
 import { getAdminSession } from "@/lib/admin/session";
 import { seedCatalogFromData } from "@/lib/catalog/seed";
 
+const seedsAllowed =
+  process.env.NODE_ENV !== "production" || process.env.GABI_ADMIN_SEEDS === "1";
+
 export async function POST() {
   const session = await getAdminSession();
   if (!session) {
@@ -11,6 +14,13 @@ export async function POST() {
 
   if (!isSuperAdmin(session.profile)) {
     return NextResponse.json({ error: "Solo superadmin puede importar catálogo." }, { status: 403 });
+  }
+
+  if (!seedsAllowed) {
+    return NextResponse.json(
+      { error: "Importar catálogo deshabilitado en producción. Usa GABI_ADMIN_SEEDS=1 si es necesario." },
+      { status: 403 },
+    );
   }
 
   try {
