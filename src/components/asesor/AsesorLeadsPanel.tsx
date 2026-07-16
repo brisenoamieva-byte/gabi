@@ -663,6 +663,7 @@ export function AsesorLeadsPanel({
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
   const [periodFilter, setPeriodFilter] = useState<LeadPeriodFilter>("");
   const [etapaFilter, setEtapaFilter] = useState(PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO);
+  const [calificacionFilter, setCalificacionFilter] = useState<"" | "A" | "B" | "C" | "sin">("");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [prospectos, setProspectos] = useState<ProspectoListRow[]>([]);
@@ -941,6 +942,32 @@ export function AsesorLeadsPanel({
     [resumen],
   );
 
+  const calificacionCounts = useMemo(() => {
+    const counts = { A: 0, B: 0, C: 0, sin: 0 };
+    for (const row of prospectos) {
+      const calificacion = resolvePerfilCalificacionLead(row);
+      if (!calificacion) {
+        counts.sin += 1;
+      } else {
+        counts[calificacion] += 1;
+      }
+    }
+    return counts;
+  }, [prospectos]);
+
+  const visibleProspectos = useMemo(() => {
+    if (!calificacionFilter) {
+      return prospectos;
+    }
+    return prospectos.filter((row) => {
+      const calificacion = resolvePerfilCalificacionLead(row);
+      if (calificacionFilter === "sin") {
+        return calificacion == null;
+      }
+      return calificacion === calificacionFilter;
+    });
+  }, [prospectos, calificacionFilter]);
+
   return (
     <div className="space-y-4">
       {playbookEnabled ? (
@@ -1077,6 +1104,31 @@ export function AsesorLeadsPanel({
           </div>
         ) : null}
 
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {(
+            [
+              { id: "" as const, label: `Calif. todas (${prospectos.length})` },
+              { id: "A" as const, label: `A (${calificacionCounts.A})` },
+              { id: "B" as const, label: `B (${calificacionCounts.B})` },
+              { id: "C" as const, label: `C (${calificacionCounts.C})` },
+              { id: "sin" as const, label: `Sin calificar (${calificacionCounts.sin})` },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.id || "calif-all"}
+              type="button"
+              onClick={() => setCalificacionFilter(option.id)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                calificacionFilter === option.id
+                  ? "bg-[#201044] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
         <label className="relative mt-4 block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" strokeWidth={2} />
           <input
@@ -1100,16 +1152,19 @@ export function AsesorLeadsPanel({
             <Loader2 className="h-4 w-4 animate-spin" />
             Cargando prospectos…
           </div>
-        ) : !prospectos.length ? (
+        ) : !visibleProspectos.length ? (
           <div className="px-6 py-16 text-center">
             <p className="text-sm font-medium text-slate-600">
-              {etapaFilter === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO
-                ? "No hay prospectos por atender en este momento."
-                : canManageAllProspectos
-                  ? "Aún no hay prospectos registrados en este desarrollo."
-                  : "Aún no tienes prospectos registrados."}
+              {calificacionFilter
+                ? "No hay prospectos con esa calificación en la vista actual."
+                : etapaFilter === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO
+                  ? "No hay prospectos por atender en este momento."
+                  : canManageAllProspectos
+                    ? "Aún no hay prospectos registrados en este desarrollo."
+                    : "Aún no tienes prospectos registrados."}
             </p>
-            {!canManageAllProspectos &&
+            {!calificacionFilter &&
+            !canManageAllProspectos &&
             etapaFilter !== PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO ? (
               <p className="mt-1 text-sm text-slate-500">
                 Crea uno con <span className="font-semibold text-[#201044]">Nuevo lead</span>, haz un
@@ -1119,7 +1174,7 @@ export function AsesorLeadsPanel({
           </div>
         ) : viewMode === "tablero" ? (
           <LeadsKanbanBoard
-            prospectos={prospectos}
+            prospectos={visibleProspectos}
             etapas={PROSPECTO_ETAPAS}
             movableEtapas={ETAPAS_ASESOR}
             formatActivity={formatLeadActivity}
@@ -1129,7 +1184,7 @@ export function AsesorLeadsPanel({
           />
         ) : (
           <ul className="divide-y divide-slate-100">
-            {prospectos.map((row) => {
+            {visibleProspectos.map((row) => {
               const calificacion = resolvePerfilCalificacionLead(row);
               return (
                 <li key={row.id}>
