@@ -17,6 +17,11 @@ export type PartnerRecord = {
   email: string | null;
   notas: string | null;
   activo: boolean;
+  convenio_storage_path: string | null;
+  convenio_public_url: string | null;
+  convenio_nombre_archivo: string | null;
+  convenio_subido_at: string | null;
+  convenio_subido_por: string | null;
   created_at: string;
   updated_at: string;
 };

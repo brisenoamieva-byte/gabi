@@ -507,7 +507,7 @@ export function MisionLaGaviaSimuladorPanel({
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <MetricCard label="Precio lista mar26" value={formatPrice(simulacion.precioLista)} variant="accent" />
+        <MetricCard label="Precio lista" value={formatPrice(simulacion.precioLista)} variant="accent" />
         <MetricCard
           label="Descuento vs lista"
           value={formatPctShort(simulacion.descuentoVsListaPct)}

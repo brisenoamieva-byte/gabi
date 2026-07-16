@@ -8,6 +8,7 @@ import {
   type InventarioEstatus,
   type SembradoUnidadRow,
 } from "@/lib/comercial/sembrado-status";
+import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
 
 type SembradoUnidadDrawerProps = {
   row: SembradoUnidadRow;
@@ -51,7 +52,7 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    precio: row.precio?.toString() ?? "",
+    precio: row.precio ? formatAmountInput(row.precio) : "",
     orden: row.orden.toString(),
     visitable: row.visitable,
     prioridadComercial: row.prioridadComercial,
@@ -77,7 +78,7 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          precio: form.precio ? Number(form.precio.replace(/[$,\s]/g, "")) : null,
+          precio: form.precio ? parseMoneyInput(form.precio) : null,
           orden: Number(form.orden) || 0,
           visitable: form.visitable,
           prioridadComercial: form.prioridadComercial,
@@ -160,9 +161,15 @@ export function SembradoUnidadDrawer({ row, onClose, onSuccess }: SembradoUnidad
             <Field label="Precio lista">
               <input
                 value={form.precio}
-                onChange={(event) => setForm((prev) => ({ ...prev, precio: event.target.value }))}
-                className={inputClass}
-                placeholder="0"
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    precio: formatAmountInput(parseMoneyInput(event.target.value) ?? 0),
+                  }))
+                }
+                className={`${inputClass} tabular-nums`}
+                placeholder="$0.00"
+                inputMode="decimal"
               />
             </Field>
 

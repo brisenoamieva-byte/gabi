@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -122,8 +122,8 @@ export function ComplianceCoachPanel({
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
             Auditoría CRM
           </p>
-          <h1 className="text-2xl font-black tracking-tight text-gabi-ink">Compliance Coach</h1>
-          <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
+          <h1 className="text-2xl font-black tracking-tight text-gabi-forest">Compliance Coach</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
             Lista de excepciones para revisión operativa: pasos vencidos y pendientes antes del
             reporte comercial. Sin acceso a edición de leads — solo auditoría y exportación.
             {scopeLabel ? ` · ${scopeLabel}` : ""}
@@ -134,7 +134,7 @@ export function ComplianceCoachPanel({
             type="button"
             onClick={exportCsv}
             disabled={!desarrolloId || !report?.playbookEnabled}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink transition hover:bg-gabi-cream disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-forest transition hover:bg-gabi-cream disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
             Exportar CSV
@@ -143,7 +143,7 @@ export function ComplianceCoachPanel({
             type="button"
             onClick={() => void load()}
             disabled={loading || !desarrolloId}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink transition hover:bg-gabi-cream disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-forest transition hover:bg-gabi-cream disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Actualizar
@@ -157,13 +157,13 @@ export function ComplianceCoachPanel({
         </div>
       ) : (
         <div className="rounded-2xl border border-gabi-cream-dark bg-white p-4 shadow-sm">
-          <label className="text-xs font-bold uppercase tracking-wide text-gabi-sand">
+          <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
             Desarrollo
           </label>
           <select
             value={desarrolloId ?? ""}
             onChange={(event) => setDesarrolloId(event.target.value)}
-            className="mt-2 w-full max-w-md rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#201044] focus:outline-none focus:ring-2 focus:ring-[#201044]/15"
+            className="mt-2 w-full max-w-md rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20"
           >
             {desarrollos.map((item) => (
               <option key={item.id} value={item.id}>
@@ -181,7 +181,7 @@ export function ComplianceCoachPanel({
       ) : null}
 
       {loading && !report ? (
-        <div className="flex items-center gap-2 text-sm text-gabi-sand">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Cargando excepciones…
         </div>
@@ -211,15 +211,15 @@ export function ComplianceCoachPanel({
           <section className="rounded-2xl border border-gabi-cream-dark bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gabi-cream-dark px-5 py-4">
               <div>
-                <h2 className="text-sm font-bold text-gabi-ink">Excepciones ({report.exceptions.length})</h2>
-                <p className="text-xs text-gabi-sand">
+                <h2 className="text-sm font-bold text-gabi-forest">Excepciones ({report.exceptions.length})</h2>
+                <p className="text-xs text-slate-500">
                   Vencidos primero; leads excluidos del embudo confiable marcados
                 </p>
               </div>
               {canOpenLeads ? (
                 <Link
                   href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId ?? "")}`}
-                  className="text-sm font-semibold text-[#201044] hover:underline"
+                  className="text-sm font-semibold text-gabi-forest hover:underline"
                 >
                   Abrir leads
                 </Link>
@@ -228,7 +228,7 @@ export function ComplianceCoachPanel({
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-gabi-sand">
+                  <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-slate-500">
                     <th className="px-5 py-3">Prospecto</th>
                     <th className="px-5 py-3">Asesor</th>
                     <th className="px-5 py-3">Etapa</th>
@@ -290,14 +290,14 @@ export function ComplianceCoachPanel({
             <div className="flex items-start gap-3">
               <MessageCircle className="mt-0.5 h-5 w-5 text-gabi-sand" />
               <div className="flex-1">
-                <h2 className="text-sm font-bold text-gabi-ink">Probar WhatsApp compliance</h2>
-                <p className="mt-1 text-xs text-gabi-sand">
+                <h2 className="text-sm font-bold text-gabi-forest">Probar WhatsApp compliance</h2>
+                <p className="mt-1 text-xs text-slate-500">
                   Envía la plantilla <code className="text-[11px]">gabi_crm_pendiente_asesor</code> a
                   un teléfono de prueba (asesor o tú).
                 </p>
                 <div className="mt-3 flex flex-wrap items-end gap-3">
                   <label className="min-w-[12rem] flex-1">
-                    <span className="text-xs font-semibold text-gabi-sand">Teléfono (+52…)</span>
+                    <span className="text-xs font-semibold text-slate-500">Teléfono (+52…)</span>
                     <input
                       type="tel"
                       value={testPhone}
@@ -317,16 +317,16 @@ export function ComplianceCoachPanel({
                   </button>
                 </div>
                 {testStatus ? (
-                  <p className="mt-2 text-xs text-gabi-sand">{testStatus}</p>
+                  <p className="mt-2 text-xs text-slate-500">{testStatus}</p>
                 ) : null}
               </div>
             </div>
           </section>
 
-          <p className="text-xs text-gabi-sand">
+          <p className="text-xs text-slate-500">
             Actualizado: {new Date(report.generatedAt).toLocaleString("es-MX")}. Gerentes pueden ver
             el panel completo en{" "}
-            <Link href="/admin/crm-compliance" className="font-semibold text-[#201044] hover:underline">
+            <Link href="/admin/crm-compliance" className="font-semibold text-gabi-forest hover:underline">
               Salud CRM
             </Link>
             .
@@ -356,9 +356,9 @@ function CoachMetric({
 
   return (
     <div className={`rounded-2xl border ${border} bg-white p-4 shadow-sm`}>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-gabi-sand">{label}</p>
-      <p className="mt-1 text-3xl font-black tabular-nums tracking-tight text-gabi-ink">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-gabi-sand">{hint}</p> : null}
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 text-3xl font-black tabular-nums tracking-tight text-gabi-forest">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
     </div>
   );
 }

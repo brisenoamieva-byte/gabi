@@ -22,6 +22,7 @@ export async function GET(request: Request) {
   const desarrolloId = searchParams.get("desarrolloId");
   const unidadId = searchParams.get("unidadId");
   const prospectoId = searchParams.get("prospectoId");
+  const listaPreciosId = searchParams.get("listaPreciosId");
 
   if (prospectoId) {
     if (!canAccessModule(session.profile, "leads") && !canAccessModule(session.profile, "sembrado")) {
@@ -44,7 +45,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const prefill = await getApartadoPrefill(desarrolloId, unidadId, session.profile);
+    const prefill = await getApartadoPrefill(
+      desarrolloId,
+      unidadId,
+      session.profile,
+      listaPreciosId,
+    );
     return NextResponse.json({ prefill });
   } catch (error) {
     return NextResponse.json(

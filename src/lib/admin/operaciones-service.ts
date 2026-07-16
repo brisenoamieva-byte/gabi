@@ -1,6 +1,11 @@
 import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
 import type { DesarrolloSembradoSegment } from "@/lib/catalog/desarrollos-registry";
 import { listAsesores } from "@/lib/admin/asesores-service";
+import {
+  getPrecioListaActivaForUnidad,
+  getPrecioListaForUnidad,
+  resolveListaForApartado,
+} from "@/lib/admin/listas-precios-service";
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import { getProspectoById } from "@/lib/admin/prospectos-service";
@@ -258,6 +263,7 @@ export type CreateApartadoInput = {
   promotorNombre?: string;
   tipoInversion?: string | null;
   listaPrecios?: string;
+  listaPreciosId?: string | null;
   precioLista?: number | null;
   descuentoPct?: number | null;
   precioVenta?: number | null;
@@ -277,6 +283,7 @@ export type ApartadoPrefill = {
   unidad: string;
   tipo: string;
   listaPrecios: string | null;
+  listaPreciosId: string | null;
   precioLista: number | null;
   prospectoId: string | null;
   cotizacionId: string | null;
@@ -360,6 +367,7 @@ export const getApartadoContextFromProspecto = async (
       unidad: cotizacion?.unidad_numero ?? "",
       tipo: cotizacion?.tipo_unidad ?? "",
       listaPrecios: null,
+      listaPreciosId: null,
       precioLista:
         cotizacion?.precio_lista != null ? Number(cotizacion.precio_lista) : null,
       prospectoId: prospecto.id,
@@ -467,6 +475,7 @@ export const getApartadoPrefill = async (
   desarrolloId: string,
   unidadId: string,
   profile?: AdminProfile,
+  listaPreciosId?: string | null,
 ): Promise<ApartadoPrefill> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -535,21 +544,42 @@ export const getApartadoPrefill = async (
     prospecto = data;
   }
 
-  const precioLista =
+  const precioListaFallback =
     cotizacion?.precio_lista != null
       ? Number(cotizacion.precio_lista)
       : unit.precio != null
         ? Number(unit.precio)
         : null;
 
+  const listaResolvida = listaPreciosId
+    ? await resolveListaForApartado(desarrolloId, listaPreciosId)
+    : null;
+
+  const precioDesdeLista = listaResolvida
+    ? await getPrecioListaForUnidad(listaResolvida.id, unit.id)
+    : await getPrecioListaActivaForUnidad(desarrolloId, unit.id);
+
+  const precioLista = precioDesdeLista?.precioLista ?? precioListaFallback;
+
+  const descuentoPct =
+    cotizacion?.descuento_pct != null ? Number(cotizacion.descuento_pct) : null;
+
+  const precioVentaFromCotizacion =
+    cotizacion?.precio_total != null ? Number(cotizacion.precio_total) : null;
+
   const precioVenta =
-    cotizacion?.precio_total != null ? Number(cotizacion.precio_total) : precioLista;
+    precioVentaFromCotizacion != null && !listaPreciosId
+      ? precioVentaFromCotizacion
+      : descuentoPct != null && precioLista != null
+        ? Math.round(precioLista * (1 - descuentoPct / 100) * 100) / 100
+        : precioLista;
 
   return {
     unidadId: unit.id,
     unidad: unit.unidad,
     tipo: unit.tipo,
-    listaPrecios: unit.lista_precios ?? null,
+    listaPrecios: precioDesdeLista?.lista.nombre ?? unit.lista_precios ?? null,
+    listaPreciosId: precioDesdeLista?.lista.id ?? listaResolvida?.id ?? null,
     precioLista,
     prospectoId: prospecto?.id ?? cotizacion?.prospecto_id ?? null,
     cotizacionId: cotizacion?.id ?? null,
@@ -566,8 +596,7 @@ export const getApartadoPrefill = async (
     promotorNombre: prospecto?.promotor_nombre ?? null,
     tipoInversion: prospecto?.tipo_inversion ?? null,
     esquemaPago: cotizacion?.esquema_pago ?? null,
-    descuentoPct:
-      cotizacion?.descuento_pct != null ? Number(cotizacion.descuento_pct) : null,
+    descuentoPct,
     precioVenta,
     prospectoEmail: prospecto?.email ?? null,
     prospectoTelefono: prospecto?.telefono ?? null,
@@ -666,8 +695,22 @@ export const createOperacionApartado = async (
       .eq("id", prospectoId);
   }
 
-  const precioVenta = input.precioVenta ?? input.precioLista ?? null;
+  const listaResolvida = await resolveListaForApartado(
+    input.desarrolloId,
+    input.listaPreciosId,
+  );
+
+  let precioLista = input.precioLista ?? null;
+  if (precioLista == null && listaResolvida) {
+    const fromLista = await getPrecioListaForUnidad(listaResolvida.id, input.unidadId);
+    precioLista = fromLista?.precioLista ?? null;
+  }
+
+  const precioVenta = input.precioVenta ?? precioLista ?? null;
   const fechaApartado = input.fechaApartado || new Date().toISOString().slice(0, 10);
+
+  const listaLabel =
+    input.listaPrecios?.trim() || listaResolvida?.nombre || null;
 
   const { data: operacion, error: opError } = await supabase
     .from("operaciones_comerciales")
@@ -682,8 +725,9 @@ export const createOperacionApartado = async (
       equipo_venta: input.equipoVenta?.trim() || null,
       promotor_nombre: input.promotorNombre?.trim() || null,
       tipo_inversion: input.tipoInversion ?? null,
-      lista_precios: input.listaPrecios?.trim() || null,
-      precio_lista: input.precioLista ?? null,
+      lista_precios: listaLabel,
+      lista_precios_id: listaResolvida?.id ?? null,
+      precio_lista: precioLista,
       descuento_pct: input.descuentoPct ?? null,
       precio_venta: precioVenta,
       esquema_pago: input.esquemaPago?.trim() || null,
@@ -742,7 +786,7 @@ export const createOperacionApartado = async (
     .from("disponibilidad_unidades")
     .update({
       estatus: inventarioEstatus,
-      lista_precios: input.listaPrecios?.trim() || null,
+      lista_precios: listaLabel,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.unidadId);
@@ -780,6 +824,7 @@ export type UpdateOperacionInput = {
   estatusSembrado?: string;
   clienteNombre?: string;
   origenCiudad?: string;
+  origenCaptacion?: string;
   equipoVenta?: string;
   promotorNombre?: string;
   tipoInversion?: string | null;
@@ -792,6 +837,7 @@ export type UpdateOperacionInput = {
   medioPublicitario?: string;
   observacionesPagos?: string;
   observaciones?: string;
+  contratoFirmado?: boolean;
   personaMoral?: boolean;
   cobranza?: Array<{ mes: string; monto: number }>;
 };
@@ -886,6 +932,9 @@ export const updateOperacionComercial = async (
   if (input.origenCiudad !== undefined) {
     patch.origen_ciudad = input.origenCiudad.trim() || null;
   }
+  if (input.origenCaptacion !== undefined) {
+    patch.origen_captacion = input.origenCaptacion.trim() || null;
+  }
   if (input.equipoVenta !== undefined) {
     patch.equipo_venta = input.equipoVenta.trim() || null;
   }
@@ -921,6 +970,12 @@ export const updateOperacionComercial = async (
   }
   if (input.observaciones !== undefined) {
     patch.observaciones = input.observaciones.trim() || null;
+  }
+  if (input.contratoFirmado !== undefined) {
+    patch.contrato_firmado = input.contratoFirmado;
+    patch.contrato_firmado_at = input.contratoFirmado
+      ? new Date().toISOString().slice(0, 10)
+      : null;
   }
   if (input.personaMoral !== undefined) {
     patch.persona_moral = input.personaMoral;

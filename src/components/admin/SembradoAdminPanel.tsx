@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Building2,
+  CircleDollarSign,
   ClipboardList,
   Home,
   Layers,
@@ -19,6 +20,7 @@ import {
 import type { Cluster, Desarrollo, Prototipo } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 import { InventarioAdminPanel } from "@/components/admin/InventarioAdminPanel";
+import { ListasPreciosAdminPanel } from "@/components/admin/ListasPreciosAdminPanel";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer";
@@ -40,7 +42,7 @@ type SembradoAdminPanelProps = {
   prototipos: Prototipo[];
 };
 
-type SembradoVista = "sembrado" | "curacion";
+type SembradoVista = "sembrado" | "curacion" | "listas";
 
 type Resumen = {
   total: number;
@@ -55,7 +57,6 @@ function SembradoTable({
   onCompletarApartado,
   onVerOperacion,
   onEditUnidad,
-  onToggleVisitable,
   dense = false,
   stickyHeader = false,
   stickyFirstColumn = false,
@@ -67,7 +68,6 @@ function SembradoTable({
   onCompletarApartado: (unidadId: string) => void;
   onVerOperacion: (operacionId: string) => void;
   onEditUnidad: (row: SembradoUnidadRow) => void;
-  onToggleVisitable: (row: SembradoUnidadRow) => void;
   dense?: boolean;
   stickyHeader?: boolean;
   stickyFirstColumn?: boolean;
@@ -107,7 +107,6 @@ function SembradoTable({
       <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>
           <th className={`${cellPad} ${headClass} ${firstHeadClass}`}>Unidad</th>
-          <th className={`${cellPad} ${headClass}`}>Recorrido</th>
           <th className={`${cellPad} ${headClass}`}>Precio lista</th>
           <th className={`${cellPad} ${headClass}`}>Lista</th>
           <th className={`${cellPad} ${headClass}`}>Estatus</th>
@@ -151,20 +150,6 @@ function SembradoTable({
                     {row.unidad}
                   </button>
                   <p className="text-xs text-slate-400">{row.tipo}</p>
-                </td>
-                <td className={cellPad} onClick={(event) => event.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => onToggleVisitable(row)}
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                      row.visitable
-                        ? "bg-sky-100 text-sky-800"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                    title={row.visitable ? "Visible en recorrido" : "Oculta en recorrido"}
-                  >
-                    {row.visitable ? "Sí" : "No"}
-                  </button>
                 </td>
                 <td className={`${cellPad} tabular-nums text-slate-600`}>
                   {row.precio ? formatPrice(row.precio) : "—"}
@@ -285,9 +270,12 @@ export function SembradoAdminPanel({
 }: SembradoAdminPanelProps) {
   const searchParams = useSearchParams();
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
-  const [vista, setVista] = useState<SembradoVista>(
-    searchParams.get("seccion") === "curacion" ? "curacion" : "sembrado",
-  );
+  const [vista, setVista] = useState<SembradoVista>(() => {
+    const seccion = searchParams.get("seccion");
+    if (seccion === "curacion") return "curacion";
+    if (seccion === "listas") return "listas";
+    return "sembrado";
+  });
   const [segmento, setSegmento] = useState<SembradoSegmentoId>(() =>
     defaultSegmentoForDesarrollo(desarrolloId),
   );
@@ -413,23 +401,6 @@ export function SembradoAdminPanel({
     setShowAllUnits(true);
   }, [desarrolloId, segmento]);
 
-  const toggleVisitable = async (row: SembradoUnidadRow) => {
-    try {
-      const response = await fetch(`/api/admin/sembrado/unidades/${row.unidadId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitable: !row.visitable }),
-      });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo actualizar.");
-      }
-      void loadSembrado();
-    } catch (toggleError) {
-      setError(toggleError instanceof Error ? toggleError.message : "Error al actualizar.");
-    }
-  };
-
   useEffect(() => {
     setSegmento(defaultSegmentoForDesarrollo(desarrolloId));
   }, [desarrolloId]);
@@ -464,7 +435,6 @@ export function SembradoAdminPanel({
     onCompletarApartado: (unidadId: string) => openApartadoModal(unidadId, "completar"),
     onVerOperacion: setOperacionId,
     onEditUnidad: setUnidadEdit,
-    onToggleVisitable: (row: SembradoUnidadRow) => void toggleVisitable(row),
   };
 
   const renderSembradoTable = (options?: {
@@ -572,6 +542,18 @@ export function SembradoAdminPanel({
           >
             <Table2 className="h-4 w-4" />
             Curación e importación CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista("listas")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
+              vista === "listas"
+                ? "bg-gabi-forest text-white"
+                : "border border-slate-200 bg-white text-gabi-forest"
+            }`}
+          >
+            <CircleDollarSign className="h-4 w-4" />
+            Listas de precios
           </button>
         </div>
 
@@ -911,6 +893,33 @@ export function SembradoAdminPanel({
         </div>
       ) : null}
         </>
+      ) : vista === "listas" ? (
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <label className="block max-w-xs text-sm">
+            <span className="mb-1 block font-semibold text-slate-600">Desarrollo</span>
+            <select
+              value={desarrolloId}
+              onChange={(event) => {
+                const nextId = event.target.value;
+                setDesarrolloId(nextId);
+                setSegmento(defaultSegmentoForDesarrollo(nextId));
+              }}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2"
+            >
+              {desarrollos.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <ListasPreciosAdminPanel
+            desarrolloId={desarrolloId}
+            desarrolloNombre={
+              desarrollos.find((item) => item.id === desarrolloId)?.nombre ?? desarrolloId
+            }
+          />
+        </div>
       ) : (
         <InventarioAdminPanel
           embedded

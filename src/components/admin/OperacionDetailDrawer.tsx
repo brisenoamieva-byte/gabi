@@ -25,6 +25,7 @@ type FormState = {
   estatusSembrado: string;
   clienteNombre: string;
   origenCiudad: string;
+  origenCaptacion: string;
   equipoVenta: string;
   promotorNombre: string;
   listaPrecios: string;
@@ -36,6 +37,7 @@ type FormState = {
   medioPublicitario: string;
   observacionesPagos: string;
   observaciones: string;
+  contratoFirmado: boolean;
   personaMoral: boolean;
   cobranza: Record<string, string>;
 };
@@ -77,6 +79,7 @@ const detailToForm = (detail: OperacionDetail): FormState => {
     estatusSembrado: op.estatus_sembrado,
     clienteNombre: op.cliente_nombre,
     origenCiudad: op.origen_ciudad ?? "",
+    origenCaptacion: op.origen_captacion ?? "",
     equipoVenta: op.equipo_venta ?? "",
     promotorNombre: op.promotor_nombre ?? "",
     listaPrecios: op.lista_precios ?? "",
@@ -88,6 +91,7 @@ const detailToForm = (detail: OperacionDetail): FormState => {
     medioPublicitario: op.medio_publicitario ?? "",
     observacionesPagos: op.observaciones_pagos ?? "",
     observaciones: op.observaciones ?? "",
+    contratoFirmado: Boolean(op.contrato_firmado),
     personaMoral: Boolean(op.persona_moral),
     cobranza,
   };
@@ -186,6 +190,7 @@ export function OperacionDetailDrawer({
           estatusSembrado: form.estatusSembrado,
           clienteNombre: form.clienteNombre,
           origenCiudad: form.origenCiudad || undefined,
+          origenCaptacion: form.origenCaptacion || undefined,
           equipoVenta: form.equipoVenta || undefined,
           promotorNombre: form.promotorNombre || undefined,
           listaPrecios: form.listaPrecios || undefined,
@@ -197,6 +202,7 @@ export function OperacionDetailDrawer({
           medioPublicitario: form.medioPublicitario || undefined,
           observacionesPagos: form.observacionesPagos || undefined,
           observaciones: form.observaciones || undefined,
+          contratoFirmado: form.contratoFirmado,
           personaMoral: form.personaMoral,
           cobranza,
         }),
@@ -351,6 +357,31 @@ export function OperacionDetailDrawer({
                       Persona moral (incluye acta constitutiva, poder e ID apoderado en checklist)
                     </span>
                   </label>
+                  <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={form.contratoFirmado}
+                      onChange={(event) => patch({ contratoFirmado: event.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    <span className="font-semibold text-slate-600">Contrato firmado</span>
+                  </label>
+                  <Field label="Captación (canal)">
+                    <input
+                      value={form.origenCaptacion}
+                      onChange={(event) => patch({ origenCaptacion: event.target.value })}
+                      className={inputClass}
+                      placeholder="Contacto directo, Facebook, Pase…"
+                    />
+                  </Field>
+                  <Field label="Residencia / ciudad">
+                    <input
+                      value={form.origenCiudad}
+                      onChange={(event) => patch({ origenCiudad: event.target.value })}
+                      className={inputClass}
+                      placeholder="Querétaro, CDMX…"
+                    />
+                  </Field>
                   <Field label="Fecha apartado">
                     <input
                       type="date"

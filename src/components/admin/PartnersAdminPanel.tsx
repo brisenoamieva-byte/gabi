@@ -1,27 +1,77 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, RefreshCw } from "lucide-react";
-import type { Desarrollo } from "@/lib/data";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FileText, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   partnerTipoLabel,
   type PartnerRecord,
   type PartnerTipo,
 } from "@/lib/admin/partners-types";
-import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type PartnersAdminPanelProps = {
-  desarrollos: Desarrollo[];
+  desarrollos: DesarrolloRecord[];
   scopeLabel?: string;
 };
 
+type ComercializadoraOption = {
+  id: string;
+  nombre: string;
+  desarrolloNombres: string[];
+};
+
+function buildComercializadoraOptions(
+  desarrollos: DesarrolloRecord[],
+): ComercializadoraOption[] {
+  const map = new Map<string, ComercializadoraOption>();
+
+  for (const desarrollo of desarrollos) {
+    const id = desarrollo.comercializadoraId?.trim() || desarrollo.comercializador?.trim();
+    if (!id) {
+      continue;
+    }
+
+    const existing = map.get(id);
+    if (existing) {
+      if (!existing.desarrolloNombres.includes(desarrollo.nombre)) {
+        existing.desarrolloNombres.push(desarrollo.nombre);
+      }
+      continue;
+    }
+
+    const nombreLegible =
+      desarrollo.comercializador && !desarrollo.comercializador.includes("-")
+        ? desarrollo.comercializador
+        : id === "bbr"
+          ? "BBR Habitarea"
+          : id;
+
+    map.set(id, {
+      id,
+      nombre: nombreLegible,
+      desarrolloNombres: [desarrollo.nombre],
+    });
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+}
+
 export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPanelProps) {
-  const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
+  const comercializadoras = useMemo(
+    () => buildComercializadoraOptions(desarrollos),
+    [desarrollos],
+  );
+  const [comercializadoraId, setComercializadoraId] = useState(
+    () => comercializadoras[0]?.id ?? "",
+  );
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const convenioInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [form, setForm] = useState({
     nombre: "",
     tipo: "inmobiliaria" as PartnerTipo,
@@ -30,9 +80,24 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
     email: "",
     notas: "",
   });
+  const [createConvenioFile, setCreateConvenioFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (!comercializadoras.length) {
+      setComercializadoraId("");
+      return;
+    }
+    if (!comercializadoras.some((item) => item.id === comercializadoraId)) {
+      setComercializadoraId(comercializadoras[0].id);
+    }
+  }, [comercializadoras, comercializadoraId]);
+
+  const comercializadoraActiva = comercializadoras.find(
+    (item) => item.id === comercializadoraId,
+  );
 
   const loadPartners = useCallback(async () => {
-    if (!desarrolloId) {
+    if (!comercializadoraId) {
       setPartners([]);
       setLoading(false);
       return;
@@ -42,7 +107,10 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
     setError("");
 
     try {
-      const params = new URLSearchParams({ desarrolloId });
+      const params = new URLSearchParams({
+        comercializadoraId,
+        activoOnly: "0",
+      });
       const response = await fetch(`/api/admin/partners?${params.toString()}`);
       const data = (await response.json()) as { partners?: PartnerRecord[]; error?: string };
 
@@ -57,7 +125,7 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
     } finally {
       setLoading(false);
     }
-  }, [desarrolloId]);
+  }, [comercializadoraId]);
 
   useEffect(() => {
     void loadPartners();
@@ -80,9 +148,69 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
     }
   };
 
+  const uploadConvenio = async (partnerId: string, file: File) => {
+    setUploadingId(partnerId);
+    setError("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch(`/api/admin/partners/${partnerId}/convenio`, {
+        method: "POST",
+        body,
+      });
+      const data = (await response.json()) as { partner?: PartnerRecord; error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo subir el convenio.");
+      }
+      if (data.partner) {
+        setPartners((prev) =>
+          prev.map((row) => (row.id === partnerId ? data.partner! : row)),
+        );
+      } else {
+        await loadPartners();
+      }
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Error al subir convenio.");
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  const removeConvenio = async (partner: PartnerRecord) => {
+    if (
+      !window.confirm(
+        `¿Quitar el convenio de «${partner.nombre}»? El archivo se eliminará del almacenamiento.`,
+      )
+    ) {
+      return;
+    }
+    setRemovingId(partner.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/partners/${partner.id}/convenio`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { partner?: PartnerRecord; error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo quitar el convenio.");
+      }
+      if (data.partner) {
+        setPartners((prev) =>
+          prev.map((row) => (row.id === partner.id ? data.partner! : row)),
+        );
+      } else {
+        await loadPartners();
+      }
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : "Error al quitar convenio.");
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!desarrolloId) {
+    if (!comercializadoraId) {
       return;
     }
 
@@ -94,7 +222,7 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          desarrolloId,
+          comercializadoraId,
           nombre: form.nombre,
           tipo: form.tipo,
           contactoNombre: form.contactoNombre,
@@ -103,9 +231,13 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
           notas: form.notas,
         }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { partner?: PartnerRecord; error?: string };
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo crear el aliado.");
+      }
+
+      if (data.partner?.id && createConvenioFile) {
+        await uploadConvenio(data.partner.id, createConvenioFile);
       }
 
       setForm({
@@ -116,6 +248,7 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
         email: "",
         notas: "",
       });
+      setCreateConvenioFile(null);
       setShowNew(false);
       await loadPartners();
     } catch (createError) {
@@ -124,8 +257,6 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
       setSaving(false);
     }
   };
-
-  const desarrollo = desarrollos.find((item) => item.id === desarrolloId);
 
   return (
     <div className="space-y-6">
@@ -136,27 +267,33 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
           </p>
           <h1 className="text-2xl font-bold text-gabi-forest">Inmobiliarias y asesores externos</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Catálogo de aliados de la comercializadora
-            {desarrollo ? ` (${desarrollo.comercializador ?? "actual"})` : ""}. Los leads de
-            Gavia u otros desarrollos se vinculan a estos registros.
+            Catálogo único por comercializadora
+            {comercializadoraActiva ? ` (${comercializadoraActiva.nombre})` : ""}            . Un aliado
+            puede referir leads en cualquiera de sus desarrollos
+            {comercializadoraActiva?.desarrolloNombres.length
+              ? ` (${comercializadoraActiva.desarrolloNombres.join(", ")})`
+              : ""}
+            . Guarda el convenio firmado (PDF) con cada casa alianza.
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="text-xs font-semibold text-slate-500">
-            Desarrollo
-            <select
-              value={desarrolloId}
-              onChange={(event) => setDesarrolloId(event.target.value)}
-              className="mt-1 block min-w-[200px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gabi-forest"
-            >
-              {desarrollos.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
+          {comercializadoras.length > 1 ? (
+            <label className="text-xs font-semibold text-slate-500">
+              Comercializadora
+              <select
+                value={comercializadoraId}
+                onChange={(event) => setComercializadoraId(event.target.value)}
+                className="mt-1 block min-w-[200px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gabi-forest"
+              >
+                {comercializadoras.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <button
             type="button"
             onClick={() => void loadPartners()}
@@ -168,7 +305,8 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
           <button
             type="button"
             onClick={() => setShowNew((value) => !value)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-gabi-forest px-3 text-sm font-semibold text-white hover:bg-gabi-forest/90"
+            disabled={!comercializadoraId}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-gabi-forest px-3 text-sm font-semibold text-white hover:bg-gabi-forest/90 disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
             Nuevo aliado
@@ -181,6 +319,11 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
           onSubmit={(event) => void handleCreate(event)}
           className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
         >
+          <p className="mb-3 text-xs text-slate-500">
+            Se registra para toda la comercializadora
+            {comercializadoraActiva ? ` · ${comercializadoraActiva.nombre}` : ""}. No hace falta
+            repetirlo por desarrollo.
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-xs font-semibold text-slate-500 sm:col-span-2">
               Nombre *
@@ -245,6 +388,19 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
                 placeholder="Acuerdo, condiciones, vigencia…"
               />
             </label>
+            <label className="block text-xs font-semibold text-slate-500 sm:col-span-2">
+              Convenio con casa alianza (PDF)
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={(event) => setCreateConvenioFile(event.target.files?.[0] ?? null)}
+                className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gabi-forest/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gabi-forest"
+              />
+              <span className="mt-1 block text-[11px] font-normal text-slate-400">
+                Opcional al crear; también se puede subir después desde la tabla.
+                {createConvenioFile ? ` · ${createConvenioFile.name}` : ""}
+              </span>
+            </label>
           </div>
           <div className="mt-4 flex gap-2">
             <button
@@ -257,7 +413,10 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
             </button>
             <button
               type="button"
-              onClick={() => setShowNew(false)}
+              onClick={() => {
+                setShowNew(false);
+                setCreateConvenioFile(null);
+              }}
               className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600"
             >
               Cancelar
@@ -278,13 +437,14 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
           Aún no hay inmobiliarias ni asesores externos registrados para esta comercializadora.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-semibold">Aliado</th>
                 <th className="px-4 py-3 font-semibold">Tipo</th>
                 <th className="px-4 py-3 font-semibold">Contacto</th>
+                <th className="px-4 py-3 font-semibold">Convenio</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
                 <th className="px-4 py-3 font-semibold" />
               </tr>
@@ -304,6 +464,78 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
                     <p className="text-xs text-slate-400">
                       {[partner.telefono, partner.email].filter(Boolean).join(" · ") || "—"}
                     </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      ref={(el) => {
+                        convenioInputRefs.current[partner.id] = el;
+                      }}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (file) {
+                          void uploadConvenio(partner.id, file);
+                        }
+                      }}
+                    />
+                    {partner.convenio_public_url ? (
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={partner.convenio_public_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-gabi-forest hover:underline"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          {partner.convenio_nombre_archivo ?? "Ver PDF"}
+                        </a>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={uploadingId === partner.id}
+                            onClick={() => convenioInputRefs.current[partner.id]?.click()}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-gabi-forest disabled:opacity-50"
+                          >
+                            {uploadingId === partner.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Upload className="h-3 w-3" />
+                            )}
+                            Reemplazar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={removingId === partner.id}
+                            onClick={() => void removeConvenio(partner)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:underline disabled:opacity-50"
+                          >
+                            {removingId === partner.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                            Quitar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={uploadingId === partner.id}
+                        onClick={() => convenioInputRefs.current[partner.id]?.click()}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-gabi-forest hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {uploadingId === partner.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
+                        Subir PDF
+                      </button>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span

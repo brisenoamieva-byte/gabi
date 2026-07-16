@@ -29,12 +29,12 @@ export const formatPrice = (price: number): string =>
 export const formatTicket = (value: number): string =>
   mxnTicketFormatter.format(Math.round(Number.isFinite(value) ? value : 0));
 
-/** Monto sin símbolo, con separador de miles y 2 decimales. */
+/** Monto con signo de pesos, separador de miles y 2 decimales (para inputs). */
 export const formatAmountInput = (value: number): string => {
   if (!Number.isFinite(value) || value <= 0) {
     return "";
   }
-  return amountFormatter.format(roundMoney(value));
+  return `$${amountFormatter.format(roundMoney(value))}`;
 };
 
 const normalizeMoneyDigits = (raw: string): string | null => {

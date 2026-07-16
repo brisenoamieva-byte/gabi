@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -125,8 +125,8 @@ export function GarantiaSlaDashboard({
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
             Producto comercial
           </p>
-          <h2 className="mt-1 text-lg font-black text-gabi-ink">Garantía de seguimiento</h2>
-          <p className="mt-1 max-w-2xl text-sm text-gabi-sand">
+          <h2 className="mt-1 text-lg font-black text-gabi-forest">Garantía de seguimiento</h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
             SLA contractual + sello semanal. Lunes 08:00 (CDMX) se envía PDF por email y resumen por
             WhatsApp a gerencia.
           </p>
@@ -136,7 +136,7 @@ export function GarantiaSlaDashboard({
             type="button"
             onClick={downloadPdf}
             disabled={!desarrolloId || !report?.playbookEnabled}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-forest disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
             PDF semanal
@@ -154,7 +154,7 @@ export function GarantiaSlaDashboard({
             type="button"
             onClick={onRefresh}
             disabled={loading || !desarrolloId}
-            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-ink disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gabi-cream-dark bg-white px-4 py-2 text-sm font-semibold text-gabi-forest disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Actualizar
@@ -162,7 +162,7 @@ export function GarantiaSlaDashboard({
         </div>
       </div>
 
-      {actionMsg ? <p className="text-xs font-semibold text-gabi-sand">{actionMsg}</p> : null}
+      {actionMsg ? <p className="text-xs font-semibold text-slate-500">{actionMsg}</p> : null}
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -171,7 +171,7 @@ export function GarantiaSlaDashboard({
       ) : null}
 
       {loading && !report ? (
-        <div className="flex items-center gap-2 text-sm text-gabi-sand">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Calculando garantía SLA…
         </div>
@@ -191,13 +191,13 @@ export function GarantiaSlaDashboard({
                   >
                     {report.sealLabel}
                   </span>
-                  <p className="mt-2 max-w-xl text-sm font-medium text-gabi-ink">
+                  <p className="mt-2 max-w-xl text-sm font-medium text-gabi-forest">
                     {report.sealMessage}
                   </p>
                   {report.playbookEnabled ? (
-                    <p className="mt-2 text-xs text-gabi-sand">
+                    <p className="mt-2 text-xs text-slate-500">
                       Score de garantía:{" "}
-                      <span className="font-black tabular-nums text-gabi-ink">
+                      <span className="font-black tabular-nums text-gabi-forest">
                         {report.garantiaScorePct}%
                       </span>{" "}
                       · {report.compliance.activeLeads} leads activos en playbook
@@ -207,10 +207,10 @@ export function GarantiaSlaDashboard({
               </div>
               {report.playbookEnabled ? (
                 <div className="text-right">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-gabi-sand">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                     Score
                   </p>
-                  <p className="text-4xl font-black tabular-nums text-gabi-ink">
+                  <p className="text-4xl font-black tabular-nums text-gabi-forest">
                     {report.garantiaScorePct}
                     <span className="text-lg">%</span>
                   </p>
@@ -222,7 +222,7 @@ export function GarantiaSlaDashboard({
               <button
                 type="button"
                 onClick={onOpenConfig}
-                className="mt-4 text-sm font-bold text-[#201044] underline-offset-2 hover:underline"
+                className="mt-4 text-sm font-bold text-gabi-forest underline-offset-2 hover:underline"
               >
                 Activar playbook en Configurar pasos →
               </button>
@@ -235,10 +235,10 @@ export function GarantiaSlaDashboard({
                 <div className="flex items-start gap-3">
                   <FileText className="mt-0.5 h-5 w-5 text-gabi-sand" />
                   <div>
-                    <h3 className="text-sm font-bold text-gabi-ink">
+                    <h3 className="text-sm font-bold text-gabi-forest">
                       {GARANTIA_SLA_CONTRACT.planLabelDefault} · v{GARANTIA_SLA_CONTRACT.version}
                     </h3>
-                    <p className="mt-1 text-xs text-gabi-sand">
+                    <p className="mt-1 text-xs text-slate-500">
                       Cláusulas operativas del contrato. Configura destinatarios del reporte en la
                       ficha del desarrollo (Cotizador, bancarios y Drive → Garantía).
                     </p>
@@ -312,15 +312,15 @@ export function GarantiaSlaDashboard({
 
               <section className="rounded-2xl border border-gabi-cream-dark bg-white shadow-sm">
                 <div className="border-b border-gabi-cream-dark px-5 py-4">
-                  <h3 className="text-sm font-bold text-gabi-ink">Ranking asesores (garantía)</h3>
-                  <p className="text-xs text-gabi-sand">
+                  <h3 className="text-sm font-bold text-gabi-forest">Ranking asesores (garantía)</h3>
+                  <p className="text-xs text-slate-500">
                     Ordenado del más crítico al más sano — base para coaching de gerencia
                   </p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-gabi-sand">
+                      <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-slate-500">
                         <th className="px-5 py-3">Asesor</th>
                         <th className="px-5 py-3">Cumplimiento</th>
                         <th className="px-5 py-3">Confianza</th>
@@ -344,7 +344,7 @@ export function GarantiaSlaDashboard({
                       ))}
                       {!report.asesores.length ? (
                         <tr>
-                          <td colSpan={5} className="px-5 py-6 text-center text-gabi-sand">
+                          <td colSpan={5} className="px-5 py-6 text-center text-slate-500">
                             Sin asesores con leads activos.
                           </td>
                         </tr>
@@ -357,15 +357,15 @@ export function GarantiaSlaDashboard({
               <section className="rounded-2xl border border-gabi-cream-dark bg-white shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gabi-cream-dark px-5 py-4">
                   <div>
-                    <h3 className="text-sm font-bold text-gabi-ink">Excepciones a cerrar hoy</h3>
-                    <p className="text-xs text-gabi-sand">
+                    <h3 className="text-sm font-bold text-gabi-forest">Excepciones a cerrar hoy</h3>
+                    <p className="text-xs text-slate-500">
                       Leads que rompen o amenazan la garantía
                     </p>
                   </div>
                   {canOpenLeads && desarrolloId ? (
                     <Link
                       href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId)}`}
-                      className="text-sm font-semibold text-[#201044] hover:underline"
+                      className="text-sm font-semibold text-gabi-forest hover:underline"
                     >
                       Abrir leads
                     </Link>
@@ -374,7 +374,7 @@ export function GarantiaSlaDashboard({
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-gabi-sand">
+                      <tr className="border-b border-gabi-cream-dark text-left text-xs uppercase tracking-wide text-slate-500">
                         <th className="px-5 py-3">Prospecto</th>
                         <th className="px-5 py-3">Asesor</th>
                         <th className="px-5 py-3">Etapa</th>
@@ -423,7 +423,7 @@ export function GarantiaSlaDashboard({
                 </div>
               </section>
 
-              <p className="text-xs text-gabi-sand">
+              <p className="text-xs text-slate-500">
                 Compromisos SLA Gabi · actualizado{" "}
                 {new Date(report.generatedAt).toLocaleString("es-MX")}. Usa esta vista en demos y
                 reportes al desarrollador.
@@ -453,13 +453,13 @@ function MiniStat({
         alert ? "border-red-200" : "border-gabi-cream-dark"
       }`}
     >
-      <div className="flex items-center gap-2 text-gabi-sand">
+      <div className="flex items-center gap-2 text-slate-500">
         <Icon className="h-4 w-4" />
         <p className="text-[10px] font-bold uppercase tracking-wide">{label}</p>
       </div>
       <p
         className={`mt-1 text-2xl font-black tabular-nums ${
-          alert ? "text-red-700" : "text-gabi-ink"
+          alert ? "text-red-700" : "text-gabi-forest"
         }`}
       >
         {value}

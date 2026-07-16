@@ -10,6 +10,7 @@ import {
   type ProspectosResumen,
   type ProspectoListRow,
 } from "@/lib/admin/prospectos-service";
+import { listPartners } from "@/lib/admin/partners-service";
 import { isProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import {
   buildProspectoTelefonoDuplicadoMessage,
@@ -25,9 +26,12 @@ import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
   isLeadershipAsesorId,
+  resolveGerenteAsesorIdForDesarrollo,
   resolveProspectoAsesorFilter,
 } from "@/lib/asesores/leadership-access";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
+
+const MEDIO_ALIANZA = "inmobiliaria-externo";
 
 export const assertAsesorDesarrollo = async (asesorId: string, desarrolloId: string) => {
   const validation = await validateAsesorForVisita(asesorId, desarrolloId);
@@ -97,6 +101,7 @@ export type AsesorCreateProspectoInput = {
   email?: string;
   telefono?: string;
   medioContacto?: string;
+  partnerId?: string;
   notas?: string;
 };
 
@@ -142,7 +147,7 @@ export const checkProspectoTelefonoForAsesor = async (
 export const createProspectoForAsesor = async (
   asesorId: string,
   input: AsesorCreateProspectoInput,
-): Promise<ProspectoDetail> => {
+): Promise<ProspectoDetail & { asignadoAGerencia?: boolean }> => {
   await assertAsesorDesarrollo(asesorId, input.desarrolloId);
 
   const nombre = input.nombre.trim();
@@ -158,9 +163,29 @@ export const createProspectoForAsesor = async (
   const telefono = telefonoValidation.telefono;
   const email = input.email?.trim();
   const medioContacto = input.medioContacto?.trim();
+  const esAlianza = medioContacto === MEDIO_ALIANZA;
   const medioPublicitario = resolveMedioPublicitarioFromProspecto({
     medio_contacto: medioContacto,
   });
+
+  let partnerId: string | undefined;
+  let partnerNombre: string | undefined;
+  if (esAlianza) {
+    const partnerIdRaw = input.partnerId?.trim();
+    if (!partnerIdRaw) {
+      throw new Error("Indica qué inmobiliaria o asesor externo trajo el lead.");
+    }
+    const partners = await listPartners({
+      desarrolloId: input.desarrolloId,
+      activoOnly: true,
+    });
+    const partner = partners.find((row) => row.id === partnerIdRaw);
+    if (!partner) {
+      throw new Error("Aliado no válido o inactivo. Regístralo en Admin → Alianzas.");
+    }
+    partnerId = partner.id;
+    partnerNombre = partner.nombre;
+  }
 
   const duplicate = await findProspectoByTelefonoInDesarrollo(input.desarrolloId, telefono);
   if (duplicate) {
@@ -173,10 +198,30 @@ export const createProspectoForAsesor = async (
     );
   }
 
+  const creatorIsLeadership = await isLeadershipAsesorId(asesorId);
+  let assignedAsesorId = asesorId;
+  let asignadoAGerencia = false;
+  let asignadoPor: string | undefined;
+
+  if (esAlianza) {
+    asignadoPor = "alianza-inmobiliaria";
+    if (!creatorIsLeadership) {
+      const gerenteId = await resolveGerenteAsesorIdForDesarrollo(input.desarrolloId);
+      if (gerenteId && gerenteId !== asesorId) {
+        assignedAsesorId = gerenteId;
+        asignadoAGerencia = true;
+      }
+    }
+  }
+
   let existingByEmail = null;
   if (email) {
     existingByEmail = await findProspectoByContact(input.desarrolloId, email);
-    if (existingByEmail?.asesor_id && existingByEmail.asesor_id !== asesorId) {
+    if (
+      existingByEmail?.asesor_id &&
+      existingByEmail.asesor_id !== asesorId &&
+      existingByEmail.asesor_id !== assignedAsesorId
+    ) {
       throw new Error("Ya existe un prospecto con ese email asignado a otro asesor.");
     }
   }
@@ -188,7 +233,11 @@ export const createProspectoForAsesor = async (
     telefono,
     medioContacto,
     medioPublicitario: medioPublicitario || undefined,
-    asesorId,
+    asesorId: assignedAsesorId,
+    partnerId,
+    promotorNombre: partnerNombre,
+    equipoVenta: esAlianza ? "Externo" : undefined,
+    asignadoPor,
     etapa: "nuevo" as const,
     notas: input.notas?.trim(),
   };
@@ -206,7 +255,16 @@ export const createProspectoForAsesor = async (
     }
   }
 
-  return getProspectoForAsesor(asesorId, record.id);
+  if (asignadoAGerencia) {
+    const detail = await getProspectoById(record.id);
+    if (!detail) {
+      throw new Error("Prospecto creado pero no se pudo cargar.");
+    }
+    return { ...detail, asignadoAGerencia: true };
+  }
+
+  const detail = await getProspectoForAsesor(asesorId, record.id);
+  return { ...detail, asignadoAGerencia: false };
 };
 
 export const updateProspectoForAsesor = async (

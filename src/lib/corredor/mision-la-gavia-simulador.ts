@@ -79,22 +79,66 @@ export function findMisionLaGaviaUnidadByCode(
   return MISION_LA_GAVIA_UNIDADES.find((item) => item.unidad === unidadCode);
 }
 
+export function applyPrecioListaOverride(
+  unidad: MisionLaGaviaUnidadRecord,
+  precioListaOverride: number | null | undefined,
+): MisionLaGaviaUnidadRecord {
+  if (
+    precioListaOverride == null ||
+    !Number.isFinite(precioListaOverride) ||
+    precioListaOverride <= 0 ||
+    unidad.precioLista <= 0
+  ) {
+    return unidad;
+  }
+  if (Math.abs(precioListaOverride - unidad.precioLista) < 1) {
+    return unidad;
+  }
+
+  const ratio = precioListaOverride / unidad.precioLista;
+  const scale = (value: number | null) =>
+    value == null ? null : round2(value * ratio);
+
+  return {
+    ...unidad,
+    precioLista: round2(precioListaOverride),
+    precioContado: round2(unidad.precioContado * ratio),
+    precio303040: scale(unidad.precio303040),
+    precio3070: scale(unidad.precio3070),
+    precio1585: scale(unidad.precio1585),
+  };
+}
+
 export function resolveMisionLaGaviaUnidadFromInventario(
   inventario: DisponibilidadUnidad[] | undefined,
   unidadId: string | undefined,
   unidadCode?: string,
 ): MisionLaGaviaUnidadRecord | undefined {
-  if (unidadCode) {
-    return findMisionLaGaviaUnidadByCode(unidadCode);
+  let code = unidadCode;
+  let inventarioPrecio: number | null | undefined;
+
+  if (!code && unidadId && inventario?.length) {
+    const row = inventario.find((item) => item.id === unidadId);
+    code = row?.unidad;
+    inventarioPrecio = row?.precio;
+  } else if (unidadId && inventario?.length) {
+    const row = inventario.find((item) => item.id === unidadId);
+    inventarioPrecio = row?.precio;
+  } else if (code && inventario?.length) {
+    const row = inventario.find((item) => item.unidad === code);
+    inventarioPrecio = row?.precio;
   }
-  if (!unidadId || !inventario?.length) {
+
+  if (!code) {
     return undefined;
   }
-  const row = inventario.find((item) => item.id === unidadId);
-  if (!row?.unidad) {
+
+  const base = findMisionLaGaviaUnidadByCode(code);
+  if (!base) {
     return undefined;
   }
-  return findMisionLaGaviaUnidadByCode(row.unidad);
+
+  return applyPrecioListaOverride(base, inventarioPrecio);
 }
 
 function parseIsoDate(value: string | null | undefined): Date | undefined {
@@ -297,7 +341,7 @@ export function buildMisionLaGaviaSimulacionSummary(
     `${desarrolloNombre} · ${result.unidad} · ${result.modelo}`,
     `Edificio ${result.edificio} (${result.lado}) · ${result.m2Totales.toFixed(1)} m²`,
     "",
-    `Precio lista mar26: ${formatPrice(result.precioLista)}`,
+    `Precio lista: ${formatPrice(result.precioLista)}`,
     `Esquema: ${result.esquemaLabel}`,
     `Total cliente: ${formatPrice(result.precioTotal)}`,
     `Descuento vs lista: ${formatPctShort(result.descuentoVsListaPct)}`,

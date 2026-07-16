@@ -1,4 +1,5 @@
 import { assertDesarrolloAccess, canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
+import { resolveAdminUserIdForDb } from "@/lib/admin/session";
 import type { AdminProfile } from "@/lib/admin/types";
 import {
   computeChecklistProgreso,
@@ -396,7 +397,7 @@ export const uploadExpedienteDocumento = async (input: {
     storage_path: storagePath,
     mime_type: mimeType,
     tamano_bytes: input.file.size,
-    subido_por: input.adminId ?? null,
+    subido_por: resolveAdminUserIdForDb(input.adminId),
     notas: input.notas?.trim() || null,
     activo: true,
   };
@@ -494,7 +495,8 @@ export const setEngancheCubierto = async (
     .update({
       enganche_cubierto: cubierto,
       enganche_cubierto_at: cubierto ? new Date().toISOString() : null,
-      enganche_cubierto_por: cubierto ? adminId : null,
+      // Operador master usa id sintético "operador-gabi"; la columna es uuid nullable.
+      enganche_cubierto_por: cubierto ? resolveAdminUserIdForDb(adminId) : null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", operacionId);

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus, Save, Trash2 } from "lucide-react";
@@ -30,7 +30,7 @@ const ACTION_KINDS: Array<{ value: PlaybookActionKind; label: string }> = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#201044] focus:outline-none focus:ring-2 focus:ring-[#201044]/15";
+  "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20";
 
 const pilotDesarrollos = (desarrollos: Desarrollo[]) => desarrollos;
 
@@ -172,10 +172,10 @@ export function CrmPlaybookAdminPanel({
       ) : (
         <>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6cc24a]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gabi-sand">
               CRM playbook
             </p>
-            <h1 className="text-2xl font-black text-[#201044]">Siguiente paso por etapa</h1>
+            <h1 className="text-2xl font-black text-gabi-forest">Siguiente paso por etapa</h1>
             {scopeLabel ? <p className="mt-1 text-sm text-slate-500">{scopeLabel}</p> : null}
           </div>
 
@@ -243,7 +243,7 @@ export function CrmPlaybookAdminPanel({
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-sm font-bold text-[#201044]">Paso {index + 1}</p>
+                  <p className="text-sm font-bold text-gabi-forest">Paso {index + 1}</p>
                   <button
                     type="button"
                     onClick={() => removeStep(index)}
@@ -338,7 +338,7 @@ export function CrmPlaybookAdminPanel({
               type="button"
               disabled={saving}
               onClick={() => void handleSave()}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#201044] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar playbook

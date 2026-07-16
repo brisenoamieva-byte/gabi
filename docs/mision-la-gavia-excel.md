@@ -29,23 +29,31 @@ Sembrado: `Sembrado Misión La Agavia.xlsx` (Control Gerencia)
 
 | Pestaña | Contenido |
 |---|---|
-| **Sembrado Depas** | 105 unidades · estatus comercial · cliente · lista aplicable · equipo/promotor |
+| **Sembrado Depas** | 105 unidades · estatus · cliente · captación vs residencia · perfil · lista |
 | **Cancelados** | Operaciones canceladas (ej. A-101, N-201) → inventario bloqueado |
 | **Bodegas** | Inventario bodegas (fase posterior) |
 | **Sembrado (2)** | Histórico otro proyecto — **ignorar** para La Gavia |
 
-### Estatus sembrado → gabi (jun 2026)
+Import unificado (mismo parser que Pasaje; alias Depa|Depto, Esquema|Pago…):
 
-- Disponibles → `disponible` (102)
-- Apartado / Vendido Cobrado 1er Parte → `apartado` (2)
-- Vendidas Cobradas → `vendido` (1)
+```bash
+npm run sembrado:import:gavia
+```
+
+Aplica antes `066_sembrado_captacion_perfil.sql` para captación, perfil y contrato.
+
+### Estatus sembrado → gabi
+
+- Disponibles → `disponible`
+- Apartado / Vendido Cobrado 1er Parte → `apartado`
+- Vendidas Cobradas / Vendidas Desarrollador → `vendido`
 - Cancelado → `bloqueado`
 
 ## Scripts
 
 ```bash
 npm run catalog:mision-la-gavia   # Regenera catálogo + config desde Excel
-npm run sembrado:import:gavia     # Sincroniza estatus a Supabase
+npm run sembrado:import:gavia     # Sincroniza estatus a Supabase (import unificado)
 npm run catalog:sync              # Catálogo completo + inventario La Gavia
 ```
 

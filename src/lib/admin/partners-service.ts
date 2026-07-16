@@ -6,6 +6,7 @@ import {
   type PartnerTipo,
 } from "@/lib/admin/partners-types";
 import { getDesarrolloById } from "@/lib/catalog/service";
+import { resolveAdminUserIdForDb } from "@/lib/admin/session";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type {
@@ -17,6 +18,28 @@ export {
   isPartnerTipo,
   partnerTipoLabel,
 } from "@/lib/admin/partners-types";
+
+const DOCUMENTOS_BUCKET = "gabi-documentos";
+const MAX_CONVENIO_BYTES = 25 * 1024 * 1024;
+
+const mapPartner = (row: Record<string, unknown>): PartnerRecord => ({
+  id: row.id as string,
+  comercializadora_id: row.comercializadora_id as string,
+  tipo: row.tipo as PartnerTipo,
+  nombre: row.nombre as string,
+  contacto_nombre: (row.contacto_nombre as string | null) ?? null,
+  telefono: (row.telefono as string | null) ?? null,
+  email: (row.email as string | null) ?? null,
+  notas: (row.notas as string | null) ?? null,
+  activo: Boolean(row.activo),
+  convenio_storage_path: (row.convenio_storage_path as string | null) ?? null,
+  convenio_public_url: (row.convenio_public_url as string | null) ?? null,
+  convenio_nombre_archivo: (row.convenio_nombre_archivo as string | null) ?? null,
+  convenio_subido_at: (row.convenio_subido_at as string | null) ?? null,
+  convenio_subido_por: (row.convenio_subido_por as string | null) ?? null,
+  created_at: row.created_at as string,
+  updated_at: row.updated_at as string,
+});
 
 export type PartnerInput = {
   /** Preferido: resuelve comercializadora y valida permiso. */
@@ -41,6 +64,36 @@ export type UpdatePartnerInput = {
   activo?: boolean;
 };
 
+async function assertComercializadoraAccess(
+  comercializadoraId: string,
+  profile?: AdminProfile,
+): Promise<void> {
+  if (!profile) {
+    return;
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data, error } = await supabase
+    .from("desarrollos_catalog")
+    .select("id")
+    .eq("comercializadora_id", comercializadoraId)
+    .eq("activo", true)
+    .limit(50);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const allowed = (data ?? []).some((row) => canAccessDesarrollo(profile, row.id as string));
+  if (!allowed) {
+    throw new Error("No tienes permiso para esta comercializadora.");
+  }
+}
+
 async function resolveComercializadoraId(input: {
   desarrolloId?: string;
   comercializadoraId?: string;
@@ -58,10 +111,38 @@ async function resolveComercializadoraId(input: {
   }
 
   if (input.comercializadoraId?.trim()) {
-    return input.comercializadoraId.trim();
+    const comercializadoraId = input.comercializadoraId.trim();
+    await assertComercializadoraAccess(comercializadoraId, input.profile);
+    return comercializadoraId;
   }
 
   throw new Error("Indica desarrolloId o comercializadoraId.");
+}
+
+async function getPartnerOrThrow(
+  id: string,
+  profile?: AdminProfile,
+): Promise<PartnerRecord> {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data, error } = await supabase.from("partners").select("*").eq("id", id).maybeSingle();
+
+  if (error) {
+    if (error.message.includes("convenio_") || error.code === "PGRST204") {
+      throw new Error("Falta aplicar la migración 067_partners_convenio.sql en Supabase.");
+    }
+    throw new Error(error.message);
+  }
+  if (!data) {
+    throw new Error("Aliado no encontrado.");
+  }
+
+  const partner = mapPartner(data as Record<string, unknown>);
+  await assertComercializadoraAccess(partner.comercializadora_id, profile);
+  return partner;
 }
 
 export const listPartners = async (
@@ -95,10 +176,13 @@ export const listPartners = async (
 
   const { data, error } = await query;
   if (error) {
+    if (error.message.includes("convenio_") || error.code === "PGRST204") {
+      throw new Error("Falta aplicar la migración 067_partners_convenio.sql en Supabase.");
+    }
     throw new Error(error.message);
   }
 
-  return (data ?? []) as PartnerRecord[];
+  return (data ?? []).map((row) => mapPartner(row as Record<string, unknown>));
 };
 
 export const createPartner = async (
@@ -145,7 +229,7 @@ export const createPartner = async (
     throw new Error(error.message);
   }
 
-  return data as PartnerRecord;
+  return mapPartner(data as Record<string, unknown>);
 };
 
 export const updatePartner = async (
@@ -158,39 +242,7 @@ export const updatePartner = async (
     throw new Error("Supabase no configurado.");
   }
 
-  const { data: existing, error: existingError } = await supabase
-    .from("partners")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (existingError) {
-    throw new Error(existingError.message);
-  }
-  if (!existing) {
-    throw new Error("Aliado no encontrado.");
-  }
-
-  if (profile) {
-    // Valida acceso vía cualquier desarrollo de la comercializadora del partner.
-    const { data: desarrollo, error: desarrolloError } = await supabase
-      .from("desarrollos_catalog")
-      .select("id")
-      .eq("comercializadora_id", existing.comercializadora_id)
-      .eq("activo", true)
-      .limit(50);
-
-    if (desarrolloError) {
-      throw new Error(desarrolloError.message);
-    }
-
-    const allowed = (desarrollo ?? []).some((row) =>
-      canAccessDesarrollo(profile, row.id as string),
-    );
-    if (!allowed) {
-      throw new Error("No tienes permiso para este aliado.");
-    }
-  }
+  await getPartnerOrThrow(id, profile);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -236,5 +288,110 @@ export const updatePartner = async (
     throw new Error(error.message);
   }
 
-  return data as PartnerRecord;
+  return mapPartner(data as Record<string, unknown>);
+};
+
+export const uploadPartnerConvenio = async (
+  partnerId: string,
+  file: File,
+  profile: AdminProfile,
+): Promise<PartnerRecord> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const partner = await getPartnerOrThrow(partnerId, profile);
+
+  const isPdf =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!isPdf) {
+    throw new Error("El convenio debe ser un PDF.");
+  }
+  if (file.size <= 0 || file.size > MAX_CONVENIO_BYTES) {
+    throw new Error("El PDF debe pesar entre 1 byte y 25 MB.");
+  }
+
+  const safeName = file.name.replace(/[^\w.\-() ]+/g, "_") || "convenio.pdf";
+  const storagePath = `partners/${partner.comercializadora_id}/${partner.id}/${Date.now()}-${safeName}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error: uploadError } = await supabase.storage
+    .from(DOCUMENTOS_BUCKET)
+    .upload(storagePath, buffer, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  if (partner.convenio_storage_path) {
+    await supabase.storage.from(DOCUMENTOS_BUCKET).remove([partner.convenio_storage_path]);
+  }
+
+  const { data: publicData } = supabase.storage
+    .from(DOCUMENTOS_BUCKET)
+    .getPublicUrl(storagePath);
+
+  const { data, error } = await supabase
+    .from("partners")
+    .update({
+      convenio_storage_path: storagePath,
+      convenio_public_url: publicData.publicUrl,
+      convenio_nombre_archivo: safeName,
+      convenio_subido_at: new Date().toISOString(),
+      convenio_subido_por: resolveAdminUserIdForDb(profile.id),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", partnerId)
+    .select("*")
+    .single();
+
+  if (error) {
+    await supabase.storage.from(DOCUMENTOS_BUCKET).remove([storagePath]);
+    if (error.message.includes("convenio_") || error.code === "PGRST204") {
+      throw new Error("Falta aplicar la migración 067_partners_convenio.sql en Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
+  return mapPartner(data as Record<string, unknown>);
+};
+
+export const removePartnerConvenio = async (
+  partnerId: string,
+  profile: AdminProfile,
+): Promise<PartnerRecord> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const partner = await getPartnerOrThrow(partnerId, profile);
+
+  if (partner.convenio_storage_path) {
+    await supabase.storage.from(DOCUMENTOS_BUCKET).remove([partner.convenio_storage_path]);
+  }
+
+  const { data, error } = await supabase
+    .from("partners")
+    .update({
+      convenio_storage_path: null,
+      convenio_public_url: null,
+      convenio_nombre_archivo: null,
+      convenio_subido_at: null,
+      convenio_subido_por: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", partnerId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapPartner(data as Record<string, unknown>);
 };

@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Building2,
+  Calculator,
   ExternalLink,
   Loader2,
   Pencil,
@@ -384,6 +386,24 @@ export function CatalogoAdminPanel() {
           (bancarios, cotizador, Drive). Guía: <code className="text-xs">docs/add-desarrollo.md</code>
           .
         </p>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Solo Grupo Investti
+          </p>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-slate-600">
+              Reglas e import del simulador de lotes (no aplica a BBR / Gavia).
+            </p>
+            <Link
+              href="/admin/investti-simulador"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#13315C]/15 bg-white px-3 py-1.5 text-sm font-semibold text-[#13315C] hover:bg-white"
+            >
+              <Calculator className="h-4 w-4" />
+              Simulador Investti
+            </Link>
+          </div>
+        </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
           <button

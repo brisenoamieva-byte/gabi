@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import type { ApartadoAsesorOption } from "@/lib/admin/operaciones-service";
 import type { ApartadoPrefill } from "@/lib/admin/operaciones-service";
+import {
+  listaPreciosEstadoLabel,
+  type ListaPreciosRecord,
+} from "@/lib/admin/listas-precios-types";
 import type { DesarrolloSembradoSegment } from "@/lib/catalog/desarrollos-registry";
 import { getSembradoSegmentsForDesarrollo } from "@/lib/catalog/desarrollos-registry";
 import {
@@ -38,6 +42,7 @@ type FormState = {
   promotorNombre: string;
   tipoInversion: string;
   listaPrecios: string;
+  listaPreciosId: string;
   precioLista: string;
   descuentoPct: string;
   precioVenta: string;
@@ -62,6 +67,7 @@ const emptyForm = (unidadId = ""): FormState => ({
   promotorNombre: "",
   tipoInversion: "",
   listaPrecios: "",
+  listaPreciosId: "",
   precioLista: "",
   descuentoPct: "",
   precioVenta: "",
@@ -86,6 +92,7 @@ const prefillToForm = (prefill: ApartadoPrefill): FormState => ({
   promotorNombre: prefill.promotorNombre ?? "",
   tipoInversion: prefill.tipoInversion ?? "",
   listaPrecios: prefill.listaPrecios ?? "",
+  listaPreciosId: prefill.listaPreciosId ?? "",
   precioLista: prefill.precioLista ? formatAmountInput(prefill.precioLista) : "",
   descuentoPct: prefill.descuentoPct != null ? String(prefill.descuentoPct) : "",
   precioVenta: prefill.precioVenta ? formatAmountInput(prefill.precioVenta) : "",
@@ -181,6 +188,7 @@ export function RegistrarApartadoModal({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
   const [cotizacionHint, setCotizacionHint] = useState(false);
+  const [listasPrecios, setListasPrecios] = useState<ListaPreciosRecord[]>([]);
   const asesoresRef = useRef(asesores);
   const unidadesOpcionesRef = useRef(unidadesOpciones);
   const prospectoMedioRef = useRef("");
@@ -253,7 +261,7 @@ export function RegistrarApartadoModal({
   }, [asesores, form.equipoVenta, form.promotorNombre, promotorAsesorId]);
 
   const loadPrefill = useCallback(
-    async (unidadId: string) => {
+    async (unidadId: string, listaPreciosId?: string | null) => {
       if (!unidadId) {
         setForm(emptyForm());
         setCotizacionHint(false);
@@ -307,6 +315,9 @@ export function RegistrarApartadoModal({
         }
 
         const params = new URLSearchParams({ desarrolloId, unidadId });
+        if (listaPreciosId) {
+          params.set("listaPreciosId", listaPreciosId);
+        }
         const response = await fetch(`/api/admin/operaciones?${params.toString()}`);
         const data = (await response.json()) as {
           prefill?: ApartadoPrefill;
@@ -319,11 +330,64 @@ export function RegistrarApartadoModal({
 
         if (data.prefill) {
           const nextForm = prefillToForm(data.prefill);
-          setForm(nextForm);
-          setCotizacionHint(data.prefill.cotizacionReciente);
-          setPromotorAsesorId(
-            inferPromotorAsesorId(nextForm.equipoVenta, nextForm.promotorNombre, asesoresActuales),
-          );
+          if (!nextForm.medioPublicitario && prospectoMedioRef.current) {
+            nextForm.medioPublicitario = prospectoMedioRef.current;
+          } else if (nextForm.medioPublicitario) {
+            prospectoMedioRef.current = nextForm.medioPublicitario;
+          }
+          setForm((prev) => {
+            const merged: FormState = {
+              ...nextForm,
+              ...(listaPreciosId
+                ? {
+                    clienteNombre: prev.clienteNombre || nextForm.clienteNombre,
+                    origenCiudad: prev.origenCiudad || nextForm.origenCiudad,
+                    equipoVenta: prev.equipoVenta || nextForm.equipoVenta,
+                    promotorNombre: prev.promotorNombre || nextForm.promotorNombre,
+                    tipoInversion: prev.tipoInversion || nextForm.tipoInversion,
+                    medioPublicitario: prev.medioPublicitario || nextForm.medioPublicitario,
+                    descuentoPct: prev.descuentoPct || nextForm.descuentoPct,
+                    esquemaPago: prev.esquemaPago || nextForm.esquemaPago,
+                    fechaApartado: prev.fechaApartado || nextForm.fechaApartado,
+                    fechaCierre: prev.fechaCierre,
+                    observacionesPagos: prev.observacionesPagos,
+                    observaciones: prev.observaciones,
+                    primerPago: prev.primerPago,
+                    prospectoEmail: prev.prospectoEmail || nextForm.prospectoEmail,
+                    prospectoTelefono: prev.prospectoTelefono || nextForm.prospectoTelefono,
+                    prospectoId: prev.prospectoId || nextForm.prospectoId,
+                    cotizacionId: prev.cotizacionId || nextForm.cotizacionId,
+                  }
+                : {}),
+            };
+
+            if (listaPreciosId && merged.descuentoPct && merged.precioLista) {
+              const lista = parseMoneyInput(merged.precioLista);
+              const pct = Number(merged.descuentoPct);
+              if (lista != null && Number.isFinite(pct)) {
+                merged.precioVenta = formatAmountInput(
+                  Math.round(lista * (1 - pct / 100) * 100) / 100,
+                );
+              }
+            }
+
+            return merged;
+          });
+          if (!listaPreciosId) {
+            setCotizacionHint(data.prefill.cotizacionReciente);
+            setPromotorAsesorId(
+              inferPromotorAsesorId(
+                nextForm.equipoVenta,
+                nextForm.promotorNombre,
+                asesoresActuales,
+                esAsesor ? asesorId : undefined,
+              ),
+            );
+          }
+          const row = unidadesActuales.find((item) => item.unidadId === unidadId);
+          if (row && !listaPreciosId) {
+            setTipoProducto(resolveSembradoSegmentIdForUnidad(desarrolloId, row) ?? "");
+          }
         }
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : "Error al cargar.";
@@ -336,8 +400,38 @@ export function RegistrarApartadoModal({
         setLoadingUnidadPrefill(false);
       }
     },
-    [desarrolloId, esAsesor, asesorId, prospectoId],
+    [asesorId, desarrolloId, esAsesor, prospectoId],
   );
+
+  useEffect(() => {
+    if (esAsesor || !desarrolloId) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/listas-precios?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+        );
+        const data = (await response.json()) as {
+          listas?: ListaPreciosRecord[];
+          error?: string;
+        };
+        if (!response.ok || cancelled) {
+          return;
+        }
+        const usable = (data.listas ?? []).filter(
+          (item) => item.estado === "activa" || item.estado === "cerrada",
+        );
+        setListasPrecios(usable);
+      } catch {
+        // Sin listas versionadas: el select queda vacío y el precio sigue editable.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [desarrolloId, esAsesor]);
 
   useEffect(() => {
     if (unidadesOpcionesProp !== undefined) {
@@ -482,6 +576,17 @@ export function RegistrarApartadoModal({
     void loadPrefill(unidadId);
   };
 
+  const handleListaPreciosChange = (listaId: string) => {
+    const lista = listasPrecios.find((item) => item.id === listaId);
+    patch({
+      listaPreciosId: listaId,
+      listaPrecios: lista?.nombre ?? "",
+    });
+    if (form.unidadId && listaId) {
+      void loadPrefill(form.unidadId, listaId);
+    }
+  };
+
   const finishApartadoSave = () => {
     setSaveSuccess(true);
     window.setTimeout(() => {
@@ -513,6 +618,7 @@ export function RegistrarApartadoModal({
             promotorNombre: resolvePromotorNombre() || undefined,
             tipoInversion: form.tipoInversion || null,
             listaPrecios: form.listaPrecios || undefined,
+            listaPreciosId: form.listaPreciosId || undefined,
             precioLista: parseMoneyInput(form.precioLista),
             descuentoPct: form.descuentoPct ? Number(form.descuentoPct) : null,
             precioVenta: parseMoneyInput(form.precioVenta),
@@ -553,6 +659,7 @@ export function RegistrarApartadoModal({
           promotorNombre: resolvePromotorNombre() || undefined,
           tipoInversion: form.tipoInversion || null,
           listaPrecios: form.listaPrecios || undefined,
+          listaPreciosId: form.listaPreciosId || undefined,
           precioLista: parseMoneyInput(form.precioLista),
           descuentoPct: form.descuentoPct ? Number(form.descuentoPct) : null,
           precioVenta: parseMoneyInput(form.precioVenta),
@@ -889,12 +996,33 @@ export function RegistrarApartadoModal({
               </select>
             </Field>
             <Field label="Lista de precios">
-              <input
-                value={form.listaPrecios}
-                onChange={(event) => patch({ listaPrecios: event.target.value })}
-                className={inputClass}
-                placeholder="F&F, Lista 4…"
-              />
+              {listasPrecios.length > 0 && !esAsesor ? (
+                <>
+                  <select
+                    value={form.listaPreciosId}
+                    onChange={(event) => handleListaPreciosChange(event.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">— Elegir lista —</option>
+                    {listasPrecios.map((lista) => (
+                      <option key={lista.id} value={lista.id}>
+                        {lista.nombre} ({listaPreciosEstadoLabel[lista.estado]})
+                        {lista.vigencia_desde ? ` · ${lista.vigencia_desde}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Puedes vender con una lista cerrada; el inventario sigue en la activa.
+                  </p>
+                </>
+              ) : (
+                <input
+                  value={form.listaPrecios}
+                  onChange={(event) => patch({ listaPrecios: event.target.value })}
+                  className={inputClass}
+                  placeholder="F&F, Lista 4…"
+                />
+              )}
             </Field>
           </div>
 

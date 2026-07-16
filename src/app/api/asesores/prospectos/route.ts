@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       email: body.email,
       telefono: body.telefono,
       medioContacto: body.medioContacto,
+      partnerId: body.partnerId,
       notas: body.notas,
     });
 

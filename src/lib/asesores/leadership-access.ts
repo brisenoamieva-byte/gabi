@@ -4,10 +4,12 @@ import { getAsesorSessionById } from "@/lib/asesores/auth";
 import {
   isAssignableAsesorRol,
   isLeadershipAsesorRol,
+  normalizeAsesorRol,
   type AsesorRecord,
   type AsesorRol,
   type AsesorSession,
 } from "@/lib/asesores/types";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export const canAsesorManageAllProspectos = (rol: AsesorRol) => isLeadershipAsesorRol(rol);
 
@@ -57,4 +59,40 @@ export const listEquipoComercialForLeadership = async (
 
   const asesores = await listAsesores({ desarrolloId }, buildLeadershipAdminProfile(session));
   return asesores.filter((row) => row.activo && isAssignableAsesorRol(row.rol));
+};
+
+const LEADERSHIP_PRIORITY: AsesorRol[] = ["gerente", "director", "coordinador"];
+
+/** Preferencia: gerente → director → coordinador del desarrollo. */
+export const resolveGerenteAsesorIdForDesarrollo = async (
+  desarrolloId: string,
+): Promise<string | null> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("asesores")
+    .select("id, rol")
+    .eq("activo", true)
+    .contains("desarrollos_ids", [desarrolloId]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = (data ?? []).map((row) => ({
+    id: row.id as string,
+    rol: normalizeAsesorRol(String(row.rol ?? "asesor")),
+  }));
+
+  for (const rol of LEADERSHIP_PRIORITY) {
+    const match = rows.find((row) => row.rol === rol);
+    if (match) {
+      return match.id;
+    }
+  }
+
+  return null;
 };

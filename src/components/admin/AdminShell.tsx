@@ -90,7 +90,6 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/metricas", label: "Reportes", ready: true },
     { href: "/admin/guion", label: "Guion", ready: true },
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
-    { href: "/admin/investti-simulador", label: "Simulador Investti", ready: true },
   ].filter((item) => {
     if (item.href === "/admin/crm-compliance") {
       return canAccessSaludCrm(profile);

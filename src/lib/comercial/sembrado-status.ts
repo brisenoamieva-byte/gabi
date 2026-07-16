@@ -7,6 +7,7 @@ export const ESTATUS_SEMBRADO = [
   "Vendidas listas para cobro",
   "Vendidas en espera de cobro",
   "Vendidas Cobradas",
+  "Vendidas Desarrollador",
 ] as const;
 
 export type EstatusSembrado = (typeof ESTATUS_SEMBRADO)[number];
@@ -23,9 +24,11 @@ export const sembradoToInventarioEstatus = (estatus: string): InventarioEstatus 
     case "Vendidas en espera de cobro":
       return "apartado";
     case "Vendidas Cobradas":
+    case "Vendidas Desarrollador":
       return "vendido";
     case "Bloqueado":
     case "Asignado":
+    case "Cancelado":
       return "bloqueado";
     default:
       return "disponible";
@@ -33,7 +36,10 @@ export const sembradoToInventarioEstatus = (estatus: string): InventarioEstatus 
 };
 
 export const operacionTieneCliente = (estatus: string) =>
-  estatus !== "Disponibles" && estatus !== "Asignado" && estatus !== "Bloqueado";
+  estatus !== "Disponibles" &&
+  estatus !== "Asignado" &&
+  estatus !== "Bloqueado" &&
+  estatus !== "Cancelado";
 
 export const normalizeTipoInversion = (value?: string | null) => {
   if (!value?.trim()) {
@@ -58,10 +64,12 @@ export const estatusSembradoLabel: Record<string, string> = {
   "Apartado pendiente": "Apartado pendiente",
   Asignado: "Asignado",
   Bloqueado: "Bloqueado",
+  Cancelado: "Cancelado",
   "Vendido Cobrado 1er Parte": "Vendido (1er cobro)",
   "Vendidas listas para cobro": "Lista para cobro",
   "Vendidas en espera de cobro": "En espera de cobro",
   "Vendidas Cobradas": "Vendida cobrada",
+  "Vendidas Desarrollador": "Vendida desarrollador",
 };
 
 export type OperacionComercialRecord = {
@@ -73,10 +81,12 @@ export type OperacionComercialRecord = {
   estatus_sembrado: string;
   cliente_nombre: string;
   origen_ciudad: string | null;
+  origen_captacion?: string | null;
   equipo_venta: string | null;
   promotor_nombre: string | null;
   tipo_inversion: string | null;
   lista_precios: string | null;
+  lista_precios_id?: string | null;
   precio_lista: number | null;
   descuento_pct: number | null;
   precio_venta: number | null;
@@ -88,6 +98,8 @@ export type OperacionComercialRecord = {
   observaciones: string | null;
   entregado: boolean;
   escriturado: boolean;
+  contrato_firmado?: boolean;
+  contrato_firmado_at?: string | null;
   cancelada: boolean;
   cancelada_at: string | null;
   comprobacion: number | null;
@@ -106,12 +118,16 @@ export type ProspectoRecord = {
   email: string | null;
   telefono: string | null;
   origen_ciudad: string | null;
+  origen_captacion?: string | null;
   medio_contacto: string | null;
   medio_publicitario: string | null;
   asesor_id: string | null;
   promotor_nombre: string | null;
   equipo_venta: string | null;
   tipo_inversion: string | null;
+  edad?: number | null;
+  sexo?: string | null;
+  ocupacion?: string | null;
   etapa: string;
   notas: string | null;
   visita_id: string | null;

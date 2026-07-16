@@ -105,7 +105,7 @@ export const prospectoEtapaFromSembrado = (
   }
 
   const estatus = estatusSembrado.trim();
-  if (estatus === "Vendidas Cobradas") {
+  if (estatus === "Vendidas Cobradas" || estatus === "Vendidas Desarrollador") {
     return "vendido";
   }
   if (ESTATUS_SEMBRADO_APARTADO.has(estatus)) {

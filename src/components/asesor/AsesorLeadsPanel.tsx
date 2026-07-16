@@ -36,6 +36,7 @@ import {
   isLeadershipAsesorRol,
   type AsesorRol,
 } from "@/lib/asesores/types";
+import { partnerTipoLabel, type PartnerTipo } from "@/lib/admin/partners-types";
 import {
   formatLeadActivity,
   formatLeadDate,
@@ -385,6 +386,17 @@ function AsesorLeadDrawer({
                   <span className="text-slate-500">Medio</span>
                   <span>{detail.medio_publicitario ?? detail.medio_contacto ?? "—"}</span>
                 </div>
+                {detail.partnerNombre ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Aliado</span>
+                    <span className="font-medium text-right">
+                      {detail.partnerNombre}
+                      {detail.partnerTipo
+                        ? ` · ${partnerTipoLabel[detail.partnerTipo as PartnerTipo] ?? detail.partnerTipo}`
+                        : ""}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-500">Última actividad</span>
                   <span>{formatLeadDate(detail.updated_at)}</span>
@@ -680,6 +692,11 @@ export function AsesorLeadsPanel({
   const [newTelefonoError, setNewTelefonoError] = useState("");
   const [checkingTelefono, setCheckingTelefono] = useState(false);
   const [newMedioContacto, setNewMedioContacto] = useState("contacto-directo");
+  const [newPartnerId, setNewPartnerId] = useState("");
+  const [partners, setPartners] = useState<Array<{ id: string; nombre: string; tipo: PartnerTipo }>>(
+    [],
+  );
+  const [loadingPartners, setLoadingPartners] = useState(false);
   const [newNotas, setNewNotas] = useState("");
   const [playbookQueue, setPlaybookQueue] = useState<PlaybookQueueItem[]>([]);
   const [playbookConfig, setPlaybookConfig] = useState<CrmPlaybookConfig | null>(null);
@@ -865,12 +882,47 @@ export function AsesorLeadsPanel({
     setNewTelefono("");
     setNewTelefonoError("");
     setNewMedioContacto("contacto-directo");
+    setNewPartnerId("");
     setNewNotas("");
   };
+
+  const loadPartners = useCallback(async () => {
+    setLoadingPartners(true);
+    try {
+      const params = new URLSearchParams({
+        asesorId,
+        desarrolloId,
+      });
+      const response = await fetch(`/api/asesores/partners?${params.toString()}`);
+      const data = (await response.json()) as {
+        partners?: Array<{ id: string; nombre: string; tipo: PartnerTipo }>;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron cargar aliados.");
+      }
+      setPartners(data.partners ?? []);
+    } catch {
+      setPartners([]);
+    } finally {
+      setLoadingPartners(false);
+    }
+  }, [asesorId, desarrolloId]);
+
+  useEffect(() => {
+    if (showNewLead && newMedioContacto === "inmobiliaria-externo") {
+      void loadPartners();
+    }
+  }, [showNewLead, newMedioContacto, loadPartners]);
 
   const handleCreateLead = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newNombre.trim()) {
+      return;
+    }
+
+    if (newMedioContacto === "inmobiliaria-externo" && !newPartnerId) {
+      setError("Selecciona la inmobiliaria o asesor externo que trajo el lead.");
       return;
     }
 
@@ -898,11 +950,16 @@ export function AsesorLeadsPanel({
           email: newEmail.trim() || undefined,
           telefono: telefonoValidation.telefono,
           medioContacto: newMedioContacto,
+          partnerId:
+            newMedioContacto === "inmobiliaria-externo" ? newPartnerId || undefined : undefined,
           notas: newNotas.trim() || undefined,
         }),
       });
 
-      const data = (await response.json()) as { prospecto?: ProspectoListRow; error?: string };
+      const data = (await response.json()) as {
+        prospecto?: ProspectoListRow & { asignadoAGerencia?: boolean };
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo crear el lead.");
@@ -910,7 +967,12 @@ export function AsesorLeadsPanel({
 
       setShowNewLead(false);
       resetNewLeadForm();
-      if (data.prospecto?.id) {
+      if (data.prospecto?.asignadoAGerencia) {
+        setError("");
+        window.alert(
+          "Lead registrado. Quedó asignado a gerencia para seguimiento (alianza inmobiliaria/externo).",
+        );
+      } else if (data.prospecto?.id) {
         setSelectedId(data.prospecto.id);
       }
       void loadLeads();
@@ -1270,7 +1332,9 @@ export function AsesorLeadsPanel({
             </p>
             <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-[#201044]">Nuevo lead</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Asignado a ti en {desarrolloNombre}.
+              {newMedioContacto === "inmobiliaria-externo" && !canManageAllProspectos
+                ? `Alianza: se asignará a gerencia en ${desarrolloNombre}.`
+                : `Asignado a ti en ${desarrolloNombre}.`}
             </p>
             <label className="mt-4 block text-sm">
               <span className="mb-1 block font-semibold text-slate-600">Nombre *</span>
@@ -1321,7 +1385,13 @@ export function AsesorLeadsPanel({
               <span className="mb-1 block font-semibold text-slate-600">Medio de contacto</span>
               <select
                 value={newMedioContacto}
-                onChange={(event) => setNewMedioContacto(event.target.value)}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setNewMedioContacto(next);
+                  if (next !== "inmobiliaria-externo") {
+                    setNewPartnerId("");
+                  }
+                }}
                 className={inputClass}
               >
                 {MEDIO_CONTACTO_OPTIONS.map((option) => (
@@ -1331,6 +1401,38 @@ export function AsesorLeadsPanel({
                 ))}
               </select>
             </label>
+            {newMedioContacto === "inmobiliaria-externo" ? (
+              <label className="mt-3 block text-sm">
+                <span className="mb-1 block font-semibold text-slate-600">
+                  Inmobiliaria / asesor externo *
+                </span>
+                <select
+                  required
+                  value={newPartnerId}
+                  onChange={(event) => setNewPartnerId(event.target.value)}
+                  className={inputClass}
+                  disabled={loadingPartners}
+                >
+                  <option value="">
+                    {loadingPartners ? "Cargando aliados…" : "Selecciona aliado"}
+                  </option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>
+                      {partner.nombre} · {partnerTipoLabel[partner.tipo]}
+                    </option>
+                  ))}
+                </select>
+                {!loadingPartners && partners.length === 0 ? (
+                  <p className="mt-1 text-xs text-amber-700">
+                    No hay aliados activos. Regístralos en Admin → Alianzas (por comercializadora).
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Obligatorio para leads de inmobiliaria o externo. Gerencia da el seguimiento.
+                  </p>
+                )}
+              </label>
+            ) : null}
             <label className="mt-3 block text-sm">
               <span className="mb-1 block font-semibold text-slate-600">Notas</span>
               <textarea
@@ -1350,7 +1452,13 @@ export function AsesorLeadsPanel({
               </button>
               <button
                 type="submit"
-                disabled={creating || checkingTelefono || Boolean(newTelefonoError)}
+                disabled={
+                  creating ||
+                  checkingTelefono ||
+                  Boolean(newTelefonoError) ||
+                  (newMedioContacto === "inmobiliaria-externo" &&
+                    (!newPartnerId || partners.length === 0))
+                }
                 className="rounded-lg bg-[#201044] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
               >
                 {creating ? "Guardando…" : "Crear lead"}

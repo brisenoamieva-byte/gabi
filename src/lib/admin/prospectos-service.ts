@@ -47,6 +47,7 @@ export type UpdateProspectoInput = {
   email?: string;
   telefono?: string;
   origenCiudad?: string;
+  origenCaptacion?: string;
   medioContacto?: string;
   medioPublicitario?: string;
   asesorId?: string | null;
@@ -62,6 +63,9 @@ export type UpdateProspectoInput = {
   asignadoPor?: string;
   esSpam?: boolean;
   esDuplicado?: boolean;
+  edad?: number | null;
+  sexo?: string | null;
+  ocupacion?: string | null;
 };
 
 export type ProspectoInput = {
@@ -70,6 +74,7 @@ export type ProspectoInput = {
   email?: string;
   telefono?: string;
   origenCiudad?: string;
+  origenCaptacion?: string;
   medioContacto?: string;
   medioPublicitario?: string;
   asesorId?: string;
@@ -81,6 +86,10 @@ export type ProspectoInput = {
   visitaId?: string;
   campanaId?: string;
   partnerId?: string;
+  asignadoPor?: string;
+  edad?: number | null;
+  sexo?: string | null;
+  ocupacion?: string | null;
 };
 
 const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
@@ -110,6 +119,7 @@ const toRow = (input: ProspectoInput) => ({
   email: input.email?.trim() || null,
   telefono: normalizeProspectoTelefono(input.telefono?.trim()) || null,
   origen_ciudad: input.origenCiudad?.trim() || null,
+  origen_captacion: input.origenCaptacion?.trim() || null,
   medio_contacto: input.medioContacto?.trim() || null,
   medio_publicitario: input.medioPublicitario?.trim() || null,
   asesor_id: input.asesorId ?? null,
@@ -121,6 +131,10 @@ const toRow = (input: ProspectoInput) => ({
   visita_id: input.visitaId ?? null,
   campana_id: input.campanaId ?? null,
   partner_id: input.partnerId ?? null,
+  asignado_por: input.asignadoPor?.trim() || null,
+  edad: input.edad ?? null,
+  sexo: input.sexo?.trim() || null,
+  ocupacion: input.ocupacion?.trim() || null,
   updated_at: new Date().toISOString(),
 });
 
@@ -364,6 +378,9 @@ export const updateProspecto = async (
   if (input.origenCiudad !== undefined) {
     patch.origen_ciudad = input.origenCiudad.trim() || null;
   }
+  if (input.origenCaptacion !== undefined) {
+    patch.origen_captacion = input.origenCaptacion.trim() || null;
+  }
   if (input.medioContacto !== undefined) {
     patch.medio_contacto = input.medioContacto.trim() || null;
   }
@@ -393,6 +410,15 @@ export const updateProspecto = async (
   }
   if (input.tipoInversion !== undefined) {
     patch.tipo_inversion = input.tipoInversion;
+  }
+  if (input.edad !== undefined) {
+    patch.edad = input.edad;
+  }
+  if (input.sexo !== undefined) {
+    patch.sexo = input.sexo?.trim() || null;
+  }
+  if (input.ocupacion !== undefined) {
+    patch.ocupacion = input.ocupacion?.trim() || null;
   }
   if (input.campanaId !== undefined) {
     patch.campana_id = input.campanaId;
