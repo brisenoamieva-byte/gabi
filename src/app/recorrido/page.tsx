@@ -221,7 +221,11 @@ function RecorridoPageContent() {
     overdueCount: number;
     pendingCount: number;
     threshold: number;
+    pauseThreshold?: number;
+    level?: "ok" | "nudge" | "coach" | "pause";
     shouldBlock: boolean;
+    allowContinue?: boolean;
+    title?: string;
     message: string;
     topExceptions: ProspectoComplianceRow[];
   } | null>(null);
@@ -1219,11 +1223,15 @@ function RecorridoPageContent() {
         overdueCount={complianceGate.overdueCount}
         pendingCount={complianceGate.pendingCount}
         threshold={complianceGate.threshold}
+        pauseThreshold={complianceGate.pauseThreshold}
+        level={complianceGate.level}
         shouldBlock={complianceGate.shouldBlock}
+        allowContinue={complianceGate.allowContinue ?? !complianceGate.shouldBlock}
+        title={complianceGate.title}
         message={complianceGate.message}
         topExceptions={complianceGate.topExceptions}
         onContinue={() => {
-          if (user?.id && complianceGate.shouldBlock) {
+          if (user?.id && (complianceGate.level === "coach" || complianceGate.shouldBlock)) {
             writeRecorridoComplianceOverride(user.id);
           }
           setComplianceAcknowledged(true);

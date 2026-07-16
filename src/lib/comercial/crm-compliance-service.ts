@@ -17,7 +17,12 @@ import {
   getPlaybookProgressMap,
 } from "@/lib/comercial/crm-playbook-service";
 import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
-import { getComplianceRecorridoBlockThreshold } from "@/lib/comercial/crm-compliance-config";
+import {
+  getCompliancePauseThreshold,
+  getComplianceRecorridoBlockThreshold,
+  resolveComplianceGateLevel,
+  type ComplianceGateLevel,
+} from "@/lib/comercial/crm-compliance-config";
 import {
   isPerfilamientoVisitaComplete,
   readPerfilamientoVisitaFromProspecto,
@@ -422,11 +427,16 @@ export const getRecorridoComplianceGate = async (
   overdueCount: number;
   pendingCount: number;
   threshold: number;
+  pauseThreshold: number;
+  level: ComplianceGateLevel;
   shouldBlock: boolean;
+  allowContinue: boolean;
   message: string;
+  title: string;
   topExceptions: ProspectoComplianceRow[];
 }> => {
   const threshold = getComplianceRecorridoBlockThreshold();
+  const pauseThreshold = getCompliancePauseThreshold();
   const summary = await getAsesorComplianceSummary(asesorId, desarrolloId);
   const config = await getCrmPlaybookConfig(desarrolloId);
   const playbookEnabled = Boolean(config?.enabled);
@@ -437,26 +447,44 @@ export const getRecorridoComplianceGate = async (
       overdueCount: 0,
       pendingCount: 0,
       threshold,
+      pauseThreshold,
+      level: "ok",
       shouldBlock: false,
+      allowContinue: true,
       message: "",
+      title: "",
       topExceptions: [],
     };
   }
 
-  const shouldBlock = summary.overdueCount >= threshold;
-  const message = shouldBlock
-    ? `Tienes ${summary.overdueCount} paso(s) vencido(s) en tu CRM. Atiende al menos ${threshold} antes de iniciar otro recorrido para mantener reportes confiables.`
-    : summary.overdueCount > 0
-      ? `Tienes ${summary.overdueCount} paso(s) vencido(s). Te recomendamos atenderlos pronto.`
-      : "";
+  const level = resolveComplianceGateLevel(summary.overdueCount);
+  const shouldBlock = level === "pause";
+  const allowContinue = level !== "pause";
+
+  let title = "";
+  let message = "";
+  if (level === "nudge") {
+    title = "Un toque a tu pipeline";
+    message = `Tienes ${summary.overdueCount} seguimiento(s) vencido(s). Dos minutos en Mis prospectos protegen tu comisión — luego sigues con el recorrido.`;
+  } else if (level === "coach") {
+    title = "Ordena tu CRM y sigue vendiendo";
+    message = `Llevas ${summary.overdueCount} paso(s) vencido(s). Atiende 1 o 2 leads clave (WhatsApp rápido) y regresas. Tu embudo es tu ingreso.`;
+  } else if (level === "pause") {
+    title = "Pausa breve: limpia vencidos";
+    message = `Hay ${summary.overdueCount} seguimientos vencidos (umbral ${pauseThreshold}). Cierra los más urgentes en Mis prospectos; el recorrido y cotizador nuevos se liberan al bajar de ${pauseThreshold}. Mis prospectos siempre está abierto.`;
+  }
 
   return {
     playbookEnabled: true,
     overdueCount: summary.overdueCount,
     pendingCount: summary.pendingCount,
     threshold,
+    pauseThreshold,
+    level,
     shouldBlock,
+    allowContinue,
     message,
+    title,
     topExceptions: summary.topExceptions.slice(0, 5),
   };
 };

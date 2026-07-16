@@ -99,7 +99,7 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResu
     (input.tipo === "recorrido_completado" || input.tipo === "lead_registrado")
   ) {
     const gate = await getRecorridoComplianceGate(input.asesorId, input.desarrolloId);
-    if (gate.shouldBlock) {
+    if (gate.shouldBlock || gate.level === "pause") {
       throw new Error(gate.message);
     }
   }

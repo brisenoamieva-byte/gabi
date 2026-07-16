@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { completeCadenciaTouch } from "@/lib/comercial/cadencia-service";
+import { isContactoResultadoRapido } from "@/lib/comercial/crm-compliance-config";
 import { asesorSessionErrorResponse, resolveAsesorIdForApi } from "@/lib/asesores/session-api";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -12,9 +13,10 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   try {
-    const body = (await request.json()) as { asesorId?: string };
+    const body = (await request.json()) as { asesorId?: string; resultado?: string };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
-    const touch = await completeCadenciaTouch(asesorId, touchId);
+    const resultado = isContactoResultadoRapido(body.resultado) ? body.resultado : undefined;
+    const touch = await completeCadenciaTouch(asesorId, touchId, resultado);
     return NextResponse.json({ touch });
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);

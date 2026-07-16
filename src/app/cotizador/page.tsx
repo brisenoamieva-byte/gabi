@@ -135,7 +135,11 @@ function CotizadorPageContent() {
     overdueCount: number;
     pendingCount: number;
     threshold: number;
+    pauseThreshold?: number;
+    level?: "ok" | "nudge" | "coach" | "pause";
     shouldBlock: boolean;
+    allowContinue?: boolean;
+    title?: string;
     message: string;
     topExceptions: ProspectoComplianceRow[];
   } | null>(null);
@@ -348,11 +352,15 @@ function CotizadorPageContent() {
         overdueCount={complianceGate.overdueCount}
         pendingCount={complianceGate.pendingCount}
         threshold={complianceGate.threshold}
+        pauseThreshold={complianceGate.pauseThreshold}
+        level={complianceGate.level}
         shouldBlock={complianceGate.shouldBlock}
+        allowContinue={complianceGate.allowContinue ?? !complianceGate.shouldBlock}
+        title={complianceGate.title}
         message={complianceGate.message}
         topExceptions={complianceGate.topExceptions}
         onContinue={() => {
-          if (complianceGate.shouldBlock) {
+          if (complianceGate.level === "coach" || complianceGate.shouldBlock) {
             writeRecorridoComplianceOverride(user.id);
           }
           setComplianceAcknowledged(true);

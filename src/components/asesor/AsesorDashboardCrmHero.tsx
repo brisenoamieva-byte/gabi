@@ -259,7 +259,7 @@ export function AsesorDashboardCrmHero({
               >
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" strokeWidth={2} />
                 <span className="flex-1 leading-snug">
-                  {overdueCount} paso(s) vencido(s) — atiéndelos antes del reporte comercial.
+                  {overdueCount} seguimiento(s) por poner al día — un WhatsApp rápido protege tu comisión.
                 </span>
                 <ArrowRight className="h-4 w-4 shrink-0 text-amber-200/80" />
               </Link>

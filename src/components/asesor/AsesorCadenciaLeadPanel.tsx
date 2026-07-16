@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
+import { Loader2, MessageCircle, Phone } from "lucide-react";
 import type { CadenciaHoyItem } from "@/lib/comercial/cadencia-service";
 
 type AsesorCadenciaLeadPanelProps = {
@@ -45,13 +45,16 @@ export function AsesorCadenciaLeadPanel({
     void load();
   }, [load]);
 
-  const handleComplete = async (touchId: string) => {
+  const handleComplete = async (
+    touchId: string,
+    resultado?: "respondio" | "sin_respuesta" | "cita" | "mensaje_enviado",
+  ) => {
     setCompletingId(touchId);
     try {
       await fetch(`/api/asesores/cadencia/touches/${touchId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asesorId }),
+        body: JSON.stringify({ asesorId, resultado }),
       });
       await load();
     } finally {
@@ -103,19 +106,29 @@ export function AsesorCadenciaLeadPanel({
                 Llamar
               </a>
             ) : null}
-            <button
-              type="button"
-              disabled={completingId === next.touch.id}
-              onClick={() => void handleComplete(next.touch.id)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#201044] underline-offset-2 hover:underline"
-            >
-              {completingId === next.touch.id ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-3 w-3" />
-              )}
-              Marcar hecho
-            </button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(
+              [
+                ["respondio", "Respondió"],
+                ["sin_respuesta", "Sin respuesta"],
+                ["cita", "Cita"],
+                ["mensaje_enviado", "Enviado"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                disabled={completingId === next.touch.id}
+                onClick={() => void handleComplete(next.touch.id, id)}
+                className="rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#201044] disabled:opacity-50"
+              >
+                {completingId === next.touch.id ? (
+                  <Loader2 className="inline h-3 w-3 animate-spin" />
+                ) : null}{" "}
+                {label}
+              </button>
+            ))}
           </div>
           {items.length > 1 ? (
             <p className="mt-2 text-[11px] text-slate-500">+{items.length - 1} toque(s) más hoy</p>

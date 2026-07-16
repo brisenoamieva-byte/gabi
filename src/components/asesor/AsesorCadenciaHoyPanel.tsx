@@ -4,13 +4,19 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  Calendar,
   CheckCircle2,
   Loader2,
   MessageCircle,
   Phone,
   Clock,
+  MessageSquareOff,
 } from "lucide-react";
 import type { CadenciaHoyItem } from "@/lib/comercial/cadencia-service";
+import {
+  CONTACTO_RESULTADO_LABEL,
+  type ContactoResultadoRapido,
+} from "@/lib/comercial/crm-compliance-config";
 
 type AsesorCadenciaHoyPanelProps = {
   asesorId: string;
@@ -19,6 +25,38 @@ type AsesorCadenciaHoyPanelProps = {
   loading?: boolean;
   onRefresh: () => void;
 };
+
+const OUTCOMES: Array<{
+  id: ContactoResultadoRapido;
+  label: string;
+  icon: typeof CheckCircle2;
+  tone: string;
+}> = [
+  {
+    id: "respondio",
+    label: CONTACTO_RESULTADO_LABEL.respondio,
+    icon: CheckCircle2,
+    tone: "bg-emerald-500/25 text-emerald-100 border-emerald-400/30",
+  },
+  {
+    id: "sin_respuesta",
+    label: CONTACTO_RESULTADO_LABEL.sin_respuesta,
+    icon: MessageSquareOff,
+    tone: "bg-amber-500/20 text-amber-100 border-amber-400/30",
+  },
+  {
+    id: "cita",
+    label: CONTACTO_RESULTADO_LABEL.cita,
+    icon: Calendar,
+    tone: "bg-[#6cc24a]/30 text-white border-[#6cc24a]/40",
+  },
+  {
+    id: "mensaje_enviado",
+    label: "Enviado",
+    icon: MessageCircle,
+    tone: "bg-sky-500/20 text-sky-100 border-sky-400/30",
+  },
+];
 
 export function AsesorCadenciaHoyPanel({
   asesorId,
@@ -29,13 +67,13 @@ export function AsesorCadenciaHoyPanel({
   const [completingId, setCompletingId] = useState<string | null>(null);
 
   const handleComplete = useCallback(
-    async (touchId: string) => {
+    async (touchId: string, resultado: ContactoResultadoRapido) => {
       setCompletingId(touchId);
       try {
         const response = await fetch(`/api/asesores/cadencia/touches/${touchId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ asesorId }),
+          body: JSON.stringify({ asesorId, resultado }),
         });
         if (!response.ok) {
           const data = (await response.json()) as { error?: string };
@@ -70,10 +108,10 @@ export function AsesorCadenciaHoyPanel({
         <div>
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-300">
             <Clock className="h-3.5 w-3.5" />
-            Hoy toca · perfilamiento
+            Hoy toca · captura rápida
           </p>
           <p className="mt-0.5 text-xs text-white/65">
-            {items.length} contacto(s) pendiente(s) — meta: agendar visita
+            Abre WhatsApp y registra el resultado en un toque — sin formularios largos
           </p>
         </div>
       </div>
@@ -84,7 +122,7 @@ export function AsesorCadenciaHoyPanel({
             key={item.touch.id}
             item={item}
             completing={completingId === item.touch.id}
-            onComplete={() => void handleComplete(item.touch.id)}
+            onComplete={(resultado) => void handleComplete(item.touch.id, resultado)}
           />
         ))}
       </ul>
@@ -92,7 +130,10 @@ export function AsesorCadenciaHoyPanel({
       {items.length > 5 ? (
         <p className="mt-2 text-center text-xs text-white/50">
           +{items.length - 5} más en{" "}
-          <Link href="/mis-leads" className="font-semibold text-sky-300 underline-offset-2 hover:underline">
+          <Link
+            href="/mis-leads"
+            className="font-semibold text-sky-300 underline-offset-2 hover:underline"
+          >
             Mis prospectos
           </Link>
         </p>
@@ -108,7 +149,7 @@ function CadenciaHoyRow({
 }: {
   item: CadenciaHoyItem;
   completing: boolean;
-  onComplete: () => void;
+  onComplete: (resultado: ContactoResultadoRapido) => void;
 }) {
   const isWa = item.touch.canal === "whatsapp";
 
@@ -151,25 +192,30 @@ function CadenciaHoyRow({
               Llamar
             </a>
           ) : null}
-          <button
-            type="button"
-            disabled={completing}
-            onClick={onComplete}
-            className="inline-flex items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1.5 text-xs font-bold text-white/90 disabled:opacity-50"
-          >
-            {completing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            )}
-            Hecho
-          </button>
         </div>
       </div>
 
-      {item.llamadaGuion ? (
-        <p className="mt-2 line-clamp-2 text-[11px] text-white/45">{item.llamadaGuion.split("\n")[3]}</p>
-      ) : null}
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
+        {OUTCOMES.map((outcome) => {
+          const Icon = outcome.icon;
+          return (
+            <button
+              key={outcome.id}
+              type="button"
+              disabled={completing}
+              onClick={() => onComplete(outcome.id)}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-bold disabled:opacity-50 ${outcome.tone}`}
+            >
+              {completing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Icon className="h-3 w-3" />
+              )}
+              {outcome.label}
+            </button>
+          );
+        })}
+      </div>
 
       <Link
         href={`/mis-leads?prospecto=${encodeURIComponent(item.prospectoId)}`}

@@ -368,6 +368,7 @@ const completeCadenciaTouchInternal = async (
   asesorId: string | null,
   source: string,
   skipAuth = false,
+  resultado?: import("@/lib/comercial/crm-compliance-config").ContactoResultadoRapido,
 ): Promise<CadenciaTouchRow | null> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -445,8 +446,16 @@ const completeCadenciaTouchInternal = async (
     canal: touch.canal === "whatsapp" ? "cadencia_whatsapp" : "cadencia_llamada",
     destinatario_tipo: "prospecto",
     status: "sent",
-    payload: { touchKey: touch.touch_key, source },
+    payload: {
+      touchKey: touch.touch_key,
+      source,
+      ...(resultado ? { resultado } : {}),
+    },
   });
+
+  if (resultado && completedBy) {
+    await applyContactoResultadoToProspecto(cadencia.prospecto_id, resultado);
+  }
 
   if (completedBy) {
     await syncPlaybookStepForTouch(
@@ -516,11 +525,63 @@ const expireCadenciaIfNoResponse = async (cadenciaId: string) => {
     .eq("id", cadencia.prospecto_id);
 };
 
+const applyContactoResultadoToProspecto = async (
+  prospectoId: string,
+  resultado: import("@/lib/comercial/crm-compliance-config").ContactoResultadoRapido,
+) => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) return;
+
+  const { data: prospecto } = await supabase
+    .from("prospectos")
+    .select("id, etapa, notas")
+    .eq("id", prospectoId)
+    .maybeSingle();
+
+  if (!prospecto) return;
+
+  const now = new Date().toISOString();
+  const label =
+    resultado === "respondio"
+      ? "Respondió"
+      : resultado === "sin_respuesta"
+        ? "Sin respuesta"
+        : resultado === "cita"
+          ? "Cita agendada"
+          : "Mensaje enviado";
+
+  const stamp = `[Contacto ${new Date().toLocaleString("es-MX")}] ${label}`;
+  const prev = (prospecto.notas as string | null)?.trim();
+  const patch: Record<string, unknown> = {
+    notas: prev ? `${prev}\n${stamp}` : stamp,
+    updated_at: now,
+  };
+
+  const etapa = prospecto.etapa as string;
+  if (resultado === "cita" && etapa !== "vendido" && etapa !== "perdido" && etapa !== "apartado") {
+    patch.etapa = "cita";
+  } else if (
+    (resultado === "respondio" || resultado === "mensaje_enviado") &&
+    etapa === "nuevo"
+  ) {
+    patch.etapa = "contactado";
+  }
+
+  await supabase.from("prospectos").update(patch).eq("id", prospectoId);
+};
+
 export const completeCadenciaTouch = async (
   asesorId: string,
   touchId: string,
+  resultado?: import("@/lib/comercial/crm-compliance-config").ContactoResultadoRapido,
 ): Promise<CadenciaTouchRow> => {
-  const result = await completeCadenciaTouchInternal(touchId, asesorId, "asesor_manual");
+  const result = await completeCadenciaTouchInternal(
+    touchId,
+    asesorId,
+    "asesor_manual",
+    false,
+    resultado,
+  );
   if (!result) {
     throw new Error("No se pudo completar el toque.");
   }
