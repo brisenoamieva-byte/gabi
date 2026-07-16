@@ -197,7 +197,7 @@ export const listOperacionesCanceladas = async (
     throw new Error("No tienes permiso para este desarrollo.");
   }
 
-  let opQuery = supabase
+  const opQuery = supabase
     .from("operaciones_comerciales")
     .select("*")
     .eq("desarrollo_id", filters.desarrolloId)
