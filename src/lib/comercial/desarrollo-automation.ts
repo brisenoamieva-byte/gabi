@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 /** Desarrollo operativo en catálogo → automatizaciones GABI (crons, WA, cadencia, emails auto). */
 export const isDesarrolloAutomationActive = async (desarrolloId: string): Promise<boolean> => {

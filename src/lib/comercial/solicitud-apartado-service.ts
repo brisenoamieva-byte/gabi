@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   formatSolicitudApartadoEmailHint,
   sendSolicitudApartadoEmail,

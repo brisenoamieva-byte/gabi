@@ -23,7 +23,7 @@ import {
   isGuardiaTurno,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type AsesorGuardiaHoy = {
   asignacionId: string;

@@ -11,7 +11,7 @@ import type {
   ListaPreciosRecord,
   ListaPreciosUnidadRecord,
 } from "@/lib/admin/listas-precios-types";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type {
   ListaPrecioPreviewRow,

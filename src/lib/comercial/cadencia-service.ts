@@ -19,7 +19,7 @@ import {
   type CadenciaTouchStatus,
 } from "@/lib/comercial/cadencia-perfilamiento";
 import { isCrmPlaybookEnabledForDesarrollo } from "@/lib/comercial/crm-playbook-enablement";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isLeadershipAsesorId } from "@/lib/asesores/leadership-access";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 

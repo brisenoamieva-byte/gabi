@@ -22,7 +22,7 @@ import {
   normalizeProspectoEtapaValue,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import {
   completeCadenciaForProspecto,

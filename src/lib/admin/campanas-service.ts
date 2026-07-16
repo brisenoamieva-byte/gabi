@@ -1,6 +1,6 @@
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type CampanaTipo = "online" | "offline";
 

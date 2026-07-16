@@ -16,7 +16,7 @@ import {
   sendComplianceWhatsAppNudge,
 } from "@/lib/comercial/compliance-notifications";
 import { getDesarrolloCadenciaReport, listCadenciaHoyForAsesor } from "@/lib/comercial/cadencia-service";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const authorizeCron = (request: Request): boolean => {
   const secret = process.env.CRON_SECRET?.trim();

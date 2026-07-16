@@ -4,7 +4,7 @@ import {
   formatGerenteAdminAccessEmailHint,
   sendGerenteAdminAccessEmail,
 } from "@/lib/email/send-gerente-admin-access";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type CoordinadorAdminSync = {
   adminLinked: boolean;

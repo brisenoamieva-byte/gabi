@@ -27,7 +27,7 @@ import {
   isPerfilamientoVisitaComplete,
   readPerfilamientoVisitaFromProspecto,
 } from "@/lib/comercial/perfilamiento-post-visita";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const COMPLIANCE_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "nuevo",

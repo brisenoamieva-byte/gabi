@@ -1,6 +1,6 @@
 import type { Cluster, Prototipo } from "@/lib/data";
 import { assertCatalogId, slugifyCatalogId } from "@/lib/catalog/slug";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type ClusterCatalogAdminRecord = Cluster & {
   desarrolloId: string;

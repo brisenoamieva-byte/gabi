@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCommercialLead } from "@/lib/comercial/commercial-lead-create";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type CaptureBody = {
   desarrolloId?: string;

@@ -3,7 +3,7 @@ import {
   getDefaultCrmPlaybook,
 } from "@/lib/comercial/crm-playbook";
 import { isDesarrolloAutomationActive } from "@/lib/comercial/desarrollo-automation";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 /** Playbook activo salvo fila explícita con enabled=false en crm_playbook_configs. */
 export const isCrmPlaybookEnabledForDesarrollo = async (

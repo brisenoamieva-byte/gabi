@@ -7,7 +7,7 @@ import {
   serializeCampoConfig,
   type DesarrolloCampoConfig,
 } from "@/lib/catalog/campo-config";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type ComercializadoraAdminRecord = {
   id: string;

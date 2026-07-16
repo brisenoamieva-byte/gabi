@@ -12,7 +12,7 @@ import {
   getGoogleDriveOperacionFolderUrl,
   isGoogleDriveConfiguredForDesarrolloAsync,
 } from "@/lib/integrations/google-drive-config";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type AsesorExpedienteSummary = {
   operacionId: string;

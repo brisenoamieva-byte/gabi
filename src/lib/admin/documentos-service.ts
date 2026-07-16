@@ -1,6 +1,6 @@
 import { sameDocumentoAlcance, type DocumentoAlcanceKey } from "@/lib/admin/documentos-scope";
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import type { AdminProfile, DocumentoRecord, DocumentoTipo } from "@/lib/admin/types";
 
 const BUCKET = "gabi-documentos";

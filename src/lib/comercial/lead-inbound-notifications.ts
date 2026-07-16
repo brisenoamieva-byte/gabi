@@ -3,7 +3,7 @@ import { getEmailConfig } from "@/lib/email/config";
 import { desarrollos } from "@/lib/data";
 import { assignAsesorByGuardiaCarousel } from "@/lib/comercial/lead-guardia-assignment";
 import type { ProspectoRecord } from "@/lib/comercial/sembrado-status";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isWhatsAppCloudConfigured } from "@/lib/whatsapp/config";
 import {
   sendAsesorLeadAlert,

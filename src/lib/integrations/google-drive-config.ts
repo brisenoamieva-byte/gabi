@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { normalizeCampoConfig } from "@/lib/catalog/campo-config";
 import {
   DEFAULT_DRIVE_EXPEDIENTES_SUBFOLDER,

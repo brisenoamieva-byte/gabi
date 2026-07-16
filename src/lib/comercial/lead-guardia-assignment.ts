@@ -1,5 +1,5 @@
 import { formatDateYmd } from "@/lib/comercial/guardias";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const MEXICO_TZ = "America/Mexico_City";
 

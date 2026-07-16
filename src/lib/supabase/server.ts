@@ -55,19 +55,3 @@ export const createSupabaseServerClient = () => {
     },
   });
 };
-
-export const createSupabaseServiceClient = () => {
-  const { url } = supabasePublicConfig();
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-  if (!url || !serviceKey) {
-    return null;
-  }
-
-  return createServerClient(url, serviceKey, {
-    cookies: {
-      getAll: () => [],
-      setAll: () => undefined,
-    },
-  });
-};

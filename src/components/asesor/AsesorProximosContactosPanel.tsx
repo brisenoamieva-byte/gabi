@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Bell, CalendarClock, Phone } from "lucide-react";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
-import type { ProximoContactoHoyItem } from "@/lib/comercial/proximo-contacto";
+import type { ProximoContactoHoyItem } from "@/lib/comercial/proximo-contacto-shared";
 
 type AsesorProximosContactosPanelProps = {
   items: ProximoContactoHoyItem[];

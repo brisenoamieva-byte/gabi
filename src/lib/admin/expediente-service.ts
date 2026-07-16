@@ -30,7 +30,7 @@ import type {
   OperacionComercialRecord,
   ProspectoRecord,
 } from "@/lib/comercial/sembrado-status";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { desarrollos, getDatosBancarios } from "@/lib/data";
 import { normalizeCampoConfig } from "@/lib/catalog/campo-config";
 import {

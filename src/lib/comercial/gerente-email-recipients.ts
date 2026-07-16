@@ -1,5 +1,5 @@
 import { isLeadershipAsesorRol, normalizeAsesorRol } from "@/lib/asesores/types";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 /** Correos de gerencia para un desarrollo (admin_profiles + asesores liderazgo). */
 export async function getGerenteEmailsForDesarrollo(desarrolloId: string): Promise<string[]> {

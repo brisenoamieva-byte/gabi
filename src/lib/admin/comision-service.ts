@@ -5,7 +5,7 @@ import {
   evaluarElegibilidadComision,
   type ComisionPagoTrigger,
 } from "@/lib/comercial/comision-reglas";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type SolicitudComisionRecord = {
   id: string;

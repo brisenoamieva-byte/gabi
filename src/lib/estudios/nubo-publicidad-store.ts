@@ -3,7 +3,7 @@ import {
   resolveConsultoriaMarca,
   type ConsultoriaMarcaPresentacion,
 } from "@/lib/brand/consultoria-marca";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { normalizeNuboUbicacionMarcadores } from "@/lib/estudios/nubo-ubicacion-markers";
 import {
   getDefaultNuboEstudioContenido,

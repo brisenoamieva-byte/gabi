@@ -14,7 +14,7 @@ import {
   isGuardiaTurno,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type { GuardiaMarcajeAdminRow, GuardiaMarcajesDiaPayload } from "@/lib/admin/guardia-marcajes-types";
 

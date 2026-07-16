@@ -18,7 +18,7 @@ import { LA_VISTA_RESIDENCIAL_ID } from "@/lib/catalog/desarrollos-registry";
 import { getDefaultRecorridoContenido } from "@/lib/catalog/recorrido-content";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
 import { syncSuperficieLegacyFields } from "@/lib/inventario/productos-recomendados";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type CatalogSeedResult = {
   comercializadoras: number;

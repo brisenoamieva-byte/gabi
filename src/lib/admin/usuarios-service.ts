@@ -1,6 +1,6 @@
 import type { AdminRol } from "@/lib/admin/types";
 import { ensureAuthUserForAdmin } from "@/lib/admin/admin-auth-user";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type AdminUserRecord = {
   id: string;

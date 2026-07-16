@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const findAuthUserIdByEmail = async (email: string): Promise<string | null> => {
   const supabase = createSupabaseServiceClient();

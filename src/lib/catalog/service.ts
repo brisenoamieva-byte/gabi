@@ -9,7 +9,7 @@ import {
 } from "@/lib/data";
 import { pasajeAlamosPrototipos } from "@/lib/catalog/pasaje-alamos.generated";
 import { getInvesttiSimuladorDesarrolloIds } from "@/lib/portal/investti-simulador";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   applyDesarrolloCodeDefaults,
   applyRecorridoCodeDefaults,

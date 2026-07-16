@@ -2,7 +2,7 @@ import { resolveAdminUserIdForDb } from "@/lib/admin/admin-user-id";
 import type { PartnerRecord, PartnerTipo } from "@/lib/admin/partners-types";
 import { isPartnerTipo } from "@/lib/admin/partners-types";
 import { getDesarrolloById } from "@/lib/catalog/service";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 

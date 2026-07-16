@@ -36,7 +36,7 @@ import {
 import { normalizeProximoContactoOn } from "@/lib/comercial/proximo-contacto";
 import { appendProspectoNota } from "@/lib/comercial/prospecto-notas-historial";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   isLeadershipAsesorId,
   resolveGerenteAsesorIdForDesarrollo,

@@ -12,7 +12,7 @@ import {
   INVESTTI_SIMULADOR_DEMO_ASESOR_ID,
   matchesInvesttiSimuladorPin,
 } from "@/lib/portal/investti-simulador";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type AsesorAuthRow = {
   id: string;

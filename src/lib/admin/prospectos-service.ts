@@ -17,7 +17,7 @@ import {
   computeSellerScore,
   pickDuplicateIds,
 } from "@/lib/comercial/lead-scoring";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import type { VisitaTipo } from "@/lib/visitas/types";
 import { normalizeProspectoTelefono } from "@/lib/comercial/prospecto-telefono";

@@ -2,7 +2,7 @@ import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import type { CapturaLogRow, CapturaLogStatus } from "@/lib/comercial/captura-log-status";
 import { extractParseurFields } from "@/lib/comercial/parseur-fields";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type { CapturaLogRow, CapturaLogStatus } from "@/lib/comercial/captura-log-status";
 export { capturaLogStatusColor, capturaLogStatusLabel } from "@/lib/comercial/captura-log-status";

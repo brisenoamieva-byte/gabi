@@ -1,7 +1,7 @@
 import { asesores as seedAsesores, desarrollos } from "@/lib/data";
 import { INVESTTI_CATALOG_DESARROLLO_IDS } from "@/lib/catalog/investti-desarrollos";
 import { findSeedAsesor, resolveSeedAsesorId } from "@/lib/asesores/seed-match";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type AsesoresSeedResult = {
   updated: number;

@@ -15,7 +15,7 @@ import {
 } from "@/lib/comercial/guardia-salida-cuestionario";
 import type { GuardiaMarcajeResumen } from "@/lib/comercial/guardia-marcaje-types";
 import { perfilamientoVisitaToRow } from "@/lib/comercial/perfilamiento-post-visita";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 function assertSalidaTables(message: string) {
   if (

@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type EncuestaTipo = "qa" | "satisfaccion";
 export type EncuestaCanal = "whatsapp" | "email" | "sms" | "otro";

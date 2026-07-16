@@ -1,6 +1,6 @@
 import { createCommercialLead } from "@/lib/comercial/commercial-lead-create";
 import { getMetaGraphApiVersion, getMetaPageAccessToken } from "@/lib/whatsapp/config";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type MetaLeadField = { name: string; values: string[] };
 

@@ -1,4 +1,5 @@
-import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { GABI_OPERADOR } from "@/lib/gabi/ecosystem";
 import { getMasterSessionEmail } from "@/lib/gabi/master-session";

@@ -4,7 +4,7 @@ import { calificacionLabel } from "@/lib/comercial/xperience-leads";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { prospectoEtapaLabel, normalizeProspectoEtapaValue, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { motivoDescarteLabel } from "@/lib/comercial/motivo-descarte";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { fetchLeadsQaResumen, type LeadsQaResumen } from "@/lib/admin/qa-satisfaccion-service";
 import {

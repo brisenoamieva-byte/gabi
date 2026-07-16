@@ -11,7 +11,7 @@ import {
   type GuardiaEstado,
   type GuardiaTurno,
 } from "@/lib/comercial/guardias";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type GuardiaAsignacionRecord = {
   id: string;

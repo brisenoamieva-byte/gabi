@@ -10,7 +10,7 @@ import {
   resolveLeadAsesorId,
 } from "@/lib/comercial/lead-inbound-notifications";
 import type { ProspectoRecord } from "@/lib/comercial/sembrado-status";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type CommercialLeadInput = {
   desarrolloId: string;

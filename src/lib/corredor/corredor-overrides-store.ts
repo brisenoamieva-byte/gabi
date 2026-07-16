@@ -10,7 +10,7 @@ import {
   getCorredorDesarrolloById,
   isCorredorDesarrolloId,
 } from "@/lib/corredor/zona-sur-seed";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 function parseJsonField<T extends object>(raw: unknown): T | null {
   if (raw == null) return null;

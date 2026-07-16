@@ -15,7 +15,7 @@ import {
 } from "@/lib/comercial/lead-scoring";
 import { nivelInteresFromLabel } from "@/lib/comercial/prospecto-interes";
 import type { ProspectoRecord } from "@/lib/comercial/sembrado-status";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type ParseurIngestStatus = "created" | "updated" | "duplicate" | "ignored" | "rejected" | "error";
 

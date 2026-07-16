@@ -13,7 +13,7 @@ import {
   getGoogleDriveRootFolderIdFromEnv,
   hasGoogleDriveServiceAccount,
 } from "@/lib/integrations/google-drive-config";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type OnboardingCheck = {
   id: string;

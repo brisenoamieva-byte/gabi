@@ -13,7 +13,7 @@ import { listDesarrollosWithCrmPlaybookEnabled } from "@/lib/comercial/crm-playb
 import { getGerenteEmailsForDesarrollo } from "@/lib/comercial/gerente-email-recipients";
 import { buildGarantiaSlaReport, type GarantiaSlaReport } from "@/lib/comercial/garantia-sla";
 import { sendGarantiaWeeklyReportEmail } from "@/lib/email/send-garantia-weekly";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isWhatsAppCloudConfigured } from "@/lib/whatsapp/config";
 import { sendAsesorComplianceNudge } from "@/lib/whatsapp/meta-cloud-api";
 

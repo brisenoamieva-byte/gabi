@@ -26,7 +26,7 @@ import {
   syncSuperficieLegacyFields,
   type ProductoRecomendadoRecord,
 } from "@/lib/inventario/productos-recomendados";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { ensureExpedienteDriveFolderForOperacion } from "@/lib/admin/expediente-service";
 
 export const listOperaciones = async (

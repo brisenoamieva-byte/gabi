@@ -5,7 +5,7 @@ import {
   type ProductoRecomendadoInput,
   type ProductoRecomendadoRecord,
 } from "@/lib/inventario/productos-recomendados";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const toRow = (input: ProductoRecomendadoInput) => {
   const superficies = syncSuperficieLegacyFields(

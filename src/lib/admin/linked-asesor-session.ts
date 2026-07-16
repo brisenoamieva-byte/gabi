@@ -4,7 +4,7 @@ import type { AsesorSession } from "@/lib/asesores/types";
 import { canAdminOpenCampoCrm } from "@/lib/admin/campo-crm-access";
 import type { AdminRol } from "@/lib/admin/types";
 import { isGabiOperator } from "@/lib/gabi/operator";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type AsesorLookupRow = {
   id: string;

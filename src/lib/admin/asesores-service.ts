@@ -22,7 +22,7 @@ import {
   syncCoordinadorAdminAccess,
   type CoordinadorAdminSync,
 } from "@/lib/admin/coordinador-admin-access";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type AsesorRow = {
   id: string;

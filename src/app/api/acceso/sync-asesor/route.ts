@@ -17,8 +17,8 @@ import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializad
 import {
   applySupabaseCookies,
   createSupabaseRouteHandlerClient,
-  createSupabaseServiceClient,
 } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const defaultPortalSlug = "bbr";

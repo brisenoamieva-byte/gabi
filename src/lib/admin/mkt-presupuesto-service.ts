@@ -14,7 +14,7 @@ import {
   type MktPresupuestoRecord,
   type MktPresupuestoResumen,
 } from "@/lib/comercial/mkt-presupuesto";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const toNumber = (value: unknown) => {
   const n = Number(value);

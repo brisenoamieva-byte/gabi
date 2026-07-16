@@ -21,7 +21,7 @@ import {
 import { useCrmPlaybookEnabled } from "@/lib/comercial/use-crm-playbook-enabled";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import type { CadenciaHoyItem, AsesorCadenciaBrief } from "@/lib/comercial/cadencia-service";
-import type { ProximoContactoHoyItem } from "@/lib/comercial/proximo-contacto";
+import type { ProximoContactoHoyItem } from "@/lib/comercial/proximo-contacto-shared";
 import { AsesorCadenciaHoyPanel } from "@/components/asesor/AsesorCadenciaHoyPanel";
 import { AsesorProximosContactosPanel } from "@/components/asesor/AsesorProximosContactosPanel";
 

@@ -2,7 +2,7 @@ import { adminAuthCallbackUrl } from "@/lib/admin/admin-auth-callback";
 import { isEmailConfigured } from "@/lib/email/config";
 import { sendViaResend } from "@/lib/email/send-via-resend";
 import { resolveSiteUrl } from "@/lib/site-url";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 async function resolvePasswordSetupLink(email: string): Promise<string> {
   const siteUrl = resolveSiteUrl();

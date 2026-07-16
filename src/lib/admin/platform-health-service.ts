@@ -1,5 +1,5 @@
 import type { PlatformHealth, PlatformHealthCheck } from "@/lib/admin/platform-health-types";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type { PlatformHealth, PlatformHealthCheck } from "@/lib/admin/platform-health-types";
 

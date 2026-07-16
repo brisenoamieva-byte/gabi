@@ -4,7 +4,7 @@ import {
   getObjetivosSegmentoSeed,
   type ReporteObjetivosAnuales,
 } from "@/lib/admin/reporte-semanal/objetivos-config";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export type ComercialObjetivoRecord = {
   id: string;

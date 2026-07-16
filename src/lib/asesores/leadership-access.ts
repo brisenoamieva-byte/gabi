@@ -9,7 +9,7 @@ import {
   type AsesorRol,
   type AsesorSession,
 } from "@/lib/asesores/types";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const canAsesorManageAllProspectos = (rol: AsesorRol) => isLeadershipAsesorRol(rol);
 

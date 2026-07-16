@@ -8,7 +8,7 @@ import {
   assertAsesorDesarrollo,
   getProspectoForAsesor,
 } from "@/lib/asesores/prospectos-service";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const assertProspectoPuedeApartar = (etapa: string) => {
   if (etapa === "vendido") {
