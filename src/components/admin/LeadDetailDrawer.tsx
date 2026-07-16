@@ -7,6 +7,8 @@ import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
 import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import type { CampanaRecord } from "@/lib/admin/campanas-service";
+import type { PartnerRecord } from "@/lib/admin/partners-service";
+import { partnerTipoLabel } from "@/lib/admin/partners-service";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import {
   PROSPECTO_ETAPAS,
@@ -69,11 +71,13 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
   const [etapa, setEtapa] = useState<ProspectoEtapa>("nuevo");
   const [notas, setNotas] = useState("");
   const [campanaId, setCampanaId] = useState("");
+  const [partnerId, setPartnerId] = useState("");
   const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
   const [asesorId, setAsesorId] = useState("");
   const [asesores, setAsesores] = useState<AsesorOption[]>([]);
   const [adminMe, setAdminMe] = useState<AdminMe>({});
   const [campanas, setCampanas] = useState<CampanaRecord[]>([]);
+  const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [apartadoModalOpen, setApartadoModalOpen] = useState(false);
   const [solicitudApartado, setSolicitudApartado] = useState<SolicitudApartadoRow | null>(null);
   const [compliance, setCompliance] = useState<ProspectoComplianceRow | null>(null);
@@ -109,6 +113,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         setEtapa(isProspectoEtapa(data.prospecto.etapa) ? data.prospecto.etapa : "nuevo");
         setNotas(data.prospecto.notas ?? "");
         setCampanaId(data.prospecto.campana_id ?? "");
+        setPartnerId(data.prospecto.partner_id ?? "");
         setNivelInteres(
           data.prospecto.nivel_interes === "sin_interes" ||
             data.prospecto.nivel_interes === "bajo" ||
@@ -132,6 +137,14 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
         const campResponse = await fetch(`/api/admin/campanas?${campParams.toString()}`);
         const campData = (await campResponse.json()) as { campanas?: CampanaRecord[] };
         setCampanas(campData.campanas ?? []);
+
+        const partnerParams = new URLSearchParams({
+          desarrolloId: data.prospecto.desarrollo_id,
+          activoOnly: "1",
+        });
+        const partnerResponse = await fetch(`/api/admin/partners?${partnerParams.toString()}`);
+        const partnerData = (await partnerResponse.json()) as { partners?: PartnerRecord[] };
+        setPartners(partnerData.partners ?? []);
 
         const complianceResponse = await fetch(`/api/admin/prospectos/${prospectoId}/compliance`);
         if (complianceResponse.ok) {
@@ -182,6 +195,7 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
           etapa,
           notas,
           campanaId: campanaId || null,
+          partnerId: partnerId || null,
           nivelInteres: nivelInteres || null,
           ...(adminMe.canReassignProspectos ? { asesorId: asesorId || null } : {}),
         }),
@@ -571,6 +585,27 @@ export function LeadDetailDrawer({ prospectoId, onClose, onUpdated }: LeadDetail
                     </option>
                   ))}
                 </select>
+              </Field>
+
+              <Field label="Aliado (inmobiliaria / asesor externo)">
+                <select
+                  value={partnerId}
+                  onChange={(event) => setPartnerId(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Sin aliado</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>
+                      {partner.nombre}
+                      {partner.tipo ? ` · ${partnerTipoLabel[partner.tipo]}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {detail.partnerNombre && !partnerId ? (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Texto legado: {detail.partnerNombre}
+                  </p>
+                ) : null}
               </Field>
 
               <Field label="Notas">

@@ -26,6 +26,8 @@ export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
   campanaNombre: string | null;
   campanaCanal: string | null;
+  partnerNombre: string | null;
+  partnerTipo: string | null;
 };
 
 export type ProspectoDetail = ProspectoListRow & {
@@ -51,6 +53,7 @@ export type UpdateProspectoInput = {
   equipoVenta?: string;
   tipoInversion?: string | null;
   campanaId?: string | null;
+  partnerId?: string | null;
   calificacion?: string;
   nivelInteres?: string | null;
   iscore?: number | null;
@@ -76,20 +79,27 @@ export type ProspectoInput = {
   notas?: string;
   visitaId?: string;
   campanaId?: string;
+  partnerId?: string;
 };
 
 const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
   const asesor = row.asesor as { nombre?: string } | null;
   const campana = row.campana as { nombre?: string; canal?: string } | null;
-  const prospecto = { ...row } as ProspectoRecord & { asesor?: unknown; campana?: unknown };
+  const partner = row.partner as { nombre?: string; tipo?: string } | null;
+  const prospecto = {
+    ...row,
+  } as ProspectoRecord & { asesor?: unknown; campana?: unknown; partner?: unknown };
   delete prospecto.asesor;
   delete prospecto.campana;
+  delete prospecto.partner;
   return {
     ...prospecto,
     etapa: normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa,
     asesorNombre: asesor?.nombre ?? null,
     campanaNombre: campana?.nombre ?? null,
     campanaCanal: campana?.canal ?? null,
+    partnerNombre: partner?.nombre ?? null,
+    partnerTipo: partner?.tipo ?? null,
   };
 };
 
@@ -109,6 +119,7 @@ const toRow = (input: ProspectoInput) => ({
   notas: input.notas?.trim() || null,
   visita_id: input.visitaId ?? null,
   campana_id: input.campanaId ?? null,
+  partner_id: input.partnerId ?? null,
   updated_at: new Date().toISOString(),
 });
 
@@ -121,6 +132,7 @@ export const listProspectos = async (
     desde?: string;
     hasta?: string;
     campanaId?: string;
+    partnerId?: string;
     fechaEn?: "created" | "updated";
     spam?: "exclude" | "only" | "include";
     duplicados?: "exclude" | "only" | "include";
@@ -135,7 +147,9 @@ export const listProspectos = async (
 
   let query = supabase
     .from("prospectos")
-    .select("*, asesor:asesores(nombre), campana:campanas(nombre, canal)")
+    .select(
+      "*, asesor:asesores(nombre), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
+    )
     .eq("activo", true)
     .order("updated_at", { ascending: false });
 
@@ -163,6 +177,10 @@ export const listProspectos = async (
 
   if (filters.campanaId) {
     query = query.eq("campana_id", filters.campanaId);
+  }
+
+  if (filters.partnerId) {
+    query = query.eq("partner_id", filters.partnerId);
   }
 
   if (filters.spam === "only") {
@@ -220,6 +238,7 @@ export const getProspectosResumen = async (
     desde?: string;
     hasta?: string;
     campanaId?: string;
+    partnerId?: string;
     fechaEn?: "created" | "updated";
     spam?: "exclude" | "only" | "include";
     duplicados?: "exclude" | "only" | "include";
@@ -250,7 +269,9 @@ export const getProspectoById = async (
 
   const { data, error } = await supabase
     .from("prospectos")
-    .select("*, asesor:asesores(nombre), campana:campanas(nombre, canal)")
+    .select(
+      "*, asesor:asesores(nombre), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
+    )
     .eq("id", id)
     .eq("activo", true)
     .maybeSingle();
@@ -361,6 +382,22 @@ export const updateProspecto = async (
   }
   if (input.campanaId !== undefined) {
     patch.campana_id = input.campanaId;
+  }
+  if (input.partnerId !== undefined) {
+    patch.partner_id = input.partnerId;
+    if (input.partnerId) {
+      const { data: partnerRow } = await supabase
+        .from("partners")
+        .select("nombre")
+        .eq("id", input.partnerId)
+        .maybeSingle();
+      if (partnerRow?.nombre) {
+        patch.promotor_nombre = partnerRow.nombre as string;
+        if (input.equipoVenta === undefined && patch.equipo_venta === undefined) {
+          patch.equipo_venta = "Externo";
+        }
+      }
+    }
   }
   if (input.calificacion !== undefined) {
     patch.calificacion = input.calificacion.trim() || null;

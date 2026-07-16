@@ -52,6 +52,12 @@ type CampanaOption = {
   canal: string | null;
 };
 
+type PartnerOption = {
+  id: string;
+  nombre: string;
+  tipo: string;
+};
+
 type ViewMode = "lista" | "tablero";
 type LeadTab = "leads" | "spam" | "duplicados" | "captura";
 
@@ -88,6 +94,7 @@ export function LeadsAdminPanel({
   const [etapaFilter, setEtapaFilter] = useState("");
   const [asesorFilter, setAsesorFilter] = useState(initialAsesorId ?? "");
   const [campanaFilter, setCampanaFilter] = useState("");
+  const [partnerFilter, setPartnerFilter] = useState("");
   const [interesFilter, setInteresFilter] = useState("");
   const [desde, setDesde] = useState(initialDesde ?? monthDefault.desde);
   const [hasta, setHasta] = useState(initialHasta ?? monthDefault.hasta);
@@ -97,6 +104,7 @@ export function LeadsAdminPanel({
     etapaFilter: "",
     asesorFilter: initialAsesorId ?? "",
     campanaFilter: "",
+    partnerFilter: "",
     interesFilter: "",
     desde: initialDesde ?? monthDefault.desde,
     hasta: initialHasta ?? monthDefault.hasta,
@@ -107,6 +115,7 @@ export function LeadsAdminPanel({
   const [resumen, setResumen] = useState<ProspectosResumen | null>(null);
   const [asesores, setAsesores] = useState<AsesorOption[]>([]);
   const [campanas, setCampanas] = useState<CampanaOption[]>([]);
+  const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -158,6 +167,22 @@ export function LeadsAdminPanel({
       setCampanas(data.campanas ?? []);
     } catch {
       setCampanas([]);
+    }
+  }, [desarrolloId]);
+
+  const loadPartners = useCallback(async () => {
+    if (!desarrolloId) {
+      setPartners([]);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({ desarrolloId, activoOnly: "1" });
+      const response = await fetch(`/api/admin/partners?${params.toString()}`);
+      const data = (await response.json()) as { partners?: PartnerOption[] };
+      setPartners(data.partners ?? []);
+    } catch {
+      setPartners([]);
     }
   }, [desarrolloId]);
 
@@ -256,6 +281,9 @@ export function LeadsAdminPanel({
       if (active.campanaFilter) {
         params.set("campanaId", active.campanaFilter);
       }
+      if (active.partnerFilter) {
+        params.set("partnerId", active.partnerFilter);
+      }
       if (active.interesFilter) {
         params.set("nivelInteres", active.interesFilter);
       }
@@ -316,15 +344,17 @@ export function LeadsAdminPanel({
   useEffect(() => {
     void loadAsesores();
     void loadCampanas();
+    void loadPartners();
     void loadCompliance();
     void loadSolicitudesApartado();
 
     if (prevDesarrolloId.current !== null && prevDesarrolloId.current !== desarrolloId) {
       setAsesorFilter("");
       setCampanaFilter("");
+      setPartnerFilter("");
     }
     prevDesarrolloId.current = desarrolloId;
-  }, [loadAsesores, loadCampanas, loadCompliance, loadSolicitudesApartado, desarrolloId]);
+  }, [loadAsesores, loadCampanas, loadPartners, loadCompliance, loadSolicitudesApartado, desarrolloId]);
 
   useEffect(() => {
     if (!initialProspectoId || deepLinkHandled.current) {
@@ -376,6 +406,7 @@ export function LeadsAdminPanel({
       etapaFilter,
       asesorFilter,
       campanaFilter,
+      partnerFilter,
       interesFilter,
       desde,
       hasta,
@@ -812,6 +843,22 @@ export function LeadsAdminPanel({
                   {campanas.map((campana) => (
                     <option key={campana.id} value={campana.id}>
                       {campana.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block text-[10px]">
+                <span className="mb-0.5 block font-semibold text-slate-500">Aliado</span>
+                <select
+                  value={partnerFilter}
+                  onChange={(event) => setPartnerFilter(event.target.value)}
+                  className={filterInputClass}
+                >
+                  <option value="">Todos</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>
+                      {partner.nombre}
                     </option>
                   ))}
                 </select>

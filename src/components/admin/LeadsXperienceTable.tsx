@@ -206,6 +206,11 @@ export function LeadsXperienceTable({
                         <p className="font-semibold text-gabi-forest">{desarrolloNombre(row)}</p>
                         <p className="text-slate-600">{row.campanaNombre ?? "—"}</p>
                         <p className="truncate text-[10px] text-slate-400">{canal ?? "—"}</p>
+                        {row.partnerNombre ? (
+                          <p className="truncate text-[10px] font-medium text-sky-800">
+                            Aliado · {row.partnerNombre}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </td>
@@ -269,6 +274,7 @@ export const exportLeadsCsv = (
     "Producto",
     "Campaña",
     "Canal",
+    "Aliado",
     "Nombre",
     "Correo",
     "Teléfono",
@@ -297,6 +303,7 @@ export const exportLeadsCsv = (
       desarrolloNombre(row),
       row.campanaNombre ?? "",
       row.campanaCanal ?? row.medio_contacto ?? "",
+      row.partnerNombre ?? row.promotor_nombre ?? "",
       normalizeLeadNombre(row.nombre),
       row.email ?? "",
       row.telefono ?? "",

@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   const etapa = searchParams.get("etapa") ?? undefined;
   const asesorId = searchParams.get("asesorId") ?? undefined;
   const campanaId = searchParams.get("campanaId") ?? undefined;
+  const partnerId = searchParams.get("partnerId") ?? undefined;
   const search = searchParams.get("search") ?? undefined;
   const desde = searchParams.get("desde") ?? undefined;
   const hasta = searchParams.get("hasta") ?? undefined;
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
     desde,
     hasta,
     campanaId,
+    partnerId,
     spam: spam ?? "exclude",
     duplicados: duplicados ?? "exclude",
   };

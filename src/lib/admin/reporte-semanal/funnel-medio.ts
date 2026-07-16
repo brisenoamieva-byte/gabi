@@ -175,7 +175,8 @@ export function buildVisitasInmobiliarias(
     })
     .slice(0, 30)
     .map((p) => ({
-      inmobiliaria: p.promotor_nombre ?? p.equipo_venta ?? p.asesorNombre ?? "Inmobiliaria",
+    inmobiliaria:
+      p.partnerNombre ?? p.promotor_nombre ?? p.equipo_venta ?? p.asesorNombre ?? "Inmobiliaria",
       fecha: p.created_at.slice(0, 10),
       prospecto: p.nombre,
     }));

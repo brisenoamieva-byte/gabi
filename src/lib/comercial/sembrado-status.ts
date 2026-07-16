@@ -116,6 +116,7 @@ export type ProspectoRecord = {
   notas: string | null;
   visita_id: string | null;
   campana_id: string | null;
+  partner_id: string | null;
   xperience_id: number | null;
   producto_nombre: string | null;
   calificacion: string | null;
