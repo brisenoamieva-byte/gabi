@@ -7,7 +7,7 @@ import {
   partnerTipoLabel,
   type PartnerRecord,
   type PartnerTipo,
-} from "@/lib/admin/partners-service";
+} from "@/lib/admin/partners-types";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 
 type PartnersAdminPanelProps = {

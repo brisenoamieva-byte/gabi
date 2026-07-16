@@ -7,8 +7,8 @@ import { formatPrice } from "@/lib/data";
 import type { ProspectoDetail } from "@/lib/admin/prospectos-service";
 import type { ProspectoComplianceRow } from "@/lib/comercial/crm-compliance-service";
 import type { CampanaRecord } from "@/lib/admin/campanas-service";
-import type { PartnerRecord } from "@/lib/admin/partners-service";
-import { partnerTipoLabel } from "@/lib/admin/partners-service";
+import type { PartnerRecord } from "@/lib/admin/partners-types";
+import { partnerTipoLabel } from "@/lib/admin/partners-types";
 import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModal";
 import {
   PROSPECTO_ETAPAS,

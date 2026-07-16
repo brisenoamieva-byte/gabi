@@ -1,30 +1,22 @@
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
+import {
+  isPartnerTipo,
+  type PartnerRecord,
+  type PartnerTipo,
+} from "@/lib/admin/partners-types";
 import { getDesarrolloById } from "@/lib/catalog/service";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
-export const PARTNER_TIPOS = ["inmobiliaria", "asesor_externo", "otro"] as const;
-export type PartnerTipo = (typeof PARTNER_TIPOS)[number];
-
-export const partnerTipoLabel: Record<PartnerTipo, string> = {
-  inmobiliaria: "Inmobiliaria",
-  asesor_externo: "Asesor externo",
-  otro: "Otro aliado",
-};
-
-export type PartnerRecord = {
-  id: string;
-  comercializadora_id: string;
-  tipo: PartnerTipo;
-  nombre: string;
-  contacto_nombre: string | null;
-  telefono: string | null;
-  email: string | null;
-  notas: string | null;
-  activo: boolean;
-  created_at: string;
-  updated_at: string;
-};
+export type {
+  PartnerRecord,
+  PartnerTipo,
+} from "@/lib/admin/partners-types";
+export {
+  PARTNER_TIPOS,
+  isPartnerTipo,
+  partnerTipoLabel,
+} from "@/lib/admin/partners-types";
 
 export type PartnerInput = {
   /** Preferido: resuelve comercializadora y valida permiso. */
@@ -48,9 +40,6 @@ export type UpdatePartnerInput = {
   notas?: string | null;
   activo?: boolean;
 };
-
-export const isPartnerTipo = (value: string): value is PartnerTipo =>
-  PARTNER_TIPOS.includes(value as PartnerTipo);
 
 async function resolveComercializadoraId(input: {
   desarrolloId?: string;
