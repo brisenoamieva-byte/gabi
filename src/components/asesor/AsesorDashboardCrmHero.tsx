@@ -162,9 +162,10 @@ export function AsesorDashboardCrmHero({
     const enProceso =
       (porEtapa.contactado ?? 0) + (porEtapa.cita ?? 0) + (porEtapa.visita ?? 0);
     const apartado = porEtapa.apartado ?? 0;
-    const cerrados =
-      (porEtapa.vendido ?? 0) + (porEtapa.cancelado ?? 0) + (porEtapa.perdido ?? 0);
-    const known = nuevos + enProceso + apartado + cerrados;
+    const vendido = porEtapa.vendido ?? 0;
+    const cancelado = porEtapa.cancelado ?? 0;
+    const descartado = porEtapa.perdido ?? 0;
+    const known = nuevos + enProceso + apartado + vendido + cancelado + descartado;
     const otros = Math.max(0, total - known);
 
     return {
@@ -172,7 +173,9 @@ export function AsesorDashboardCrmHero({
       nuevos,
       enProceso,
       apartado,
-      cerrados,
+      vendido,
+      cancelado,
+      descartado,
       otros,
       pendientesPlaybook: playbookQueue.length,
     };
@@ -226,16 +229,12 @@ export function AsesorDashboardCrmHero({
               <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-white/40">
                 Etapas
               </p>
-              <div
-                className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-                  stats.otros > 0 ? "xl:grid-cols-6" : "xl:grid-cols-5"
-                }`}
-              >
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
                 <StatChip label="Total" value={stats.total} highlight />
                 <StatChip
                   label="Nuevos"
                   value={stats.nuevos}
-                  title="Etapa Nuevo / Por contactar"
+                  title={prospectoEtapaLabel.nuevo}
                 />
                 <StatChip
                   label="En proceso"
@@ -243,11 +242,19 @@ export function AsesorDashboardCrmHero({
                   title="Contactado + Cita + Visita"
                 />
                 <StatChip label="Apartado" value={stats.apartado} />
+                <StatChip label="Vendido" value={stats.vendido} />
                 <StatChip
-                  label="Cerrados"
-                  value={stats.cerrados}
-                  title="Vendido + Cancelado + Descartado"
+                  label="Descartado"
+                  value={stats.descartado}
+                  title="Lead que no comprará (bandeja de reciclaje)"
                 />
+                {stats.cancelado > 0 ? (
+                  <StatChip
+                    label="Cancelado"
+                    value={stats.cancelado}
+                    title="Apartó y luego canceló la operación"
+                  />
+                ) : null}
                 {stats.otros > 0 ? (
                   <StatChip
                     label="Otros"

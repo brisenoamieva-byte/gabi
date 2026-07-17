@@ -146,6 +146,66 @@ const main = async () => {
   let cobranzaInsertada = 0;
   const missing = [];
 
+  const normalizeName = (value) =>
+    String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+
+  const nameTokens = (value) =>
+    normalizeName(value)
+      .split(" ")
+      .filter((t) => t.length > 2 && !["del", "de", "los", "las", "la", "el"].includes(t));
+
+  const namesFuzzyMatch = (a, b) => {
+    const an = normalizeName(a);
+    const bn = normalizeName(b);
+    if (!an || !bn) return false;
+    if (an === bn) return true;
+    if (an.includes(bn) || bn.includes(an)) return true;
+    const at = nameTokens(a);
+    const bt = nameTokens(b);
+    if (at.length < 2 || bt.length < 2) return false;
+    const shared = at.filter((t) => bt.includes(t));
+    return at[0] === bt[0] && shared.length >= 2;
+  };
+
+  let prospectosCache = null;
+  const loadProspectosCache = async () => {
+    if (prospectosCache) return prospectosCache;
+    const { data, error } = await supabase
+      .from("prospectos")
+      .select("id, nombre, notas, etapa, telefono, email")
+      .eq("desarrollo_id", config.desarrolloId)
+      .eq("activo", true);
+    if (error) throw new Error(error.message);
+    prospectosCache = data ?? [];
+    return prospectosCache;
+  };
+
+  const findProspectoByCliente = async (cliente) => {
+    const { data: exact } = await supabase
+      .from("prospectos")
+      .select("id, notas, nombre, etapa, telefono, email")
+      .eq("desarrollo_id", config.desarrolloId)
+      .ilike("nombre", cliente)
+      .eq("activo", true)
+      .limit(1)
+      .maybeSingle();
+    if (exact?.id) return exact;
+
+    const cache = await loadProspectosCache();
+    const hits = cache.filter((p) => namesFuzzyMatch(p.nombre, cliente));
+    if (!hits.length) return null;
+    const rank = (p) =>
+      (p.telefono || p.email ? 2 : 0) +
+      (["apartado", "vendido", "cancelado"].includes(p.etapa) ? 1 : 0);
+    hits.sort((a, b) => rank(b) - rank(a));
+    return hits[0];
+  };
+
   for (const row of allRows) {
     const key =
       config.unitLookupMode === "unidad|tipo"
@@ -182,14 +242,7 @@ const main = async () => {
 
     let prospectoId = null;
     if (row.cliente) {
-      const { data: existingProspecto } = await supabase
-        .from("prospectos")
-        .select("id, notas")
-        .eq("desarrollo_id", config.desarrolloId)
-        .ilike("nombre", row.cliente)
-        .eq("activo", true)
-        .limit(1)
-        .maybeSingle();
+      const existingProspecto = await findProspectoByCliente(row.cliente);
 
       const prospectoPatch = {
         origen_ciudad: row.origenCiudad || null,
@@ -222,6 +275,12 @@ const main = async () => {
       if (existingProspecto?.id) {
         prospectoId = existingProspecto.id;
         await supabase.from("prospectos").update(prospectoPatch).eq("id", prospectoId);
+        if (prospectosCache) {
+          const idx = prospectosCache.findIndex((p) => p.id === prospectoId);
+          if (idx >= 0) {
+            prospectosCache[idx] = { ...prospectosCache[idx], ...prospectoPatch, nombre: existingProspecto.nombre };
+          }
+        }
       } else {
         const insertRow = {
           desarrollo_id: config.desarrolloId,
@@ -238,7 +297,7 @@ const main = async () => {
         const { data: prospecto, error: prospectoError } = await supabase
           .from("prospectos")
           .insert(insertRow)
-          .select("id")
+          .select("id, nombre, notas, etapa, telefono, email")
           .single();
 
         if (prospectoError) {
@@ -246,6 +305,7 @@ const main = async () => {
         } else {
           prospectoId = prospecto.id;
           prospectosCreados += 1;
+          if (prospectosCache) prospectosCache.push(prospecto);
         }
       }
     }

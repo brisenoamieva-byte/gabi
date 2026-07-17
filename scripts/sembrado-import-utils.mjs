@@ -164,14 +164,16 @@ export const parseEdad = (value) => {
 export const prospectoEtapaFromSembrado = (estatus, cancelada) => {
   if (cancelada) return "cancelado";
   const e = String(estatus ?? "").trim();
-  if (e === "Apartado") return "apartado";
+  // Alineado con src/lib/comercial/prospecto-etapas.ts
   if (
-    e === "Vendidas Cobradas" ||
-    e === "Vendidas Desarrollador" ||
+    e === "Apartado" ||
     e === "Vendido Cobrado 1er Parte" ||
     e === "Vendidas listas para cobro" ||
     e === "Vendidas en espera de cobro"
   ) {
+    return "apartado";
+  }
+  if (e === "Vendidas Cobradas" || e === "Vendidas Desarrollador") {
     return "vendido";
   }
   return "cita";
