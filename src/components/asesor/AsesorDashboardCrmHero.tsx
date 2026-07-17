@@ -157,16 +157,23 @@ export function AsesorDashboardCrmHero({
 
   const stats = useMemo(() => {
     const porEtapa = resumen?.porEtapa ?? {};
+    const total = resumen?.total ?? 0;
     const nuevos = porEtapa.nuevo ?? 0;
-    const contactados = porEtapa.contactado ?? 0;
-    const cita = porEtapa.cita ?? 0;
+    const enProceso =
+      (porEtapa.contactado ?? 0) + (porEtapa.cita ?? 0) + (porEtapa.visita ?? 0);
     const apartado = porEtapa.apartado ?? 0;
-    const activos = nuevos + contactados + cita + apartado;
+    const cerrados =
+      (porEtapa.vendido ?? 0) + (porEtapa.cancelado ?? 0) + (porEtapa.perdido ?? 0);
+    const known = nuevos + enProceso + apartado + cerrados;
+    const otros = Math.max(0, total - known);
 
     return {
-      total: resumen?.total ?? 0,
+      total,
       nuevos,
-      activos,
+      enProceso,
+      apartado,
+      cerrados,
+      otros,
       pendientesPlaybook: playbookQueue.length,
     };
   }, [resumen, playbookQueue.length]);
@@ -215,36 +222,81 @@ export function AsesorDashboardCrmHero({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-              <StatChip label="Total" value={stats.total} />
-              <StatChip label="Nuevos" value={stats.nuevos} />
-              <StatChip label="En proceso" value={stats.activos} highlight />
-              {playbookEnabled ? (
+            <div>
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-white/40">
+                Etapas
+              </p>
+              <div
+                className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
+                  stats.otros > 0 ? "xl:grid-cols-6" : "xl:grid-cols-5"
+                }`}
+              >
+                <StatChip label="Total" value={stats.total} highlight />
                 <StatChip
-                  label="Hoy toca"
-                  value={cadenciaHoy.length}
-                  highlight={cadenciaHoy.length > 0}
-                  href={cadenciaHoy.length > 0 ? "/mis-leads" : undefined}
-                  title={
-                    cadenciaHoy.length > 0
-                      ? "Contactos de perfilamiento pendientes hoy"
-                      : undefined
-                  }
+                  label="Nuevos"
+                  value={stats.nuevos}
+                  title="Etapa Nuevo / Por contactar"
                 />
-              ) : null}
-              {playbookEnabled ? (
                 <StatChip
-                  label={overdueCount > 0 ? "Vencidos" : "Cumplimiento"}
-                  value={overdueCount > 0 ? overdueCount : (compliancePct ?? stats.pendientesPlaybook)}
-                  alert={overdueCount > 0}
-                  highlight={overdueCount === 0 && compliancePct !== null && compliancePct >= 85}
-                  href={overdueCount > 0 ? overdueLeadHref : "/mis-leads"}
-                  title={overdueCount > 0 ? "Abrir lead con paso vencido" : undefined}
+                  label="En proceso"
+                  value={stats.enProceso}
+                  title="Contactado + Cita + Visita"
                 />
-              ) : (
-                <StatChip label="Con cita" value={resumen?.porEtapa.cita ?? 0} />
-              )}
+                <StatChip label="Apartado" value={stats.apartado} />
+                <StatChip
+                  label="Cerrados"
+                  value={stats.cerrados}
+                  title="Vendido + Cancelado + Descartado"
+                />
+                {stats.otros > 0 ? (
+                  <StatChip
+                    label="Otros"
+                    value={stats.otros}
+                    title="Etapas fuera del desglose estándar"
+                  />
+                ) : null}
+              </div>
             </div>
+
+            {playbookEnabled ? (
+              <div className="mt-4">
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-white/40">
+                  Pendientes
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <StatChip
+                    label="Hoy toca"
+                    value={cadenciaHoy.length}
+                    highlight={cadenciaHoy.length > 0}
+                    href={cadenciaHoy.length > 0 ? "/mis-leads" : undefined}
+                    title={
+                      cadenciaHoy.length > 0
+                        ? "Contactos de perfilamiento pendientes hoy"
+                        : undefined
+                    }
+                  />
+                  <StatChip
+                    label={overdueCount > 0 ? "Pasos vencidos" : "Cumplimiento"}
+                    value={
+                      overdueCount > 0
+                        ? overdueCount
+                        : (compliancePct ?? stats.pendientesPlaybook)
+                    }
+                    suffix={overdueCount > 0 || compliancePct === null ? undefined : "%"}
+                    alert={overdueCount > 0}
+                    highlight={
+                      overdueCount === 0 && compliancePct !== null && compliancePct >= 85
+                    }
+                    href={overdueCount > 0 ? overdueLeadHref : "/mis-leads"}
+                    title={
+                      overdueCount > 0
+                        ? "Pasos del playbook atrasados (un lead puede tener varios)"
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
 
             {playbookEnabled && (cadenciaBrief?.expiredCount ?? 0) > 0 ? (
               <Link
@@ -267,7 +319,8 @@ export function AsesorDashboardCrmHero({
               >
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" strokeWidth={2} />
                 <span className="flex-1 leading-snug">
-                  {overdueCount} seguimiento(s) por poner al día — un WhatsApp rápido protege tu comisión.
+                  {overdueCount} paso(s) vencido(s) por poner al día — un WhatsApp rápido protege tu
+                  comisión.
                 </span>
                 <ArrowRight className="h-4 w-4 shrink-0 text-amber-200/80" />
               </Link>
@@ -388,6 +441,7 @@ function StatChip({
   alert,
   href,
   title,
+  suffix,
 }: {
   label: string;
   value: number;
@@ -395,6 +449,7 @@ function StatChip({
   alert?: boolean;
   href?: string;
   title?: string;
+  suffix?: string;
 }) {
   const className = [
     "rounded-xl border px-3 py-2.5",
@@ -411,7 +466,10 @@ function StatChip({
   const content = (
     <>
       <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-white/45">{label}</p>
-      <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+      <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight">
+        {value}
+        {suffix ? <span className="text-lg font-medium text-white/60">{suffix}</span> : null}
+      </p>
     </>
   );
 
