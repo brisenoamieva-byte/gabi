@@ -4,8 +4,13 @@
  *
  * Uso:
  *   npm run leads:import:gavia
- *   npm run leads:import:gavia -- "C:/Users/brise/Downloads/Histórico Leads La Gavia 2026.xlsx"
+ *   npm run leads:import:gavia -- "C:/ruta/Histórico Leads La Gavia 2026.xlsx"
  *   npm run leads:import:gavia -- --dry-run
+ *   npm run leads:import:gavia -- --force-excel "C:/ruta/archivo.xlsx"
+ *
+ * --force-excel: el Excel manda el seguimiento (etapa, visitas, notas, banderas,
+ * playbook). Descarta cambios de seguimiento hechos a mano en Gabi (excepto
+ * apartado/vendido).
  */
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes, scryptSync } from "node:crypto";
@@ -60,9 +65,15 @@ const normalizePhone = (telefono) => {
 const normalizeEmail = (correo) => {
   const value = String(correo ?? "").trim().toLowerCase();
   if (!value) return null;
-  // Placeholder Xperience: +52...@xperience.adryo.com.mx
   if (value.includes("@xperience.") || value.includes("@adryo.")) return null;
   return value;
+};
+
+const flagOn = (value) => {
+  const n = Number(value);
+  if (Number.isFinite(n)) return n > 0;
+  const t = normalizeText(value);
+  return t === "1" || t === "si" || t === "true" || t === "yes";
 };
 
 /** Canal Excel → medio canónico del reporte La Gavia / PDF. */
@@ -96,26 +107,58 @@ const mapMedioContacto = (canal) => {
   return String(canal ?? "").trim() || null;
 };
 
-const mapEtapaFromCalificacion = (calificacion) => {
+const mapMotivoDescarte = (calificacion) => {
   const cal = normalizeText(calificacion);
-  if (!cal) return "nuevo";
-  if (cal.startsWith("descartado") || cal.includes("descartado")) return "perdido";
-  if (cal.includes("visito") || cal.includes("agendo cita") || cal.includes("cita")) return "cita";
-  if (cal.includes("seguimiento") || cal.includes("lead valido") || cal.includes("en contacto")) {
+  if (!cal.includes("descartado")) return { motivo: null, detalle: null };
+  if (cal.includes("no localizable")) return { motivo: "no_localizable", detalle: null };
+  if (cal.includes("datos falsos")) return { motivo: "datos_falsos", detalle: null };
+  if (cal.includes("broker") || cal.includes("proveedor")) {
+    return { motivo: "es_proveedor", detalle: null };
+  }
+  if (cal.includes("fuera de presupuesto")) return { motivo: "falta_presupuesto", detalle: null };
+  if (cal.includes("no le interesa")) return { motivo: "no_le_interesa", detalle: null };
+  if (cal.includes("no pidio informacion")) {
+    return { motivo: "solo_informacion", detalle: null };
+  }
+  if (cal.includes("objecion") || cal.includes("caracteristicas")) {
+    return {
+      motivo: "buscaba_otro_producto",
+      detalle: "Objeción a características del desarrollo (Xperience)",
+    };
+  }
+  return { motivo: "otro", detalle: String(calificacion).trim() || "Descartado en Xperience" };
+};
+
+/**
+ * Clasifica etapa CRM a partir de calificación + banderas de contacto.
+ * Bandera WhatsApp / Llamada = ya hubo intento de contacto en Xperience.
+ */
+const mapEtapaFromRow = ({ calificacion, banderaWhatsapp, banderaLlamada }) => {
+  const cal = normalizeText(calificacion);
+  if (cal.includes("descartado")) return "perdido";
+  if (cal.includes("visito")) return "visita";
+  if (cal.includes("agendo cita") || (cal.includes("cita") && !cal.includes("descartado"))) {
+    return "cita";
+  }
+  if (
+    cal.includes("seguimiento") ||
+    cal.includes("lead valido") ||
+    cal.includes("en contacto") ||
+    cal.includes("no contesta")
+  ) {
     return "contactado";
   }
+  if (banderaWhatsapp || banderaLlamada) return "contactado";
   return "nuevo";
 };
 
 const calificacionEsSpam = (calificacion) =>
-  normalizeText(calificacion).startsWith("descartado") ||
-  normalizeText(calificacion).includes("descartado /");
+  normalizeText(calificacion).includes("descartado");
 
 const parseCreatedAt = (fecha, hora) => {
   const day = String(fecha ?? "").trim();
   const time = String(hora ?? "12:00:00").trim() || "12:00:00";
   if (!day) return new Date().toISOString();
-  // Excel often gives YYYY-MM-DD already when raw:false
   const iso = `${day.slice(0, 10)}T${time}`;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) {
@@ -123,6 +166,36 @@ const parseCreatedAt = (fecha, hora) => {
     return Number.isNaN(fallback.getTime()) ? new Date().toISOString() : fallback.toISOString();
   }
   return d.toISOString();
+};
+
+/** Pasos de playbook derivados del Excel (banderas + calificación). */
+const playbookStepsFromRow = ({
+  banderaWhatsapp,
+  banderaLlamada,
+  telefono,
+  calificacion,
+  createdAt,
+}) => {
+  const cal = normalizeText(calificacion);
+  const steps = [];
+  const at = createdAt;
+
+  if (banderaWhatsapp) steps.push({ step_id: "whatsapp-inicial", completed_at: at });
+  if (banderaLlamada) steps.push({ step_id: "llamada-d0", completed_at: at });
+  if (telefono) steps.push({ step_id: "datos-completos", completed_at: at });
+  if (cal.includes("agendo cita") || cal.includes("visito")) {
+    steps.push({ step_id: "visita-agendada", completed_at: at });
+  }
+  if (cal.includes("visito")) {
+    steps.push({ step_id: "recorrido", completed_at: at });
+  }
+
+  const seen = new Set();
+  return steps.filter((s) => {
+    if (seen.has(s.step_id)) return false;
+    seen.add(s.step_id);
+    return true;
+  });
 };
 
 const resolveAsesorId = (vendedor, asesoresByNormName, asesoresById) => {
@@ -211,6 +284,31 @@ const ensureAsesores = async (supabase, dryRun) => {
   return { created, updated };
 };
 
+const syncPlaybookProgress = async (supabase, prospectoId, asesorId, steps, dryRun) => {
+  if (dryRun || !prospectoId) return;
+  const { error: delError } = await supabase
+    .from("prospecto_playbook_progress")
+    .delete()
+    .eq("prospecto_id", prospectoId);
+  if (delError) {
+    console.error(`[gavia-leads] Playbook clear ${prospectoId}:`, delError.message);
+    return;
+  }
+  if (!steps.length) return;
+  const rows = steps.map((step) => ({
+    prospecto_id: prospectoId,
+    step_id: step.step_id,
+    completed_at: step.completed_at,
+    completed_by: asesorId,
+  }));
+  const { error } = await supabase.from("prospecto_playbook_progress").upsert(rows, {
+    onConflict: "prospecto_id,step_id",
+  });
+  if (error) {
+    console.error(`[gavia-leads] Playbook upsert ${prospectoId}:`, error.message);
+  }
+};
+
 const main = async () => {
   if (!loadEnvLocal()) {
     console.error("Falta .env.local con credenciales de Supabase.");
@@ -219,6 +317,7 @@ const main = async () => {
 
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
+  const forceExcel = args.includes("--force-excel");
   const pathArg = args.find((a) => !a.startsWith("--"));
   const xlsxPath = resolve(pathArg ?? DEFAULT_XLSX);
 
@@ -248,7 +347,9 @@ const main = async () => {
     raw: false,
   });
 
-  console.log(`[gavia-leads] Filas: ${rows.length} · ${xlsxPath}${dryRun ? " · DRY-RUN" : ""}`);
+  console.log(
+    `[gavia-leads] Filas: ${rows.length} · ${xlsxPath}${dryRun ? " · DRY-RUN" : ""}${forceExcel ? " · FORCE-EXCEL" : ""}`,
+  );
 
   const asesoresSeed = await ensureAsesores(supabase, dryRun);
   console.log(`[gavia-leads] Asesores: +${asesoresSeed.created} / ~${asesoresSeed.updated}`);
@@ -267,6 +368,8 @@ const main = async () => {
   let skipped = 0;
   let withVisita = 0;
   let spamCount = 0;
+  let playbookSynced = 0;
+  const etapaCount = new Map();
   const unmappedVendedores = new Map();
   const mediosCount = new Map();
 
@@ -278,7 +381,11 @@ const main = async () => {
     }
 
     const producto = String(row.Producto ?? "").trim();
-    if (producto && normalizeText(producto) !== normalizeText(PRODUCTO) && !normalizeText(producto).includes("gavia")) {
+    if (
+      producto &&
+      normalizeText(producto) !== normalizeText(PRODUCTO) &&
+      !normalizeText(producto).includes("gavia")
+    ) {
       skipped += 1;
       continue;
     }
@@ -290,20 +397,35 @@ const main = async () => {
     const esDuplicado = String(row["Asignado Por"] ?? "").includes("Duplicado");
     if (esSpam) spamCount += 1;
 
+    const banderaWhatsapp = flagOn(row["Bandera Whatsapp"]);
+    const banderaLlamada = flagOn(row["Bandera Llamada"]);
+    const banderaCorreo = flagOn(row["Bandera Correo"]);
+    const banderaCrm = Number(row["Bandera CRM"] ?? 0) || 0;
+
     const medioPublicitario = mapMedioPublicitario(canal);
     if (medioPublicitario) {
       mediosCount.set(medioPublicitario, (mediosCount.get(medioPublicitario) ?? 0) + 1);
     }
 
-    const etapa = mapEtapaFromCalificacion(calificacion);
+    const etapa = esSpam
+      ? "perdido"
+      : mapEtapaFromRow({ calificacion, banderaWhatsapp, banderaLlamada });
+    etapaCount.set(etapa, (etapaCount.get(etapa) ?? 0) + 1);
+
     const createdAt = parseCreatedAt(row.Fecha, row.Hora);
     const day = createdAt.slice(0, 10);
     const visitó = normalizeText(calificacion).includes("visito");
     const agendo = normalizeText(calificacion).includes("agendo cita");
     if (visitó) withVisita += 1;
 
+    const { motivo, detalle } = mapMotivoDescarte(calificacion);
+    const telefono = normalizePhone(row.Teléfono);
     const asesorId = resolveAsesorId(row.Vendedor, asesoresByNormName, asesoresById);
-    if (!asesorId && String(row.Vendedor ?? "").trim() && normalizeText(row.Vendedor) !== "agente ia") {
+    if (
+      !asesorId &&
+      String(row.Vendedor ?? "").trim() &&
+      normalizeText(row.Vendedor) !== "agente ia"
+    ) {
       const v = String(row.Vendedor).trim();
       unmappedVendedores.set(v, (unmappedVendedores.get(v) ?? 0) + 1);
     }
@@ -315,13 +437,21 @@ const main = async () => {
       campanaCache.set(cacheKey, campanaId);
     }
 
+    const playbookSteps = playbookStepsFromRow({
+      banderaWhatsapp,
+      banderaLlamada,
+      telefono,
+      calificacion,
+      createdAt,
+    });
+
     const payload = {
       desarrollo_id: MISION_LA_GAVIA_DESARROLLO_ID,
       xperience_id: xperienceId,
       producto_nombre: PRODUCTO,
       nombre: normalizeNombre(row.Nombre),
       email: normalizeEmail(row.Correo),
-      telefono: normalizePhone(row.Teléfono),
+      telefono,
       notas: String(row.Comentarios ?? "").trim() || null,
       asesor_id: asesorId,
       campana_id: dryRun ? null : campanaId,
@@ -331,60 +461,84 @@ const main = async () => {
       iscore: Number.isFinite(Number(row.iScore)) ? Number(row.iScore) : null,
       seller_score: Number.isFinite(Number(row.sellerScore)) ? Number(row.sellerScore) : null,
       asignado_por: String(row["Asignado Por"] ?? "").trim() || ASIGNADO_POR_TAG,
-      bandera_correo: Number(row["Bandera Correo"] ?? 0),
-      bandera_llamada: Number(row["Bandera Llamada"] ?? 0),
-      bandera_whatsapp: Number(row["Bandera Whatsapp"] ?? 0),
-      bandera_crm: Number(row["Bandera CRM"] ?? 0),
+      bandera_correo: banderaCorreo ? 1 : 0,
+      bandera_llamada: banderaLlamada ? 1 : 0,
+      bandera_whatsapp: banderaWhatsapp ? 1 : 0,
+      bandera_crm: banderaCrm,
       es_spam: esSpam,
       es_duplicado: esDuplicado,
-      etapa: esSpam ? "perdido" : etapa,
+      etapa,
+      motivo_descarte: etapa === "perdido" ? motivo : null,
+      motivo_descarte_detalle: etapa === "perdido" ? detalle : null,
       visita_realizada_on: visitó ? day : null,
       visita_agendada_on: agendo || visitó ? day : null,
+      visita_agendada_hora: null,
       activo: true,
       created_at: createdAt,
-      updated_at: createdAt,
+      updated_at: new Date().toISOString(),
     };
+
+    if (forceExcel) {
+      payload.proximo_contacto_on = null;
+      payload.proximo_contacto_nota = null;
+      payload.perfil_presupuesto_disponible = null;
+      payload.perfil_intencion_apartar = null;
+      payload.perfil_decisor_visita = null;
+      payload.perfil_vio_publicidad_redes = null;
+      payload.perfil_calificacion_lead = null;
+    }
 
     if (dryRun) {
       created += 1;
+      playbookSynced += playbookSteps.length > 0 ? 1 : 0;
       continue;
     }
 
     const { data: existing } = await supabase
       .from("prospectos")
-      .select("id, etapa, visita_realizada_on")
+      .select("id, etapa")
       .eq("xperience_id", xperienceId)
       .maybeSingle();
+
+    let prospectoId = existing?.id ?? null;
 
     if (existing?.id) {
       const updatePayload = { ...payload };
       delete updatePayload.created_at;
-      // No degradar etapas avanzadas (apartado/vendido) en re-import.
       if (["apartado", "vendido"].includes(String(existing.etapa))) {
         delete updatePayload.etapa;
-      } else if (!esSpam && existing.etapa === "cita" && etapa !== "perdido") {
-        // Mantener cita si ya estaba
-        delete updatePayload.etapa;
-      }
-      if (existing.visita_realizada_on && !payload.visita_realizada_on) {
-        delete updatePayload.visita_realizada_on;
+        delete updatePayload.motivo_descarte;
+        delete updatePayload.motivo_descarte_detalle;
+      } else if (!forceExcel) {
+        if (existing.etapa === "cita" && etapa !== "perdido" && etapa !== "visita") {
+          delete updatePayload.etapa;
+        }
       }
       const { error } = await supabase.from("prospectos").update(updatePayload).eq("id", existing.id);
       if (error) {
         console.error(`[gavia-leads] Update ${xperienceId}:`, error.message);
         skipped += 1;
-      } else {
-        updated += 1;
+        continue;
       }
+      updated += 1;
     } else {
-      const { error } = await supabase.from("prospectos").insert(payload);
+      const { data: inserted, error } = await supabase
+        .from("prospectos")
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) {
-        // Posible colisión de xperience_id global con otro desarrollo
         console.error(`[gavia-leads] Insert ${xperienceId}:`, error.message);
         skipped += 1;
-      } else {
-        created += 1;
+        continue;
       }
+      prospectoId = inserted?.id ?? null;
+      created += 1;
+    }
+
+    if (forceExcel || !existing?.id) {
+      await syncPlaybookProgress(supabase, prospectoId, asesorId, playbookSteps, dryRun);
+      if (playbookSteps.length) playbookSynced += 1;
     }
   }
 
@@ -394,7 +548,12 @@ const main = async () => {
   console.log(`  Omitidos:      ${skipped}`);
   console.log(`  Spam/perdidos: ${spamCount}`);
   console.log(`  Con visita:    ${withVisita}`);
+  console.log(`  Playbook sync: ${playbookSynced}`);
   console.log(`  Campañas:      ${campanaCache.size}`);
+  console.log("  Etapas:");
+  for (const [etapa, n] of [...etapaCount.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`    - ${etapa}: ${n}`);
+  }
   console.log("  Medios:");
   for (const [medio, n] of [...mediosCount.entries()].sort((a, b) => b[1] - a[1])) {
     console.log(`    - ${medio}: ${n}`);

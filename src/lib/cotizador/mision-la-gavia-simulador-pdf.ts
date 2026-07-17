@@ -189,9 +189,11 @@ const drawFittedImage = (
   boxH: number,
   pad = 2,
 ) => {
-  const scale = Math.min((boxW - pad * 2) / asset.width, (boxH - pad * 2) / asset.height);
-  const drawW = asset.width * scale;
-  const drawH = asset.height * scale;
+  const innerW = Math.max(1, boxW - pad * 2);
+  const innerH = Math.max(1, boxH - pad * 2);
+  const scale = Math.min(innerW / asset.width, innerH / asset.height);
+  const drawW = Math.min(innerW, asset.width * scale);
+  const drawH = Math.min(innerH, asset.height * scale);
   doc.addImage(
     asset.dataUrl,
     asset.format,
@@ -210,7 +212,7 @@ const drawHeader = (
   logo: ImageAsset | null,
   fechaDoc: string,
 ): number => {
-  const h = 34;
+  const h = 40;
   const left = PAGE.marginX + 5;
   const right = PAGE.marginX + contentW - 5;
 
@@ -219,11 +221,11 @@ const drawHeader = (
   setFill(doc, INK_DEEP);
   doc.rect(PAGE.marginX, y + h - 12, contentW, 12, "F");
 
-  // Logo sobre placa crema: el isotipo Gavia (verde) se lee bien; no se pierde en el verde del header.
-  const logoBoxW = 42;
-  const logoBoxH = 14;
+  // Placa crema más alta: el logo vertical (pájaro + MISIÓN + LA GAVIA) no cabe en 14 mm.
+  const logoBoxW = 36;
+  const logoBoxH = 22;
   const logoX = left;
-  const logoY = y + 4;
+  const logoY = y + 3;
   setFill(doc, CREAM);
   setDraw(doc, BORDER);
   doc.setLineWidth(0.15);
@@ -231,7 +233,7 @@ const drawHeader = (
 
   if (logo) {
     try {
-      drawFittedImage(doc, logo, logoX, logoY, logoBoxW, logoBoxH, 2.5);
+      drawFittedImage(doc, logo, logoX, logoY, logoBoxW, logoBoxH, 1.4);
     } catch {
       text(doc, "Misión La Gavia", logoX + logoBoxW / 2, logoY + logoBoxH / 2 + 1, {
         size: 6,
@@ -255,26 +257,26 @@ const drawHeader = (
   const dateW = 40;
   const titleMaxW = right - titleX - dateW - 2;
 
-  caps(doc, "Cotización", titleX, y + 7, { color: ACCENT, size: 5.5 });
-  text(doc, input.desarrolloNombre, titleX, y + 12.5, {
+  caps(doc, "Cotización", titleX, y + 8, { color: ACCENT, size: 5.5 });
+  text(doc, input.desarrolloNombre, titleX, y + 14, {
     size: 11,
     bold: true,
     color: WHITE,
     maxW: titleMaxW,
   });
-  text(doc, "Simulador lista mar26", titleX, y + 17.5, {
+  text(doc, "Simulador lista mar26", titleX, y + 19.5, {
     size: 6.5,
     color: MUTED_ON_DARK,
     maxW: titleMaxW,
   });
 
-  caps(doc, "Elaboración", right, y + 7, {
+  caps(doc, "Elaboración", right, y + 8, {
     color: MUTED_ON_DARK,
     size: 5.5,
     align: "right",
     maxW: dateW,
   });
-  text(doc, fechaDoc, right, y + 12.5, {
+  text(doc, fechaDoc, right, y + 14, {
     size: 7.5,
     color: WHITE,
     align: "right",

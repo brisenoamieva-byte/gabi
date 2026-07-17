@@ -252,6 +252,8 @@ function PercentSlider({
   onChange?: (value: number) => void;
   label: string;
 }) {
+  const safeMax = Math.max(max, min);
+  const safeValue = clamp(value, min, safeMax);
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -265,11 +267,11 @@ function PercentSlider({
       <input
         type="range"
         min={min}
-        max={max}
+        max={safeMax}
         step={step}
-        value={value}
+        value={safeValue}
         onChange={(event) => onChange?.(Number(event.target.value))}
-        disabled={!onChange}
+        disabled={!onChange || safeMax <= min}
         className="mt-2 h-2 w-full cursor-pointer accent-[#C7A694] disabled:cursor-not-allowed disabled:opacity-40"
       />
     </div>
@@ -644,20 +646,57 @@ export function PasajeSimuladorPanel({
         onLibreSinMensPagoChange,
     );
 
+  const libreMensualidadesMax = Math.min(0.5, Math.max(0, 1 - libreEnganche));
+  const libreSinMensPagoMax = Math.min(0.5, Math.max(0, 1 - libreSinMensEnganche));
+
+  const handleLibreEngancheChange = (value: number) => {
+    if (!onLibreEngancheChange) return;
+    const nextEnganche = clamp(value, 0.15, 1);
+    onLibreEngancheChange(nextEnganche);
+    if (onLibreMensualidadesChange) {
+      const maxMens = Math.min(0.5, Math.max(0, 1 - nextEnganche));
+      if (libreMensualidades > maxMens) {
+        onLibreMensualidadesChange(maxMens);
+      }
+    }
+  };
+
+  const handleLibreMensualidadesChange = (value: number) => {
+    if (!onLibreMensualidadesChange) return;
+    onLibreMensualidadesChange(clamp(value, 0, libreMensualidadesMax));
+  };
+
+  const handleLibreSinMensEngancheChange = (value: number) => {
+    if (!onLibreSinMensEngancheChange) return;
+    const nextEnganche = clamp(value, 0.15, 1);
+    onLibreSinMensEngancheChange(nextEnganche);
+    if (onLibreSinMensPagoChange) {
+      const maxPago = Math.min(0.5, Math.max(0, 1 - nextEnganche));
+      if (libreSinMensPago > maxPago) {
+        onLibreSinMensPagoChange(maxPago);
+      }
+    }
+  };
+
+  const handleLibreSinMensPagoChange = (value: number) => {
+    if (!onLibreSinMensPagoChange) return;
+    onLibreSinMensPagoChange(clamp(value, 0, libreSinMensPagoMax));
+  };
+
   const syncLibreEngancheFromAmount = (amount: number) => {
     if (!onLibreEngancheChange || resultado.precioContado <= 0) {
       return;
     }
-    onLibreEngancheChange(clamp(amount / resultado.precioContado, 0.15, 0.5));
+    handleLibreEngancheChange(amount / resultado.precioContado);
   };
 
   const syncLibreMensualidadFromAmount = (monthlyAmount: number) => {
     if (!onLibreMensualidadesChange || resultado.precioTotal <= 0) {
       return;
     }
-    const numMeses = resultado.numMensualidades ?? 1;
-    onLibreMensualidadesChange(
-      clamp((monthlyAmount * numMeses) / resultado.precioTotal, 0.05, 0.5),
+    const numMeses = Math.max(1, resultado.numMensualidades ?? 1);
+    handleLibreMensualidadesChange(
+      (monthlyAmount * numMeses) / resultado.precioTotal,
     );
   };
 
@@ -665,22 +704,22 @@ export function PasajeSimuladorPanel({
     if (!onLibreMensualidadesChange || resultado.precioTotal <= 0) {
       return;
     }
-    const finiquitoPct = clamp(amount / resultado.precioTotal, 0, 1 - libreEnganche - 0.05);
-    onLibreMensualidadesChange(clamp(1 - libreEnganche - finiquitoPct, 0.05, 0.5));
+    const finiquitoPct = clamp(amount / resultado.precioTotal, 0, 1 - libreEnganche);
+    handleLibreMensualidadesChange(1 - libreEnganche - finiquitoPct);
   };
 
   const syncLibreSinMensEngancheFromAmount = (amount: number) => {
     if (!onLibreSinMensEngancheChange || resultado.precioContado <= 0) {
       return;
     }
-    onLibreSinMensEngancheChange(clamp(amount / resultado.precioContado, 0.15, 0.5));
+    handleLibreSinMensEngancheChange(amount / resultado.precioContado);
   };
 
   const syncLibreSinMensPagoFromAmount = (amount: number) => {
     if (!onLibreSinMensPagoChange || resultado.precioTotal <= 0) {
       return;
     }
-    onLibreSinMensPagoChange(clamp(amount / resultado.precioTotal, 0.05, 0.5));
+    handleLibreSinMensPagoChange(amount / resultado.precioTotal);
   };
 
   const syncLibreSinMensFiniquitoFromAmount = (amount: number) => {
@@ -690,9 +729,9 @@ export function PasajeSimuladorPanel({
     const finiquitoPct = clamp(
       amount / resultado.precioTotal,
       0,
-      1 - libreSinMensEnganche - 0.05,
+      1 - libreSinMensEnganche,
     );
-    onLibreSinMensPagoChange(clamp(1 - libreSinMensEnganche - finiquitoPct, 0.05, 0.5));
+    handleLibreSinMensPagoChange(1 - libreSinMensEnganche - finiquitoPct);
   };
 
   const prospectoAutollenado =
@@ -955,9 +994,9 @@ export function PasajeSimuladorPanel({
               label="Enganche"
               value={libreEnganche}
               min={0.15}
-              max={0.5}
+              max={1}
               step={0.01}
-              onChange={onLibreEngancheChange}
+              onChange={onLibreEngancheChange ? handleLibreEngancheChange : undefined}
             />
             <MoneyAmountInput
               label="Monto enganche"
@@ -970,13 +1009,17 @@ export function PasajeSimuladorPanel({
           <div className="space-y-3">
             <PercentSlider
               label="Mensualidades"
-              value={libreMensualidades}
-              min={0.05}
-              max={0.5}
+              value={Math.min(libreMensualidades, libreMensualidadesMax)}
+              min={0}
+              max={libreMensualidadesMax}
               step={0.01}
-              onChange={onLibreMensualidadesChange}
+              onChange={
+                onLibreMensualidadesChange && libreMensualidadesMax > 0
+                  ? handleLibreMensualidadesChange
+                  : undefined
+              }
             />
-            {resultado.mensualidadCliente ? (
+            {resultado.mensualidadCliente && libreMensualidadesMax > 0 ? (
               <MoneyAmountInput
                 label="Monto mensualidad"
                 amount={resultado.mensualidadCliente}
@@ -1005,7 +1048,7 @@ export function PasajeSimuladorPanel({
               onAmountChange={
                 puedeEditarMontosLibre ? syncLibreFiniquitoFromAmount : undefined
               }
-              helper="Mínimos: enganche 15%, enganche + mensualidades 30%."
+              helper="Enganche hasta 100%. Mínimos: enganche 15%, enganche + mensualidades 30%."
             />
           </div>
         </div>
@@ -1018,9 +1061,13 @@ export function PasajeSimuladorPanel({
               label="Enganche"
               value={libreSinMensEnganche}
               min={0.15}
-              max={0.5}
+              max={1}
               step={0.01}
-              onChange={onLibreSinMensEngancheChange}
+              onChange={
+                onLibreSinMensEngancheChange
+                  ? handleLibreSinMensEngancheChange
+                  : undefined
+              }
             />
             <MoneyAmountInput
               label="Monto enganche"
@@ -1035,13 +1082,17 @@ export function PasajeSimuladorPanel({
           <div className="space-y-3">
             <PercentSlider
               label="Pago intermedio"
-              value={libreSinMensPago}
-              min={0.05}
-              max={0.5}
+              value={Math.min(libreSinMensPago, libreSinMensPagoMax)}
+              min={0}
+              max={libreSinMensPagoMax}
               step={0.01}
-              onChange={onLibreSinMensPagoChange}
+              onChange={
+                onLibreSinMensPagoChange && libreSinMensPagoMax > 0
+                  ? handleLibreSinMensPagoChange
+                  : undefined
+              }
             />
-            {resultado.pagoIntermedio ? (
+            {resultado.pagoIntermedio && libreSinMensPagoMax > 0 ? (
               <MoneyAmountInput
                 label="Monto pago intermedio"
                 amount={resultado.pagoIntermedio}
@@ -1086,7 +1137,7 @@ export function PasajeSimuladorPanel({
                   ? syncLibreSinMensFiniquitoFromAmount
                   : undefined
               }
-              helper="El pago intermedio debe ser anterior o igual al finiquito."
+              helper="Enganche hasta 100%. El pago intermedio debe ser anterior o igual al finiquito."
             />
           </div>
         </div>

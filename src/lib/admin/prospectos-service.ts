@@ -29,9 +29,16 @@ import {
   calificacionFromMotivoDescarte,
   validateMotivoDescarteForPerdido,
 } from "@/lib/comercial/motivo-descarte";
+import {
+  ASESOR_FILTER_INACTIVOS,
+  isAsesorFilterInactivos,
+} from "@/lib/comercial/prospecto-asesor-filters";
+import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
 
 export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
+  /** false si el asesor asignado está desactivado; null si no hay asesor. */
+  asesorActivo: boolean | null;
   campanaNombre: string | null;
   campanaCanal: string | null;
   partnerNombre: string | null;
@@ -109,7 +116,7 @@ export type ProspectoInput = {
 };
 
 const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
-  const asesor = row.asesor as { nombre?: string } | null;
+  const asesor = row.asesor as { nombre?: string; activo?: boolean } | null;
   const campana = row.campana as { nombre?: string; canal?: string } | null;
   const partner = row.partner as { nombre?: string; tipo?: string } | null;
   const prospecto = {
@@ -118,10 +125,12 @@ const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
   delete prospecto.asesor;
   delete prospecto.campana;
   delete prospecto.partner;
+  const hasAsesor = Boolean(prospecto.asesor_id);
   return {
     ...prospecto,
     etapa: normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa,
     asesorNombre: asesor?.nombre ?? null,
+    asesorActivo: hasAsesor ? asesor?.activo !== false : null,
     campanaNombre: campana?.nombre ?? null,
     campanaCanal: campana?.canal ?? null,
     partnerNombre:
@@ -131,6 +140,18 @@ const mapProspectoRow = (row: Record<string, unknown>): ProspectoListRow => {
         : null),
     partnerTipo: partner?.tipo ?? null,
   };
+};
+
+const listInactiveAsesorIds = async (): Promise<string[]> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return [];
+  }
+  const { data, error } = await supabase.from("asesores").select("id").eq("activo", false);
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data ?? []).map((row) => String(row.id));
 };
 
 const toRow = (input: ProspectoInput) => ({
@@ -163,6 +184,10 @@ export const listProspectos = async (
     desarrolloId?: string;
     etapa?: string;
     asesorId?: string;
+    /** Solo leads sin asesor asignado. */
+    sinAsesor?: boolean;
+    /** Solo leads cuyo asesor está desactivado. */
+    asesorInactivo?: boolean;
     search?: string;
     desde?: string;
     hasta?: string;
@@ -185,7 +210,7 @@ export const listProspectos = async (
   let query = supabase
     .from("prospectos")
     .select(
-      "*, asesor:asesores(nombre), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
+      "*, asesor:asesores(nombre, activo), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
     )
     .eq("activo", true)
     .order("updated_at", { ascending: false });
@@ -208,7 +233,18 @@ export const listProspectos = async (
     query = query.eq("etapa", filters.etapa);
   }
 
-  if (filters.asesorId) {
+  const filterInactivos =
+    filters.asesorInactivo === true || isAsesorFilterInactivos(filters.asesorId);
+
+  if (filters.sinAsesor) {
+    query = query.is("asesor_id", null);
+  } else if (filterInactivos) {
+    const inactiveIds = await listInactiveAsesorIds();
+    if (!inactiveIds.length) {
+      return [];
+    }
+    query = query.in("asesor_id", inactiveIds);
+  } else if (filters.asesorId && filters.asesorId !== ASESOR_FILTER_INACTIVOS) {
     query = query.eq("asesor_id", filters.asesorId);
   }
 
@@ -281,6 +317,8 @@ export const getProspectosResumen = async (
   profile?: AdminProfile,
   filters?: {
     asesorId?: string;
+    sinAsesor?: boolean;
+    asesorInactivo?: boolean;
     search?: string;
     desde?: string;
     hasta?: string;
@@ -318,7 +356,7 @@ export const getProspectoById = async (
   const { data, error } = await supabase
     .from("prospectos")
     .select(
-      "*, asesor:asesores(nombre), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
+      "*, asesor:asesores(nombre, activo), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
     )
     .eq("id", id)
     .eq("activo", true)
@@ -397,6 +435,14 @@ export const updateProspecto = async (
 
   if (input.etapa && !isProspectoEtapa(input.etapa)) {
     throw new Error("Etapa no válida.");
+  }
+
+  if (
+    input.etapa !== undefined &&
+    input.etapa !== existing.etapa &&
+    isProspectoEtapa(input.etapa)
+  ) {
+    await validatePlaybookEtapaChange(existing, input.etapa);
   }
 
   const patch: Record<string, unknown> = {
@@ -675,7 +721,7 @@ export const findProspectoByTelefonoInDesarrollo = async (
 
   const { data: candidates } = await supabase
     .from("prospectos")
-    .select("*, asesor:asesores(nombre)")
+    .select("*, asesor:asesores(nombre, activo)")
     .eq("desarrollo_id", desarrolloId)
     .eq("activo", true)
     .not("telefono", "is", null)

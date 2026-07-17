@@ -121,16 +121,18 @@ export function DisponibilidadPlanoGavia({
             <p className="mb-2 px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500 sm:hidden">
               Desliza el plano →
             </p>
-            <div className="mx-auto min-w-[56rem] max-w-5xl space-y-0">
-              <div className="mb-2 hidden items-center justify-between gap-2 px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500 sm:flex">
-                <span>N ↑</span>
-                <span>Por lado: PB colinda con la calle</span>
+            <div className="mx-auto min-w-[68rem] max-w-6xl space-y-0">
+              <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                <GaviaNorthCompass />
+                <p className="hidden text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500 sm:block">
+                  Por lado: PB colinda con la calle
+                </p>
               </div>
 
-            {/* Fila norte: calle horizontal (flecha ←) */}
+            {/* Calle norte del conjunto */}
             <StreetHorizontal dir="left" label="Calle" />
 
-            <div className="grid grid-cols-[4.25rem_10.5rem_1.75rem_minmax(0,1fr)_1.75rem_10.5rem] gap-0">
+            <div className="grid grid-cols-[4.25rem_10.5rem_1.75rem_minmax(32rem,1fr)_1.75rem_10.5rem] gap-0">
               {/* Plaza */}
               <div className="row-span-3 flex items-center justify-center border border-[#c5cfc0] bg-[#d8e0c8] px-1 text-center text-[10px] font-semibold uppercase tracking-wide text-[#4d5c42]">
                 Plaza
@@ -153,7 +155,7 @@ export function DisponibilidadPlanoGavia({
               <StreetVertical dir="down" />
 
               {/* Manzana central — centrada en altura frente a O–R / J–G */}
-              <div className="flex h-full flex-col justify-center gap-1 bg-white p-1">
+              <div className="flex h-full min-w-0 flex-col justify-center gap-1 bg-white p-1">
                 <div className="grid grid-cols-4 gap-1">
                   {renderEdificio("N")}
                   {renderEdificio("M")}
@@ -204,14 +206,20 @@ export function DisponibilidadPlanoGavia({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 border-t border-slate-100 px-4 py-3 text-[11px] text-slate-600">
-          <LegendDot className="bg-emerald-400" label="Disponible" />
-          <LegendDot className="bg-amber-400" label="Apartado" />
-          <LegendDot className="bg-slate-400" label="Vendido" />
-          <LegendDot className="bg-slate-300" label="Bloqueado" />
-          <span className="text-slate-400">
-            · Fondo gris = calle · flechas = sentido de circulación
-          </span>
+        <div className="space-y-2 border-t border-slate-100 px-4 py-3 text-[11px] text-slate-600">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <LegendSwatch className="bg-[#e8dcc8] ring-1 ring-[#c4b49a]/80" label="Triplex 3 recámaras" />
+            <LegendSwatch className="bg-[#d7e8f2] ring-1 ring-[#9bb8cb]/80" label="Triplex 2 recámaras" />
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+            <LegendDot className="bg-emerald-400" label="Disponible" />
+            <LegendDot className="bg-amber-400" label="Apartado" />
+            <LegendDot className="bg-slate-400" label="Vendido" />
+            <LegendDot className="bg-slate-300" label="Bloqueado" />
+            <span className="text-slate-400">
+              · Fondo gris = calle · flechas = sentido de circulación
+            </span>
+          </div>
         </div>
       </div>
 
@@ -238,7 +246,10 @@ export function DisponibilidadPlanoGavia({
                   Edificio {selected.edificio.id} · {GAVIA_LADO_LABEL[selected.lado]}
                 </p>
                 <h3 className="text-lg font-semibold tracking-tight text-[#201044]">
-                  {selected.edificio.tipologia} · 3 niveles
+                  {selected.edificio.tipologia === "3R"
+                    ? "Triplex 3 recámaras"
+                    : "Triplex 2 recámaras"}{" "}
+                  · 3 niveles
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">{selectedSummary.tip}</p>
               </div>
@@ -380,8 +391,8 @@ function StreetVertical({ dir }: { dir: "up" | "down" }) {
   return (
     <div
       className="flex flex-col items-center justify-center gap-3 border border-slate-200/80 bg-white"
-      title={dir === "up" ? "Calle · sentido norte" : "Calle · sentido sur"}
-      aria-label={dir === "up" ? "Calle sentido norte" : "Calle sentido sur"}
+      title="Calle · sentido de circulación"
+      aria-label="Calle · sentido de circulación"
     >
       <Icon className="h-4 w-4 text-slate-700" strokeWidth={2.75} />
       <span className="rotate-180 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400 [writing-mode:vertical-rl]">
@@ -402,8 +413,8 @@ function StreetHorizontal({
   return (
     <div
       className="flex h-7 items-center justify-center gap-2 border border-slate-200/80 bg-white"
-      title={`${label} · sentido ${dir === "left" ? "oeste" : "este"}`}
-      aria-label={`${label} sentido ${dir === "left" ? "oeste" : "este"}`}
+      title={`${label} · sentido de circulación`}
+      aria-label={`${label} · sentido de circulación`}
     >
       {dir === "left" ? (
         <>
@@ -449,14 +460,21 @@ function EdificioCell({
 
   return (
     <div
-      className={`rounded-lg p-1 transition ${tipologiaBg} ${
-        cotizable ? "" : "pointer-events-none opacity-35 grayscale-[0.35]"
+      className={`relative min-w-0 overflow-hidden rounded-lg p-1 transition ${tipologiaBg} ${
+        cotizable ? "" : "pointer-events-none opacity-55"
       }`}
       aria-disabled={!cotizable}
-      title={cotizable ? undefined : `Edificio ${edificio.id} · aún no cotizable`}
+      title={
+        cotizable
+          ? `Edificio ${edificio.id} · ${edificio.tipologia === "3R" ? "3 recámaras" : "2 recámaras"}`
+          : `Edificio ${edificio.id} · aún no cotizable`
+      }
     >
+      <span className="pointer-events-none absolute right-1 top-1 z-[1] rounded bg-white/80 px-1 text-[8px] font-bold uppercase tracking-wide text-slate-600">
+        {edificio.tipologia === "3R" ? "3 rec" : "2 rec"}
+      </span>
       <div
-        className={`grid gap-1 ${
+        className={`grid min-w-0 gap-1 ${
           apilado || lados.length === 1 ? "grid-cols-1" : "grid-cols-2"
         }`}
       >
@@ -477,15 +495,15 @@ function EdificioCell({
           return (
             <div
               key={lado}
-              className={`rounded-md border border-black/5 bg-white/55 p-1 ${
-                apilado ? "min-w-0" : "min-w-[4.5rem]"
-              } ${isActive ? "ring-2 ring-[#201044]/40" : ""}`}
+              className={`min-w-0 overflow-hidden rounded-md border border-black/5 bg-white/70 p-0.5 ${
+                isActive ? "ring-2 ring-[#201044]/40" : ""
+              }`}
             >
-              <p className="mb-1 px-0.5 text-center text-[10px] font-bold uppercase tracking-wide text-[#201044]">
+              <p className="mb-0.5 truncate px-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-[#201044]">
                 {edificio.id} {lado}
               </p>
               <div
-                className={`grid gap-1 ${
+                className={`grid gap-0.5 ${
                   apilado ? "grid-cols-3" : "grid-cols-1"
                 }`}
               >
@@ -518,7 +536,7 @@ function EdificioCell({
                           onSelect(lado);
                         }
                       }}
-                      className={`flex min-h-12 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-1.5 text-center transition ${
+                      className={`flex min-h-10 min-w-0 touch-manipulation flex-col items-center justify-center gap-0 overflow-hidden rounded-md border px-0.5 py-1 text-center transition ${
                         PLANO_TONE_CLASS[tone]
                       } ${
                         cotizable
@@ -526,10 +544,10 @@ function EdificioCell({
                           : "cursor-not-allowed"
                       }`}
                     >
-                      <span className="text-[10px] font-bold leading-none tracking-wide">
+                      <span className="text-[9px] font-bold leading-none tracking-wide">
                         {nivelShort}
                       </span>
-                      <span className="max-w-full text-[11px] font-semibold leading-tight tabular-nums tracking-tight">
+                      <span className="max-w-full truncate text-[10px] font-semibold leading-tight tabular-nums tracking-tight">
                         {unidadShort}
                       </span>
                     </button>
@@ -550,5 +568,50 @@ function LegendDot({ className, label }: { className: string; label: string }) {
       <span className={`h-2.5 w-2.5 rounded-sm ${className}`} />
       {label}
     </span>
+  );
+}
+
+function LegendSwatch({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 font-medium text-slate-700">
+      <span className={`h-3 w-4 rounded-sm ${className}`} />
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Rosa de los vientos alineada al plano comercial Gavia:
+ * con la misma disposición (plaza a la izquierda, acceso abajo),
+ * el norte apunta ~135° hacia la esquina inferior izquierda.
+ */
+function GaviaNorthCompass() {
+  return (
+    <div
+      className="inline-flex items-center gap-2"
+      title="Norte según plano comercial del desarrollo"
+      aria-label="Orientación: norte hacia la esquina inferior izquierda del plano"
+    >
+      <div className="relative grid h-11 w-11 place-items-center rounded-full border border-slate-300 bg-white shadow-sm">
+        <div
+          className="absolute inset-0 flex items-start justify-center pt-1"
+          style={{ transform: "rotate(-135deg)" }}
+        >
+          <span className="flex flex-col items-center leading-none">
+            <span className="text-[11px] font-black text-[#201044]">N</span>
+            <span
+              className="mt-0.5 h-0 w-0 border-x-[4px] border-b-[9px] border-x-transparent border-b-[#201044]"
+              aria-hidden
+            />
+          </span>
+        </div>
+        <span className="pointer-events-none absolute inset-[3px] rounded-full border border-dashed border-slate-200" />
+      </div>
+      <span className="hidden text-[10px] font-medium leading-tight text-slate-500 sm:inline">
+        Norte
+        <br />
+        (plano comercial)
+      </span>
+    </div>
   );
 }

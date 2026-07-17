@@ -67,7 +67,10 @@ export const normalizeAsesorRol = (rol: string): AsesorRol => {
 
 export const isLeadershipAsesorRol = (rol: AsesorRol) => LEADERSHIP_ASESOR_ROLES.includes(rol);
 
-export const isAssignableAsesorRol = (rol: AsesorRol) => ALL_ASESOR_ROLES.includes(rol);
+/** Roles a los que se puede asignar seguimiento de leads (no dirección). */
+export const ASSIGNABLE_ASESOR_ROLES: AsesorRol[] = ["gerente", "coordinador", "asesor"];
+
+export const isAssignableAsesorRol = (rol: AsesorRol) => ASSIGNABLE_ASESOR_ROLES.includes(rol);
 
 export const getEditableAsesorRoles = (
   _isGerenteComercial: boolean,

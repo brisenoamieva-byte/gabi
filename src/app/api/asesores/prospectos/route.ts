@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const search = searchParams.get("search") ?? undefined;
   const desde = searchParams.get("desde") ?? undefined;
   const hasta = searchParams.get("hasta") ?? undefined;
+  const filterAsesorId = searchParams.get("filterAsesorId")?.trim() || undefined;
   const withResumen = searchParams.get("resumen") === "1";
 
   if (!desarrolloId) {
@@ -23,9 +24,21 @@ export async function GET(request: Request) {
   try {
     const asesorId = resolveAsesorIdForApi(searchParams.get("asesorId"));
     const [prospectos, resumen] = await Promise.all([
-      listProspectosForAsesor(asesorId, { desarrolloId, etapa, search, desde, hasta }),
+      listProspectosForAsesor(asesorId, {
+        desarrolloId,
+        etapa,
+        search,
+        desde,
+        hasta,
+        filterAsesorId,
+      }),
       withResumen
-        ? getProspectosResumenForAsesor(asesorId, desarrolloId, { search, desde, hasta })
+        ? getProspectosResumenForAsesor(asesorId, desarrolloId, {
+            search,
+            desde,
+            hasta,
+            filterAsesorId,
+          })
         : Promise.resolve(null),
     ]);
 

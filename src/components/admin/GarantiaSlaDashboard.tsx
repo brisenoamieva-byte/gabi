@@ -127,7 +127,7 @@ export function GarantiaSlaDashboard({
           </p>
           <h2 className="mt-1 text-lg font-black text-gabi-forest">Garantía de seguimiento</h2>
           <p className="mt-1 text-sm text-slate-500">
-            SLA contractual y reporte semanal.
+            Compromisos medibles y reporte semanal.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -162,6 +162,22 @@ export function GarantiaSlaDashboard({
       </div>
 
       {actionMsg ? <p className="text-xs font-semibold text-slate-500">{actionMsg}</p> : null}
+
+      <div className="rounded-2xl border border-gabi-cream-dark bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+        <p className="font-semibold text-gabi-forest">
+          ¿Qué significa SLA?
+        </p>
+        <p className="mt-1 leading-relaxed">
+          <span className="font-semibold text-slate-800">SLA</span> (Service Level
+          Agreement) es el{" "}
+          <span className="font-semibold text-slate-800">
+            compromiso de tiempos y calidad de seguimiento
+          </span>{" "}
+          que Gabi mide frente al dueño del proyecto: contactar a tiempo, mantener el
+          playbook al día y no dejar leads críticos vencidos. El sello semanal (verde /
+          riesgo / rojo) resume si el desarrollo cumple ese acuerdo.
+        </p>
+      </div>
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -227,6 +243,48 @@ export function GarantiaSlaDashboard({
               </button>
             ) : null}
           </section>
+
+          {report.playbookEnabled && report.perfilCalificacion.total > 0 ? (
+            <section className="rounded-2xl border border-gabi-cream-dark bg-white p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gabi-forest">
+                Calificación comercial A/B/C
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Calidad del lead post-visita. No afecta el sello SLA (ese mide proceso de
+                seguimiento).
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {(
+                  [
+                    { key: "A", value: report.perfilCalificacion.a, tone: "bg-emerald-50 text-emerald-800 border-emerald-100" },
+                    { key: "B", value: report.perfilCalificacion.b, tone: "bg-amber-50 text-amber-900 border-amber-100" },
+                    { key: "C", value: report.perfilCalificacion.c, tone: "bg-red-50 text-red-800 border-red-100" },
+                    {
+                      key: "Sin perfil",
+                      value: report.perfilCalificacion.sinPerfil,
+                      tone: "bg-slate-50 text-slate-700 border-slate-100",
+                    },
+                  ] as const
+                ).map((item) => (
+                  <div
+                    key={item.key}
+                    className={`rounded-xl border px-3 py-3 text-center ${item.tone}`}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wide opacity-80">
+                      {item.key}
+                    </p>
+                    <p className="mt-1 text-2xl font-black tabular-nums">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                {report.perfilCalificacion.perfiladosPct}% de leads activos con A/B/C
+                {report.perfilCalificacion.visitaSinPerfil > 0
+                  ? ` · ${report.perfilCalificacion.visitaSinPerfil} en Visita sin perfilar`
+                  : ""}
+              </p>
+            </section>
+          ) : null}
 
           {report.playbookEnabled ? (
             <>

@@ -21,6 +21,7 @@ export async function GET(request: Request) {
   const desarrolloId = searchParams.get("desarrolloId") ?? undefined;
   const comercializadoraId = searchParams.get("comercializadoraId") ?? undefined;
   const activoOnly = searchParams.get("activoOnly") === "1";
+  const usedInDesarrolloOnly = searchParams.get("usedInDesarrolloOnly") === "1";
 
   if (!desarrolloId && !comercializadoraId) {
     return NextResponse.json(
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
   try {
     const partners = await listPartners(
-      { desarrolloId, comercializadoraId, activoOnly },
+      { desarrolloId, comercializadoraId, activoOnly, usedInDesarrolloOnly },
       session.profile,
     );
     return NextResponse.json({ partners });

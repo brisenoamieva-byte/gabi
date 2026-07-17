@@ -15,6 +15,7 @@ import {
   getCotizacionCountMap,
   getCrmPlaybookConfig,
   getPlaybookProgressMap,
+  resolveRecorridoCompletadoMap,
 } from "@/lib/comercial/crm-playbook-service";
 import { isProspectoEtapa, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import {
@@ -26,6 +27,7 @@ import {
 import {
   isPerfilamientoVisitaComplete,
   readPerfilamientoVisitaFromProspecto,
+  resolvePerfilCalificacionLead,
 } from "@/lib/comercial/perfilamiento-post-visita";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
@@ -35,6 +37,49 @@ const COMPLIANCE_ACTIVE_ETAPAS = new Set<ProspectoEtapa>([
   "cita",
   "visita",
 ]);
+
+const emptyPerfilCalificacion = (): PerfilCalificacionSummary => ({
+  a: 0,
+  b: 0,
+  c: 0,
+  sinPerfil: 0,
+  total: 0,
+  perfiladosPct: 0,
+  visitaSinPerfil: 0,
+});
+
+const summarizePerfilCalificacion = (
+  rows: ProspectoListRow[],
+): PerfilCalificacionSummary => {
+  let a = 0;
+  let b = 0;
+  let c = 0;
+  let sinPerfil = 0;
+  let visitaSinPerfil = 0;
+
+  for (const row of rows) {
+    const cal = resolvePerfilCalificacionLead(row);
+    if (cal === "A") a += 1;
+    else if (cal === "B") b += 1;
+    else if (cal === "C") c += 1;
+    else {
+      sinPerfil += 1;
+      if (row.etapa === "visita") visitaSinPerfil += 1;
+    }
+  }
+
+  const total = rows.length;
+  const perfilados = a + b + c;
+  return {
+    a,
+    b,
+    c,
+    sinPerfil,
+    total,
+    perfiladosPct: total > 0 ? Math.round((perfilados / total) * 100) : 0,
+    visitaSinPerfil,
+  };
+};
 
 export type ProspectoComplianceRow = {
   prospectoId: string;
@@ -63,6 +108,17 @@ export type AsesorComplianceSummary = {
   confidencePct: number;
 };
 
+/** Distribución A/B/C post-visita (métrica de calidad, no del sello SLA). */
+export type PerfilCalificacionSummary = {
+  a: number;
+  b: number;
+  c: number;
+  sinPerfil: number;
+  total: number;
+  perfiladosPct: number;
+  visitaSinPerfil: number;
+};
+
 export type DesarrolloComplianceReport = {
   desarrolloId: string;
   playbookEnabled: boolean;
@@ -74,17 +130,22 @@ export type DesarrolloComplianceReport = {
   exceptionCount: number;
   pipelineReliableCount: number;
   pipelineExcludedCount: number;
+  perfilCalificacion: PerfilCalificacionSummary;
   asesores: AsesorComplianceSummary[];
   exceptions: ProspectoComplianceRow[];
   generatedAt: string;
 };
 
-const buildPlaybookSignals = (prospecto: ProspectoListRow, cotizacionesCount = 0) => ({
+const buildPlaybookSignals = (
+  prospecto: ProspectoListRow,
+  cotizacionesCount = 0,
+  recorridoCompletado = false,
+) => ({
   etapa: prospecto.etapa,
   email: prospecto.email,
   telefono: prospecto.telefono,
   notas: prospecto.notas,
-  recorridoCompletado: false,
+  recorridoCompletado,
   cotizacionesCount,
   perfilamientoCompleto: isPerfilamientoVisitaComplete(
     readPerfilamientoVisitaFromProspecto(prospecto),
@@ -118,10 +179,11 @@ export const evaluateProspectoCompliance = (
   config: CrmPlaybookConfig,
   manualStepIds: string[],
   cotizacionesCount = 0,
+  recorridoCompletado = false,
 ): ProspectoComplianceRow => {
   const etapa = isProspectoEtapa(prospecto.etapa) ? prospecto.etapa : "nuevo";
   const autoIds = getAutoCompletedPlaybookStepIds(
-    buildPlaybookSignals(prospecto, cotizacionesCount),
+    buildPlaybookSignals(prospecto, cotizacionesCount, recorridoCompletado),
   );
   const completedIds = mergePlaybookProgress(manualStepIds, autoIds);
   const pendingSteps = getAllPendingRequiredUpToEtapa(config, etapa, completedIds);
@@ -209,6 +271,7 @@ export const getDesarrolloComplianceReport = async (
       exceptionCount: 0,
       pipelineReliableCount: 0,
       pipelineExcludedCount: 0,
+      perfilCalificacion: emptyPerfilCalificacion(),
       asesores: [],
       exceptions: [],
       generatedAt,
@@ -232,6 +295,7 @@ export const getDesarrolloComplianceReport = async (
       exceptionCount: 0,
       pipelineReliableCount: 0,
       pipelineExcludedCount: 0,
+      perfilCalificacion: emptyPerfilCalificacion(),
       asesores: [],
       exceptions: [],
       generatedAt,
@@ -241,6 +305,7 @@ export const getDesarrolloComplianceReport = async (
   const ids = active.map((row) => row.id);
   const progressMap = await getPlaybookProgressMap(ids);
   const cotizacionMap = await getCotizacionCountMap(ids);
+  const recorridoMap = await resolveRecorridoCompletadoMap(active);
 
   const evaluated = active.map((row) =>
     evaluateProspectoCompliance(
@@ -248,6 +313,7 @@ export const getDesarrolloComplianceReport = async (
       config,
       progressMap.get(row.id) ?? [],
       cotizacionMap.get(row.id) ?? 0,
+      recorridoMap.get(row.id) ?? false,
     ),
   );
 
@@ -279,6 +345,7 @@ export const getDesarrolloComplianceReport = async (
     exceptionCount: exceptions.length,
     pipelineReliableCount,
     pipelineExcludedCount,
+    perfilCalificacion: summarizePerfilCalificacion(active),
     asesores: aggregateAsesorSummaries(evaluated),
     exceptions,
     generatedAt,
@@ -332,6 +399,7 @@ export const getAsesorComplianceSummary = async (
   const ids = active.map((row) => row.id);
   const progressMap = await getPlaybookProgressMap(ids);
   const cotizacionMap = await getCotizacionCountMap(ids);
+  const recorridoMap = await resolveRecorridoCompletadoMap(active);
 
   const evaluated = active.map((row) =>
     evaluateProspectoCompliance(
@@ -339,6 +407,7 @@ export const getAsesorComplianceSummary = async (
       config,
       progressMap.get(row.id) ?? [],
       cotizacionMap.get(row.id) ?? 0,
+      recorridoMap.get(row.id) ?? false,
     ),
   );
 
@@ -498,12 +567,14 @@ export const getProspectoCompliance = async (
 
   const progressMap = await getPlaybookProgressMap([prospecto.id]);
   const cotizacionMap = await getCotizacionCountMap([prospecto.id]);
+  const recorridoMap = await resolveRecorridoCompletadoMap([prospecto]);
 
   return evaluateProspectoCompliance(
     prospecto,
     config,
     progressMap.get(prospecto.id) ?? [],
     cotizacionMap.get(prospecto.id) ?? 0,
+    recorridoMap.get(prospecto.id) ?? false,
   );
 };
 

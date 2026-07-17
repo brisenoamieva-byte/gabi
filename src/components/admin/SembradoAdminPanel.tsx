@@ -7,6 +7,7 @@ import {
   Building2,
   CircleDollarSign,
   ClipboardList,
+  Download,
   Home,
   Layers,
   Loader2,
@@ -25,6 +26,7 @@ import { RegistrarApartadoModal } from "@/components/admin/RegistrarApartadoModa
 import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { OperacionDetailDrawer } from "@/components/admin/OperacionDetailDrawer";
 import { SembradoUnidadDrawer } from "@/components/admin/SembradoUnidadDrawer";
+import { downloadAdminExport } from "@/lib/admin/download-excel-client";
 import {
   canceladaEnEtapaLabel,
   estatusSembradoLabel,
@@ -631,6 +633,29 @@ export function SembradoAdminPanel({
             </button>
             <button
               type="button"
+              onClick={() => {
+                void (async () => {
+                  try {
+                    await downloadAdminExport(
+                      `/api/admin/sembrado/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+                      `sembrado-${desarrolloId}.xlsx`,
+                    );
+                  } catch (exportError) {
+                    setError(
+                      exportError instanceof Error
+                        ? exportError.message
+                        : "Error al exportar Excel.",
+                    );
+                  }
+                })();
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
+            >
+              <Download className="h-4 w-4" />
+              Exportar Excel
+            </button>
+            <button
+              type="button"
               onClick={() => setModoAmplio(true)}
               className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
             >
@@ -868,6 +893,10 @@ export function SembradoAdminPanel({
         <ExpedienteDrawer
           operacionId={expedienteOperacionId}
           onClose={() => setExpedienteOperacionId(null)}
+          onEditCobranza={(id) => {
+            setExpedienteOperacionId(null);
+            setOperacionId(id);
+          }}
         />
       ) : null}
 

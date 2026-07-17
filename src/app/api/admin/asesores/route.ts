@@ -20,10 +20,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const desarrolloId = searchParams.get("desarrolloId") ?? undefined;
   const includeInactive = searchParams.get("includeInactive") === "1";
+  const assignableOnly = searchParams.get("assignableOnly") === "1";
 
   try {
     const asesores = await listAsesores(
-      { desarrolloId, includeInactive },
+      { desarrolloId, includeInactive, assignableOnly },
       session.profile,
     );
     return NextResponse.json({ asesores });

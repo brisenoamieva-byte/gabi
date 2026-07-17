@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { FileText, Download, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import {
   partnerTipoLabel,
   type PartnerRecord,
   type PartnerTipo,
 } from "@/lib/admin/partners-types";
+import { downloadAdminExport } from "@/lib/admin/download-excel-client";
 
 type PartnersAdminPanelProps = {
   desarrollos: DesarrolloRecord[];
@@ -295,6 +296,30 @@ export function PartnersAdminPanel({ desarrollos, scopeLabel }: PartnersAdminPan
           >
             <RefreshCw className="h-4 w-4" />
             Actualizar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void (async () => {
+                if (!comercializadoraId) return;
+                try {
+                  await downloadAdminExport(
+                    `/api/admin/partners/export?comercializadoraId=${encodeURIComponent(comercializadoraId)}`,
+                    `partners-${comercializadoraId}.xlsx`,
+                  );
+                } catch (exportError) {
+                  setError(
+                    exportError instanceof Error
+                      ? exportError.message
+                      : "Error al exportar Excel.",
+                  );
+                }
+              })();
+            }}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            <Download className="h-4 w-4" />
+            Excel
           </button>
           <button
             type="button"

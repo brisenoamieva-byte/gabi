@@ -504,7 +504,9 @@ export function RegistrarApartadoModal({
 
   useEffect(() => {
     if (!esAsesor && desarrolloId && asesores.length === 0) {
-      void fetch(`/api/admin/asesores?desarrolloId=${encodeURIComponent(desarrolloId)}`)
+      void fetch(
+        `/api/admin/asesores?desarrolloId=${encodeURIComponent(desarrolloId)}&assignableOnly=1`,
+      )
         .then((response) => response.json())
         .then((data: { asesores?: ApartadoAsesorOption[] }) => {
           if (data.asesores?.length) {

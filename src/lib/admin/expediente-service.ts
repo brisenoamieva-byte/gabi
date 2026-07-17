@@ -32,7 +32,9 @@ import type {
 } from "@/lib/comercial/sembrado-status";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { desarrollos, getDatosBancarios } from "@/lib/data";
-import { normalizeCampoConfig } from "@/lib/catalog/campo-config";
+import { normalizeCampoConfig, resolveCotizadorRulesFromCampo } from "@/lib/catalog/campo-config";
+import { getRegistryCotizadorRules } from "@/lib/catalog/desarrollos-registry";
+import { getComisionReglaByDesarrolloId } from "@/lib/comercial/comision-reglas";
 import {
   getGoogleDriveOperacionFolderUrl,
   isGoogleDriveConfiguredForDesarrolloAsync,
@@ -91,6 +93,21 @@ export type ExpedienteListRow = {
   updatedAt: string;
 };
 
+export type ExpedienteCobranzaPago = {
+  mes: string;
+  monto: number;
+};
+
+export type ExpedienteCobranzaSummary = {
+  totalCobrado: number;
+  precioVenta: number | null;
+  saldo: number | null;
+  ultimosPagos: ExpedienteCobranzaPago[];
+  engancheEsperado: number | null;
+  enganchePctUsado: number;
+  sugiereEngancheCubierto: boolean;
+};
+
 export type ExpedienteDetail = {
   operacion: OperacionComercialRecord;
   unidadNumero: string;
@@ -104,6 +121,30 @@ export type ExpedienteDetail = {
   checklist: ReturnType<typeof getExpedienteChecklist>;
   driveFolderUrl: string | null;
   driveConfigured: boolean;
+  cobranza: ExpedienteCobranzaSummary;
+};
+
+const DEFAULT_ENGANCHE_PCT = 0.2;
+
+const resolveEnganchePctEsperado = (
+  desarrolloId: string,
+  campoConfig: ReturnType<typeof normalizeCampoConfig>,
+): number => {
+  const regla = getComisionReglaByDesarrolloId(desarrolloId);
+  if (regla?.enganchePctRequerido != null) {
+    return regla.enganchePctRequerido / 100;
+  }
+  const registryRules = getRegistryCotizadorRules(desarrolloId);
+  const campoRules = resolveCotizadorRulesFromCampo(
+    campoConfig,
+    registryRules ?? {
+      enganchePct: DEFAULT_ENGANCHE_PCT,
+      apartado: 50000,
+      descuentoStep: 5000,
+      esquemas: ["mensualidades", "contado"],
+    },
+  );
+  return campoRules.enganchePct > 0 ? campoRules.enganchePct : DEFAULT_ENGANCHE_PCT;
 };
 
 const assertMime = (file: File) => {
@@ -244,33 +285,52 @@ export const getExpedienteDetail = async (
 
   assertDesarrolloAccess(profile, operacion.desarrollo_id as string);
 
-  const [{ data: unidad }, { data: documentos, error: documentosError }, prospectoResult] =
-    await Promise.all([
-      supabase
-        .from("disponibilidad_unidades")
-        .select("unidad, tipo, prototipo_id")
-        .eq("id", operacion.unidad_id as string)
-        .maybeSingle(),
-      supabase
-        .from("expediente_documentos")
-        .select("*")
-        .eq("operacion_id", operacionId)
-        .eq("activo", true)
-        .order("created_at", { ascending: false }),
-      operacion.prospecto_id
-        ? supabase
-            .from("prospectos")
-            .select("*")
-            .eq("id", operacion.prospecto_id as string)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    { data: unidad },
+    { data: documentos, error: documentosError },
+    prospectoResult,
+    { data: cobranzaRows, error: cobranzaError },
+    { data: desarrolloRow },
+  ] = await Promise.all([
+    supabase
+      .from("disponibilidad_unidades")
+      .select("unidad, tipo, prototipo_id")
+      .eq("id", operacion.unidad_id as string)
+      .maybeSingle(),
+    supabase
+      .from("expediente_documentos")
+      .select("*")
+      .eq("operacion_id", operacionId)
+      .eq("activo", true)
+      .order("created_at", { ascending: false }),
+    operacion.prospecto_id
+      ? supabase
+          .from("prospectos")
+          .select("*")
+          .eq("id", operacion.prospecto_id as string)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("cobranza_mensual")
+      .select("mes, monto")
+      .eq("operacion_id", operacionId)
+      .order("mes", { ascending: false }),
+    supabase
+      .from("desarrollos_catalog")
+      .select("campo_config")
+      .eq("id", operacion.desarrollo_id as string)
+      .maybeSingle(),
+  ]);
 
   if (documentosError) {
     if (documentosError.message.includes("expediente_documentos")) {
       throw new Error("Falta aplicar la migración 022_expediente_ventas.sql en Supabase.");
     }
     throw new Error(documentosError.message);
+  }
+
+  if (cobranzaError) {
+    throw new Error(cobranzaError.message);
   }
 
   const docs = (documentos ?? []).map((row) => mapDocumento(row as Record<string, unknown>));
@@ -286,6 +346,33 @@ export const getExpedienteDetail = async (
   });
   const kyc = mergeKycPrefill(op.cliente_kyc, prospecto);
   const planPago = normalizePlanPago(op.plan_pago);
+
+  const pagos = (cobranzaRows ?? [])
+    .map((row) => ({
+      mes: String(row.mes).slice(0, 10),
+      monto: Number(row.monto ?? 0),
+    }))
+    .filter((row) => row.monto > 0);
+  const totalCobrado = pagos.reduce((sum, row) => sum + row.monto, 0);
+  const precioVenta =
+    op.precio_venta != null && Number.isFinite(Number(op.precio_venta))
+      ? Number(op.precio_venta)
+      : null;
+  const saldo =
+    precioVenta != null
+      ? precioVenta - totalCobrado
+      : op.comprobacion != null
+        ? Number(op.comprobacion)
+        : null;
+  const campoConfig = normalizeCampoConfig(desarrolloRow?.campo_config);
+  const enganchePctUsado = resolveEnganchePctEsperado(op.desarrollo_id, campoConfig);
+  const engancheEsperado =
+    precioVenta != null && precioVenta > 0 ? precioVenta * enganchePctUsado : null;
+  const sugiereEngancheCubierto =
+    !op.enganche_cubierto &&
+    engancheEsperado != null &&
+    engancheEsperado > 0 &&
+    totalCobrado >= engancheEsperado;
 
   return {
     operacion: op,
@@ -306,6 +393,15 @@ export const getExpedienteDetail = async (
     driveConfigured: await isGoogleDriveConfiguredForDesarrolloAsync(
       operacion.desarrollo_id as string,
     ),
+    cobranza: {
+      totalCobrado,
+      precioVenta,
+      saldo,
+      ultimosPagos: pagos.slice(0, 6),
+      engancheEsperado,
+      enganchePctUsado,
+      sugiereEngancheCubierto,
+    },
   };
 };
 

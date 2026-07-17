@@ -149,6 +149,8 @@ function PercentSlider({
   onChange?: (value: number) => void;
   label: string;
 }) {
+  const safeMax = Math.max(max, min);
+  const safeValue = clamp(value, min, safeMax);
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -162,11 +164,11 @@ function PercentSlider({
       <input
         type="range"
         min={min}
-        max={max}
+        max={safeMax}
         step={step}
-        value={value}
+        value={safeValue}
         onChange={(event) => onChange?.(Number(event.target.value))}
-        disabled={!onChange}
+        disabled={!onChange || safeMax <= min}
         className="mt-2 h-2 w-full cursor-pointer accent-[#5B8A7D] disabled:cursor-not-allowed disabled:opacity-40"
       />
     </div>
@@ -468,21 +470,40 @@ export function MisionLaGaviaSimuladorPanel({
     esquemaLocal === "libre" &&
     Boolean(onLibreEngancheChange && onLibreMensualidadesChange);
 
+  const libreMensualidadesMax = Math.min(0.5, Math.max(0, 1 - libreEnganche));
+
+  const handleLibreEngancheChange = (value: number) => {
+    if (!onLibreEngancheChange) return;
+    const nextEnganche = clamp(value, 0.15, 1);
+    onLibreEngancheChange(nextEnganche);
+    if (onLibreMensualidadesChange) {
+      const maxMens = Math.min(0.5, Math.max(0, 1 - nextEnganche));
+      if (libreMensualidades > maxMens) {
+        onLibreMensualidadesChange(maxMens);
+      }
+    }
+  };
+
+  const handleLibreMensualidadesChange = (value: number) => {
+    if (!onLibreMensualidadesChange) return;
+    onLibreMensualidadesChange(clamp(value, 0, libreMensualidadesMax));
+  };
+
   const syncLibreEngancheFromAmount = (amount: number) => {
     const base = simulacion?.precioContado ?? unidadRecord?.precioContado ?? 0;
     if (!onLibreEngancheChange || base <= 0) {
       return;
     }
-    onLibreEngancheChange(clamp(amount / base, 0.15, 0.5));
+    handleLibreEngancheChange(amount / base);
   };
 
   const syncLibreMensualidadFromAmount = (monthlyAmount: number) => {
     if (!onLibreMensualidadesChange || !simulacion || simulacion.precioTotal <= 0) {
       return;
     }
-    const numMeses = simulacion.numMensualidades ?? 1;
-    onLibreMensualidadesChange(
-      clamp((monthlyAmount * numMeses) / simulacion.precioTotal, 0.05, 0.5),
+    const numMeses = Math.max(1, simulacion.numMensualidades ?? 1);
+    handleLibreMensualidadesChange(
+      (monthlyAmount * numMeses) / simulacion.precioTotal,
     );
   };
 
@@ -490,12 +511,8 @@ export function MisionLaGaviaSimuladorPanel({
     if (!onLibreMensualidadesChange || !simulacion || simulacion.precioTotal <= 0) {
       return;
     }
-    const finiquitoPct = clamp(
-      amount / simulacion.precioTotal,
-      0,
-      1 - libreEnganche - 0.05,
-    );
-    onLibreMensualidadesChange(clamp(1 - libreEnganche - finiquitoPct, 0.05, 0.5));
+    const finiquitoPct = clamp(amount / simulacion.precioTotal, 0, 1 - libreEnganche);
+    handleLibreMensualidadesChange(1 - libreEnganche - finiquitoPct);
   };
 
   const handleEsquema = (value: MisionLaGaviaEsquemaId) => {
@@ -770,9 +787,9 @@ export function MisionLaGaviaSimuladorPanel({
               label="Enganche"
               value={libreEnganche}
               min={0.15}
-              max={0.5}
+              max={1}
               step={0.01}
-              onChange={onLibreEngancheChange}
+              onChange={onLibreEngancheChange ? handleLibreEngancheChange : undefined}
             />
             <MoneyAmountInput
               label="Monto enganche"
@@ -783,13 +800,17 @@ export function MisionLaGaviaSimuladorPanel({
           <div className="space-y-3">
             <PercentSlider
               label="Mensualidades"
-              value={libreMensualidades}
-              min={0.05}
-              max={0.5}
+              value={Math.min(libreMensualidades, libreMensualidadesMax)}
+              min={0}
+              max={libreMensualidadesMax}
               step={0.01}
-              onChange={onLibreMensualidadesChange}
+              onChange={
+                onLibreMensualidadesChange && libreMensualidadesMax > 0
+                  ? handleLibreMensualidadesChange
+                  : undefined
+              }
             />
-            {simulacion.mensualidad ? (
+            {simulacion.mensualidad && libreMensualidadesMax > 0 ? (
               <MoneyAmountInput
                 label="Monto mensualidad"
                 amount={simulacion.mensualidad}
@@ -816,7 +837,7 @@ export function MisionLaGaviaSimuladorPanel({
               label={`Finiquito (${formatPctShort(Math.max(0, 1 - libreEnganche - libreMensualidades))})`}
               amount={simulacion.finiquito ?? 0}
               onAmountChange={puedeEditarMontosLibre ? syncLibreFiniquitoFromAmount : undefined}
-              helper="Mínimos: enganche 15%, enganche + mensualidades 30%. El descuento se recalcula capitalizando al 11% anual desde el precio contado."
+              helper="Enganche hasta 100%. Mínimos: enganche 15%, enganche + mensualidades 30%. El descuento se recalcula capitalizando al 11% anual desde el precio contado."
             />
           </div>
         </div>

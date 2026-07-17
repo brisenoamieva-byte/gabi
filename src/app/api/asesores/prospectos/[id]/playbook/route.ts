@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   completePlaybookStepForProspecto,
   getProspectoPlaybookState,
+  uncompletePlaybookStepForProspecto,
 } from "@/lib/comercial/crm-playbook-service";
 import type { PerfilamientoVisitaAnswers } from "@/lib/comercial/perfilamiento-post-visita";
 import { getProspectoForAsesor } from "@/lib/asesores/prospectos-service";
@@ -40,26 +41,32 @@ export async function POST(request: Request, context: RouteContext) {
       stepId?: string;
       stepDate?: string;
       stepTime?: string;
+      action?: "complete" | "uncomplete";
       perfilamientoVisita?: PerfilamientoVisitaAnswers;
     };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
     const stepId = body.stepId?.trim();
     const stepDate = body.stepDate?.trim();
     const stepTime = body.stepTime?.trim();
+    const action = body.action === "uncomplete" ? "uncomplete" : "complete";
 
     if (!stepId) {
       return NextResponse.json({ error: "stepId requerido." }, { status: 400 });
     }
 
-    const { playbook, prospecto } = await completePlaybookStepForProspecto(
-      asesorId,
-      id,
-      stepId,
-      stepDate,
-      body.perfilamientoVisita,
-      stepTime,
-    );
-    return NextResponse.json({ playbook, prospecto });
+    const result =
+      action === "uncomplete"
+        ? await uncompletePlaybookStepForProspecto(asesorId, id, stepId)
+        : await completePlaybookStepForProspecto(
+            asesorId,
+            id,
+            stepId,
+            stepDate,
+            body.perfilamientoVisita,
+            stepTime,
+          );
+
+    return NextResponse.json(result);
   } catch (error) {
     const authResponse = asesorSessionErrorResponse(error);
     if (authResponse) {
@@ -67,7 +74,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error al completar paso." },
+      { error: error instanceof Error ? error.message : "Error al actualizar el paso." },
       { status: 400 },
     );
   }

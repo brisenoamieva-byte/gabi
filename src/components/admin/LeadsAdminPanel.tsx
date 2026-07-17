@@ -18,17 +18,21 @@ import { SolicitudesApartadoBanner } from "@/components/admin/SolicitudesApartad
 import { LeadDetailDrawer } from "@/components/admin/LeadDetailDrawer";
 import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { exportLeadsCsv, LeadsXperienceTable } from "@/components/admin/LeadsXperienceTable";
+import { downloadAdminExport } from "@/lib/admin/download-excel-client";
 import {
   PROSPECTO_ETAPAS,
   prospectoEtapaLabel,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
-import { NIVELES_INTERES, nivelInteresLabel } from "@/lib/comercial/prospecto-interes";
 import { formatLeadsDateRangeLabel } from "@/lib/comercial/xperience-leads";
 import type { DesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
 import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
 import { resolveAdminDesarrolloId } from "@/lib/admin/admin-desarrollo-session";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import {
+  ASESOR_FILTER_INACTIVOS,
+  isAsesorFilterInactivos,
+} from "@/lib/comercial/prospecto-asesor-filters";
 
 type LeadsAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -94,7 +98,6 @@ export function LeadsAdminPanel({
   const [asesorFilter, setAsesorFilter] = useState(initialAsesorId ?? "");
   const [campanaFilter, setCampanaFilter] = useState("");
   const [partnerFilter, setPartnerFilter] = useState("");
-  const [interesFilter, setInteresFilter] = useState("");
   const [calificacionFilter, setCalificacionFilter] = useState("");
   const [desde, setDesde] = useState(initialDesde ?? monthDefault.desde);
   const [hasta, setHasta] = useState(initialHasta ?? monthDefault.hasta);
@@ -105,7 +108,6 @@ export function LeadsAdminPanel({
     asesorFilter: initialAsesorId ?? "",
     campanaFilter: "",
     partnerFilter: "",
-    interesFilter: "",
     calificacionFilter: "",
     desde: initialDesde ?? monthDefault.desde,
     hasta: initialHasta ?? monthDefault.hasta,
@@ -146,7 +148,7 @@ export function LeadsAdminPanel({
     }
 
     try {
-      const params = new URLSearchParams({ desarrolloId });
+      const params = new URLSearchParams({ desarrolloId, assignableOnly: "1" });
       const response = await fetch(`/api/admin/asesores?${params.toString()}`);
       const data = (await response.json()) as { asesores?: AsesorOption[] };
       setAsesores(data.asesores ?? []);
@@ -178,7 +180,11 @@ export function LeadsAdminPanel({
     }
 
     try {
-      const params = new URLSearchParams({ desarrolloId, activoOnly: "1" });
+      const params = new URLSearchParams({
+        desarrolloId,
+        activoOnly: "1",
+        usedInDesarrolloOnly: "1",
+      });
       const response = await fetch(`/api/admin/partners?${params.toString()}`);
       const data = (await response.json()) as { partners?: PartnerOption[] };
       setPartners(data.partners ?? []);
@@ -284,9 +290,6 @@ export function LeadsAdminPanel({
       }
       if (active.partnerFilter) {
         params.set("partnerId", active.partnerFilter);
-      }
-      if (active.interesFilter) {
-        params.set("nivelInteres", active.interesFilter);
       }
       if (active.calificacionFilter) {
         params.set("calificacionLead", active.calificacionFilter);
@@ -411,7 +414,6 @@ export function LeadsAdminPanel({
       asesorFilter,
       campanaFilter,
       partnerFilter,
-      interesFilter,
       calificacionFilter,
       desde,
       hasta,
@@ -514,6 +516,44 @@ export function LeadsAdminPanel({
     link.click();
     URL.revokeObjectURL(url);
     setShowExportMenu(false);
+  };
+
+  const downloadExcel = async () => {
+    if (!applied.desarrolloId) {
+      return;
+    }
+    setError("");
+    try {
+      const params = new URLSearchParams({ desarrolloId: applied.desarrolloId });
+      if (viewMode === "lista" && applied.etapaFilter) {
+        params.set("etapa", applied.etapaFilter);
+      }
+      if (applied.asesorFilter) params.set("asesorId", applied.asesorFilter);
+      if (applied.campanaFilter) params.set("campanaId", applied.campanaFilter);
+      if (applied.partnerFilter) params.set("partnerId", applied.partnerFilter);
+      if (applied.calificacionFilter) {
+        params.set("calificacionLead", applied.calificacionFilter);
+      }
+      params.set("spam", applied.leadTab === "spam" ? "only" : "include");
+      params.set(
+        "duplicados",
+        applied.leadTab === "duplicados"
+          ? "only"
+          : applied.leadTab === "spam"
+            ? "include"
+            : "include",
+      );
+      if (applied.desde) params.set("desde", applied.desde);
+      if (applied.hasta) params.set("hasta", applied.hasta);
+
+      await downloadAdminExport(
+        `/api/admin/prospectos/export?${params.toString()}`,
+        `prospectos-${applied.desarrolloId}.xlsx`,
+      );
+      setShowExportMenu(false);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "Error al exportar Excel.");
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -691,7 +731,14 @@ export function LeadsAdminPanel({
                   <ChevronDown className="h-3 w-3" />
                 </button>
                 {showExportMenu ? (
-                  <div className="absolute right-0 z-20 mt-1 min-w-[180px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  <div className="absolute right-0 z-20 mt-1 min-w-[200px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                    <button
+                      type="button"
+                      onClick={() => void downloadExcel()}
+                      className="block w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Excel (.xlsx) — vista filtrada
+                    </button>
                     <button
                       type="button"
                       onClick={() => downloadCsv(prospectos)}
@@ -836,13 +883,20 @@ export function LeadsAdminPanel({
                   value={partnerFilter}
                   onChange={(event) => setPartnerFilter(event.target.value)}
                   className={filterInputClass}
+                  title="Solo aliados con leads ligados en este desarrollo"
                 >
                   <option value="">Todos</option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>
-                      {partner.nombre}
+                  {partners.length === 0 ? (
+                    <option value="" disabled>
+                      Sin aliados ligados aún
                     </option>
-                  ))}
+                  ) : (
+                    partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>
+                        {partner.nombre}
+                      </option>
+                    ))
+                  )}
                 </select>
               </label>
 
@@ -854,6 +908,7 @@ export function LeadsAdminPanel({
                   className={filterInputClass}
                 >
                   <option value="">Todos</option>
+                  <option value={ASESOR_FILTER_INACTIVOS}>Asesores inactivos</option>
                   {asesores.map((asesor) => (
                     <option key={asesor.id} value={asesor.id}>
                       {asesor.nombre}
@@ -881,22 +936,6 @@ export function LeadsAdminPanel({
               ) : (
                 <div className="hidden xl:block" />
               )}
-
-              <label className="block text-[10px]">
-                <span className="mb-0.5 block font-semibold text-slate-500">Interés</span>
-                <select
-                  value={interesFilter}
-                  onChange={(event) => setInteresFilter(event.target.value)}
-                  className={filterInputClass}
-                >
-                  <option value="">Todos</option>
-                  {NIVELES_INTERES.map((nivel) => (
-                    <option key={nivel} value={nivel}>
-                      {nivelInteresLabel[nivel]}
-                    </option>
-                  ))}
-                </select>
-              </label>
 
               <label className="block text-[10px]">
                 <span className="mb-0.5 block font-semibold text-slate-500">Calificación</span>
@@ -969,6 +1008,16 @@ export function LeadsAdminPanel({
           loading={solicitudesLoading}
           onOpenProspecto={openProspecto}
         />
+      ) : null}
+
+      {leadTab === "leads" && isAsesorFilterInactivos(applied.asesorFilter) && canReassignProspectos ? (
+        <div className="shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          <p className="font-bold">Cartera de asesores inactivos</p>
+          <p className="mt-0.5 text-amber-900/90">
+            Selecciona leads y usa <span className="font-semibold">Reasignar a…</span> para pasarlos
+            a un asesor activo del desarrollo.
+          </p>
+        </div>
       ) : null}
 
       {leadTab !== "captura" ? (

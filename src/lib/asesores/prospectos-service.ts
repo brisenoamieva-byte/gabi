@@ -39,9 +39,11 @@ import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   isLeadershipAsesorId,
+  loadAsesorSessionOrThrow,
   resolveGerenteAsesorIdForDesarrollo,
   resolveProspectoAsesorFilter,
 } from "@/lib/asesores/leadership-access";
+import { isLeadershipAsesorRol } from "@/lib/asesores/types";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 
 const MEDIO_ALIANZA = "inmobiliaria-externo";
@@ -72,25 +74,70 @@ export const listProspectosForAsesor = async (
     search?: string;
     desde?: string;
     hasta?: string;
+    /** Solo gerencia: acotar a un asesor del equipo (o `__sin__` sin asignar). */
+    filterAsesorId?: string;
   },
 ): Promise<ProspectoListRow[]> => {
   await assertAsesorDesarrollo(asesorId, filters.desarrolloId);
-  const asesorFilter = await resolveProspectoAsesorFilter(asesorId);
+  const scopeFilter = await resolveProspectoAsesorFilter(asesorId);
+  const { filterAsesorId, ...rest } = filters;
+
+  let asesorScope: string | undefined = scopeFilter;
+  if (!scopeFilter && filterAsesorId) {
+    if (filterAsesorId === "__sin__") {
+      return listProspectos(
+        { ...rest, fechaEn: "updated", sinAsesor: true },
+      );
+    }
+    if (filterAsesorId === "__inactivos__") {
+      return listProspectos(
+        { ...rest, fechaEn: "updated", asesorInactivo: true },
+      );
+    }
+    asesorScope = filterAsesorId;
+  }
+
   return listProspectos(
-    { ...filters, ...(asesorFilter ? { asesorId: asesorFilter } : {}), fechaEn: "updated" },
+    { ...rest, ...(asesorScope ? { asesorId: asesorScope } : {}), fechaEn: "updated" },
   );
 };
 
 export const getProspectosResumenForAsesor = async (
   asesorId: string,
   desarrolloId: string,
-  filters?: { search?: string; desde?: string; hasta?: string },
+  filters?: {
+    search?: string;
+    desde?: string;
+    hasta?: string;
+    filterAsesorId?: string;
+  },
 ): Promise<ProspectosResumen> => {
   await assertAsesorDesarrollo(asesorId, desarrolloId);
-  const asesorFilter = await resolveProspectoAsesorFilter(asesorId);
+  const scopeFilter = await resolveProspectoAsesorFilter(asesorId);
+  const { filterAsesorId, ...rest } = filters ?? {};
+
+  let asesorScope: string | undefined = scopeFilter;
+  if (!scopeFilter && filterAsesorId === "__sin__") {
+    return getProspectosResumen(desarrolloId, undefined, {
+      ...rest,
+      sinAsesor: true,
+      fechaEn: "updated",
+    });
+  }
+  if (!scopeFilter && filterAsesorId === "__inactivos__") {
+    return getProspectosResumen(desarrolloId, undefined, {
+      ...rest,
+      asesorInactivo: true,
+      fechaEn: "updated",
+    });
+  }
+  if (!scopeFilter && filterAsesorId) {
+    asesorScope = filterAsesorId;
+  }
+
   return getProspectosResumen(desarrolloId, undefined, {
-    ...(asesorFilter ? { asesorId: asesorFilter } : {}),
-    ...filters,
+    ...(asesorScope ? { asesorId: asesorScope } : {}),
+    ...rest,
     fechaEn: "updated",
   });
 };
@@ -232,18 +279,28 @@ export const createProspectoForAsesor = async (
     );
   }
 
-  const creatorIsLeadership = await isLeadershipAsesorId(asesorId);
+  const creatorSession = await loadAsesorSessionOrThrow(asesorId);
+  const creatorIsLeadership = isLeadershipAsesorRol(creatorSession.rol);
   let assignedAsesorId = asesorId;
   let asignadoAGerencia = false;
   let asignadoPor: string | undefined;
 
+  // Dirección (y alianzas de asesores de campo) no cargan cartera propia:
+  // el seguimiento queda con gerencia del desarrollo.
+  const routeToGerencia =
+    creatorSession.rol === "director" || (esAlianza && !creatorIsLeadership);
+
   if (esAlianza) {
     asignadoPor = "alianza-inmobiliaria";
-    if (!creatorIsLeadership) {
-      const gerenteId = await resolveGerenteAsesorIdForDesarrollo(input.desarrolloId);
-      if (gerenteId && gerenteId !== asesorId) {
-        assignedAsesorId = gerenteId;
-        asignadoAGerencia = true;
+  }
+
+  if (routeToGerencia) {
+    const gerenteId = await resolveGerenteAsesorIdForDesarrollo(input.desarrolloId);
+    if (gerenteId && gerenteId !== asesorId) {
+      assignedAsesorId = gerenteId;
+      asignadoAGerencia = true;
+      if (creatorSession.rol === "director" && !asignadoPor) {
+        asignadoPor = "direccion-bbr";
       }
     }
   }

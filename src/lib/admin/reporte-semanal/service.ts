@@ -52,6 +52,7 @@ import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import type { OperacionComercialRecord, SembradoUnidadRow } from "@/lib/comercial/sembrado-status";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { getDesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const VENTA_ESTATUS = new Set(["Vendidas Cobradas"]);
 const APARTADO_ESTATUS = new Set([
@@ -63,6 +64,73 @@ const APARTADO_ESTATUS = new Set([
 ]);
 
 const SIN_LISTA = "Sin lista";
+
+/** YYYY-MM keys tocados por un rango de fechas inclusive. */
+function monthKeysInRange(desde: string, hasta: string): Set<string> {
+  const keys = new Set<string>();
+  let year = Number(desde.slice(0, 4));
+  let month = Number(desde.slice(5, 7));
+  const endYear = Number(hasta.slice(0, 4));
+  const endMonth = Number(hasta.slice(5, 7));
+  if (!year || !month || !endYear || !endMonth) {
+    return keys;
+  }
+  while (year < endYear || (year === endYear && month <= endMonth)) {
+    keys.add(`${year}-${String(month).padStart(2, "0")}`);
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+  return keys;
+}
+
+async function loadCobranzaByOperacionForPeriods(
+  operacionIds: string[],
+  periodoSemana: { desde: string; hasta: string },
+  periodoMes: { desde: string; hasta: string },
+): Promise<{
+  semana: Map<string, number>;
+  mes: Map<string, number>;
+}> {
+  const semana = new Map<string, number>();
+  const mes = new Map<string, number>();
+  if (!operacionIds.length) {
+    return { semana, mes };
+  }
+
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return { semana, mes };
+  }
+
+  const weekKeys = monthKeysInRange(periodoSemana.desde, periodoSemana.hasta);
+  const monthKeys = monthKeysInRange(periodoMes.desde, periodoMes.hasta);
+
+  const { data, error } = await supabase
+    .from("cobranza_mensual")
+    .select("operacion_id, mes, monto")
+    .in("operacion_id", operacionIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  for (const row of data ?? []) {
+    const mesKey = String(row.mes ?? "").slice(0, 7);
+    const operacionId = row.operacion_id as string;
+    const monto = Number(row.monto ?? 0);
+    if (weekKeys.has(mesKey)) {
+      semana.set(operacionId, (semana.get(operacionId) ?? 0) + monto);
+    }
+    if (monthKeys.has(mesKey)) {
+      mes.set(operacionId, (mes.get(operacionId) ?? 0) + monto);
+    }
+  }
+
+  return { semana, mes };
+}
 
 type ListaResolver = {
   resolveForInventario: (listaPreciosStamp: string | null) => string;
@@ -191,6 +259,8 @@ function buildSegmentoReporte(
   acumuladoDesde: string,
   objetivos: ReporteObjetivosAnuales | null,
   listas: ListaResolver,
+  cobranzaPeriodoByOperacion: Map<string, number>,
+  cobranzaMesByOperacion: Map<string, number>,
 ): ReporteSemanalSegmento {
   const segmentRows =
     config.clusterId === "__all__"
@@ -211,6 +281,7 @@ function buildSegmentoReporte(
   let ventasMes = 0;
   let apartadosMes = 0;
   let cajaSemana = 0;
+  let cajaMes = 0;
   let comprometidos = 0;
   let ventasMesMonto = 0;
 
@@ -297,7 +368,8 @@ function buildSegmentoReporte(
       apartadosMes += 1;
     }
 
-    cajaSemana += row.totalCobrado;
+    cajaSemana += cobranzaPeriodoByOperacion.get(op.id) ?? 0;
+    cajaMes += cobranzaMesByOperacion.get(op.id) ?? 0;
     modeloMap.set(modelo, modeloEntry);
   }
 
@@ -382,9 +454,9 @@ function buildSegmentoReporte(
     objetivoIngresos: objetivos
       ? {
           totalObjetivo: objetivos.ingresosTotales,
-          cajaReal: Math.round(cajaSemana),
+          cajaReal: Math.round(cajaMes),
           comprometidos: Math.round(comprometidos),
-          pctCaja: Math.round((cajaSemana / objetivos.ingresosTotales) * 1000) / 10,
+          pctCaja: Math.round((cajaMes / objetivos.ingresosTotales) * 1000) / 10,
           pctComprometidos: Math.round((comprometidos / objetivos.ingresosTotales) * 1000) / 10,
           pctTotal: Math.round((ingresosAcumulado / objetivos.ingresosTotales) * 1000) / 10,
         }
@@ -409,6 +481,8 @@ function buildGeneralSegmento(
   acumuladoDesde: string,
   objetivos: ReporteObjetivosAnuales | null,
   listas: ListaResolver,
+  cobranzaPeriodoByOperacion: Map<string, number>,
+  cobranzaMesByOperacion: Map<string, number>,
 ): ReporteSemanalSegmento {
   return buildSegmentoReporte(
     desarrolloId,
@@ -421,6 +495,8 @@ function buildGeneralSegmento(
     acumuladoDesde,
     objetivos,
     listas,
+    cobranzaPeriodoByOperacion,
+    cobranzaMesByOperacion,
   );
 }
 
@@ -470,7 +546,7 @@ function buildSeguimiento(
     if (p.etapa === "cancelado") return null;
     if (p.etapa === "perdido") return "No comprará";
     if (p.etapa === "apartado" || p.etapa === "vendido") return "Apartó / Compró / Asignaciones";
-    if (p.etapa === "cita" || p.etapa === "visita" || p.etapa === "cotizo" || p.etapa === "negociacion") return "En seguimiento";
+    if (p.etapa === "cita" || p.etapa === "visita") return "En seguimiento";
     if (p.etapa === "contactado") return "Llamar más adelante";
     return "En seguimiento";
   };
@@ -541,8 +617,8 @@ function buildProspectosInteresados(
         !p.es_duplicado &&
         (p.etapa === "cita" ||
           p.etapa === "visita" ||
-          p.etapa === "cotizo" ||
-          p.etapa === "negociacion" ||
+          p.perfil_calificacion_lead === "A" ||
+          p.perfil_calificacion_lead === "B" ||
           p.nivel_interes === "alto"),
     )
     .slice(0, 25)
@@ -614,10 +690,17 @@ export async function getReporteComercialSemanal(
   const segmentConfigs = getReporteSemanalSegments(filters.desarrolloId);
   const segmentIds = segmentConfigs?.map((config) => config.id) ?? ["general"];
 
-  const [objetivosDbRows, objetivosMap] = await Promise.all([
+  const [objetivosDbRows, objetivosMap, cobranzaMaps] = await Promise.all([
     listObjetivosAnuales({ desarrolloId: filters.desarrolloId, anio: year }, profile),
     loadObjetivosAnualesMap(filters.desarrolloId, year, segmentIds, profile),
+    loadCobranzaByOperacionForPeriods(
+      todasOperaciones.map((op) => op.id),
+      periodo,
+      mes,
+    ),
   ]);
+  const cobranzaPeriodoByOperacion = cobranzaMaps.semana;
+  const cobranzaMesByOperacion = cobranzaMaps.mes;
 
   const segmentos = segmentConfigs
     ? segmentConfigs.map((config) =>
@@ -632,6 +715,8 @@ export async function getReporteComercialSemanal(
           acumuladoDesde,
           objetivosMap.get(config.id) ?? null,
           listas,
+          cobranzaPeriodoByOperacion,
+          cobranzaMesByOperacion,
         ),
       )
     : [
@@ -645,6 +730,8 @@ export async function getReporteComercialSemanal(
           acumuladoDesde,
           objetivosMap.get("general") ?? null,
           listas,
+          cobranzaPeriodoByOperacion,
+          cobranzaMesByOperacion,
         ),
       ];
 

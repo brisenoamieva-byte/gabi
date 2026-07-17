@@ -44,7 +44,7 @@ export function desarrolloSelectorLogoPaddingClass(desarrolloId: string): string
     return "p-0";
   }
   if (desarrolloId === "mision-la-gavia") {
-    return "px-1 py-0.5";
+    return "px-1.5 py-1";
   }
   if (desarrolloId === "simate") {
     return "px-1.5 py-1";
@@ -53,9 +53,6 @@ export function desarrolloSelectorLogoPaddingClass(desarrolloId: string): string
 }
 
 export function desarrolloSelectorLogoImageClass(desarrolloId: string): string {
-  const base = "h-full w-full object-contain object-center";
-  if (desarrolloId === "mision-la-gavia") {
-    return `${base} scale-[1.08]`;
-  }
-  return base;
+  void desarrolloId;
+  return "h-full w-full object-contain object-center";
 }

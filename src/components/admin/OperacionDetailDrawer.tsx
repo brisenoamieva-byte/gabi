@@ -8,7 +8,7 @@ import {
   estatusSembradoLabel,
 } from "@/lib/comercial/sembrado-status";
 import {
-  SEMBRADO_COBRANZA_MESES,
+  resolveCobranzaMeses,
   formatMesCobranzaLabel,
 } from "@/lib/comercial/cobranza-meses";
 import { formatPrice } from "@/lib/data";
@@ -40,6 +40,7 @@ type FormState = {
   contratoFirmado: boolean;
   personaMoral: boolean;
   cobranza: Record<string, string>;
+  cobranzaMeses: string[];
 };
 
 const inputClass =
@@ -63,12 +64,16 @@ function Field({
 }
 
 const detailToForm = (detail: OperacionDetail): FormState => {
+  const cobranzaMeses = resolveCobranzaMeses({
+    fechaApartado: detail.operacion.fecha_apartado,
+    existingMeses: detail.cobranza.map((row) => row.mes),
+  });
   const cobranza: Record<string, string> = {};
-  for (const mes of SEMBRADO_COBRANZA_MESES) {
+  for (const mes of cobranzaMeses) {
     cobranza[mes] = "";
   }
   for (const row of detail.cobranza) {
-    const key = row.mes.slice(0, 10);
+    const key = `${row.mes.slice(0, 7)}-01`;
     if (Number(row.monto) > 0) {
       cobranza[key] = formatAmountInput(Number(row.monto));
     }
@@ -94,6 +99,7 @@ const detailToForm = (detail: OperacionDetail): FormState => {
     contratoFirmado: Boolean(op.contrato_firmado),
     personaMoral: Boolean(op.persona_moral),
     cobranza,
+    cobranzaMeses,
   };
 };
 
@@ -161,7 +167,7 @@ export function OperacionDetailDrawer({
     if (!form) {
       return { totalCobrado: 0, comprobacion: null as number | null };
     }
-    const total = SEMBRADO_COBRANZA_MESES.reduce((sum, mes) => {
+    const total = form.cobranzaMeses.reduce((sum, mes) => {
       return sum + (parseMoneyInput(form.cobranza[mes]) ?? 0);
     }, 0);
     const precioVenta = parseMoneyInput(form.precioVenta);
@@ -181,7 +187,7 @@ export function OperacionDetailDrawer({
     setError("");
 
     try {
-      const cobranza = SEMBRADO_COBRANZA_MESES.map((mes) => ({
+      const cobranza = form.cobranzaMeses.map((mes) => ({
         mes,
         monto: parseMoneyInput(form.cobranza[mes]) ?? 0,
       }));
@@ -403,7 +409,26 @@ export function OperacionDetailDrawer({
                     <input
                       type="date"
                       value={form.fechaApartado}
-                      onChange={(event) => patch({ fechaApartado: event.target.value })}
+                      onChange={(event) => {
+                        const fechaApartado = event.target.value;
+                        setForm((prev) => {
+                          if (!prev) return prev;
+                          const cobranzaMeses = resolveCobranzaMeses({
+                            fechaApartado,
+                            existingMeses: [
+                              ...prev.cobranzaMeses,
+                              ...Object.keys(prev.cobranza),
+                            ],
+                          });
+                          const cobranza = { ...prev.cobranza };
+                          for (const mes of cobranzaMeses) {
+                            if (cobranza[mes] === undefined) {
+                              cobranza[mes] = "";
+                            }
+                          }
+                          return { ...prev, fechaApartado, cobranzaMeses, cobranza };
+                        });
+                      }}
                       className={inputClass}
                     />
                   </Field>
@@ -455,7 +480,7 @@ export function OperacionDetailDrawer({
                   <h4 className="mb-3 text-sm font-bold text-gabi-forest">Cobranza mensual</h4>
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
                     <div className="flex min-w-max">
-                      {SEMBRADO_COBRANZA_MESES.map((mes) => (
+                      {form.cobranzaMeses.map((mes) => (
                         <div key={mes} className="w-24 shrink-0 border-r border-slate-100 p-2 last:border-r-0">
                           <p className="mb-1 text-center text-[10px] font-bold uppercase text-slate-500">
                             {formatMesCobranzaLabel(mes)}

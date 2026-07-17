@@ -27,7 +27,6 @@ import { MotivoDescarteFields } from "@/components/comercial/MotivoDescarteField
 import { ProspectoHistorialComercial } from "@/components/comercial/ProspectoHistorialComercial";
 import { ProspectoNotasHistorialField } from "@/components/comercial/ProspectoNotasHistorialField";
 import type { SolicitudApartadoRow } from "@/lib/comercial/solicitud-apartado-service";
-import { NIVELES_INTERES, nivelInteresLabel, type NivelInteres } from "@/lib/comercial/prospecto-interes";
 import { ETAPA_RESCATE_DEFAULT } from "@/lib/asesores/prospectos-client";
 import { PARTNER_OTRO } from "@/lib/comercial/apartado-form-options";
 import { formatMotivoDescarte } from "@/lib/comercial/motivo-descarte";
@@ -89,7 +88,6 @@ export function LeadDetailDrawer({
   const [campanaId, setCampanaId] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [partnerNombreLibre, setPartnerNombreLibre] = useState("");
-  const [nivelInteres, setNivelInteres] = useState<NivelInteres | "">("");
   const [asesorId, setAsesorId] = useState("");
   const [asesores, setAsesores] = useState<AsesorOption[]>([]);
   const [adminMe, setAdminMe] = useState<AdminMe>({});
@@ -148,21 +146,31 @@ export function LeadDetailDrawer({
             : "";
         setPartnerId(linkedPartnerId || (nombreLibre ? PARTNER_OTRO : ""));
         setPartnerNombreLibre(nombreLibre);
-        setNivelInteres(
-          data.prospecto.nivel_interes === "sin_interes" ||
-            data.prospecto.nivel_interes === "bajo" ||
-            data.prospecto.nivel_interes === "alto"
-            ? data.prospecto.nivel_interes
-            : "",
-        );
         setAsesorId(data.prospecto.asesor_id ?? "");
 
         const asesorParams = new URLSearchParams({
           desarrolloId: data.prospecto.desarrollo_id,
+          assignableOnly: "1",
         });
         const asesorResponse = await fetch(`/api/admin/asesores?${asesorParams.toString()}`);
         const asesorData = (await asesorResponse.json()) as { asesores?: AsesorOption[] };
         setAsesores(asesorData.asesores ?? []);
+
+        // Si el lead sigue en un director, muéstralo en el select aunque no sea asignable.
+        const currentAsesorId = data.prospecto.asesor_id;
+        const currentAsesorNombre = data.prospecto.asesorNombre;
+        if (
+          currentAsesorId &&
+          !(asesorData.asesores ?? []).some((row) => row.id === currentAsesorId)
+        ) {
+          setAsesores((prev) => [
+            ...prev,
+            {
+              id: currentAsesorId,
+              nombre: currentAsesorNombre ?? currentAsesorId,
+            },
+          ]);
+        }
 
         const campParams = new URLSearchParams({
           desarrolloId: data.prospecto.desarrollo_id,
@@ -249,7 +257,6 @@ export function LeadDetailDrawer({
                 : null,
           equipoVenta:
             partnerId === PARTNER_OTRO || partnerId ? "Externo" : undefined,
-          nivelInteres: nivelInteres || null,
           ...(adminMe.canReassignProspectos ? { asesorId: asesorId || null } : {}),
         }),
       });
@@ -643,23 +650,6 @@ export function LeadDetailDrawer({
                   <span className="font-medium">{detail.asesorNombre ?? "—"}</span>
                 </div>
               )}
-
-              <Field label="Nivel de interés">
-                <select
-                  value={nivelInteres}
-                  onChange={(event) =>
-                    setNivelInteres(event.target.value as NivelInteres | "")
-                  }
-                  className={inputClass}
-                >
-                  <option value="">Sin definir</option>
-                  {NIVELES_INTERES.map((item) => (
-                    <option key={item} value={item}>
-                      {nivelInteresLabel[item]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
 
               <Field label="Etapa">
                 <select

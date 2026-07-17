@@ -157,7 +157,25 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
     comercializadorasCount += 1;
   }
 
+  // No sobrescribir `activo`: es el interruptor operativo (pausar CRM) que solo
+  // cambia un superadmin. `npm run sync` / predev reactivaban todos menos La Vista.
+  const { data: existingDesarrollos, error: existingDesarrollosError } = await supabase
+    .from("desarrollos_catalog")
+    .select("id, activo");
+  if (existingDesarrollosError) {
+    throw new Error(
+      `No se pudo leer desarrollos existentes: ${existingDesarrollosError.message}`,
+    );
+  }
+  const existingActivoById = new Map(
+    (existingDesarrollos ?? []).map((row) => [String(row.id), Boolean(row.activo)]),
+  );
+
   for (const item of desarrollos) {
+    const activoPreserved = existingActivoById.has(item.id)
+      ? existingActivoById.get(item.id)!
+      : item.id !== LA_VISTA_RESIDENCIAL_ID;
+
     const { error } = await supabase.from("desarrollos_catalog").upsert(
       {
         id: item.id,
@@ -179,7 +197,7 @@ export const seedCatalogFromData = async (): Promise<CatalogSeedResult> => {
         recorrido_etapas: [...DEFAULT_RECORRIDO_ETAPAS],
         recorrido_version: 2,
         recorrido_contenido: getDefaultRecorridoContenido(item.id),
-        activo: item.id !== LA_VISTA_RESIDENCIAL_ID,
+        activo: activoPreserved,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" },

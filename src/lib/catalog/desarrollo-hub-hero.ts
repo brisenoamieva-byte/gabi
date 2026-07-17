@@ -1,5 +1,4 @@
 import {
-  desarrolloSelectorLogoImageClass,
   desarrolloSelectorLogoShellClass,
   desarrolloSelectorLogoSrc,
 } from "@/lib/catalog/desarrollo-selector-logo-shell";
@@ -71,12 +70,9 @@ export const desarrolloHubHeroPaddingClass = (desarrolloId: string): string => {
 };
 
 export const desarrolloHubHeroImageClass = (desarrolloId: string): string => {
-  const base = "max-h-full max-w-full object-contain object-center";
-  const selector = desarrolloSelectorLogoImageClass(desarrolloId);
-  if (selector.includes("scale-")) {
-    return `${base} ${selector.split(" ").filter((c) => c.startsWith("scale-")).join(" ")}`;
-  }
-  return base;
+  // Sin scale: el scale del selector compacto recorta el logo en la franja 16:10 del hub.
+  void desarrolloId;
+  return "max-h-full max-w-full object-contain object-center";
 };
 
 /** Mejor fuente para mostrar logo completo en el hub (no recortar wide PNG). */

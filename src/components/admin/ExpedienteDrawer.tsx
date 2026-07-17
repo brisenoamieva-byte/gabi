@@ -26,15 +26,19 @@ import {
   type ExpedienteChecklistEtapa,
   type ExpedienteChecklistItem,
 } from "@/lib/comercial/expediente-checklist";
+import { formatMesCobranzaLabel } from "@/lib/comercial/cobranza-meses";
 import { estatusSembradoLabel } from "@/lib/comercial/sembrado-status";
 import { canGenerateApartadoPack } from "@/lib/comercial/expediente-template-map";
 import { desarrollos, formatPrice } from "@/lib/data";
 import { ExpedienteOfertaDatosForm } from "@/components/admin/ExpedienteOfertaDatosForm";
+import Link from "next/link";
 
 type ExpedienteDrawerProps = {
   operacionId: string;
   onClose: () => void;
   onUpdated?: () => void;
+  /** Abre el drawer de Sembrado para editar cobranza mensual. */
+  onEditCobranza?: (operacionId: string) => void;
 };
 
 const ETAPAS: ExpedienteChecklistEtapa[] = ["apartado", "contrato", "cancelacion"];
@@ -49,7 +53,12 @@ const solicitudEstadoLabel: Record<SolicitudComisionRecord["estado"], string> = 
   facturada: "Facturada",
 };
 
-export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: ExpedienteDrawerProps) {
+export function ExpedienteDrawer({
+  operacionId,
+  onClose,
+  onUpdated,
+  onEditCobranza,
+}: ExpedienteDrawerProps) {
   const [detail, setDetail] = useState<ExpedienteDetail | null>(null);
   const [elegibilidad, setElegibilidad] = useState<ComisionElegibilidad | null>(null);
   const [solicitudes, setSolicitudes] = useState<SolicitudComisionRecord[]>([]);
@@ -581,6 +590,97 @@ export function ExpedienteDrawer({ operacionId, onClose, onUpdated }: Expediente
                   }}
                 />
               ) : null}
+
+              <div className="rounded-2xl border border-gabi-forest/10 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-gabi-forest">Cobranza</p>
+                    <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+                      <div>
+                        <dt className="text-xs text-slate-500">Total cobrado</dt>
+                        <dd className="font-semibold tabular-nums text-gabi-forest">
+                          {formatPrice(detail.cobranza.totalCobrado)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">Precio venta</dt>
+                        <dd className="font-semibold tabular-nums text-slate-800">
+                          {detail.cobranza.precioVenta != null
+                            ? formatPrice(detail.cobranza.precioVenta)
+                            : "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">Saldo</dt>
+                        <dd
+                          className={`font-semibold tabular-nums ${
+                            (detail.cobranza.saldo ?? 0) > 0
+                              ? "text-amber-800"
+                              : "text-emerald-700"
+                          }`}
+                        >
+                          {detail.cobranza.saldo != null
+                            ? formatPrice(detail.cobranza.saldo)
+                            : "—"}
+                        </dd>
+                      </div>
+                    </dl>
+                    {detail.cobranza.ultimosPagos.length > 0 ? (
+                      <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                        {detail.cobranza.ultimosPagos.map((pago) => (
+                          <li key={pago.mes} className="flex justify-between gap-4">
+                            <span>{formatMesCobranzaLabel(pago.mes)}</span>
+                            <span className="tabular-nums font-medium">
+                              {formatPrice(pago.monto)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-xs text-slate-500">Sin pagos registrados aún.</p>
+                    )}
+                  </div>
+                  {onEditCobranza ? (
+                    <button
+                      type="button"
+                      onClick={() => onEditCobranza(operacionId)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-gabi-forest/20 bg-white px-3 py-2 text-xs font-bold text-gabi-forest"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Editar cobranza en Sembrado
+                    </button>
+                  ) : (
+                    <Link
+                      href="/admin/sembrado"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-gabi-forest/20 bg-white px-3 py-2 text-xs font-bold text-gabi-forest"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Editar cobranza en Sembrado
+                    </Link>
+                  )}
+                </div>
+
+                {detail.cobranza.sugiereEngancheCubierto ? (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+                    <p>
+                      El cobro ya cubre el enganche esperado (
+                      {Math.round(detail.cobranza.enganchePctUsado * 100)}%
+                      {detail.cobranza.engancheEsperado != null
+                        ? ` · ${formatPrice(detail.cobranza.engancheEsperado)}`
+                        : ""}
+                      ). ¿Marcar cubierto?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void toggleEnganche()}
+                      disabled={savingEnganche}
+                      className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white"
+                    >
+                      {savingEnganche ? "Guardando…" : "Marcar enganche cubierto"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
 
               <div className="rounded-2xl border border-gabi-forest/10 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

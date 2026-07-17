@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Loader2, Plus, RefreshCw } from "lucide-react";
+import { Check, Copy, Download, Loader2, Plus, RefreshCw } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { CampanaRecord, CampanaTipo } from "@/lib/admin/campanas-service";
 import { buildParseurWebhookUrl } from "@/lib/comercial/parseur-webhook-url";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import { downloadAdminExport } from "@/lib/admin/download-excel-client";
 
 type CampanasAdminPanelProps = {
   desarrollos: Desarrollo[];
@@ -179,6 +180,28 @@ export function CampanasAdminPanel({
       >
         <Plus className="h-4 w-4" />
         Campaña
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          void (async () => {
+            if (!desarrolloId) return;
+            try {
+              await downloadAdminExport(
+                `/api/admin/campanas/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+                `campanas-${desarrolloId}.xlsx`,
+              );
+            } catch (exportError) {
+              setError(
+                exportError instanceof Error ? exportError.message : "Error al exportar Excel.",
+              );
+            }
+          })();
+        }}
+        className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
+      >
+        <Download className="h-4 w-4" />
+        Excel
       </button>
       <button
         type="button"

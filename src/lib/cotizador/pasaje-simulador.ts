@@ -384,17 +384,22 @@ export const computePasajeSimulador = (
 
     case "libre": {
       const enganchePct = input.libre?.enganchePct ?? config.defaults.libreEnganche;
-      const mensualidadesPct =
-        input.libre?.mensualidadesPct ?? config.defaults.libreMensualidades;
+      const mensualidadesPct = Math.max(
+        0,
+        Math.min(
+          input.libre?.mensualidadesPct ?? config.defaults.libreMensualidades,
+          1 - enganchePct,
+        ),
+      );
       const fechaFiniquito = input.libre?.fechaFiniquito ?? config.fechaEntrega;
-      const finiquitoPct = 1 - enganchePct - mensualidadesPct;
+      const finiquitoPct = Math.max(0, 1 - enganchePct - mensualidadesPct);
 
       let error: string | undefined;
       if (enganchePct < 0.15) {
         error = "Enganche mínimo 15%.";
       } else if (enganchePct + mensualidadesPct < 0.3) {
         error = "Enganche + mensualidades deben sumar al menos 30%.";
-      } else if (finiquitoPct < 0) {
+      } else if (enganchePct + mensualidadesPct > 1 + 1e-9) {
         error = "Los porcentajes suman más de 100%.";
       }
 
@@ -402,21 +407,22 @@ export const computePasajeSimulador = (
         1,
         monthsBetween(startOfMonth(fechaCotizacion), fechaFiniquito),
       );
-      const numMensualidades = Math.max(1, mesesHastaFiniquito - 1);
-      const fechaUltimoMes = addMonths(firstPaymentDate, numMensualidades - 1);
+      const numMensualidades =
+        mensualidadesPct > 0 ? Math.max(1, mesesHastaFiniquito - 1) : 0;
+      const fechaUltimoMes =
+        numMensualidades > 0
+          ? addMonths(firstPaymentDate, numMensualidades - 1)
+          : undefined;
 
       const enganche = round2(precioContado * enganchePct);
-      const mensualidadConInteres = pmt(
-        tasaMensual,
-        numMensualidades,
-        -(precioContado * mensualidadesPct),
-      );
-      const finiquitoCapitalizado = fv(
-        tasaMensual,
-        mesesHastaFiniquito,
-        0,
-        -(precioContado * finiquitoPct),
-      );
+      const mensualidadConInteres =
+        numMensualidades > 0
+          ? pmt(tasaMensual, numMensualidades, -(precioContado * mensualidadesPct))
+          : 0;
+      const finiquitoCapitalizado =
+        finiquitoPct > 0
+          ? fv(tasaMensual, mesesHastaFiniquito, 0, -(precioContado * finiquitoPct))
+          : 0;
       const totalReal = round2(
         enganche + mensualidadConInteres * numMensualidades + finiquitoCapitalizado,
       );
@@ -434,7 +440,7 @@ export const computePasajeSimulador = (
         enganchePct,
         mensualidadCliente,
         numMensualidades,
-        fechaPrimerMes: firstPaymentDate,
+        fechaPrimerMes: numMensualidades > 0 ? firstPaymentDate : undefined,
         fechaUltimoMes,
         finiquito: finiquitoCliente,
         finiquitoPct,
@@ -445,19 +451,25 @@ export const computePasajeSimulador = (
 
     case "libre-sin-mensualidades": {
       const enganchePct = input.libreSinMens?.enganchePct ?? config.defaults.libreSinMensEnganche;
-      const pagoPct = input.libreSinMens?.pagoPct ?? config.defaults.libreSinMensPago;
+      const pagoPct = Math.max(
+        0,
+        Math.min(
+          input.libreSinMens?.pagoPct ?? config.defaults.libreSinMensPago,
+          1 - enganchePct,
+        ),
+      );
       const fechaPago = input.libreSinMens?.fechaPagoIntermedio ?? config.fechaEntrega;
       const fechaFiniquito = input.libreSinMens?.fechaFiniquito ?? config.fechaEntrega;
-      const finiquitoPct = 1 - enganchePct - pagoPct;
+      const finiquitoPct = Math.max(0, 1 - enganchePct - pagoPct);
 
       let error: string | undefined;
       if (enganchePct < 0.15) {
         error = "Enganche mínimo 15%.";
       } else if (enganchePct + pagoPct < 0.3) {
         error = "Enganche + pago intermedio deben sumar al menos 30%.";
-      } else if (finiquitoPct < 0) {
+      } else if (enganchePct + pagoPct > 1 + 1e-9) {
         error = "Los porcentajes suman más de 100%.";
-      } else if (fechaPago.getTime() > fechaFiniquito.getTime()) {
+      } else if (pagoPct > 0 && fechaPago.getTime() > fechaFiniquito.getTime()) {
         error = "La fecha del pago intermedio no puede ser posterior al finiquito.";
       }
 
@@ -471,13 +483,14 @@ export const computePasajeSimulador = (
       );
 
       const enganche = round2(precioContado * enganchePct);
-      const pagoCapitalizado = fv(tasaMensual, mesesHastaPago, 0, -(precioContado * pagoPct));
-      const finiquitoCapitalizado = fv(
-        tasaMensual,
-        mesesHastaFiniquito,
-        0,
-        -(precioContado * finiquitoPct),
-      );
+      const pagoCapitalizado =
+        pagoPct > 0
+          ? fv(tasaMensual, mesesHastaPago, 0, -(precioContado * pagoPct))
+          : 0;
+      const finiquitoCapitalizado =
+        finiquitoPct > 0
+          ? fv(tasaMensual, mesesHastaFiniquito, 0, -(precioContado * finiquitoPct))
+          : 0;
       const totalReal = round2(enganche + pagoCapitalizado + finiquitoCapitalizado);
 
       const pagoCliente = round2(pagoPct * totalReal);

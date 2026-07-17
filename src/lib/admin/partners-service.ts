@@ -147,12 +147,29 @@ export const listPartners = async (
     desarrolloId?: string;
     comercializadoraId?: string;
     activoOnly?: boolean;
+    /**
+     * Solo aliados con al menos un prospecto activo ligado en el desarrollo
+     * (no el catálogo completo de la comercializadora).
+     */
+    usedInDesarrolloOnly?: boolean;
   },
   profile?: AdminProfile,
 ): Promise<PartnerRecord[]> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     return [];
+  }
+
+  if (filters.usedInDesarrolloOnly) {
+    if (!filters.desarrolloId) {
+      throw new Error("desarrolloId requerido para aliados del desarrollo.");
+    }
+    if (profile && !canAccessDesarrollo(profile, filters.desarrolloId)) {
+      throw new Error("No tienes permiso para este desarrollo.");
+    }
+    return listPartnersUsedInDesarrollo(filters.desarrolloId, {
+      activoOnly: filters.activoOnly,
+    });
   }
 
   const comercializadoraId = await resolveComercializadoraId({
@@ -168,6 +185,60 @@ export const listPartners = async (
     .order("nombre", { ascending: true });
 
   if (filters.activoOnly) {
+    query = query.eq("activo", true);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    if (error.message.includes("convenio_") || error.code === "PGRST204") {
+      throw new Error("Falta aplicar la migración 067_partners_convenio.sql en Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((row) => mapPartner(row as Record<string, unknown>));
+};
+
+/** Aliados ya ligados a prospectos (o ventas) del desarrollo. */
+const listPartnersUsedInDesarrollo = async (
+  desarrolloId: string,
+  options?: { activoOnly?: boolean },
+): Promise<PartnerRecord[]> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return [];
+  }
+
+  const { data: prospectoRows, error: prospectoError } = await supabase
+    .from("prospectos")
+    .select("partner_id")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("activo", true)
+    .not("partner_id", "is", null);
+
+  if (prospectoError) {
+    throw new Error(prospectoError.message);
+  }
+
+  const partnerIds = [
+    ...new Set(
+      (prospectoRows ?? [])
+        .map((row) => (row.partner_id ? String(row.partner_id) : ""))
+        .filter(Boolean),
+    ),
+  ];
+
+  if (!partnerIds.length) {
+    return [];
+  }
+
+  let query = supabase
+    .from("partners")
+    .select("*")
+    .in("id", partnerIds)
+    .order("nombre", { ascending: true });
+
+  if (options?.activoOnly) {
     query = query.eq("activo", true);
   }
 

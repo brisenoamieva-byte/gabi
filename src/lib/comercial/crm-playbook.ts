@@ -45,14 +45,14 @@ export const PLAYBOOK_PERFILAMIENTO_OBJETIVO =
 export const PERFILAMIENTO_VENTANAS_HORARIAS = ["9–11 h", "12–14 h", "17–19 h"] as const;
 
 const CADENCIA_HINT =
-  "Si no responde: día 1 (llamada + WA), pausa día 2, día 3 (WA + llamada), día 4 (llamada + WA), pausa 5–6, día 7 último intento → Descartado.";
+  "Si no responde: sigue la cadencia de 10 toques en 8 días (D0 WA+llamada, D1, pausa D2, D3, D4, pausa D5–6, D7 cierre). Tras el último intento, valora Descartado; no se mueve solo.";
 
 const basePasos = (): PlaybookStep[] => [
   {
     id: "whatsapp-inicial",
     etapa: "nuevo",
     label: "WhatsApp de bienvenida",
-    hint: `Inmediato al recibir el lead. Presenta el desarrollo e invita a visita. Horarios: ${PERFILAMIENTO_VENTANAS_HORARIAS.join(", ")}.`,
+    hint: `Inmediato al recibir el lead (SLA 1 h). Presenta el desarrollo e invita a visita. Horarios: ${PERFILAMIENTO_VENTANAS_HORARIAS.join(", ")}.`,
     kind: "contacto",
     required: true,
     order: 10,
@@ -61,7 +61,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "llamada-d0",
     etapa: "nuevo",
     label: "Primera llamada (mismo día)",
-    hint: `2–5 h después del WhatsApp. Si no contesta, deja buzón breve. ${CADENCIA_HINT}`,
+    hint: `Due operativo ~2 h después del WA; ventana SLA hasta 5 h. Si no contesta, deja buzón breve. ${CADENCIA_HINT}`,
     kind: "contacto",
     required: true,
     order: 20,
@@ -97,7 +97,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "necesidades-perfiladas",
     etapa: "visita",
     label: "Necesidades y perfil documentados",
-    hint: "Presupuesto, intención de apartar, decisor y publicidad en redes. Puede capturarse en cualquier momento del funnel.",
+    hint: "Obligatorio en etapa Visita. El perfilamiento (presupuesto, decisión, intención) define la calificación A/B/C.",
     kind: "manual",
     required: true,
     order: 60,
@@ -135,15 +135,7 @@ const buildPilotPlaybook = (desarrolloId: CrmPlaybookPilotDesarrolloId): CrmPlay
   desarrolloId,
   enabled: true,
   blockEtapa: true,
-  steps: basePasos().map((step) => {
-    if (step.id === "necesidades-perfiladas" && desarrolloNecesidadesHint[desarrolloId]) {
-      return {
-        ...step,
-        hint: `${step.hint} ${desarrolloNecesidadesHint[desarrolloId]}`,
-      };
-    }
-    return step;
-  }),
+  steps: basePasos(),
 });
 
 export const DEFAULT_CRM_PLAYBOOKS: Record<CrmPlaybookPilotDesarrolloId, CrmPlaybookConfig> = {
@@ -253,7 +245,10 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
   if (signals.telefono?.trim()) {
     done.add("datos-completos");
   }
-  if (signals.recorridoCompletado) {
+  if (
+    signals.recorridoCompletado ||
+    etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("visita")
+  ) {
     done.add("recorrido");
   }
   if (signals.cotizacionesCount > 0) {

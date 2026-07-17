@@ -212,6 +212,8 @@ export const getCotizacionCountMap = async (prospectoIds: string[]): Promise<Map
 export type ProspectoPlaybookState = {
   config: CrmPlaybookConfig | null;
   completedStepIds: string[];
+  /** Pasos marcados a mano (se pueden desmarcar). */
+  manualCompletedStepIds: string[];
   nextStep: PlaybookStep | null;
   pendingRequired: PlaybookStep[];
   canAdvanceEtapa: boolean;
@@ -255,7 +257,8 @@ const resolveRecorridoCompletadoForProspecto = async (
   return data?.tipo === "recorrido_completado";
 };
 
-const resolveRecorridoCompletadoMap = async (
+/** Mapa prospectoId → si tiene visita GABI tipo recorrido_completado. */
+export const resolveRecorridoCompletadoMap = async (
   prospectos: Pick<ProspectoListRow, "id" | "visita_id">[],
 ): Promise<Map<string, boolean>> => {
   const map = new Map<string, boolean>();
@@ -298,6 +301,7 @@ export const computeProspectoPlaybookState = (
     return {
       config: null,
       completedStepIds: [],
+      manualCompletedStepIds: [],
       nextStep: null,
       pendingRequired: [],
       canAdvanceEtapa: true,
@@ -309,7 +313,8 @@ export const computeProspectoPlaybookState = (
   const autoIds = getAutoCompletedPlaybookStepIds(
     buildPlaybookSignals(prospecto, cotizacionesCount, recorridoCompletado),
   );
-  const completedIds = mergePlaybookProgress(manualStepIds, autoIds);
+  const manualIds = normalizeLegacyPlaybookStepIds(manualStepIds);
+  const completedIds = mergePlaybookProgress(manualIds, autoIds);
   const nextStep = getNextPlaybookStep(config, etapa, completedIds);
   const pendingRequired = getPendingRequiredForEtapa(config, etapa, completedIds);
 
@@ -324,6 +329,7 @@ export const computeProspectoPlaybookState = (
   return {
     config,
     completedStepIds: Array.from(completedIds),
+    manualCompletedStepIds: Array.from(new Set(manualIds)),
     nextStep,
     pendingRequired,
     canAdvanceEtapa,
@@ -459,6 +465,89 @@ export const completePlaybookStepForProspecto = async (
         .update({ etapa: nextEtapa, updated_at: new Date().toISOString() })
         .eq("id", prospectoId);
     }
+  }
+
+  const { data: fullProspecto, error: fullError } = await supabase
+    .from("prospectos")
+    .select("*")
+    .eq("id", prospectoId)
+    .maybeSingle();
+
+  if (fullError || !fullProspecto) {
+    throw new Error("No se pudo recargar el prospecto.");
+  }
+
+  const { data: cotizaciones } = await supabase
+    .from("cotizaciones")
+    .select("id")
+    .eq("prospecto_id", prospectoId);
+
+  const progressMap = await getPlaybookProgressMap([prospectoId]);
+  const manualStepIds = progressMap.get(prospectoId) ?? [];
+  const recorridoCompletado = await resolveRecorridoCompletadoForProspecto(
+    fullProspecto as ProspectoListRow,
+  );
+
+  return {
+    playbook: computeProspectoPlaybookState(
+      fullProspecto as ProspectoListRow,
+      config,
+      manualStepIds,
+      cotizaciones?.length ?? 0,
+      recorridoCompletado,
+    ),
+    prospecto: fullProspecto as ProspectoListRow,
+  };
+};
+
+export const uncompletePlaybookStepForProspecto = async (
+  asesorId: string,
+  prospectoId: string,
+  stepId: string,
+): Promise<{ playbook: ProspectoPlaybookState; prospecto: ProspectoListRow }> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("Supabase no configurado.");
+  }
+
+  const { data: prospectoRow, error: prospectoError } = await supabase
+    .from("prospectos")
+    .select("id, desarrollo_id, asesor_id")
+    .eq("id", prospectoId)
+    .maybeSingle();
+
+  if (prospectoError || !prospectoRow) {
+    throw new Error("Prospecto no encontrado.");
+  }
+
+  const isLeadership = await isLeadershipAsesorId(asesorId);
+  if (!isLeadership && prospectoRow.asesor_id !== asesorId) {
+    throw new Error("Este prospecto no está asignado a ti.");
+  }
+
+  const config = await getCrmPlaybookConfig(prospectoRow.desarrollo_id as string);
+  if (!config?.enabled) {
+    throw new Error("Playbook no activo para este desarrollo.");
+  }
+
+  const step = config.steps.find((item) => item.id === stepId);
+  if (!step) {
+    throw new Error("Paso de playbook no válido.");
+  }
+
+  if (PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(stepId)) {
+    throw new Error("El perfilamiento se edita en el bloque de arriba.");
+  }
+
+  const legacyIds = normalizeLegacyPlaybookStepIds([stepId]);
+  const { error } = await supabase
+    .from("prospecto_playbook_progress")
+    .delete()
+    .eq("prospecto_id", prospectoId)
+    .in("step_id", Array.from(new Set([stepId, ...legacyIds])));
+
+  if (error) {
+    throw new Error(error.message);
   }
 
   const { data: fullProspecto, error: fullError } = await supabase

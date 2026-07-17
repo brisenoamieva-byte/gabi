@@ -143,7 +143,7 @@ export function LeadsReportePanel({
   const loadAsesores = useCallback(async () => {
     if (!desarrolloId) return;
     try {
-      const params = new URLSearchParams({ desarrolloId });
+      const params = new URLSearchParams({ desarrolloId, assignableOnly: "1" });
       const response = await fetch(`/api/admin/asesores?${params.toString()}`);
       const data = (await response.json()) as { asesores?: AsesorOption[] };
       setAsesores(data.asesores ?? []);

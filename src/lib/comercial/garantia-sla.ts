@@ -2,6 +2,7 @@ import type { DesarrolloCadenciaReport } from "@/lib/comercial/cadencia-service"
 import type {
   AsesorComplianceSummary,
   DesarrolloComplianceReport,
+  PerfilCalificacionSummary,
   ProspectoComplianceRow,
 } from "@/lib/comercial/crm-compliance-service";
 
@@ -50,6 +51,8 @@ export type GarantiaSlaReport = {
     | "pipelineReliableCount"
     | "pipelineExcludedCount"
   >;
+  /** Calidad comercial post-visita (no afecta el sello SLA). */
+  perfilCalificacion: PerfilCalificacionSummary;
   cadencia: {
     overdueTouchesTotal: number;
     dueTodayTotal: number;
@@ -87,7 +90,7 @@ export const GARANTIA_SLA_CONTRACT = {
   planLabelDefault: "Gabi Garantía de seguimiento",
   version: "2026.1",
   clauses: [
-    "Gabi mide semanalmente el cumplimiento del playbook CRM y la cadencia de contacto sobre leads activos (nuevo, contactado, cita).",
+    "Gabi mide semanalmente el cumplimiento del playbook CRM y la cadencia de contacto sobre leads activos (nuevo, contactado, cita, visita).",
     "Compromiso operativo: ≥95% de leads activos sin pasos vencidos; calidad de datos ≥80%; pipeline confiable ≥90%; 0 pasos críticos vencidos; 0 toques de cadencia vencidos.",
     "Si el sello semanal queda en rojo (fuera de SLA), Gabi alerta a gerencia el mismo ciclo y prioriza excepciones hasta recuperar verde o riesgo controlado.",
     "La garantía cubre el proceso de seguimiento en plataforma (registro, alertas, bloqueos y reportes). No garantiza cierre de ventas ni calidad del inventario/tráfico de medios.",
@@ -149,6 +152,7 @@ export const buildGarantiaSlaReport = (
         pipelineReliableCount: compliance.pipelineReliableCount,
         pipelineExcludedCount: compliance.pipelineExcludedCount,
       },
+      perfilCalificacion: compliance.perfilCalificacion,
       cadencia: cadencia
         ? {
             overdueTouchesTotal: cadencia.overdueTouchesTotal,
@@ -305,6 +309,7 @@ export const buildGarantiaSlaReport = (
       pipelineReliableCount: compliance.pipelineReliableCount,
       pipelineExcludedCount: compliance.pipelineExcludedCount,
     },
+    perfilCalificacion: compliance.perfilCalificacion,
     cadencia: cadencia
       ? {
           overdueTouchesTotal: cadencia.overdueTouchesTotal,

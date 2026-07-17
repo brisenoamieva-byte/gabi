@@ -15,6 +15,8 @@ import {
   BarChart3,
   Building2,
   ClipboardList,
+  Eye,
+  EyeOff,
   LayoutGrid,
   MapPin,
   Megaphone,
@@ -25,7 +27,19 @@ import {
   Wallet,
 } from "lucide-react";
 import type { ComercializadoraAdminRecord } from "@/lib/admin/catalog-service";
+import {
+  filterDesarrollosForPersonalVista,
+  readShowInactiveDesarrollos,
+  writeShowInactiveDesarrollos,
+} from "@/lib/admin/hide-inactive-desarrollos";
 import { filterDesarrollosHub, getDesarrolloHeroImage } from "@/lib/catalog/desarrollo-hub-utils";
+import {
+  desarrolloHubHeroImageClass,
+  desarrolloHubHeroPaddingClass,
+  desarrolloHubHeroShellClass,
+  isDesarrolloHubLogoHero,
+  resolveDesarrolloHubHeroDisplaySrc,
+} from "@/lib/catalog/desarrollo-hub-hero";
 import { getDesarrolloXperienceProductId } from "@/lib/comercial/xperience-catalog-ids";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
 import type { Cluster } from "@/lib/data";
@@ -128,10 +142,25 @@ export function DesarrollosHubPanel({
   );
   const [desarrollosState, setDesarrollosState] = useState(desarrollos);
   const [marcaFilter, setMarcaFilter] = useState(marcaFromUrl ?? "");
+  const [showInactive, setShowInactive] = useState(false);
 
   useEffect(() => {
     setDesarrollosState(desarrollos);
   }, [desarrollos]);
+
+  useEffect(() => {
+    setShowInactive(readShowInactiveDesarrollos());
+  }, []);
+
+  const inactiveCount = useMemo(
+    () => desarrollosState.filter((item) => item.catalogActivo === false).length,
+    [desarrollosState],
+  );
+
+  const visibleDesarrollos = useMemo(
+    () => filterDesarrollosForPersonalVista(desarrollosState, showInactive),
+    [desarrollosState, showInactive],
+  );
 
   const comercializadoraNames = useMemo(
     () => Object.fromEntries(comercializadoras.map((item) => [item.id, item.nombre])),
@@ -146,12 +175,12 @@ export function DesarrollosHubPanel({
   }, [desarrollosState, selectedFromUrl]);
 
   const filteredDesarrollos = useMemo(
-    () => filterDesarrollosHub(desarrollosState, searchQuery, marcaFilter || undefined),
-    [desarrollosState, marcaFilter, searchQuery],
+    () => filterDesarrollosHub(visibleDesarrollos, searchQuery, marcaFilter || undefined),
+    [visibleDesarrollos, marcaFilter, searchQuery],
   );
 
   const desarrollosByMarca = useMemo(() => {
-    const counts = desarrollosState.reduce<Record<string, number>>((acc, item) => {
+    const counts = visibleDesarrollos.reduce<Record<string, number>>((acc, item) => {
       acc[item.comercializadoraId] = (acc[item.comercializadoraId] ?? 0) + 1;
       return acc;
     }, {});
@@ -161,8 +190,13 @@ export function DesarrollosHubPanel({
         desarrollosAsignados: counts[marca.id] ?? 0,
       }))
       .filter((marca) => marca.desarrollosAsignados > 0);
-  }, [comercializadoras, desarrollosState]);
+  }, [comercializadoras, visibleDesarrollos]);
 
+  const toggleShowInactive = () => {
+    const next = !showInactive;
+    setShowInactive(next);
+    writeShowInactiveDesarrollos(next);
+  };
   const loadStats = useCallback(
     async (desarrolloId: string) => {
       setStatsById((prev) => ({
@@ -250,7 +284,7 @@ export function DesarrollosHubPanel({
         if (permissions.asesores) {
           tasks.push(
             (async () => {
-              const params = new URLSearchParams({ desarrolloId });
+              const params = new URLSearchParams({ desarrolloId, assignableOnly: "1" });
               const response = await fetch(`/api/admin/asesores?${params.toString()}`);
               const data = (await response.json()) as {
                 asesores?: unknown[];
@@ -271,10 +305,10 @@ export function DesarrollosHubPanel({
   );
 
   useEffect(() => {
-    for (const desarrollo of desarrollosState) {
+    for (const desarrollo of visibleDesarrollos) {
       void loadStats(desarrollo.id);
     }
-  }, [desarrollosState, loadStats]);
+  }, [visibleDesarrollos, loadStats]);
 
   useEffect(() => {
     if (tabFromUrl && HUB_TABS.some((item) => item.id === tabFromUrl)) {
@@ -343,6 +377,24 @@ export function DesarrollosHubPanel({
     const etapasTop = topEtapas(stats.leadsPorEtapa);
     const xperienceProductId = getDesarrolloXperienceProductId(selectedDesarrollo.id);
     const detailHero = getDesarrolloHeroImage(selectedDesarrollo, clusters);
+    const detailAdminHubHero = Boolean(
+      selectedDesarrollo.hubHeroImage?.trim() &&
+        detailHero === selectedDesarrollo.hubHeroImage.trim(),
+    );
+    const detailLogoHero = Boolean(
+      detailHero &&
+        isDesarrolloHubLogoHero(selectedDesarrollo.id, detailHero, {
+          adminHubHero: detailAdminHubHero,
+        }),
+    );
+    const detailHeroSrc = detailHero
+      ? resolveDesarrolloHubHeroDisplaySrc(
+          selectedDesarrollo.id,
+          detailHero,
+          selectedDesarrollo.logo,
+          { adminHubHero: detailAdminHubHero },
+        )
+      : null;
 
     if (showMktView && permissions.leads) {
       return (
@@ -385,20 +437,42 @@ export function DesarrollosHubPanel({
           style={{ borderTopWidth: 4, borderTopColor: selectedDesarrollo.colorPrincipal }}
         >
           <div className="flex flex-col gap-6 p-5 md:flex-row md:p-6">
-            {detailHero ? (
-              <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100 md:h-44 md:w-56">
-                <Image
-                  src={detailHero}
-                  alt={selectedDesarrollo.nombre}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 224px"
-                />
-              </div>
+            {detailHeroSrc ? (
+              detailLogoHero ? (
+                <div
+                  className={`flex h-40 w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 md:h-44 md:w-56 ${desarrolloHubHeroShellClass(selectedDesarrollo.id)} ${desarrolloHubHeroPaddingClass(selectedDesarrollo.id)}`}
+                >
+                  <Image
+                    src={detailHeroSrc}
+                    alt={selectedDesarrollo.nombre}
+                    width={960}
+                    height={600}
+                    className={desarrolloHubHeroImageClass(selectedDesarrollo.id)}
+                    sizes="(max-width: 768px) 100vw, 224px"
+                    unoptimized={detailHeroSrc.endsWith(".png")}
+                  />
+                </div>
+              ) : (
+                <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100 md:h-44 md:w-56">
+                  <Image
+                    src={detailHeroSrc}
+                    alt={selectedDesarrollo.nombre}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 224px"
+                  />
+                </div>
+              )
             ) : selectedDesarrollo.logo ? (
               <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 p-4 md:h-28 md:w-44">
                 <Image
-                  src={selectedDesarrollo.logo}
+                  src={
+                    resolveDesarrolloHubHeroDisplaySrc(
+                      selectedDesarrollo.id,
+                      selectedDesarrollo.logo,
+                      selectedDesarrollo.logo,
+                    ) ?? selectedDesarrollo.logo
+                  }
                   alt={selectedDesarrollo.nombre}
                   width={180}
                   height={80}
@@ -463,13 +537,16 @@ export function DesarrollosHubPanel({
           desarrolloId={selectedDesarrollo.id}
           desarrolloNombre={selectedDesarrollo.nombre}
           catalogActivo={selectedDesarrollo.catalogActivo !== false}
-          canManage={isSuperAdmin || permissions.leads}
+          canManage={isSuperAdmin}
           onUpdated={(activo) => {
             setDesarrollosState((prev) =>
               prev.map((item) =>
                 item.id === selectedDesarrollo.id ? { ...item, catalogActivo: activo } : item,
               ),
             );
+            if (!activo && !showInactive) {
+              clearSelection();
+            }
           }}
         />
 
@@ -619,16 +696,39 @@ export function DesarrollosHubPanel({
 
         <div className="flex flex-wrap items-center gap-2">
           {hubTab === "desarrollos" ? (
-            <label className="relative min-w-[200px] flex-1 sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Buscar desarrollo"
-                className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none ring-gabi-forest/20 focus:border-gabi-forest focus:ring-2"
-              />
-            </label>
+            <>
+              <label className="relative min-w-[200px] flex-1 sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Buscar desarrollo"
+                  className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none ring-gabi-forest/20 focus:border-gabi-forest focus:ring-2"
+                />
+              </label>
+              {inactiveCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={toggleShowInactive}
+                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                    showInactive
+                      ? "border-amber-300 bg-amber-50 text-amber-900"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                  title={
+                    showInactive
+                      ? "Ocultar desarrollos pausados de tu vista"
+                      : "Mostrar desarrollos pausados en tu vista"
+                  }
+                >
+                  {showInactive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {showInactive
+                    ? `Ocultar pausados (${inactiveCount})`
+                    : `Mostrar pausados (${inactiveCount})`}
+                </button>
+              ) : null}
+            </>
           ) : null}
           {isSuperAdmin ? (
             <Link
@@ -645,6 +745,18 @@ export function DesarrollosHubPanel({
       {scopeLabel ? (
         <p className="text-xs text-slate-500">
           Alcance: <span className="font-semibold">{scopeLabel}</span>
+          {!showInactive && inactiveCount > 0 ? (
+            <>
+              {" "}
+              · {inactiveCount} pausado{inactiveCount === 1 ? "" : "s"} oculto
+              {inactiveCount === 1 ? "" : "s"} en tu vista
+            </>
+          ) : null}
+        </p>
+      ) : !showInactive && inactiveCount > 0 ? (
+        <p className="text-xs text-slate-500">
+          {inactiveCount} desarrollo{inactiveCount === 1 ? "" : "s"} pausado
+          {inactiveCount === 1 ? "" : "s"} oculto{inactiveCount === 1 ? "" : "s"} en tu vista
         </p>
       ) : null}
 
@@ -666,7 +778,21 @@ export function DesarrollosHubPanel({
 
           {!filteredDesarrollos.length ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-              No hay desarrollos que coincidan con la búsqueda.
+              {!showInactive && inactiveCount > 0 && !searchQuery.trim() && !marcaFilter ? (
+                <>
+                  <p>No hay desarrollos activos en tu vista.</p>
+                  <button
+                    type="button"
+                    onClick={toggleShowInactive}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Mostrar {inactiveCount} pausado{inactiveCount === 1 ? "" : "s"}
+                  </button>
+                </>
+              ) : (
+                "No hay desarrollos que coincidan con la búsqueda."
+              )}
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">

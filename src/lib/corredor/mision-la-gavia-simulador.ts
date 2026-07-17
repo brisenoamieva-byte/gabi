@@ -426,10 +426,15 @@ function simularLibreMisionLaGavia(params: {
   } = params;
   const precioContado = unidad.precioContado;
   const enganchePct = libre?.enganchePct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.enganchePct;
-  const mensualidadesPct =
-    libre?.mensualidadesPct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.mensualidadesPct;
+  const mensualidadesPct = Math.max(
+    0,
+    Math.min(
+      libre?.mensualidadesPct ?? MISION_LA_GAVIA_LIBRE_DEFAULTS.mensualidadesPct,
+      1 - enganchePct,
+    ),
+  );
   const fechaFiniquito = libre?.fechaFiniquito ?? fechaEntrega;
-  const finiquitoPct = 1 - enganchePct - mensualidadesPct;
+  const finiquitoPct = Math.max(0, 1 - enganchePct - mensualidadesPct);
 
   let error: string | undefined;
   if (precioContado <= 0) {
@@ -438,7 +443,7 @@ function simularLibreMisionLaGavia(params: {
     error = "Enganche mínimo 15%.";
   } else if (enganchePct + mensualidadesPct < 0.3) {
     error = "Enganche + mensualidades deben sumar al menos 30%.";
-  } else if (finiquitoPct < 0) {
+  } else if (enganchePct + mensualidadesPct > 1 + 1e-9) {
     error = "Los porcentajes suman más de 100%.";
   }
 
@@ -447,21 +452,22 @@ function simularLibreMisionLaGavia(params: {
     1,
     monthsBetween(startOfMonth(fechaCotizacion), fechaFiniquito),
   );
-  const numMensualidades = Math.max(1, mesesHastaFiniquito - 1);
-  const fechaUltimoPago = addMonths(firstPaymentDate, numMensualidades - 1);
+  const numMensualidades =
+    mensualidadesPct > 0 ? Math.max(1, mesesHastaFiniquito - 1) : 0;
+  const fechaUltimoPago =
+    numMensualidades > 0
+      ? addMonths(firstPaymentDate, numMensualidades - 1)
+      : undefined;
 
   const enganche = round2(precioContado * enganchePct);
-  const mensualidadConInteres = pmt(
-    tasaMensual,
-    numMensualidades,
-    -(precioContado * mensualidadesPct),
-  );
-  const finiquitoCapitalizado = fv(
-    tasaMensual,
-    mesesHastaFiniquito,
-    0,
-    -(precioContado * finiquitoPct),
-  );
+  const mensualidadConInteres =
+    numMensualidades > 0
+      ? pmt(tasaMensual, numMensualidades, -(precioContado * mensualidadesPct))
+      : 0;
+  const finiquitoCapitalizado =
+    finiquitoPct > 0
+      ? fv(tasaMensual, mesesHastaFiniquito, 0, -(precioContado * finiquitoPct))
+      : 0;
   const precioTotal = round2(
     enganche + mensualidadConInteres * numMensualidades + finiquitoCapitalizado,
   );
@@ -470,6 +476,16 @@ function simularLibreMisionLaGavia(params: {
     numMensualidades > 0 ? (mensualidadesPct * precioTotal) / numMensualidades : 0,
   );
   const finiquito = round2(finiquitoPct * precioTotal);
+
+  const partesPago = [
+    `enganche ${formatPctShort(enganchePct)}`,
+    numMensualidades > 0
+      ? `${numMensualidades} mensualidades (${formatPctShort(mensualidadesPct)})`
+      : null,
+    finiquitoPct > 0
+      ? `finiquito ${formatPctShort(finiquitoPct)} en ${formatMonthYear(fechaFiniquito)}`
+      : null,
+  ].filter(Boolean);
 
   return {
     ...base,
@@ -482,12 +498,12 @@ function simularLibreMisionLaGavia(params: {
     enganchePct,
     mensualidad,
     numMensualidades,
-    fechaPrimerPago: firstPaymentDate,
+    fechaPrimerPago: numMensualidades > 0 ? firstPaymentDate : undefined,
     fechaUltimoPago,
     finiquito,
     finiquitoPct,
     fechaFiniquito,
-    descripcionPago: `Libre: enganche ${formatPctShort(enganchePct)} + ${numMensualidades} mensualidades (${formatPctShort(mensualidadesPct)}) + finiquito ${formatPctShort(Math.max(0, finiquitoPct))} en ${formatMonthYear(fechaFiniquito)} · capitalizado al ${(MISION_LA_GAVIA_SIMULADOR_CONFIG.tasaAnual * 100).toFixed(0)}% anual`,
+    descripcionPago: `Libre: ${partesPago.join(" + ")} · capitalizado al ${(MISION_LA_GAVIA_SIMULADOR_CONFIG.tasaAnual * 100).toFixed(0)}% anual`,
     error,
   };
 }

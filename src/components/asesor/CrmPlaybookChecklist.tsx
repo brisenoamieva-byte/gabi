@@ -25,9 +25,7 @@ import {
 import {
   PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
   type PerfilamientoVisitaAnswers,
-  type PerfilamientoVisitaRecord,
 } from "@/lib/comercial/perfilamiento-post-visita";
-import { PerfilamientoVisitaSummary } from "@/components/asesor/PerfilamientoVisitaPanel";
 import { prospectoEtapaLabel, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 
 type PlaybookContactContext = {
@@ -45,13 +43,13 @@ type CrmPlaybookChecklistProps = {
   visitaAgendadaOn?: string | null;
   visitaAgendadaHora?: string | null;
   visitaRealizadaOn?: string | null;
-  perfilamientoVisita?: PerfilamientoVisitaRecord;
   onCompleteStep: (
     stepId: string,
     stepDate?: string,
     perfilamientoVisita?: PerfilamientoVisitaAnswers,
     stepTime?: string,
   ) => void;
+  onUncompleteStep?: (stepId: string) => void;
 };
 
 export function CrmPlaybookChecklist({
@@ -62,8 +60,8 @@ export function CrmPlaybookChecklist({
   visitaAgendadaOn,
   visitaAgendadaHora,
   visitaRealizadaOn,
-  perfilamientoVisita,
   onCompleteStep,
+  onUncompleteStep,
 }: CrmPlaybookChecklistProps) {
   if (!playbook?.config?.enabled) {
     return null;
@@ -75,6 +73,7 @@ export function CrmPlaybookChecklist({
   }
 
   const completedSet = new Set(playbook.completedStepIds);
+  const manualCompletedSet = new Set(playbook.manualCompletedStepIds ?? []);
   const canAdvanceToContactado =
     etapa === "nuevo" &&
     ["whatsapp-inicial", "llamada-d0", "datos-completos"].every((id) => completedSet.has(id));
@@ -108,6 +107,11 @@ export function CrmPlaybookChecklist({
                 ? visitaRealizadaOn
                 : null;
           const visitTime = step.id === "visita-agendada" ? visitaAgendadaHora : null;
+          const canUncomplete =
+            Boolean(onUncompleteStep) &&
+            done &&
+            manualCompletedSet.has(step.id) &&
+            !PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(step.id);
 
           return (
             <PlaybookStepRow
@@ -118,9 +122,14 @@ export function CrmPlaybookChecklist({
               visitTime={visitTime}
               loading={completingStepId === step.id}
               contactContext={contactContext}
-              perfilamientoVisita={perfilamientoVisita}
+              canUncomplete={canUncomplete}
               onComplete={(stepDate, answers, stepTime) =>
                 onCompleteStep(step.id, stepDate, answers, stepTime)
+              }
+              onUncomplete={
+                canUncomplete && onUncompleteStep
+                  ? () => onUncompleteStep(step.id)
+                  : undefined
               }
             />
           );
@@ -137,8 +146,9 @@ function PlaybookStepRow({
   visitTime,
   loading,
   contactContext,
-  perfilamientoVisita,
+  canUncomplete,
   onComplete,
+  onUncomplete,
 }: {
   step: PlaybookStep;
   done: boolean;
@@ -146,12 +156,13 @@ function PlaybookStepRow({
   visitTime?: string | null;
   loading: boolean;
   contactContext?: PlaybookContactContext;
-  perfilamientoVisita?: PerfilamientoVisitaRecord;
+  canUncomplete?: boolean;
   onComplete: (
     stepDate?: string,
     perfilamientoVisita?: PerfilamientoVisitaAnswers,
     stepTime?: string,
   ) => void;
+  onUncomplete?: () => void;
 }) {
   const needsVisitDate = PLAYBOOK_STEPS_WITH_VISIT_DATE.has(step.id);
   const needsVisitTime = PLAYBOOK_STEPS_WITH_VISIT_TIME.has(step.id);
@@ -208,7 +219,9 @@ function PlaybookStepRow({
           {step.label}
           {step.required ? <span className="text-rose-500"> *</span> : null}
         </p>
-        {step.hint ? <p className="text-xs text-slate-500">{step.hint}</p> : null}
+        {step.hint && !(done && isPerfilamientoForm) ? (
+          <p className="text-xs text-slate-500">{step.hint}</p>
+        ) : null}
         {done && visitDate && !editingVisitDate ? (
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="text-xs font-medium text-emerald-800">
@@ -230,6 +243,26 @@ function PlaybookStepRow({
               </button>
             ) : null}
           </div>
+        ) : null}
+        {done && canUncomplete ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => onUncomplete?.()}
+            className="mt-1 text-xs font-bold text-[#201044] underline-offset-2 hover:underline disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="inline-flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Guardando…
+              </span>
+            ) : (
+              "Desmarcar / editar"
+            )}
+          </button>
+        ) : null}
+        {done && !canUncomplete && !isPerfilamientoForm && !needsVisitDate ? (
+          <p className="mt-1 text-[11px] text-slate-400">Completado automáticamente.</p>
         ) : null}
         {done && needsVisitDate && editingVisitDate ? (
           <div className="mt-2 space-y-2">
@@ -284,13 +317,9 @@ function PlaybookStepRow({
             </div>
           </div>
         ) : null}
-        {done && isPerfilamientoForm && perfilamientoVisita ? (
-          <PerfilamientoVisitaSummary record={perfilamientoVisita} />
-        ) : null}
-
         {!done && isPerfilamientoForm ? (
           <p className="mt-1 text-[11px] text-slate-500">
-            Completa el bloque de perfilamiento arriba (disponible en cualquier etapa).
+            Completa el bloque de perfilamiento arriba.
           </p>
         ) : null}
 

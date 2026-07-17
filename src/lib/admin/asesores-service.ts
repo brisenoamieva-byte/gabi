@@ -201,7 +201,7 @@ const suggestId = (email: string) =>
     .replace(/^-|-$/g, "") || "asesor";
 
 export const listAsesores = async (
-  filters: { desarrolloId?: string; includeInactive?: boolean },
+  filters: { desarrolloId?: string; includeInactive?: boolean; assignableOnly?: boolean },
   profile?: AdminProfile,
 ) => {
   const supabase = createSupabaseServiceClient();
@@ -239,7 +239,11 @@ export const listAsesores = async (
     );
   }
 
-  return rows.map((row) => toRecord({ ...row, pin_hash: "" }));
+  const records = rows.map((row) => toRecord({ ...row, pin_hash: "" }));
+  if (filters.assignableOnly) {
+    return records.filter((row) => isAssignableAsesorRol(row.rol));
+  }
+  return records;
 };
 
 export const getAsesorById = async (id: string) => {

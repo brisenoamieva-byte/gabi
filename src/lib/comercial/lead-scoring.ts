@@ -1,5 +1,6 @@
 import type { ProspectoRecord } from "@/lib/comercial/sembrado-status";
 import { calificacionEsSpam } from "@/lib/comercial/xperience-leads";
+import { normalizeProspectoEtapaValue } from "@/lib/comercial/prospecto-etapas";
 
 export const normalizeLeadEmail = (value?: string | null) => value?.trim().toLowerCase() || null;
 
@@ -74,7 +75,8 @@ export const computeIscore = (
     score += 5;
   }
 
-  score += ETAPA_ISCORE[prospecto.etapa === "negociacion" ? "cita" : prospecto.etapa] ?? 0;
+  const etapaNorm = normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa;
+  score += ETAPA_ISCORE[etapaNorm] ?? 0;
 
   if (prospecto.campana_id) {
     score += 2;
@@ -106,7 +108,8 @@ export const computeSellerScore = (
   }
 
   let score = prospecto.asesor_id ? 5 : 0;
-  score += ETAPA_ISCORE[prospecto.etapa === "negociacion" ? "cita" : prospecto.etapa] ?? 0;
+  const etapaNorm = normalizeProspectoEtapaValue(prospecto.etapa) ?? prospecto.etapa;
+  score += ETAPA_ISCORE[etapaNorm] ?? 0;
 
   const cal = prospecto.calificacion?.trim().toLowerCase() ?? "";
   if (cal.includes("visita")) {

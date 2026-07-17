@@ -64,9 +64,10 @@ export const listEquipoComercialForLeadership = async (
   return asesores.filter((row) => row.activo && isAssignableAsesorRol(row.rol));
 };
 
-const LEADERSHIP_PRIORITY: AsesorRol[] = ["gerente", "director", "coordinador"];
+/** Preferencia: gerente → coordinador (dirección no recibe cartera de seguimiento). */
+const LEADERSHIP_PRIORITY: AsesorRol[] = ["gerente", "coordinador"];
 
-/** Preferencia: gerente → director → coordinador del desarrollo. */
+/** Preferencia: gerente → coordinador del desarrollo. */
 export const resolveGerenteAsesorIdForDesarrollo = async (
   desarrolloId: string,
 ): Promise<string | null> => {

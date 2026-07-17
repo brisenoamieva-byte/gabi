@@ -295,6 +295,10 @@ export function DesarrolloCampoConfigCard({ desarrolloId, canEdit, onSaved }: Pr
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Garantía SLA (contrato)
             </p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+              SLA = Service Level Agreement: el acuerdo de plazos y calidad de
+              seguimiento que se reporta al dueño (sello semanal verde / riesgo / rojo).
+            </p>
             <div className="mt-2 space-y-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <input

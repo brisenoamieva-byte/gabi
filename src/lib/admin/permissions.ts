@@ -71,9 +71,9 @@ export const canAccessInventarioApi = (profile: AdminProfile) =>
 
 export const canDeleteProspectos = (profile: AdminProfile) => isSuperAdmin(profile);
 
-export const canManageDesarrolloOperativo = (profile: AdminProfile, desarrolloId: string) =>
-  canAccessDesarrollo(profile, desarrolloId) &&
-  (isSuperAdmin(profile) || profile.rol === "gerente");
+/** Pausar/activar CRM de un desarrollo: solo superadmin. */
+export const canManageDesarrolloOperativo = (profile: AdminProfile, _desarrolloId: string) =>
+  isSuperAdmin(profile);
 
 export const canReassignProspectos = (profile: AdminProfile) =>
   canAccessModule(profile, "leads");

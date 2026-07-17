@@ -38,7 +38,10 @@ export async function GET(request: Request) {
   try {
     const month = await listGuardiasMonth(desarrolloId, monthStart, session.profile);
     const conflictos = await listGuardiaConflictosMonth(desarrolloId, monthStart, session.profile);
-    const asesores = await listAsesores({ desarrolloId }, session.profile);
+    const asesores = await listAsesores(
+      { desarrolloId, assignableOnly: true },
+      session.profile,
+    );
 
     return NextResponse.json({ month, conflictos, asesores });
   } catch (error) {

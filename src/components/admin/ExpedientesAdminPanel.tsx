@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FolderOpen, Loader2, RefreshCw, Search } from "lucide-react";
+import { FolderOpen, Download, Loader2, RefreshCw, Search } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { ExpedienteListRow } from "@/lib/admin/expediente-service";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import { downloadAdminExport } from "@/lib/admin/download-excel-client";
 import { ComisionesAdminPanel } from "@/components/admin/ComisionesAdminPanel";
 import { ExpedienteDrawer } from "@/components/admin/ExpedienteDrawer";
 import { ExpedienteTemplatesAdminCard } from "@/components/admin/ExpedienteTemplatesAdminCard";
@@ -140,14 +141,39 @@ export function ExpedientesAdminPanel({ desarrollos, scopeLabel }: ExpedientesAd
               {scopeLabel ? ` · ${scopeLabel}` : ""}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadExpedientes()}
-            className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Actualizar
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void (async () => {
+                  try {
+                    await downloadAdminExport(
+                      `/api/admin/expedientes/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+                      `expedientes-${desarrolloId}.xlsx`,
+                    );
+                  } catch (exportError) {
+                    setError(
+                      exportError instanceof Error
+                        ? exportError.message
+                        : "Error al exportar Excel.",
+                    );
+                  }
+                })();
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest/20 bg-white px-4 py-2 text-sm font-bold text-gabi-forest"
+            >
+              <Download className="h-4 w-4" />
+              Exportar Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadExpedientes()}
+              className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-bold text-white"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Actualizar
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3">

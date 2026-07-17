@@ -11,6 +11,7 @@ import {
 import type { ProductoRecomendadoRecord } from "@/lib/inventario/productos-recomendados";
 import { filterClustersByDesarrollo } from "@/lib/catalog/cluster-filter";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import { downloadAdminExport } from "@/lib/admin/download-excel-client";
 
 const downloadTextFile = (filename: string, content: string, mime = "text/csv;charset=utf-8") => {
   const blob = new Blob([content], { type: mime });
@@ -321,6 +322,31 @@ export function InventarioAdminPanel({
             >
               <Download className="h-4 w-4" />
               Exportar lista actual
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void (async () => {
+                  if (!desarrolloId) return;
+                  try {
+                    await downloadAdminExport(
+                      `/api/admin/inventario/export?desarrolloId=${encodeURIComponent(desarrolloId)}`,
+                      `inventario-${desarrolloId}.xlsx`,
+                    );
+                  } catch (exportError) {
+                    setError(
+                      exportError instanceof Error
+                        ? exportError.message
+                        : "Error al exportar Excel.",
+                    );
+                  }
+                })();
+              }}
+              disabled={!desarrolloId}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#13315C]/15 bg-white px-4 text-sm font-semibold text-[#13315C] disabled:opacity-40"
+            >
+              <Download className="h-4 w-4" />
+              Excel desarrollo
             </button>
             <button
               type="button"

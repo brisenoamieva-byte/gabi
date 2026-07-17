@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck, Handshake } from "lucide-react";
+import { FileText, LogOut, Package, Users, BarChart3, Store, Shield, BookOpen, ClipboardList, UserRound, Megaphone, Building2, FolderOpen, Calculator, CalendarClock, ShieldCheck, Handshake, Download } from "lucide-react";
 import { PlatformHealthBanner } from "@/components/admin/PlatformHealthBanner";
 import { AdminCampoCrmLink } from "@/components/admin/AdminCampoCrmLink";
 import { GabiLogo } from "@/components/brand/GabiLogo";
@@ -32,6 +32,7 @@ const navIcons = {
   "/admin/desarrollos": Building2,
   "/admin/investti-simulador": Calculator,
   "/admin/guardias": CalendarClock,
+  "/admin/exportaciones": Download,
 } as const;
 
 const navModules: Record<string, AdminModule> = {
@@ -51,6 +52,7 @@ const navModules: Record<string, AdminModule> = {
   "/admin/desarrollos": "leads",
   "/admin/investti-simulador": "catalogo",
   "/admin/guardias": "guardias",
+  "/admin/exportaciones": "leads",
 };
 
 type AdminShellProps = {
@@ -88,6 +90,7 @@ export function AdminShell({ profile, scopeLabel, children }: AdminShellProps) {
     { href: "/admin/expedientes", label: "Expedientes", ready: true },
     { href: "/admin/asesores", label: "Equipo", ready: true },
     { href: "/admin/metricas", label: "Reportes", ready: true },
+    { href: "/admin/exportaciones", label: "Exportar", ready: true },
     { href: "/admin/guion", label: "Guion", ready: true },
     { href: "/admin/catalogo", label: "Catálogo", ready: true },
   ].filter((item) => {

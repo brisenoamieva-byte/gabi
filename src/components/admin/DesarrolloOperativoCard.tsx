@@ -94,7 +94,11 @@ export function DesarrolloOperativoCard({
             )}
             {activo ? "Pausar desarrollo" : "Activar desarrollo"}
           </button>
-        ) : null}
+        ) : (
+          <p className="shrink-0 text-[11px] font-semibold text-slate-500">
+            Solo superadmin puede cambiar este estado.
+          </p>
+        )}
       </div>
 
       {error ? <p className="mt-3 text-xs font-semibold text-red-700">{error}</p> : null}

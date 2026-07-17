@@ -46,6 +46,7 @@ export function LeadsKanbanBoard({
   const [dropTarget, setDropTarget] = useState<ProspectoEtapa | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [recycleOpen, setRecycleOpen] = useState(false);
+  const [moveError, setMoveError] = useState("");
 
   const movableSet = useMemo(() => new Set(movableEtapas), [movableEtapas]);
 
@@ -119,8 +120,11 @@ export function LeadsKanbanBoard({
     }
 
     setMovingId(prospectoId);
+    setMoveError("");
     try {
       await onMoveEtapa(prospectoId, etapa);
+    } catch (error) {
+      setMoveError(error instanceof Error ? error.message : "No se pudo mover el lead.");
     } finally {
       setMovingId(null);
       setDraggingId(null);
@@ -228,7 +232,10 @@ export function LeadsKanbanBoard({
                         </p>
                       ) : null}
                       {row.asesorNombre ? (
-                        <p className="mt-2 text-[11px] text-slate-400">{row.asesorNombre}</p>
+                        <p className="mt-2 text-[11px] text-slate-400">
+                          {row.asesorNombre}
+                          {row.asesorActivo === false ? " · inactivo" : ""}
+                        </p>
                       ) : null}
                     </button>
                   </div>
@@ -360,15 +367,22 @@ export function LeadsKanbanBoard({
   );
 
   return (
-    <div className="overflow-x-auto pb-2">
-      <div className="flex min-w-max gap-4 p-4">
-        {columnEtapas.map((etapa) => (
-          <Fragment key={etapa}>
-            {renderColumn(etapa)}
-            {etapa === insertRecycleAfter ? recycleTray : null}
-          </Fragment>
-        ))}
-        {!columnEtapas.includes(insertRecycleAfter) ? recycleTray : null}
+    <div className="space-y-2">
+      {moveError ? (
+        <div className="mx-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {moveError}
+        </div>
+      ) : null}
+      <div className="overflow-x-auto pb-2">
+        <div className="flex min-w-max gap-4 p-4">
+          {columnEtapas.map((etapa) => (
+            <Fragment key={etapa}>
+              {renderColumn(etapa)}
+              {etapa === insertRecycleAfter ? recycleTray : null}
+            </Fragment>
+          ))}
+          {!columnEtapas.includes(insertRecycleAfter) ? recycleTray : null}
+        </div>
       </div>
     </div>
   );

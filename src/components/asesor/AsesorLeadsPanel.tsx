@@ -350,6 +350,43 @@ function AsesorLeadDrawer({
     }
   };
 
+  const handleUncompleteStep = async (stepId: string) => {
+    setCompletingStepId(stepId);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/asesores/prospectos/${prospectoId}/playbook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asesorId, stepId, action: "uncomplete" }),
+      });
+
+      const data = (await response.json()) as {
+        playbook?: ProspectoPlaybookState;
+        prospecto?: ProspectoDetail;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo desmarcar el paso.");
+      }
+
+      setPlaybook(data.playbook ?? null);
+      if (data.prospecto && detail) {
+        setDetail({ ...detail, ...data.prospecto });
+      }
+      onUpdated();
+    } catch (uncompleteError) {
+      setError(
+        uncompleteError instanceof Error
+          ? uncompleteError.message
+          : "Error al desmarcar el paso.",
+      );
+    } finally {
+      setCompletingStepId(null);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
@@ -761,10 +798,10 @@ function AsesorLeadDrawer({
                   visitaAgendadaOn={detail.visita_agendada_on}
                   visitaAgendadaHora={detail.visita_agendada_hora}
                   visitaRealizadaOn={detail.visita_realizada_on}
-                  perfilamientoVisita={readPerfilamientoVisitaFromProspecto(detail)}
                   onCompleteStep={(stepId, stepDate, perfilamientoVisita, stepTime) =>
                     void handleCompleteStep(stepId, stepDate, perfilamientoVisita, stepTime)
                   }
+                  onUncompleteStep={(stepId) => void handleUncompleteStep(stepId)}
                 />
               ) : null}
 
@@ -997,6 +1034,8 @@ export function AsesorLeadsPanel({
   const [viewMode, setViewMode] = useState<ViewMode>("lista");
   const [periodFilter, setPeriodFilter] = useState<LeadPeriodFilter>("");
   const [etapaFilter, setEtapaFilter] = useState(PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO);
+  const [asesorFilter, setAsesorFilter] = useState("");
+  const [equipoFiltro, setEquipoFiltro] = useState<Array<{ id: string; nombre: string }>>([]);
   const [calificacionFilter, setCalificacionFilter] = useState<"" | "A" | "B" | "C" | "sin">("");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -1089,6 +1128,9 @@ export function AsesorLeadsPanel({
       if (viewMode === "lista" && etapaFilter) {
         params.set("etapa", etapaFilter);
       }
+      if (canManageAllProspectos && asesorFilter) {
+        params.set("filterAsesorId", asesorFilter);
+      }
       if (search) {
         params.set("search", search);
       }
@@ -1119,7 +1161,47 @@ export function AsesorLeadsPanel({
     } finally {
       setLoading(false);
     }
-  }, [asesorId, desarrolloId, viewMode, etapaFilter, search, periodRange.desde, periodRange.hasta]);
+  }, [
+    asesorId,
+    desarrolloId,
+    viewMode,
+    etapaFilter,
+    asesorFilter,
+    canManageAllProspectos,
+    search,
+    periodRange.desde,
+    periodRange.hasta,
+  ]);
+
+  useEffect(() => {
+    if (!canManageAllProspectos) {
+      setEquipoFiltro([]);
+      setAsesorFilter("");
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const params = new URLSearchParams({ asesorId, desarrolloId });
+        const response = await fetch(`/api/asesores/equipo?${params.toString()}`);
+        const data = (await response.json()) as {
+          asesores?: Array<{ id: string; nombre: string }>;
+        };
+        if (!cancelled && response.ok) {
+          setEquipoFiltro(
+            (data.asesores ?? [])
+              .map((row) => ({ id: row.id, nombre: row.nombre }))
+              .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+          );
+        }
+      } catch {
+        if (!cancelled) setEquipoFiltro([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [asesorId, canManageAllProspectos, desarrolloId]);
 
   useEffect(() => {
     void loadLeads();
@@ -1507,6 +1589,70 @@ export function AsesorLeadsPanel({
           </div>
         ) : null}
 
+        {canManageAllProspectos ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setAsesorFilter("")}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                !asesorFilter
+                  ? "bg-[#201044] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+              }`}
+            >
+              Todos los asesores
+            </button>
+            {equipoFiltro.map((asesor) => (
+              <button
+                key={asesor.id}
+                type="button"
+                onClick={() =>
+                  setAsesorFilter(asesorFilter === asesor.id ? "" : asesor.id)
+                }
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  asesorFilter === asesor.id
+                    ? "bg-[#201044] text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+                }`}
+              >
+                {asesor.nombre}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                setAsesorFilter(asesorFilter === "__sin__" ? "" : "__sin__")
+              }
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                asesorFilter === "__sin__"
+                  ? "bg-[#201044] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+              }`}
+            >
+              Sin asignar
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setAsesorFilter(asesorFilter === "__inactivos__" ? "" : "__inactivos__")
+              }
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                asesorFilter === "__inactivos__"
+                  ? "bg-amber-700 text-white"
+                  : "bg-amber-50 text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
+              }`}
+            >
+              Asesores inactivos
+            </button>
+          </div>
+        ) : null}
+
+        {canManageAllProspectos && asesorFilter === "__inactivos__" ? (
+          <p className="mt-2 text-xs text-amber-800">
+            Abre cada lead y reasígnalo a un asesor activo del equipo.
+          </p>
+        ) : null}
+
         <div className="mt-3 flex flex-wrap gap-1.5">
           {(
             [
@@ -1560,11 +1706,13 @@ export function AsesorLeadsPanel({
             <p className="text-sm font-medium text-slate-600">
               {calificacionFilter
                 ? "No hay prospectos con esa calificación en la vista actual."
-                : etapaFilter === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO
-                  ? "No hay prospectos por atender en este momento."
-                  : canManageAllProspectos
-                    ? "Aún no hay prospectos registrados en este desarrollo."
-                    : "Aún no tienes prospectos registrados."}
+                : asesorFilter
+                  ? "No hay prospectos de ese asesor en la vista actual."
+                  : etapaFilter === PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO
+                    ? "No hay prospectos por atender en este momento."
+                    : canManageAllProspectos
+                      ? "Aún no hay prospectos registrados en este desarrollo."
+                      : "Aún no tienes prospectos registrados."}
             </p>
             {!calificacionFilter &&
             !canManageAllProspectos &&
@@ -1614,6 +1762,9 @@ export function AsesorLeadsPanel({
                         {formatLeadActivity(row.updated_at)}
                         {canManageAllProspectos && row.asesorNombre
                           ? ` · ${row.asesorNombre}`
+                          : ""}
+                        {canManageAllProspectos && row.asesorActivo === false
+                          ? " (inactivo)"
                           : ""}
                       </p>
                     </div>
