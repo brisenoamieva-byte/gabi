@@ -409,18 +409,19 @@ function descripcionPlanDesdeContado(input: {
   finiquitoPct: number;
   fechaFiniquito?: Date;
 }): string {
-  const partes = [
-    `enganche ${formatPctShort(input.enganchePct)} del contado`,
+  // Resumen corto para copy/WhatsApp — la UI y el PDF ya desglosan los %.
+  const bits = [
+    `Enganche ${formatPctShort(input.enganchePct)}`,
     input.numMensualidades && input.mensualidadesPct > 0
-      ? `${input.numMensualidades} mensualidades (${formatPctShort(input.mensualidadesPct)} del contado)`
+      ? `${input.numMensualidades} mens. ${formatPctShort(input.mensualidadesPct)}`
       : null,
     input.finiquitoPct > 0
-      ? `finiquito ${formatPctShort(input.finiquitoPct)} del contado${
-          input.fechaFiniquito ? ` a ${formatMonthYear(input.fechaFiniquito)}` : ""
+      ? `Finiquito ${formatPctShort(input.finiquitoPct)}${
+          input.fechaFiniquito ? ` (${formatMonthYear(input.fechaFiniquito)})` : ""
         }`
       : null,
   ].filter(Boolean);
-  return `${input.label}: ${partes.join(" + ")}. Los porcentajes parten del precio de contado; el total de venta es la suma del plan.`;
+  return `${input.label}: ${bits.join(" · ")}`;
 }
 
 export function simularMisionLaGavia(
@@ -700,7 +701,7 @@ export function buildCalendarioPagosMisionLaGavia(
       fechaPago: fechaEnganche,
       pagoTotal: result.enganche,
       tipo: "enganche",
-      concepto: `Enganche ${formatPctShort(result.enganchePct)} del contado`,
+      concepto: `Enganche ${formatPctShort(result.enganchePct)}`,
     });
   }
 
@@ -725,7 +726,7 @@ export function buildCalendarioPagosMisionLaGavia(
       fechaPago: result.fechaFiniquito ?? result.fechaUltimoPago ?? fechaEnganche,
       pagoTotal: result.finiquito,
       tipo: "finiquito",
-      concepto: `Finiquito ${formatPctShort(result.finiquitoPct ?? 0)} del contado`,
+      concepto: `Finiquito ${formatPctShort(result.finiquitoPct ?? 0)}`,
     });
   }
 

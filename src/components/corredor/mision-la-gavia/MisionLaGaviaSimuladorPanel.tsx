@@ -655,8 +655,13 @@ export function MisionLaGaviaSimuladorPanel({
         pdfGenerado: true,
         origen: "mision_la_gavia_simulador_pdf",
       });
-    } catch {
-      window.alert("No se pudo generar el PDF. Intenta de nuevo.");
+    } catch (error) {
+      console.error("[gavia-pdf]", error);
+      window.alert(
+        error instanceof Error
+          ? `No se pudo generar el PDF: ${error.message}`
+          : "No se pudo generar el PDF. Intenta de nuevo.",
+      );
     } finally {
       setPdfLoading(false);
     }
@@ -922,7 +927,7 @@ export function MisionLaGaviaSimuladorPanel({
               label={`Finiquito (${formatPctShort(Math.max(0, 1 - libreEnganche - libreMensualidades))})`}
               amount={simulacion.finiquito ?? 0}
               onAmountChange={puedeEditarMontosLibre ? syncLibreFiniquitoFromAmount : undefined}
-              helper="Los % se aplican al contado. El finiquito es el remanente y puede ser 0% si enganche + mensualidades suman 100%. El total de venta es la suma del plan."
+              helper="Finiquito puede ser 0% si enganche + mensualidades suman 100%."
             />
           </div>
         </div>
@@ -950,17 +955,16 @@ export function MisionLaGaviaSimuladorPanel({
       <MetricCard
         label={`Total ${simulacion.esquemaLabel}`}
         value={formatPrice(simulacion.precioTotal)}
-        helper={simulacion.descripcionPago}
         variant="hero"
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
-          label={`Enganche ${formatPctShort(simulacion.enganchePct)} del contado`}
+          label={`Enganche ${formatPctShort(simulacion.enganchePct)}`}
           value={formatPrice(simulacion.enganche)}
           helper={
             simulacion.precioContado
-              ? `Sobre precio contado ${formatPrice(simulacion.precioContado)}`
+              ? `Contado ${formatPrice(simulacion.precioContado)}`
               : undefined
           }
         />
@@ -973,7 +977,7 @@ export function MisionLaGaviaSimuladorPanel({
         ) : null}
         {simulacion.finiquito ? (
           <MetricCard
-            label={`Finiquito ${formatPctShort(simulacion.finiquitoPct ?? 0)} del contado`}
+            label={`Finiquito ${formatPctShort(simulacion.finiquitoPct ?? 0)}`}
             value={formatPrice(simulacion.finiquito)}
             helper={
               simulacion.fechaFiniquito
@@ -997,14 +1001,13 @@ export function MisionLaGaviaSimuladorPanel({
               <option value="dia-15">Día 15 de cada mes</option>
             </select>
             <p className="mt-1.5 text-[11px] text-slate-500">
-              Enganche y mensualidades caen en {labelDiaPagoMisionLaGavia(diaPago)}. El
-              finiquito respeta la fecha de entrega pactada.
+              Enganche y mensualidades: {labelDiaPagoMisionLaGavia(diaPago)}. Finiquito según
+              entrega.
             </p>
           </label>
           <CalendarioPagosGavia
             filas={calendarioPagos}
             titulo={`Plan de pagos — ${simulacion.esquemaLabel}`}
-            descripcion={simulacion.descripcionPago}
           />
         </div>
       ) : null}
@@ -1078,11 +1081,9 @@ function fmtFechaPago(d: Date): string {
 function CalendarioPagosGavia({
   filas,
   titulo,
-  descripcion,
 }: {
   filas: MisionLaGaviaFilaPago[];
   titulo: string;
-  descripcion: string;
 }) {
   const totalPagado = filas.reduce((sum, fila) => sum + fila.pagoTotal, 0);
 
@@ -1090,7 +1091,6 @@ function CalendarioPagosGavia({
     <div className="mt-2">
       <div className="mb-3">
         <h3 className="text-base font-bold text-[#14453D]">{titulo}</h3>
-        <p className="mt-1 text-[12px] text-slate-600">{descripcion}</p>
       </div>
 
       <div className="max-h-[28rem] overflow-auto rounded-xl border border-slate-200">
