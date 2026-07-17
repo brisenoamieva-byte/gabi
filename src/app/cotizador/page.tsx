@@ -140,7 +140,7 @@ function CotizadorPageContent() {
   const [misionLaGaviaLibreFechaFiniquito, setMisionLaGaviaLibreFechaFiniquito] = useState<
     string | undefined
   >();
-  const [misionLaGaviaMsiMensualidades, setMisionLaGaviaMsiMensualidades] = useState(
+  const [misionLaGaviaMsiMensualidades, setMisionLaGaviaMsiMensualidades] = useState<number>(
     MISION_LA_GAVIA_MSI_DEFAULTS.numMensualidades,
   );
   const [clienteNombre, setClienteNombre] = useState<string | undefined>();
