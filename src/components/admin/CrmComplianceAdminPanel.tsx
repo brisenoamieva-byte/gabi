@@ -191,13 +191,37 @@ export function CrmComplianceAdminPanel({
           template: "compliance",
         }),
       });
-      const data = (await response.json()) as { error?: string; ok?: boolean; messageId?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        sent?: boolean;
+        messageId?: string;
+        skippedReason?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo enviar la prueba.");
       }
 
-      setTestStatus(data.messageId ? `Enviado (id: ${data.messageId})` : "Enviado.");
+      if (data.sent) {
+        setTestStatus(
+          data.messageId
+            ? `Aceptado por Meta (id: ${data.messageId}). Si no llega, revisa plantilla aprobada y el número en WhatsApp.`
+            : "Aceptado por Meta. Revisa WhatsApp en unos segundos.",
+        );
+        return;
+      }
+
+      const skipHint: Record<string, string> = {
+        whatsapp_disabled: "WhatsApp Cloud está desactivado (WHATSAPP_CLOUD_ENABLED).",
+        not_configured:
+          "Falta WHATSAPP_CLOUD_ACCESS_TOKEN o WHATSAPP_PHONE_NUMBER_ID del desarrollo en Vercel.",
+        invalid_phone: "Teléfono inválido. Usa +52 y 10 dígitos (ej. +524421556155).",
+      };
+      setTestStatus(
+        data.error ??
+          skipHint[data.skippedReason ?? ""] ??
+          `No enviado (${data.skippedReason ?? "sin detalle"}).`,
+      );
     } catch (sendError) {
       setTestStatus(sendError instanceof Error ? sendError.message : "Error al enviar.");
     } finally {
