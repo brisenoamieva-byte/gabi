@@ -35,10 +35,11 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
           }}
         >
           <div>
-            <p style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94A3B8" }}>
-              gabi
+            <p style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.04em", margin: 0, lineHeight: 1 }}>
+              <span style={{ color: "#2DD4BF" }}>g</span>
+              <span style={{ color: "#13315C" }}>abi</span>
             </p>
-            <h1 style={{ fontSize: 24, margin: "8px 0" }}>Error de la aplicación</h1>
+            <h1 style={{ fontSize: 24, margin: "12px 0 8px" }}>Error de la aplicación</h1>
             <p style={{ color: "#475569", maxWidth: 420, margin: "0 auto" }}>
               No pudimos recuperar la interfaz. Reintenta; si el problema continúa, avisa a soporte.
             </p>

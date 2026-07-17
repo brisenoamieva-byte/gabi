@@ -1,7 +1,7 @@
 {
-  "name": "gabi - Plataforma comercial inmobiliaria",
+  "name": "gabi",
   "short_name": "gabi",
-  "description": "Plataforma comercial integral: recorrido, cotizador, CRM, sembrado y métricas para comercializadoras inmobiliarias.",
+  "description": "Sistema comercial para desarrollos: recorrido, cotizador, CRM, sembrado y expedientes.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
@@ -11,6 +11,12 @@
   "lang": "es-MX",
   "categories": ["business", "productivity"],
   "icons": [
+    {
+      "src": "/logos/gabi-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/logos/gabi-icon-192.png",
       "sizes": "192x192",

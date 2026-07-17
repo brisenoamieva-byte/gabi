@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Syne } from "next/font/google";
 import localFont from "next/font/local";
 import { DevServiceWorkerCleanup } from "@/components/DevServiceWorkerCleanup";
 import { OfflineStatus } from "@/components/OfflineStatus";
@@ -15,11 +16,17 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+const gabiDisplay = Syne({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-gabi-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "gabi — Sistema comercial inmobiliario",
+  title: "gabi — Sistema comercial para desarrollos inmobiliarios",
   description:
-    "gabi concentra recorrido, cotización, CRM, sembrado, expedientes y estudios de mercado en un solo sistema para comercializadoras inmobiliarias.",
+    "gabi es el sistema operativo comercial del desarrollo: recorrido, cotizador, CRM, sembrado y expedientes en un solo lugar. Listo para showroom y oficina.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -46,7 +53,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${gabiDisplay.variable} antialiased`}
       >
         {children}
         <ObservabilityInit />

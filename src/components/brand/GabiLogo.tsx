@@ -1,30 +1,85 @@
 import Link from "next/link";
 
-type GabiLogoVariant = "header" | "hero" | "footer" | "platform" | "plain";
+type GabiLogoVariant = "header" | "hero" | "heroLg" | "footer" | "platform" | "plain";
 
 type GabiLogoProps = {
   variant?: GabiLogoVariant;
   className?: string;
   priority?: boolean;
   href?: string;
+  /** En fondos oscuros: wordmark en blanco (la g de acento sigue en teal). */
+  onDark?: boolean;
 };
 
 const variantClasses: Record<GabiLogoVariant, string> = {
   header: "text-[1.35rem] md:text-[1.5rem]",
   hero: "text-[1.75rem] md:text-[2rem]",
+  heroLg: "text-[clamp(2.75rem,10vw,4.5rem)]",
   footer: "text-[clamp(1.1rem,3.5vw,1.35rem)]",
   platform: "text-[0.95rem] md:text-[1.05rem]",
   plain: "text-[1.5rem]",
 };
 
-function GabiWordmark({ className = "" }: { className?: string }) {
+/**
+ * Monograma solo para favicon / PWA / usos compactos.
+ * No va junto al wordmark (evita “g gabi”).
+ */
+export function GabiMark({
+  className = "",
+  title,
+}: {
+  className?: string;
+  title?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 ${className}`.trim()}
+      aria-hidden={title ? undefined : true}
+      role={title ? "img" : undefined}
+    >
+      {title ? <title>{title}</title> : null}
+      <rect width="32" height="32" rx="9" fill="#13315C" />
+      <circle
+        cx="15.4"
+        cy="14.2"
+        r="6.35"
+        stroke="#2DD4BF"
+        strokeWidth="3.15"
+      />
+      <path
+        d="M21.75 14.2V24.4H13.2"
+        stroke="#2DD4BF"
+        strokeWidth="3.15"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function GabiWordmark({
+  onDark = false,
+  className = "",
+}: {
+  onDark?: boolean;
+  className?: string;
+}) {
   return (
     <span
       className={`inline-flex items-baseline leading-none ${className}`.trim()}
       aria-hidden
     >
-      <span className="font-black tracking-[-0.03em] text-gabi-teal">g</span>
-      <span className="font-black tracking-[-0.03em] text-gabi-navy">abi</span>
+      <span className="font-semibold tracking-[-0.04em] text-gabi-teal">g</span>
+      <span
+        className={`font-semibold tracking-[-0.04em] ${
+          onDark ? "text-white" : "text-gabi-navy"
+        }`}
+      >
+        abi
+      </span>
     </span>
   );
 }
@@ -33,10 +88,11 @@ export function GabiLogo({
   variant = "plain",
   className = "",
   href,
+  onDark = false,
 }: GabiLogoProps) {
   const mark = (
     <span className={`inline-flex shrink-0 items-center ${variantClasses[variant]} ${className}`.trim()}>
-      <GabiWordmark />
+      <GabiWordmark onDark={onDark} />
     </span>
   );
 
@@ -82,13 +138,9 @@ export function GabiLogoOnDark({
 }
 
 type GabiSistemaMarkProps = {
-  /** Tamaño del wordmark gabi */
   size?: "sm" | "md";
-  /** Alineación del bloque Sistema + gabi */
   align?: "start" | "center" | "end";
-  /** Estilo editorial (memo Investti) vs. app corredor */
   tone?: "app" | "report";
-  /** Línea opcional bajo el logo */
   tagline?: string;
   href?: string;
   className?: string;
@@ -109,7 +161,11 @@ export function GabiSistemaMark({
   className = "",
 }: GabiSistemaMarkProps) {
   const alignClass =
-    align === "end" ? "items-end text-right" : align === "center" ? "items-center text-center" : "items-start text-left";
+    align === "end"
+      ? "items-end text-right"
+      : align === "center"
+        ? "items-center text-center"
+        : "items-start text-left";
 
   const sistemaLabelClass =
     tone === "report"

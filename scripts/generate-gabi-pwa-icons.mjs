@@ -1,18 +1,17 @@
 import sharp from "sharp";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
+/**
+ * Regenera PNG PWA + favicon desde public/logos/gabi-icon.svg
+ * (misma geometría que GabiMark en src/components/brand/GabiLogo.tsx).
+ */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const logosDir = path.join(__dirname, "..", "public", "logos");
-
-const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="108" fill="#13315C"/>
-  <circle cx="256" cy="256" r="200" fill="#13315C"/>
-  <text x="256" y="318" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="280" font-weight="800" fill="#2DD4BF">g</text>
-</svg>`;
-
-const svgBuffer = Buffer.from(iconSvg);
+const root = path.join(__dirname, "..");
+const logosDir = path.join(root, "public", "logos");
+const svgPath = path.join(logosDir, "gabi-icon.svg");
+const svgBuffer = readFileSync(svgPath);
 
 const outputs = [
   { file: "gabi-icon-512.png", size: 512 },
@@ -26,12 +25,32 @@ for (const { file, size } of outputs) {
   console.log("Wrote", file);
 }
 
-writeFileSync(
-  path.join(logosDir, "gabi-icon.svg"),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="108" fill="#13315C"/>
-  <text x="256" y="318" text-anchor="middle" font-family="system-ui,sans-serif" font-size="280" font-weight="800" fill="#2DD4BF">g</text>
-</svg>`,
-);
+// Favicon multi-size ICO (16 / 32 / 48) para src/app/favicon.ico
+const icoSizes = [16, 32, 48];
+const pngBuffers = [];
+for (const size of icoSizes) {
+  pngBuffers.push(await sharp(svgBuffer).resize(size, size).png().toBuffer());
+}
+
+try {
+  const pngToIco = (await import("png-to-ico")).default;
+  const ico = await pngToIco(pngBuffers);
+  writeFileSync(path.join(root, "src", "app", "favicon.ico"), ico);
+  console.log("Wrote src/app/favicon.ico");
+} catch (error) {
+  console.warn(
+    "png-to-ico no disponible; se copió PNG 32px como fallback icon.",
+    error instanceof Error ? error.message : error,
+  );
+  await sharp(svgBuffer)
+    .resize(32, 32)
+    .png()
+    .toFile(path.join(root, "src", "app", "icon.png"));
+  console.log("Wrote src/app/icon.png");
+}
+
+// Icono App Router (Next metadata)
+writeFileSync(path.join(root, "src", "app", "icon.svg"), readFileSync(svgPath));
+console.log("Wrote src/app/icon.svg");
 
 console.log("PWA icons ready.");

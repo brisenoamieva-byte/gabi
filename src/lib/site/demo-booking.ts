@@ -1,4 +1,5 @@
-const DEFAULT_BOOKING_URL = "mailto:hola@gabi.mx?subject=Demo%20de%20gabi";
+const DEFAULT_BOOKING_URL =
+  "mailto:hola@gabi.mx?subject=Quiero%20Gabi%20para%20mi%20desarrollo";
 
 const CAL_HOSTS = ["cal.com", "app.cal.com", "cal.eu", "app.cal.eu"];
 
