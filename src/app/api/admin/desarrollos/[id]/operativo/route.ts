@@ -13,7 +13,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { id } = await context.params;
 
-  if (!canManageDesarrolloOperativo(session.profile, id)) {
+  if (!canManageDesarrolloOperativo(session.profile)) {
     return NextResponse.json({ error: "Sin permiso para este desarrollo." }, { status: 403 });
   }
 
