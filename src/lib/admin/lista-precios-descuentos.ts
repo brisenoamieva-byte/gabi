@@ -50,6 +50,82 @@ const makeRule = (
   orden,
 });
 
+/** Esquemas del PDF inmobiliarias Gavia (Contado ancla; MSI / 30-70 derivados). */
+const GAVIA_LISTA_ESQUEMA_IDS = new Set(["contado", "msi", "30-70"]);
+
+const getGaviaListaDescuentosBase = (): ListaPrecioEsquemaDescuento[] =>
+  getMisionLaGaviaEsquemas()
+    .filter((esquema) => GAVIA_LISTA_ESQUEMA_IDS.has(esquema.id))
+    .map((esquema, index) =>
+      makeRule(esquema.id, esquema.label, esquema.descuentoPct, index + 1),
+    );
+
+/**
+ * Spreads comerciales vs Contado (fracción): MSI = Contado − Δmsi, etc.
+ * Los Δ vienen de las reglas Excel del simulador (p. ej. 17.2 → 13.5 / 10.1).
+ */
+export const getGaviaDescuentoSpreadsFromContado = (): Record<string, number> => {
+  const base = getGaviaListaDescuentosBase();
+  const contado = base.find((row) => row.id === "contado")?.descuentoPct ?? 0;
+  const spreads: Record<string, number> = {};
+  for (const row of base) {
+    if (row.id === "contado") continue;
+    spreads[row.id] = contado - row.descuentoPct;
+  }
+  return spreads;
+};
+
+/** En Gavia solo Contado se edita a mano; el resto se calcula. */
+export const isDescuentoEsquemaPctEditable = (
+  desarrolloId: string,
+  esquemaId: string,
+): boolean => {
+  if (getCotizadorKind(desarrolloId) === "mision-gavia") {
+    return esquemaId === "contado";
+  }
+  return true;
+};
+
+/** Catálogo fijo de esquemas (sin + Esquema / Quitar libre). */
+export const isDescuentosEsquemaCatalogoFijo = (desarrolloId: string): boolean =>
+  getCotizadorKind(desarrolloId) === "mision-gavia";
+
+/**
+ * Recalcula MSI / 30-70 desde Contado preservando spreads comerciales.
+ * En otros desarrollos deja las reglas igual.
+ */
+export const syncDescuentosDerivadosDesdeContado = (
+  desarrolloId: string,
+  rules: ListaPrecioEsquemaDescuento[],
+): ListaPrecioEsquemaDescuento[] => {
+  if (getCotizadorKind(desarrolloId) !== "mision-gavia") {
+    return rules;
+  }
+
+  const defaults = getGaviaListaDescuentosBase();
+  const spreads = getGaviaDescuentoSpreadsFromContado();
+  const byId = new Map(rules.map((row) => [row.id, row]));
+  const contadoPct =
+    byId.get("contado")?.descuentoPct ??
+    defaults.find((row) => row.id === "contado")?.descuentoPct ??
+    0;
+
+  return defaults.map((def, index) => {
+    const existing = byId.get(def.id);
+    const descuentoPct =
+      def.id === "contado"
+        ? contadoPct
+        : clampDescuentoFrac(contadoPct - (spreads[def.id] ?? 0));
+    return makeRule(
+      def.id,
+      existing?.label ?? def.label,
+      descuentoPct,
+      existing?.orden ?? index + 1,
+      existing?.incluirEnPdf ?? def.incluirEnPdf,
+    );
+  });
+};
+
 /** Defaults según reglas comerciales del desarrollo (simuladores vigentes). */
 export const getDefaultDescuentosEsquema = (
   desarrolloId: string,
@@ -67,11 +143,10 @@ export const getDefaultDescuentosEsquema = (
   }
 
   if (kind === "mision-gavia") {
-    return getMisionLaGaviaEsquemas()
-      .filter((esquema) => esquema.id !== "libre")
-      .map((esquema, index) =>
-        makeRule(esquema.id, esquema.label, esquema.descuentoPct, index + 1),
-      );
+    return syncDescuentosDerivadosDesdeContado(
+      desarrolloId,
+      getGaviaListaDescuentosBase(),
+    );
   }
 
   if (kind === "investti") {

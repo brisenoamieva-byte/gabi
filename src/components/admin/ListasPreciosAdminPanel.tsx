@@ -7,6 +7,9 @@ import {
   descuentoFracToPctPoints,
   descuentoPctPointsToFrac,
   getDefaultDescuentosEsquema,
+  isDescuentoEsquemaPctEditable,
+  isDescuentosEsquemaCatalogoFijo,
+  syncDescuentosDerivadosDesdeContado,
   type ListaPrecioEsquemaDescuento,
 } from "@/lib/admin/lista-precios-descuentos";
 import { downloadListaPreciosPdf } from "@/lib/admin/lista-precios-pdf";
@@ -16,6 +19,8 @@ import {
   type ListaPreciosDetail,
   type ListaPreciosRecord,
 } from "@/lib/admin/listas-precios-types";
+import type { InventarioEstatus } from "@/lib/comercial/sembrado-status";
+import { isUnidadEnEtapaVendible } from "@/lib/inventario/sembrado-cotizable";
 
 type ListasPreciosAdminPanelProps = {
   desarrolloId: string;
@@ -24,6 +29,21 @@ type ListasPreciosAdminPanelProps = {
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20";
+
+const ESTATUS_INVENTARIO_LABEL: Record<InventarioEstatus, string> = {
+  disponible: "Disponible",
+  apartado: "Apartado",
+  vendido: "Vendido",
+  bloqueado: "Bloqueado",
+};
+
+const formatEstatusInventario = (estatus: string | null | undefined): string => {
+  const value = (estatus ?? "").trim().toLowerCase() as InventarioEstatus | "";
+  if (value && value in ESTATUS_INVENTARIO_LABEL) {
+    return ESTATUS_INVENTARIO_LABEL[value as InventarioEstatus];
+  }
+  return estatus?.trim() || "—";
+};
 
 type DescuentoEditRow = {
   id: string;
@@ -42,6 +62,12 @@ const toEditRows = (rules: ListaPrecioEsquemaDescuento[]): DescuentoEditRow[] =>
     orden: row.orden || index + 1,
   }));
 
+const toSyncedEditRows = (
+  desarrolloId: string,
+  rules: ListaPrecioEsquemaDescuento[],
+): DescuentoEditRow[] =>
+  toEditRows(syncDescuentosDerivadosDesdeContado(desarrolloId, rules));
+
 const fromEditRows = (rows: DescuentoEditRow[]): ListaPrecioEsquemaDescuento[] =>
   rows
     .filter((row) => row.id.trim() && row.label.trim())
@@ -52,6 +78,43 @@ const fromEditRows = (rows: DescuentoEditRow[]): ListaPrecioEsquemaDescuento[] =
       incluirEnPdf: row.incluirEnPdf,
       orden: row.orden || index + 1,
     }));
+
+/** Actualiza Contado y recalcula MSI / 30-70; preserva el texto tipado en Contado. */
+const applyContadoPctToEditRows = (
+  desarrolloId: string,
+  rows: DescuentoEditRow[],
+  contadoPctPoints: string,
+): DescuentoEditRow[] => {
+  const withContado = rows.map((item) =>
+    item.id === "contado" ? { ...item, descuentoPctPoints: contadoPctPoints } : item,
+  );
+  const synced = syncDescuentosDerivadosDesdeContado(
+    desarrolloId,
+    fromEditRows(withContado),
+  );
+  if (isDescuentosEsquemaCatalogoFijo(desarrolloId)) {
+    return synced.map((row, index) => ({
+      id: row.id,
+      label: row.label,
+      descuentoPctPoints:
+        row.id === "contado"
+          ? contadoPctPoints
+          : String(descuentoFracToPctPoints(row.descuentoPct)),
+      incluirEnPdf: row.incluirEnPdf,
+      orden: row.orden || index + 1,
+    }));
+  }
+  const syncedById = new Map(synced.map((row) => [row.id, row]));
+  return withContado.map((item) => {
+    if (item.id === "contado") return item;
+    const syncedRow = syncedById.get(item.id);
+    if (!syncedRow) return item;
+    return {
+      ...item,
+      descuentoPctPoints: String(descuentoFracToPctPoints(syncedRow.descuentoPct)),
+    };
+  });
+};
 
 export function ListasPreciosAdminPanel({
   desarrolloId,
@@ -125,12 +188,14 @@ export function ListasPreciosAdminPanel({
         map[row.unidad_id] = formatAmountInput(Number(row.precio_lista));
       }
       setEditPrecios(map);
-      setEditDescuentos(toEditRows(data.lista?.descuentos_esquema ?? []));
+      setEditDescuentos(
+        toSyncedEditRows(desarrolloId, data.lista?.descuentos_esquema ?? []),
+      );
     } catch (detailError) {
       setError(detailError instanceof Error ? detailError.message : "Error al cargar detalle.");
       setDetail(null);
     }
-  }, []);
+  }, [desarrolloId]);
 
   useEffect(() => {
     if (selectedId) {
@@ -254,7 +319,7 @@ export function ListasPreciosAdminPanel({
           map[row.unidad_id] = formatAmountInput(Number(row.precio_lista));
         }
         setEditPrecios(map);
-        setEditDescuentos(toEditRows(lista.descuentos_esquema));
+        setEditDescuentos(toSyncedEditRows(desarrolloId, lista.descuentos_esquema));
       }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Error al guardar.");
@@ -267,7 +332,10 @@ export function ListasPreciosAdminPanel({
     if (!detail || detail.estado === "cerrada") {
       return;
     }
-    const descuentos = fromEditRows(editDescuentos);
+    const descuentos = syncDescuentosDerivadosDesdeContado(
+      desarrolloId,
+      fromEditRows(editDescuentos),
+    );
     if (!descuentos.length) {
       setError("Agrega al menos un esquema con nombre.");
       return;
@@ -287,7 +355,7 @@ export function ListasPreciosAdminPanel({
       const lista = data.lista ?? null;
       setDetail(lista);
       if (lista) {
-        setEditDescuentos(toEditRows(lista.descuentos_esquema));
+        setEditDescuentos(toSyncedEditRows(desarrolloId, lista.descuentos_esquema));
       }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Error al guardar descuentos.");
@@ -297,7 +365,7 @@ export function ListasPreciosAdminPanel({
   };
 
   const handleRestaurarDescuentos = () => {
-    setEditDescuentos(toEditRows(getDefaultDescuentosEsquema(desarrolloId)));
+    setEditDescuentos(toSyncedEditRows(desarrolloId, getDefaultDescuentosEsquema(desarrolloId)));
   };
 
   const handleExportPdf = async () => {
@@ -307,7 +375,10 @@ export function ListasPreciosAdminPanel({
     setExportingPdf(true);
     setError("");
     try {
-      const descuentosActuales = fromEditRows(editDescuentos);
+      const descuentosActuales = syncDescuentosDerivadosDesdeContado(
+        desarrolloId,
+        fromEditRows(editDescuentos),
+      );
       await downloadListaPreciosPdf({
         desarrolloNombre,
         lista: {
@@ -350,7 +421,7 @@ export function ListasPreciosAdminPanel({
       await loadListas();
       setDetail(data.lista ?? null);
       if (data.lista) {
-        setEditDescuentos(toEditRows(data.lista.descuentos_esquema));
+        setEditDescuentos(toSyncedEditRows(desarrolloId, data.lista.descuentos_esquema));
       }
     } catch (actError) {
       setError(actError instanceof Error ? actError.message : "Error al activar.");
@@ -369,6 +440,7 @@ export function ListasPreciosAdminPanel({
   }, [preview]);
 
   const canEditDescuentos = detail != null && detail.estado !== "cerrada";
+  const catalogoDescuentosFijo = isDescuentosEsquemaCatalogoFijo(desarrolloId);
 
   return (
     <div className="space-y-5">
@@ -609,7 +681,9 @@ export function ListasPreciosAdminPanel({
                         Descuentos por esquema
                       </h5>
                       <p className="text-xs text-slate-500">
-                        Porcentaje sobre precio lista. Se usan en el PDF comercial.
+                        {catalogoDescuentosFijo
+                          ? "Solo Contado es editable. MSI y 30-70 se calculan con el spread comercial respecto a Contado (PDF inmobiliarias)."
+                          : "Porcentaje sobre precio lista. Se usan en el PDF comercial."}
                       </p>
                     </div>
                     {canEditDescuentos ? (
@@ -622,24 +696,26 @@ export function ListasPreciosAdminPanel({
                           <RotateCcw className="h-3.5 w-3.5" />
                           Reglas del desarrollo
                         </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditDescuentos((prev) => [
-                              ...prev,
-                              {
-                                id: `esquema-${prev.length + 1}`,
-                                label: "Nuevo esquema",
-                                descuentoPctPoints: "0",
-                                incluirEnPdf: true,
-                                orden: prev.length + 1,
-                              },
-                            ])
-                          }
-                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600"
-                        >
-                          + Esquema
-                        </button>
+                        {!catalogoDescuentosFijo ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditDescuentos((prev) => [
+                                ...prev,
+                                {
+                                  id: `esquema-${prev.length + 1}`,
+                                  label: "Nuevo esquema",
+                                  descuentoPctPoints: "0",
+                                  incluirEnPdf: true,
+                                  orden: prev.length + 1,
+                                },
+                              ])
+                            }
+                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600"
+                          >
+                            + Esquema
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           disabled={saving}
@@ -660,14 +736,20 @@ export function ListasPreciosAdminPanel({
                           <th className="px-3 py-2">Id</th>
                           <th className="px-3 py-2">Descuento %</th>
                           <th className="px-3 py-2">PDF</th>
-                          {canEditDescuentos ? <th className="px-3 py-2" /> : null}
+                          {canEditDescuentos && !catalogoDescuentosFijo ? (
+                            <th className="px-3 py-2" />
+                          ) : null}
                         </tr>
                       </thead>
                       <tbody>
-                        {editDescuentos.map((row, index) => (
+                        {editDescuentos.map((row, index) => {
+                          const pctEditable =
+                            canEditDescuentos &&
+                            isDescuentoEsquemaPctEditable(desarrolloId, row.id);
+                          return (
                           <tr key={`${row.id}-${index}`} className="border-t border-slate-100">
                             <td className="px-3 py-1.5">
-                              {canEditDescuentos ? (
+                              {canEditDescuentos && !catalogoDescuentosFijo ? (
                                 <input
                                   value={row.label}
                                   onChange={(event) =>
@@ -686,7 +768,7 @@ export function ListasPreciosAdminPanel({
                               )}
                             </td>
                             <td className="px-3 py-1.5">
-                              {canEditDescuentos ? (
+                              {canEditDescuentos && !catalogoDescuentosFijo ? (
                                 <input
                                   value={row.id}
                                   onChange={(event) =>
@@ -705,7 +787,7 @@ export function ListasPreciosAdminPanel({
                               )}
                             </td>
                             <td className="px-3 py-1.5">
-                              {canEditDescuentos ? (
+                              {pctEditable ? (
                                 <input
                                   type="number"
                                   step="0.01"
@@ -714,20 +796,33 @@ export function ListasPreciosAdminPanel({
                                   value={row.descuentoPctPoints}
                                   onChange={(event) =>
                                     setEditDescuentos((prev) =>
-                                      prev.map((item, i) =>
-                                        i === index
-                                          ? {
-                                              ...item,
-                                              descuentoPctPoints: event.target.value,
-                                            }
-                                          : item,
+                                      applyContadoPctToEditRows(
+                                        desarrolloId,
+                                        prev,
+                                        event.target.value,
                                       ),
                                     )
                                   }
                                   className="w-24 rounded-lg border border-slate-200 px-2 py-1 tabular-nums"
                                 />
                               ) : (
-                                <span className="tabular-nums">{row.descuentoPctPoints}%</span>
+                                <span
+                                  className="tabular-nums text-slate-700"
+                                  title={
+                                    catalogoDescuentosFijo && row.id !== "contado"
+                                      ? "Calculado desde Contado"
+                                      : undefined
+                                  }
+                                >
+                                  {row.descuentoPctPoints}%
+                                  {catalogoDescuentosFijo &&
+                                  canEditDescuentos &&
+                                  row.id !== "contado" ? (
+                                    <span className="ml-1 text-[10px] font-medium uppercase text-slate-400">
+                                      auto
+                                    </span>
+                                  ) : null}
+                                </span>
                               )}
                             </td>
                             <td className="px-3 py-1.5">
@@ -746,7 +841,7 @@ export function ListasPreciosAdminPanel({
                                 }
                               />
                             </td>
-                            {canEditDescuentos ? (
+                            {canEditDescuentos && !catalogoDescuentosFijo ? (
                               <td className="px-3 py-1.5 text-right">
                                 <button
                                   type="button"
@@ -762,14 +857,18 @@ export function ListasPreciosAdminPanel({
                               </td>
                             ) : null}
                           </tr>
-                        ))}
+                          );
+                        })}
                         {!editDescuentos.length ? (
                           <tr>
                             <td
-                              colSpan={canEditDescuentos ? 5 : 4}
+                              colSpan={
+                                canEditDescuentos && !catalogoDescuentosFijo ? 5 : 4
+                              }
                               className="px-3 py-4 text-center text-sm text-slate-500"
                             >
-                              Sin esquemas. Usa «Reglas del desarrollo» o agrega uno.
+                              Sin esquemas. Usa «Reglas del desarrollo»
+                              {!catalogoDescuentosFijo ? " o agrega uno" : ""}.
                             </td>
                           </tr>
                         ) : null}
@@ -779,21 +878,48 @@ export function ListasPreciosAdminPanel({
                 </div>
 
                 <div className="mt-4 max-h-[420px] overflow-auto rounded-xl border border-slate-100">
+                  <p className="border-b border-slate-100 bg-slate-50/80 px-3 py-2 text-xs text-slate-500">
+                    El PDF inmobiliarias incluye solo unidades{" "}
+                    <span className="font-semibold text-slate-600">disponibles</span> de la{" "}
+                    <span className="font-semibold text-slate-600">
+                      etapa comercial abierta
+                    </span>{" "}
+                    (en Gavia: etapa 1 / edificios cotizables).
+                  </p>
                   <table className="min-w-full text-left text-sm">
                     <thead className="sticky top-0 bg-slate-50 text-xs uppercase text-slate-500">
                       <tr>
                         <th className="px-3 py-2">Unidad</th>
                         <th className="px-3 py-2">Tipo</th>
+                        <th className="px-3 py-2">Estatus</th>
                         <th className="px-3 py-2">Precio lista</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.unidades.map((row) => (
-                        <tr key={row.id} className="border-t border-slate-100">
+                      {detail.unidades.map((row) => {
+                        const enPdf =
+                          (row.estatusInventario == null ||
+                            row.estatusInventario === "disponible") &&
+                          isUnidadEnEtapaVendible(desarrolloId, row.unidad ?? "");
+                        return (
+                        <tr
+                          key={row.id}
+                          className={`border-t border-slate-100 ${
+                            enPdf ? "" : "bg-slate-50/70 text-slate-400"
+                          }`}
+                        >
                           <td className="px-3 py-1.5 font-medium text-gabi-forest">
                             {row.unidad ?? "—"}
+                            {!enPdf ? (
+                              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                no en PDF
+                              </span>
+                            ) : null}
                           </td>
                           <td className="px-3 py-1.5 text-slate-500">{row.tipo ?? "—"}</td>
+                          <td className="px-3 py-1.5">
+                            {formatEstatusInventario(row.estatusInventario)}
+                          </td>
                           <td className="px-3 py-1.5">
                             {detail.estado === "borrador" ? (
                               <input
@@ -814,7 +940,8 @@ export function ListasPreciosAdminPanel({
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

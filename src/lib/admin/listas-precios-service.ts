@@ -3,6 +3,7 @@ import type { AdminProfile } from "@/lib/admin/types";
 import {
   getDefaultDescuentosEsquema,
   normalizeDescuentosEsquema,
+  syncDescuentosDerivadosDesdeContado,
   type ListaPrecioEsquemaDescuento,
 } from "@/lib/admin/lista-precios-descuentos";
 import type {
@@ -55,11 +56,14 @@ const mapLista = (
   estado: row.estado as ListaPreciosRecord["estado"],
   incremento_pct: row.incremento_pct != null ? Number(row.incremento_pct) : null,
   notas: (row.notas as string | null) ?? null,
-  descuentos_esquema: normalizeDescuentosEsquema(
-    row.descuentos_esquema,
-    descuentosFallback.length
-      ? descuentosFallback
-      : getDefaultDescuentosEsquema(row.desarrollo_id as string),
+  descuentos_esquema: syncDescuentosDerivadosDesdeContado(
+    row.desarrollo_id as string,
+    normalizeDescuentosEsquema(
+      row.descuentos_esquema,
+      descuentosFallback.length
+        ? descuentosFallback
+        : getDefaultDescuentosEsquema(row.desarrollo_id as string),
+    ),
   ),
   created_at: row.created_at as string,
   updated_at: row.updated_at as string,
@@ -462,7 +466,10 @@ export const updateListaPreciosDescuentos = async (
     throw new Error("No se pueden editar descuentos en una lista cerrada.");
   }
 
-  const normalized = normalizeDescuentosEsquema(descuentos);
+  const normalized = syncDescuentosDerivadosDesdeContado(
+    detail.desarrollo_id,
+    normalizeDescuentosEsquema(descuentos),
+  );
   if (!normalized.length) {
     throw new Error("Agrega al menos un esquema con descuento.");
   }
