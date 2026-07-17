@@ -8,311 +8,241 @@ import { InstallGabiApp } from "@/components/InstallGabiApp";
 import { GabiProductMock } from "@/components/landing/GabiProductMock";
 import { ScheduleDemoButton } from "@/components/ScheduleDemoButton";
 
-const VALOR = [
+const MOMENTS = [
   {
-    titulo: "Campo",
-    texto:
-      "Recorrido y cotizador listos para showroom — con precios e inventario vivos, también sin conexión.",
+    label: "En visita",
+    body: "Recorrido guiado y cotizador con los esquemas del desarrollo. En tablet; también sin red si ya se precargó.",
   },
   {
-    titulo: "Operación",
-    texto:
-      "CRM, sembrado y expedientes en la misma fuente de verdad. Un estatus por unidad, no varios Excel.",
+    label: "Después",
+    body: "El lead queda en CRM con etapa e historial. Al apartar, el sembrado se actualiza: una unidad, un estatus.",
   },
   {
-    titulo: "Reglas del desarrollo",
-    texto:
-      "Esquemas, listas y PDFs alineados a lo que realmente se cotiza. No un CRM genérico pegado a hojas sueltas.",
+    label: "Al cerrar",
+    body: "Expediente, documentos y seguimiento hasta escrituración — sin armar el cierre en otro sistema.",
   },
-] as const;
-
-const FLUJO = [
-  { paso: "01", titulo: "Prospecto", texto: "Campaña, visita o Meta Lead Ads." },
-  { paso: "02", titulo: "Visita", texto: "Recorrido + cotización en sitio." },
-  { paso: "03", titulo: "Apartado", texto: "Sembrado y cliente en un clic." },
-  { paso: "04", titulo: "Cierre", texto: "Expediente hasta escrituración." },
 ] as const;
 
 export function GabiHomePage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <main className="min-h-dvh bg-gabi-surface text-gabi-ink">
-      {/* Header */}
+    <main className="min-h-dvh bg-[#F4F6F8] text-gabi-ink">
       <header className="absolute inset-x-0 top-0 z-30">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-5 py-5 md:px-8">
           <GabiLogo variant="header" href="/" onDark />
-          <nav className="hidden items-center gap-7 md:flex">
-            <a
-              href="#diferencia"
-              className="text-sm text-white/65 transition hover:text-white"
-            >
-              Por qué gabi
-            </a>
-            <a
-              href="#flujo"
-              className="text-sm text-white/65 transition hover:text-white"
-            >
-              Cómo funciona
+          <nav className="hidden items-center gap-8 md:flex">
+            <a href="#producto" className="text-[13px] text-white/60 transition hover:text-white">
+              Producto
             </a>
             <ScheduleDemoButton
               variant="nav"
               label="Agendar demo"
-              className="!inline-flex !text-white/70 hover:!text-white"
+              className="!inline-flex !text-[13px] !text-white/60 hover:!text-white"
             />
-          </nav>
-          <div className="flex items-center gap-2">
             <Link
               href="/acceso"
-              className="hidden items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 px-3.5 py-2 text-sm font-medium text-white backdrop-blur-sm transition hover:border-white/35 hover:bg-white/10 sm:inline-flex"
+              className="text-[13px] font-medium text-white transition hover:text-white/80"
             >
               Entrar
-              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-            <button
-              type="button"
-              aria-expanded={mobileNavOpen}
-              aria-label={mobileNavOpen ? "Cerrar menú" : "Abrir menú"}
-              onClick={() => setMobileNavOpen((open) => !open)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 text-white md:hidden"
-            >
-              {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
-          </div>
+          </nav>
+          <button
+            type="button"
+            aria-expanded={mobileNavOpen}
+            aria-label={mobileNavOpen ? "Cerrar menú" : "Abrir menú"}
+            onClick={() => setMobileNavOpen((open) => !open)}
+            className="inline-flex h-9 w-9 items-center justify-center text-white md:hidden"
+          >
+            {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
         </div>
         {mobileNavOpen ? (
-          <nav className="border-t border-white/10 bg-gabi-navy-dark/95 px-5 py-3 backdrop-blur-md md:hidden">
-            <ul className="space-y-0.5">
-              <li>
-                <a
-                  href="#diferencia"
-                  onClick={() => setMobileNavOpen(false)}
-                  className="block px-2 py-2.5 text-sm text-white/85"
-                >
-                  Por qué gabi
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#flujo"
-                  onClick={() => setMobileNavOpen(false)}
-                  className="block px-2 py-2.5 text-sm text-white/85"
-                >
-                  Cómo funciona
-                </a>
-              </li>
-              <li>
-                <ScheduleDemoButton
-                  variant="link"
-                  label="Agendar demo"
-                  className="!block px-2 py-2.5 !text-gabi-teal !no-underline"
-                />
-              </li>
-              <li>
-                <Link
-                  href="/acceso"
-                  onClick={() => setMobileNavOpen(false)}
-                  className="block px-2 py-2.5 text-sm font-medium text-white"
-                >
-                  Entrar
-                </Link>
-              </li>
-            </ul>
+          <nav className="border-t border-white/10 bg-[#0F2A4A]/98 px-5 py-3 md:hidden">
+            <a
+              href="#producto"
+              onClick={() => setMobileNavOpen(false)}
+              className="block py-2.5 text-sm text-white/80"
+            >
+              Producto
+            </a>
+            <ScheduleDemoButton
+              variant="link"
+              label="Agendar demo"
+              className="!block py-2.5 !text-gabi-teal !no-underline"
+            />
+            <Link
+              href="/acceso"
+              onClick={() => setMobileNavOpen(false)}
+              className="block py-2.5 text-sm font-medium text-white"
+            >
+              Entrar
+            </Link>
           </nav>
         ) : null}
       </header>
 
-      {/* Hero */}
-      <section className="relative min-h-[100dvh] overflow-hidden bg-gabi-navy">
+      {/* Hero: una composición — marca dominante + producto como plano visual */}
+      <section className="relative overflow-hidden bg-[#13315C]">
         <div
-          className="pointer-events-none absolute inset-0 opacity-90"
+          className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 70% 40%, rgba(45,212,191,0.18), transparent 55%), radial-gradient(ellipse 50% 40% at 10% 80%, rgba(34,211,238,0.12), transparent 50%), linear-gradient(165deg, #0F2A4A 0%, #13315C 45%, #1A4478 100%)",
+              "radial-gradient(ellipse 55% 70% at 100% 40%, rgba(45,212,191,0.14), transparent 55%), linear-gradient(165deg, #0C243F 0%, #13315C 48%, #163A66 100%)",
           }}
         />
+        {/* Atmósfera: trama fina, no decoración genérica */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          className="pointer-events-none absolute inset-0 opacity-[0.035]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-            maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
+              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
           }}
         />
 
-        <div className="relative mx-auto grid min-h-[100dvh] max-w-6xl items-center gap-10 px-5 pb-16 pt-28 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:px-8 md:pb-20 md:pt-24">
-          <div className="gabi-home-fade-up">
-            <GabiLogo variant="heroLg" onDark />
-            <h1 className="mt-6 max-w-xl font-[family-name:var(--font-gabi-display)] text-[clamp(1.65rem,4.2vw,2.45rem)] font-bold leading-[1.12] tracking-tight text-white">
+        <div className="relative mx-auto grid max-w-[1180px] items-start gap-10 px-5 pb-0 pt-28 md:grid-cols-12 md:gap-6 md:px-8 md:pb-0 md:pt-32">
+          <div className="gabi-home-fade-up pb-12 md:col-span-5 md:pb-20 md:pt-4 lg:col-span-5">
+            <GabiLogo variant="heroLg" onDark className="!leading-none" />
+            <h1 className="mt-7 max-w-[18ch] font-gabi-display text-[clamp(1.9rem,4.2vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.035em] text-white">
               El sistema con el que tu equipo vende el desarrollo.
             </h1>
-            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/70 md:text-base">
-              De la visita al expediente, con inventario y esquemas reales — listo para
-              showroom y oficina.
+            <p className="mt-5 max-w-[32ch] text-[15px] leading-[1.65] text-[#B8C5D6]">
+              Visita, cotización, seguimiento e inventario — con las reglas reales de
+              cada desarrollo.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
               <ScheduleDemoButton
                 variant="hero"
                 label="Agendar demo"
-                showIcon
-                className="!bg-gabi-teal !text-gabi-navy-dark hover:!bg-white"
+                className="!rounded-md !bg-gabi-teal !px-4 !py-2.5 !text-[13px] !font-semibold !text-gabi-navy-dark hover:!bg-white"
               />
               <Link
                 href="/acceso"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/45 hover:bg-white/5"
+                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/70 transition hover:text-white"
               >
-                Entrar
+                Ya tengo acceso
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </div>
 
-          <div className="gabi-home-fade-in gabi-home-float">
-            <GabiProductMock />
+          <div className="gabi-home-slide-in md:col-span-7 md:col-start-6 lg:col-span-7 lg:col-start-6">
+            <div className="md:translate-x-2 lg:translate-x-4">
+              <GabiProductMock />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Diferencia */}
-      <section id="diferencia" className="scroll-mt-8 px-5 py-16 md:px-8 md:py-24">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gabi-muted">
-            Por qué gabi
-          </p>
-          <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-gabi-display)] text-2xl font-bold tracking-tight text-gabi-navy md:text-3xl">
-            No es otro CRM. Es el sistema operativo comercial del desarrollo.
-          </h2>
-          <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
-            {VALOR.map((item) => (
-              <div key={item.titulo} className="border-t border-gabi-navy/15 pt-5">
-                <h3 className="font-[family-name:var(--font-gabi-display)] text-lg font-bold text-gabi-navy">
-                  {item.titulo}
-                </h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-gabi-navy/65">
-                  {item.texto}
-                </p>
-              </div>
-            ))}
+      {/* Producto — editorial, una historia */}
+      <section id="producto" className="scroll-mt-10 px-5 py-20 md:px-8 md:py-28">
+        <div className="mx-auto max-w-[1180px]">
+          <div className="grid gap-16 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-5 md:pt-1">
+              <h2 className="max-w-[15ch] font-gabi-display text-[clamp(1.55rem,3vw,2.05rem)] font-semibold leading-[1.15] tracking-[-0.03em] text-gabi-navy">
+                Hecho para vender en campo y operar en oficina.
+              </h2>
+              <p className="mt-6 max-w-[34ch] text-[15px] leading-[1.7] text-gabi-navy/55">
+                Hoy el cierre vive en Excel, PDFs y un CRM aparte. gabi concentra eso:
+                el asesor cotiza con inventario vivo; gerencia ve el mismo estatus.
+              </p>
+              <p className="mt-8 max-w-[36ch] border-l-2 border-gabi-teal pl-4 text-[14px] leading-[1.65] text-gabi-navy/70">
+                <span className="font-medium text-gabi-navy">
+                  Prospecto → visita → apartado → cierre.
+                </span>{" "}
+                Una sola fuente de verdad para asesor, gerencia y dirección.
+              </p>
+            </div>
+
+            <div className="md:col-span-6 md:col-start-7">
+              <ul className="divide-y divide-gabi-navy/[0.08] border-y border-gabi-navy/[0.08]">
+                {MOMENTS.map((item) => (
+                  <li key={item.label} className="flex gap-6 py-6 md:gap-8">
+                    <span className="w-[5.5rem] shrink-0 pt-0.5 text-[12px] font-medium text-gabi-navy/40">
+                      {item.label}
+                    </span>
+                    <p className="text-[15px] leading-[1.65] text-gabi-navy/80">
+                      {item.body}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
-      </section>
 
-      {/* Flujo */}
-      <section
-        id="flujo"
-        className="scroll-mt-8 border-t border-gabi-line bg-white px-5 py-16 md:px-8 md:py-20"
-      >
-        <div className="mx-auto max-w-6xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gabi-muted">
-            Cómo funciona
-          </p>
-          <h2 className="mt-3 max-w-xl font-[family-name:var(--font-gabi-display)] text-2xl font-bold tracking-tight text-gabi-navy md:text-3xl">
-            Un solo flujo. Del primer contacto a la venta.
-          </h2>
-
-          <ol className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {FLUJO.map((item, index) => (
-              <li key={item.paso} className="relative">
-                {index < FLUJO.length - 1 ? (
-                  <span
-                    className="absolute left-[calc(100%-0.5rem)] top-4 hidden h-px w-[calc(100%-2rem)] bg-gabi-line lg:block"
-                    aria-hidden
-                  />
-                ) : null}
-                <p className="font-[family-name:var(--font-gabi-display)] text-sm font-bold tabular-nums text-gabi-teal">
-                  {item.paso}
-                </p>
-                <p className="mt-2 text-base font-semibold text-gabi-navy">{item.titulo}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-gabi-navy/60">{item.texto}</p>
-              </li>
-            ))}
-          </ol>
-
-          <p className="mt-12 max-w-2xl text-[15px] leading-relaxed text-gabi-navy/60">
-            Asesor en showroom · Gerencia en admin · Dirección con datos reales.
+          <p className="mt-16 max-w-[52ch] text-[13px] leading-[1.6] text-gabi-navy/40 md:mt-20">
+            Pensado para desarrollos que venden con equipo en showroom — no para
+            portales de anuncios ni CRMs genéricos.
           </p>
         </div>
       </section>
 
-      {/* Cierre venta */}
+      {/* Cierre */}
       <section
         id="agendar-demo"
-        className="relative overflow-hidden bg-gabi-navy px-5 py-16 md:px-8 md:py-20"
+        className="relative overflow-hidden bg-[#0F2A4A] px-5 py-16 md:px-8 md:py-20"
       >
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 80% 50%, rgba(45,212,191,0.15), transparent 60%)",
+              "radial-gradient(ellipse 50% 80% at 0% 50%, rgba(45,212,191,0.1), transparent 50%)",
           }}
         />
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-xl">
-            <h2 className="font-[family-name:var(--font-gabi-display)] text-2xl font-bold tracking-tight text-white md:text-3xl">
-              Lleva gabi a tu desarrollo.
+        <div className="relative mx-auto flex max-w-[1180px] flex-col gap-8 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-lg">
+            <h2 className="font-gabi-display text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-[-0.03em] text-white">
+              Treinta minutos. Un desarrollo real.
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-white/65">
-              Plataforma operativa para equipos comerciales — no una landing de leads al
-              público. Te mostramos cómo se vive en showroom y en oficina.
+            <p className="mt-3 max-w-[40ch] text-[14px] leading-[1.65] text-[#B8C5D6]">
+              Te mostramos el flujo de showroom y de oficina — sin pitch largo ni demo
+              genérica.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-5">
             <ScheduleDemoButton
               variant="footer"
               label="Agendar demo"
-              showIcon
-              className="!bg-gabi-teal !text-gabi-navy-dark hover:!bg-white"
+              className="!rounded-md !bg-gabi-teal !px-5 !py-3 !text-[13px] !font-semibold !text-gabi-navy-dark hover:!bg-white"
             />
-            <Link
-              href="/acceso"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
+            <a
+              href="mailto:hola@gabi.mx"
+              className="text-[13px] font-medium text-white/60 transition hover:text-white"
             >
-              Ya tengo acceso
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+              hola@gabi.mx
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Install discreto */}
-      <section className="border-t border-gabi-line bg-gabi-surface px-5 py-8 md:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-gabi-navy">¿Ya operas con gabi?</p>
-            <p className="mt-0.5 text-[13px] text-gabi-muted">
-              Instala la app en la tablet del showroom.
-            </p>
-          </div>
+      <section className="border-t border-gabi-line/80 bg-white/50 px-5 py-7 md:px-8">
+        <div className="mx-auto flex max-w-[1180px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-gabi-navy/45">
+            ¿Ya operas con gabi? Instálalo en la tablet del showroom.
+          </p>
           <InstallGabiApp variant="compact" />
         </div>
       </section>
 
-      <footer className="border-t border-gabi-line bg-white px-5 py-10 md:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+      <footer className="border-t border-gabi-line px-5 py-10 md:px-8">
+        <div className="mx-auto flex max-w-[1180px] flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <GabiLogo variant="footer" />
-            <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-gabi-muted">
-              Sistema comercial para desarrollos y comercializadoras.
+            <p className="mt-3 text-[12px] text-gabi-navy/40">
+              Sistema comercial para desarrollos inmobiliarios
             </p>
           </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <ScheduleDemoButton variant="link" label="Agendar demo" />
-            <a
-              href="mailto:hola@gabi.mx"
-              className="text-gabi-navy/55 transition hover:text-gabi-navy"
-            >
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
+            <a href="mailto:hola@gabi.mx" className="text-gabi-navy/45 hover:text-gabi-navy">
               hola@gabi.mx
             </a>
-            <Link
-              href="/acceso"
-              className="text-gabi-navy/55 transition hover:text-gabi-navy"
-            >
+            <Link href="/acceso" className="text-gabi-navy/45 hover:text-gabi-navy">
               Entrar
             </Link>
           </div>
         </div>
-        <p className="mx-auto mt-8 max-w-6xl border-t border-gabi-line pt-6 text-xs text-gabi-muted/70">
+        <p className="mx-auto mt-8 max-w-[1180px] text-[11px] text-gabi-navy/30">
           © {new Date().getFullYear()} gabi
         </p>
       </footer>

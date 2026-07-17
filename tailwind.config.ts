@@ -61,6 +61,7 @@ const config: Config = {
         },
       },
       fontFamily: {
+        "gabi-display": ["var(--font-gabi-display)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
         "nubo-heading": ["var(--font-nubo-heading)", "Georgia", "serif"],
         "nubo-subheading": ["var(--font-nubo-subheading)", "Georgia", "serif"],
         "nubo-body": ["var(--font-nubo-body)", "system-ui", "sans-serif"],
