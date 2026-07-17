@@ -555,7 +555,8 @@ export function MisionLaGaviaSimuladorPanel({
   };
 
   const syncLibreFiniquitoFromAmount = (amount: number) => {
-    if (!onLibreMensualidadesChange || !simulacion || simulacion.precioContado <= 0) {
+    const precioContado = simulacion?.precioContado ?? 0;
+    if (!onLibreMensualidadesChange || !simulacion || precioContado <= 0) {
       return;
     }
     if (amount <= 0) {
@@ -564,7 +565,7 @@ export function MisionLaGaviaSimuladorPanel({
       return;
     }
     // Aproxima el % de contado con el monto capturado (remanente hasta 100%).
-    const finiquitoPct = clamp(amount / simulacion.precioContado, 0, 1 - libreEnganche);
+    const finiquitoPct = clamp(amount / precioContado, 0, 1 - libreEnganche);
     handleLibreMensualidadesChange(1 - libreEnganche - finiquitoPct);
   };
 
