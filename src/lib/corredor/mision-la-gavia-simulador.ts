@@ -29,7 +29,6 @@ import type {
   MisionLaGaviaEsquemaId,
   MisionLaGaviaFilaPago,
   MisionLaGaviaLibreConfig,
-  MisionLaGaviaMsiConfig,
   MisionLaGaviaSimulacionInput,
   MisionLaGaviaSimulacionResult,
   MisionLaGaviaUnidadRecord,
