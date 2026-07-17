@@ -220,13 +220,13 @@ const listPartnersUsedInDesarrollo = async (
     throw new Error(prospectoError.message);
   }
 
-  const partnerIds = [
-    ...new Set(
+  const partnerIds = Array.from(
+    new Set(
       (prospectoRows ?? [])
         .map((row) => (row.partner_id ? String(row.partner_id) : ""))
         .filter(Boolean),
     ),
-  ];
+  );
 
   if (!partnerIds.length) {
     return [];
