@@ -8,6 +8,7 @@ import {
 } from "@/lib/corredor/mision-la-gavia-simulador";
 import type {
   MisionLaGaviaDiaPago,
+  MisionLaGaviaFilaPago,
   MisionLaGaviaSimulacionResult,
 } from "@/lib/corredor/mision-la-gavia-simulador-data-types";
 import {
@@ -42,11 +43,11 @@ type Rgb = [number, number, number];
 type JsPDFDoc = import("jspdf").jsPDF;
 
 const PAGE = {
-  marginX: 14,
-  marginTop: 12,
-  marginBottom: 10,
-  footerH: 14,
-  gap: 3.5,
+  marginX: 12,
+  marginTop: 10,
+  marginBottom: 8,
+  footerH: 10,
+  gap: 2.5,
 } as const;
 
 /** Términos oficiales de cotización Misión La Gavia. */
@@ -59,6 +60,14 @@ export const MISION_LA_GAVIA_TERMINOS_CONDICIONES = [
   "Las imágenes, renders y demás elementos visuales incluidos en esta cotización son de carácter ilustrativo y pueden modificarse sin previo aviso.",
   "Todos los pagos deberán provenir de la cuenta del comprador.",
 ] as const;
+
+type PdfPlanRow = {
+  concepto: string;
+  periodo: string;
+  detalle: string;
+  monto: string;
+  emphasize?: boolean;
+};
 
 const slugify = (value: string) =>
   value
@@ -136,7 +145,7 @@ const roundedRect = (
   w: number,
   h: number,
   style: "S" | "F" | "FD" = "S",
-  r = 2,
+  r = 1.5,
 ) => {
   doc.roundedRect(x, y, w, h, r, r, style);
 };
@@ -160,9 +169,10 @@ const text = (
   if (opts?.maxW) {
     const lines = doc.splitTextToSize(value, opts.maxW);
     doc.text(lines, x, y, { align: opts?.align ?? "left" });
-    return;
+    return lines.length as number;
   }
   doc.text(value, x, y, { align: opts?.align ?? "left" });
+  return 1;
 };
 
 const caps = (
@@ -173,7 +183,7 @@ const caps = (
   opts?: { size?: number; color?: Rgb; align?: "left" | "center" | "right"; maxW?: number },
 ) => {
   text(doc, value.toUpperCase(), x, y, {
-    size: opts?.size ?? 6,
+    size: opts?.size ?? 5.5,
     bold: true,
     color: opts?.color ?? MUTED,
     align: opts?.align,
@@ -219,6 +229,61 @@ const drawFittedImage = (
   );
 };
 
+/** Resume mensualidades idénticas en una sola fila (ahorra ~15 líneas en Libre/MSI). */
+const buildCompactPlanRows = (
+  calendario: MisionLaGaviaFilaPago[],
+  esquemaLabel: string,
+): PdfPlanRow[] => {
+  const rows: PdfPlanRow[] = [];
+  let i = 0;
+  while (i < calendario.length) {
+    const fila = calendario[i];
+    if (fila.tipo === "mensualidad") {
+      let j = i;
+      while (
+        j + 1 < calendario.length &&
+        calendario[j + 1].tipo === "mensualidad" &&
+        Math.abs(calendario[j + 1].pagoTotal - fila.pagoTotal) < 0.01
+      ) {
+        j += 1;
+      }
+      const count = j - i + 1;
+      const first = calendario[i];
+      const last = calendario[j];
+      const totalMens = fila.pagoTotal * count;
+      rows.push({
+        concepto: count === 1 ? "Mensualidad" : `${count} mensualidades`,
+        periodo:
+          count === 1
+            ? formatMonthYear(first.fechaPago)
+            : `${formatMonthYear(first.fechaPago)} – ${formatMonthYear(last.fechaPago)}`,
+        detalle: `${formatPrice(fila.pagoTotal)} c/u`,
+        monto: formatPrice(totalMens),
+      });
+      i = j + 1;
+      continue;
+    }
+
+    rows.push({
+      concepto: fila.tipo === "enganche" ? "Enganche" : fila.tipo === "finiquito" ? "Finiquito" : fila.concepto,
+      periodo: formatMonthYear(fila.fechaPago),
+      detalle: fila.concepto.replace(/^(Enganche|Finiquito)\s+/i, "").trim() || esquemaLabel,
+      monto: formatPrice(fila.pagoTotal),
+      emphasize: fila.tipo === "enganche" || fila.tipo === "finiquito",
+    });
+    i += 1;
+  }
+  return rows;
+};
+
+const shortDescripcion = (s: MisionLaGaviaSimulacionResult): string => {
+  const raw = s.descripcionPago?.trim() ?? "";
+  if (!raw) return s.esquemaLabel;
+  // Quita el pie didáctico largo; basta la fórmula comercial.
+  const cut = raw.split(". Los porcentajes")[0]?.trim() ?? raw;
+  return cut.length > 160 ? `${cut.slice(0, 157)}…` : cut;
+};
+
 const drawHeader = (
   doc: JsPDFDoc,
   y: number,
@@ -227,167 +292,79 @@ const drawHeader = (
   logo: ImageAsset | null,
   fechaDoc: string,
 ): number => {
-  const h = 40;
-  const left = PAGE.marginX + 5;
-  const right = PAGE.marginX + contentW - 5;
+  const h = 28;
+  const left = PAGE.marginX + 4;
+  const right = PAGE.marginX + contentW - 4;
 
   setFill(doc, INK);
-  roundedRect(doc, PAGE.marginX, y, contentW, h, "F", 2.5);
-  setFill(doc, INK_DEEP);
-  doc.rect(PAGE.marginX, y + h - 12, contentW, 12, "F");
+  roundedRect(doc, PAGE.marginX, y, contentW, h, "F", 2);
 
-  // Placa crema más alta: el logo vertical (pájaro + MISIÓN + LA GAVIA) no cabe en 14 mm.
-  const logoBoxW = 36;
-  const logoBoxH = 22;
+  const logoBoxW = 28;
+  const logoBoxH = 16;
   const logoX = left;
   const logoY = y + 3;
   setFill(doc, CREAM);
-  setDraw(doc, BORDER);
-  doc.setLineWidth(0.15);
-  roundedRect(doc, logoX, logoY, logoBoxW, logoBoxH, "FD", 1.8);
+  roundedRect(doc, logoX, logoY, logoBoxW, logoBoxH, "F", 1.4);
 
   if (logo) {
     try {
-      drawFittedImage(doc, logo, logoX, logoY, logoBoxW, logoBoxH, 1.4);
+      drawFittedImage(doc, logo, logoX, logoY, logoBoxW, logoBoxH, 1);
     } catch {
-      text(doc, "Misión La Gavia", logoX + logoBoxW / 2, logoY + logoBoxH / 2 + 1, {
+      text(doc, "Gavia", logoX + logoBoxW / 2, logoY + logoBoxH / 2 + 1, {
         size: 6,
         bold: true,
         color: INK,
         align: "center",
-        maxW: logoBoxW - 2,
       });
     }
-  } else {
-    text(doc, "Misión La Gavia", logoX + logoBoxW / 2, logoY + logoBoxH / 2 + 1, {
-      size: 6,
-      bold: true,
-      color: INK,
-      align: "center",
-      maxW: logoBoxW - 2,
-    });
   }
 
-  const titleX = logoX + logoBoxW + 4;
-  const dateW = 40;
-  const titleMaxW = right - titleX - dateW - 2;
-
-  caps(doc, "Cotización", titleX, y + 8, { color: ACCENT, size: 5.5 });
-  text(doc, input.desarrolloNombre, titleX, y + 14, {
-    size: 11,
+  const titleX = logoX + logoBoxW + 3.5;
+  caps(doc, "Cotización", titleX, y + 6, { color: ACCENT, size: 5 });
+  text(doc, input.desarrolloNombre, titleX, y + 11.5, {
+    size: 10,
     bold: true,
     color: WHITE,
-    maxW: titleMaxW,
+    maxW: contentW * 0.45,
   });
-  text(doc, "Simulador lista mar26", titleX, y + 19.5, {
-    size: 6.5,
+  text(doc, "Lista mar26", titleX, y + 16.5, {
+    size: 6,
     color: MUTED_ON_DARK,
-    maxW: titleMaxW,
   });
 
-  caps(doc, "Elaboración", right, y + 8, {
+  caps(doc, "Elaboración", right, y + 6, {
     color: MUTED_ON_DARK,
-    size: 5.5,
+    size: 5,
     align: "right",
-    maxW: dateW,
   });
-  text(doc, fechaDoc, right, y + 14, {
-    size: 7.5,
+  text(doc, fechaDoc, right, y + 11, {
+    size: 7,
     color: WHITE,
     align: "right",
-    maxW: dateW,
   });
 
-  caps(doc, "En atención a", left, y + h - 8.5, { color: MUTED_ON_DARK, size: 5.5 });
-  text(doc, input.clienteNombre?.trim() || "Sin nombre", left, y + h - 3.5, {
-    size: 9.5,
+  setFill(doc, INK_DEEP);
+  doc.rect(PAGE.marginX, y + h - 9, contentW, 9, "F");
+  const cliente = input.clienteNombre?.trim() || "Sin nombre";
+  text(doc, cliente, left, y + h - 3.2, {
+    size: 8.5,
     bold: true,
     color: WHITE,
     maxW: contentW * 0.55,
   });
-
   if (input.asesorNombre?.trim()) {
-    caps(doc, "Asesor", right, y + h - 8.5, {
+    text(doc, `Asesor · ${input.asesorNombre.trim()}`, right, y + h - 3.2, {
+      size: 7,
       color: MUTED_ON_DARK,
-      size: 5.5,
-      align: "right",
-    });
-    text(doc, input.asesorNombre.trim(), right, y + h - 3.5, {
-      size: 8,
-      bold: true,
-      color: WHITE,
       align: "right",
       maxW: contentW * 0.4,
     });
   }
 
-  return y + h + 5;
+  return y + h + 3.5;
 };
 
-const drawTerminosPage = (doc: JsPDFDoc, input: MisionLaGaviaSimuladorPdfInput) => {
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const contentW = pageW - PAGE.marginX * 2;
-  const left = PAGE.marginX + 4;
-  const s = input.simulacion;
-
-  doc.addPage();
-  let y = PAGE.marginTop;
-
-  setFill(doc, CREAM);
-  setDraw(doc, BORDER);
-  doc.setLineWidth(0.2);
-  roundedRect(doc, PAGE.marginX, y, contentW, 18, "FD", 2);
-  caps(doc, "Cotización", left, y + 6, { color: ACCENT });
-  text(doc, "TÉRMINOS Y CONDICIONES", left, y + 12.5, { size: 12, bold: true });
-  text(
-    doc,
-    `${s.unidad} · ${input.clienteNombre?.trim() || "Prospecto"}`,
-    PAGE.marginX + contentW - 4,
-    y + 12.5,
-    { size: 7.5, color: MUTED, align: "right", maxW: contentW * 0.42 },
-  );
-  y += 26;
-
-  MISION_LA_GAVIA_TERMINOS_CONDICIONES.forEach((line, index) => {
-    const bullet = `${index + 1}.`;
-    const maxW = contentW - 14;
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(8.5);
-    setText(doc, MUTED);
-    const parts = doc.splitTextToSize(line, maxW) as string[];
-    const blockH = Math.max(6, parts.length * 4.2 + 2);
-
-    if (y + blockH > pageH - PAGE.marginBottom - 8) {
-      doc.addPage();
-      y = PAGE.marginTop;
-    }
-
-    text(doc, bullet, left, y + 3.5, { size: 8.5, bold: true, color: INK });
-    parts.forEach((part, lineIndex) => {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8.5);
-      setText(doc, MUTED);
-      doc.text(part, left + 8, y + 3.5 + lineIndex * 4.2);
-    });
-    y += blockH + 2.5;
-  });
-
-  y += 4;
-  if (y + 14 < pageH - PAGE.marginBottom) {
-    setFill(doc, SLATE_50);
-    roundedRect(doc, PAGE.marginX, y, contentW, 12, "F", 2);
-    text(
-      doc,
-      "Documento informativo generado en GABI · Misión La Gavia · BBR Habitarea",
-      left,
-      y + 7,
-      { size: 7, color: MUTED, maxW: contentW - 8 },
-    );
-  }
-};
-
-const drawPlantasPage = (
+const drawPlantasAndTerminosPage = (
   doc: JsPDFDoc,
   input: MisionLaGaviaSimuladorPdfInput,
   planta: ImageAsset | null,
@@ -396,79 +373,115 @@ const drawPlantasPage = (
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const contentW = pageW - PAGE.marginX * 2;
-  const left = PAGE.marginX + 4;
+  const left = PAGE.marginX + 3.5;
   const s = input.simulacion;
 
   doc.addPage();
   let y = PAGE.marginTop;
 
+  // Cabecera compacta
   setFill(doc, CREAM);
-  roundedRect(doc, PAGE.marginX, y, contentW, 18, "F", 2);
   setDraw(doc, BORDER);
-  doc.setLineWidth(0.2);
-  roundedRect(doc, PAGE.marginX, y, contentW, 18, "S", 2);
-
-  caps(doc, "Planta arquitectónica", left, y + 6, { color: ACCENT });
-  text(doc, `${s.unidad} · ${s.modelo}`, left, y + 12, { size: 11, bold: true });
+  doc.setLineWidth(0.15);
+  roundedRect(doc, PAGE.marginX, y, contentW, 12, "FD", 1.5);
+  text(doc, `${s.unidad} · ${s.modelo}`, left, y + 5, { size: 9, bold: true });
   text(
     doc,
     `Edificio ${s.edificio} · ${s.lado}${s.entregaLabel ? ` · Entrega ${s.entregaLabel}` : ""}`,
-    PAGE.marginX + contentW - 4,
-    y + 12,
-    { size: 7.5, color: MUTED, align: "right", maxW: contentW * 0.45 },
+    PAGE.marginX + contentW - 3.5,
+    y + 5,
+    { size: 7, color: MUTED, align: "right", maxW: contentW * 0.48 },
   );
-  y += 24;
+  text(doc, "Planta · Términos", left, y + 9.5, { size: 6, color: ACCENT });
+  y += 15;
 
-  const usableH = pageH - y - PAGE.marginBottom - 8;
-  const hasRoof = Boolean(roof);
+  const terminosReserve = 72;
+  const usableH = pageH - y - PAGE.marginBottom - terminosReserve - 4;
+  const hasRoof = Boolean(roof && planta);
 
   if (!planta && !roof) {
     setFill(doc, SLATE_50);
-    roundedRect(doc, PAGE.marginX, y, contentW, 40, "F", 2);
-    text(doc, "Planta no disponible para esta unidad.", left, y + 20, {
-      size: 9,
+    roundedRect(doc, PAGE.marginX, y, contentW, 28, "F", 1.5);
+    text(doc, "Planta no disponible para esta unidad.", left, y + 15, {
+      size: 8,
       color: MUTED,
     });
-    return;
-  }
-
-  if (hasRoof && planta && roof) {
-    const gap = 4;
+    y += 32;
+  } else if (hasRoof && planta && roof) {
+    const gap = 3;
     const colW = (contentW - gap) / 2;
-    const boxH = Math.min(usableH - 10, 150);
-
-    caps(doc, "Planta", left, y, { color: ACCENT, size: 5.5 });
-    caps(doc, "Roof garden", left + colW + gap, y, { color: ACCENT, size: 5.5 });
-    y += 3;
-
+    const boxH = Math.min(usableH, 118);
+    caps(doc, "Planta", left, y, { color: ACCENT, size: 5 });
+    caps(doc, "Roof garden", left + colW + gap, y, { color: ACCENT, size: 5 });
+    y += 2.5;
     setFill(doc, WHITE);
     setDraw(doc, BORDER);
-    roundedRect(doc, PAGE.marginX, y, colW, boxH, "FD", 2);
-    roundedRect(doc, PAGE.marginX + colW + gap, y, colW, boxH, "FD", 2);
-
+    roundedRect(doc, PAGE.marginX, y, colW, boxH, "FD", 1.5);
+    roundedRect(doc, PAGE.marginX + colW + gap, y, colW, boxH, "FD", 1.5);
     try {
-      drawFittedImage(doc, planta, PAGE.marginX, y, colW, boxH, 4);
+      drawFittedImage(doc, planta, PAGE.marginX, y, colW, boxH, 3);
     } catch {
       // opcional
     }
     try {
-      drawFittedImage(doc, roof, PAGE.marginX + colW + gap, y, colW, boxH, 4);
+      drawFittedImage(doc, roof, PAGE.marginX + colW + gap, y, colW, boxH, 3);
     } catch {
       // opcional
     }
+    y += boxH + 4;
   } else if (planta) {
-    const boxH = Math.min(usableH, 170);
-    caps(doc, "Planta", left, y, { color: ACCENT, size: 5.5 });
-    y += 3;
+    const boxH = Math.min(usableH, 130);
+    caps(doc, "Planta arquitectónica", left, y, { color: ACCENT, size: 5 });
+    y += 2.5;
     setFill(doc, WHITE);
     setDraw(doc, BORDER);
-    roundedRect(doc, PAGE.marginX, y, contentW, boxH, "FD", 2);
+    roundedRect(doc, PAGE.marginX, y, contentW, boxH, "FD", 1.5);
     try {
-      drawFittedImage(doc, planta, PAGE.marginX, y, contentW, boxH, 5);
+      drawFittedImage(doc, planta, PAGE.marginX, y, contentW, boxH, 4);
     } catch {
       // opcional
     }
+    y += boxH + 4;
   }
+
+  // Términos en la misma página (tipografía densa)
+  caps(doc, "Términos y condiciones", left, y + 2, { color: ACCENT, size: 5.5 });
+  y += 5.5;
+
+  const termBlocks: string[][] = MISION_LA_GAVIA_TERMINOS_CONDICIONES.map((line, index) => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    return doc.splitTextToSize(`${index + 1}. ${line}`, contentW - 10) as string[];
+  });
+  const termsInnerH =
+    termBlocks.reduce((sum, parts) => sum + parts.length * 3.1 + 1.1, 0) + 4;
+  const termsH = Math.min(termsInnerH, pageH - y - PAGE.marginBottom - 8);
+
+  setFill(doc, SLATE_50);
+  setDraw(doc, BORDER);
+  doc.setLineWidth(0.15);
+  roundedRect(doc, PAGE.marginX, y, contentW, termsH, "FD", 1.5);
+
+  let ty = y + 4;
+  for (const parts of termBlocks) {
+    const blockH = parts.length * 3.1;
+    if (ty + blockH > y + termsH - 2) break;
+    parts.forEach((part, lineIndex) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      setText(doc, MUTED);
+      doc.text(part, left, ty + lineIndex * 3.1);
+    });
+    ty += blockH + 1.1;
+  }
+
+  text(
+    doc,
+    "Documento informativo · GABI · Misión La Gavia · BBR Habitarea",
+    left,
+    Math.min(pageH - PAGE.marginBottom - 2, y + termsH + 4.5),
+    { size: 6, color: MUTED, maxW: contentW - 6 },
+  );
 };
 
 export async function downloadMisionLaGaviaSimuladorPdf(
@@ -493,7 +506,8 @@ export async function downloadMisionLaGaviaSimuladorPdf(
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const contentW = pageW - PAGE.marginX * 2;
-  const left = PAGE.marginX + 4;
+  const left = PAGE.marginX + 3.5;
+  const right = PAGE.marginX + contentW - 3.5;
   const footerTop = pageH - PAGE.marginBottom - PAGE.footerH;
 
   const fechaDoc = new Date().toLocaleDateString("es-MX", {
@@ -502,182 +516,163 @@ export async function downloadMisionLaGaviaSimuladorPdf(
     year: "numeric",
   });
 
-  let y: number = PAGE.marginTop;
-  y = drawHeader(doc, y, contentW, input, logo, fechaDoc);
+  let y = drawHeader(doc, PAGE.marginTop, contentW, input, logo, fechaDoc);
 
+  // Unidad + specs en una sola franja
   setFill(doc, SLATE_50);
   setDraw(doc, BORDER);
-  doc.setLineWidth(0.2);
-  roundedRect(doc, PAGE.marginX, y, contentW, 34, "FD", 2);
-  caps(doc, "Unidad", left, y + 6, { color: ACCENT });
-  text(doc, `Departamento ${s.unidad}`, left, y + 13, { size: 12, bold: true });
+  doc.setLineWidth(0.15);
+  roundedRect(doc, PAGE.marginX, y, contentW, 22, "FD", 1.5);
+  caps(doc, "Unidad", left, y + 4.5, { color: ACCENT, size: 5 });
+  text(doc, `Departamento ${s.unidad}`, left, y + 10, { size: 11, bold: true });
 
-  const specs: Array<[string, string]> = [
-    ["Modelo", s.modelo],
-    ["Edificio", s.edificio],
-    ["Lado", s.lado],
-    ["m² totales", formatAreaM2(s.m2Totales) || String(s.m2Totales)],
+  const specs: string[] = [
+    s.modelo,
+    `Edif. ${s.edificio}`,
+    s.lado,
+    formatAreaM2(s.m2Totales) || `${s.m2Totales} m²`,
   ];
-  if (input.recamaras) {
-    specs.push(["Recámaras", String(input.recamaras)]);
-  }
-  if (s.entregaLabel) {
-    specs.push(["Entrega", s.entregaLabel]);
-  }
-
-  const colW = (contentW - 8) / 3;
-  specs.slice(0, 6).forEach(([label, value], index) => {
-    const col = index % 3;
-    const row = Math.floor(index / 3);
-    const sx = left + col * colW;
-    const sy = y + 20 + row * 7;
-    caps(doc, label, sx, sy, { size: 5.5 });
-    text(doc, value, sx, sy + 3.5, { size: 8, bold: true, maxW: colW - 2 });
+  if (input.recamaras) specs.push(`${input.recamaras}R`);
+  if (s.entregaLabel) specs.push(`Entrega ${s.entregaLabel}`);
+  text(doc, specs.join("  ·  "), left, y + 16.5, {
+    size: 7.5,
+    color: MUTED,
+    maxW: contentW - 8,
   });
-  y += 38;
+  y += 25;
 
+  // Precios
+  const priceH = 16;
+  const listaW = contentW * 0.38;
+  const totalW = contentW - listaW - PAGE.gap;
   setFill(doc, ACCENT);
-  roundedRect(doc, PAGE.marginX, y, contentW * 0.42, 20, "F", 2);
-  caps(doc, "Precio lista mar26", left, y + 6, { color: WHITE, size: 5.5 });
-  text(doc, formatPrice(s.precioLista), left, y + 14, {
-    size: 12,
+  roundedRect(doc, PAGE.marginX, y, listaW, priceH, "F", 1.5);
+  caps(doc, "Precio lista", left, y + 4.5, { color: WHITE, size: 5 });
+  text(doc, formatPrice(s.precioLista), left, y + 11.5, {
+    size: 10,
     bold: true,
     color: WHITE,
   });
 
   setFill(doc, INK);
-  roundedRect(
-    doc,
-    PAGE.marginX + contentW * 0.42 + PAGE.gap,
-    y,
-    contentW * 0.58 - PAGE.gap,
-    20,
-    "F",
-    2,
-  );
-  caps(doc, `Total ${s.esquemaLabel}`, PAGE.marginX + contentW * 0.42 + PAGE.gap + 4, y + 6, {
+  roundedRect(doc, PAGE.marginX + listaW + PAGE.gap, y, totalW, priceH, "F", 1.5);
+  caps(doc, `Total ${s.esquemaLabel}`, PAGE.marginX + listaW + PAGE.gap + 3.5, y + 4.5, {
     color: WHITE,
-    size: 5.5,
+    size: 5,
   });
-  text(doc, formatPrice(s.precioTotal), PAGE.marginX + contentW * 0.42 + PAGE.gap + 4, y + 14, {
-    size: 13,
+  text(doc, formatPrice(s.precioTotal), PAGE.marginX + listaW + PAGE.gap + 3.5, y + 11.5, {
+    size: 11,
     bold: true,
     color: WHITE,
   });
-  y += 24;
+  y += priceH + 2.5;
 
-  text(doc, s.descripcionPago, left, y + 2, { size: 8, color: MUTED, maxW: contentW - 8 });
-  y += 10;
+  // Meta comercial en una línea
+  const metaBits = [
+    `Desc. vs lista ${formatPctShort(s.descuentoVsListaPct)}`,
+    s.descuentoEspecialPct && s.descuentoEspecialPct > 0
+      ? `Especial ${formatPctShort(s.descuentoEspecialPct)}`
+      : null,
+    `Renta ref. ${formatPrice(s.rentaMensual)}/mes`,
+    `~${formatPctShort(s.rendimientoRentasAnual)} anual`,
+  ].filter(Boolean);
+  text(doc, metaBits.join("  ·  "), left, y + 3, {
+    size: 7,
+    color: MUTED,
+    maxW: contentW - 7,
+  });
+  y += 7;
 
+  text(doc, shortDescripcion(s), left, y + 2, {
+    size: 7,
+    color: MUTED,
+    maxW: contentW - 7,
+  });
+  y += 8;
+
+  // Plan compacto
   const calendario = buildCalendarioPagosMisionLaGavia(s, {
     diaPago: input.diaPago ?? MISION_LA_GAVIA_DIA_PAGO_DEFAULT,
   });
-  const rowH = 5.2;
-  const headerH = 10;
-  const maxRowsFit = Math.max(
-    4,
-    Math.floor((footerTop - y - 18 - headerH) / rowH),
-  );
-  const visibleRows = calendario.slice(0, maxRowsFit);
-  const omitted = Math.max(0, calendario.length - visibleRows.length);
-  const payH = headerH + visibleRows.length * rowH + (omitted ? 5 : 0) + 6;
+  const planRows = buildCompactPlanRows(calendario, s.esquemaLabel);
+  const rowH = 6.2;
+  const headerH = 8;
+  const payH = headerH + planRows.length * rowH + 8;
 
   setFill(doc, WHITE);
   setDraw(doc, BORDER);
-  roundedRect(doc, PAGE.marginX, y, contentW, payH, "FD", 2);
-  caps(doc, `Plan de pagos — ${s.esquemaLabel}`, left, y + 5);
-  text(doc, "No.", left, y + 9.5, { size: 6.5, color: MUTED });
-  text(doc, "Fecha", left + 12, y + 9.5, { size: 6.5, color: MUTED });
-  text(doc, "Concepto", left + 42, y + 9.5, { size: 6.5, color: MUTED });
-  text(doc, "Pago", PAGE.marginX + contentW - 4, y + 9.5, {
-    size: 6.5,
-    color: MUTED,
-    align: "right",
-  });
+  roundedRect(doc, PAGE.marginX, y, contentW, payH, "FD", 1.5);
+  caps(doc, `Plan de pagos — ${s.esquemaLabel}`, left, y + 5, { size: 5.5 });
 
-  visibleRows.forEach((fila, index) => {
-    const py = y + headerH + 2 + index * rowH;
-    text(doc, String(fila.numero), left, py, { size: 7.5 });
-    text(doc, formatMonthYear(fila.fechaPago), left + 12, py, { size: 7.5 });
-    text(doc, fila.concepto, left + 42, py, { size: 7.5, maxW: contentW - 70 });
-    text(doc, formatPrice(fila.pagoTotal), PAGE.marginX + contentW - 4, py, {
-      size: 7.5,
-      bold: true,
-      align: "right",
+  const colConcepto = left;
+  const colPeriodo = left + 42;
+  const colDetalle = left + 78;
+  text(doc, "Concepto", colConcepto, y + 9.5, { size: 6, color: MUTED });
+  text(doc, "Periodo", colPeriodo, y + 9.5, { size: 6, color: MUTED });
+  text(doc, "Detalle", colDetalle, y + 9.5, { size: 6, color: MUTED });
+  text(doc, "Monto", right, y + 9.5, { size: 6, color: MUTED, align: "right" });
+
+  planRows.forEach((row, index) => {
+    const py = y + headerH + 3 + index * rowH;
+    if (index % 2 === 1) {
+      setFill(doc, SLATE_50);
+      doc.rect(PAGE.marginX + 1, py - 3.5, contentW - 2, rowH, "F");
+    }
+    text(doc, row.concepto, colConcepto, py, {
+      size: 8,
+      bold: Boolean(row.emphasize),
+      maxW: 40,
     });
-  });
-
-  if (omitted > 0) {
-    text(
-      doc,
-      `+ ${omitted} pago(s) adicional(es) en el detalle del simulador`,
-      left,
-      y + headerH + visibleRows.length * rowH + 2,
-      { size: 6.5, color: MUTED },
-    );
-  }
-
-  y += payH + 4;
-
-  const metaRows: Array<[string, string]> = [
-    ["Descuento vs lista", formatPctShort(s.descuentoVsListaPct)],
-  ];
-  if (s.descuentoEspecialPct && s.descuentoEspecialPct > 0) {
-    metaRows.push(["Descuento especial", formatPctShort(s.descuentoEspecialPct)]);
-  }
-  metaRows.forEach(([label, value], index) => {
-    const py = y + index * 5;
-    text(doc, label, left, py, { size: 7.5, color: MUTED });
-    text(doc, value, PAGE.marginX + contentW - 4, py, {
+    text(doc, row.periodo, colPeriodo, py, { size: 7.5, color: MUTED, maxW: 34 });
+    text(doc, row.detalle, colDetalle, py, { size: 7, color: MUTED, maxW: contentW - 110 });
+    text(doc, row.monto, right, py, {
       size: 8,
       bold: true,
       align: "right",
     });
   });
-  y += metaRows.length * 5 + 2;
 
-  setFill(doc, SLATE_50);
-  roundedRect(doc, PAGE.marginX, y, contentW, 16, "F", 2);
-  caps(doc, "Plusvalía / renta referencial", left, y + 5);
-  text(
-    doc,
-    `Renta estimada ${formatPrice(s.rentaMensual)}/mes · rendimiento rentas ~${formatPctShort(s.rendimientoRentasAnual)} anual`,
-    left,
-    y + 11,
-    { size: 8, maxW: contentW - 8 },
-  );
+  // Total del plan
+  const totalY = y + headerH + planRows.length * rowH + 4;
+  text(doc, "Total plan", colConcepto, totalY, { size: 7.5, color: MUTED });
+  text(doc, formatPrice(s.precioTotal), right, totalY, {
+    size: 9,
+    bold: true,
+    align: "right",
+  });
+  y += payH + 3;
 
   if (planta || roof) {
-    y += 20;
     setFill(doc, CREAM);
     setDraw(doc, BORDER);
-    roundedRect(doc, PAGE.marginX, y, contentW, 12, "FD", 2);
+    roundedRect(doc, PAGE.marginX, y, contentW, 9, "FD", 1.5);
     text(
       doc,
       roof
-        ? "Ver página siguiente: planta arquitectónica y roof garden."
-        : "Ver página siguiente: planta arquitectónica.",
+        ? "Página siguiente: planta arquitectónica, roof garden y términos."
+        : "Página siguiente: planta arquitectónica y términos.",
       left,
-      y + 7.5,
-      { size: 8, color: INK, maxW: contentW - 8 },
+      y + 5.8,
+      { size: 7, color: INK, maxW: contentW - 7 },
     );
   }
 
   setFill(doc, SLATE_50);
-  roundedRect(doc, PAGE.marginX, footerTop, contentW, PAGE.footerH, "F", 2);
+  roundedRect(doc, PAGE.marginX, footerTop, contentW, PAGE.footerH, "F", 1.5);
   text(
     doc,
-    "Vigencia 10 días naturales · Ver página de Términos y condiciones al final de este documento.",
+    "Vigencia 10 días naturales · Valores referenciales · No constituye preaprobación",
     left,
-    footerTop + 8,
-    { size: 6.5, color: MUTED, maxW: contentW - 8 },
+    footerTop + 6.2,
+    { size: 6, color: MUTED, maxW: contentW - 7 },
   );
 
   if (planta || roof) {
-    drawPlantasPage(doc, input, planta, roof);
+    drawPlantasAndTerminosPage(doc, input, planta, roof);
+  } else {
+    // Sin planta: términos en página 2 compacta
+    drawPlantasAndTerminosPage(doc, input, null, null);
   }
-
-  drawTerminosPage(doc, input);
 
   const fileName = `cotizacion-gavia-${s.unidad}-${slugify(input.clienteNombre ?? "prospecto")}.pdf`;
   doc.save(fileName);
