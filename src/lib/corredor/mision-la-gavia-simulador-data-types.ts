@@ -1,5 +1,6 @@
 export type MisionLaGaviaEsquemaId =
   | "contado"
+  | "msi"
   | "6msi"
   | "12msi"
   | "30-70"
@@ -40,11 +41,17 @@ export type MisionLaGaviaLibreConfig = {
   fechaFiniquito?: Date;
 };
 
+/** MSI unificado: número de mensualidades que elige el cliente. */
+export type MisionLaGaviaMsiConfig = {
+  numMensualidades: number;
+};
+
 export type MisionLaGaviaSimulacionInput = {
   unidad: MisionLaGaviaUnidadRecord;
   esquema: MisionLaGaviaEsquemaId;
   fechaCotizacion?: Date;
   libre?: MisionLaGaviaLibreConfig;
+  msi?: MisionLaGaviaMsiConfig;
   /** Descuento especial gerente/director (fracción 0–0.015). */
   descuentoEspecialPct?: number;
 };
@@ -59,7 +66,7 @@ export type MisionLaGaviaSimulacionResult = {
   m2Totales: number;
   precioLista: number;
   precioTotal: number;
-  /** Precio contado (base de capitalización Libre). */
+  /** Precio contado (base del esquema Libre). */
   precioContado?: number;
   /** Descuento especial aplicado (fracción 0–0.015). */
   descuentoEspecialPct?: number;
@@ -78,4 +85,16 @@ export type MisionLaGaviaSimulacionResult = {
   rendimientoRentasAnual: number;
   descripcionPago: string;
   error?: string;
+};
+
+/** Día fijo de enganche y mensualidades en el calendario comercial. */
+export type MisionLaGaviaDiaPago = "dia-15" | "fin-mes";
+
+/** Fila del calendario comercial (prospecto): fecha + monto. */
+export type MisionLaGaviaFilaPago = {
+  numero: number;
+  fechaPago: Date;
+  pagoTotal: number;
+  tipo: "enganche" | "mensualidad" | "finiquito";
+  concepto: string;
 };

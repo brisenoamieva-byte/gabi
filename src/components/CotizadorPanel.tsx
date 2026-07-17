@@ -88,9 +88,11 @@ export type CotizadorPanelProps = {
   misionLaGaviaLibreEnganche?: number;
   misionLaGaviaLibreMensualidades?: number;
   misionLaGaviaLibreFechaFiniquito?: string;
+  misionLaGaviaMsiMensualidades?: number;
   onMisionLaGaviaLibreEngancheChange?: MisionLaGaviaSimuladorPanelProps["onLibreEngancheChange"];
   onMisionLaGaviaLibreMensualidadesChange?: MisionLaGaviaSimuladorPanelProps["onLibreMensualidadesChange"];
   onMisionLaGaviaLibreFechaFiniquitoChange?: MisionLaGaviaSimuladorPanelProps["onLibreFechaFiniquitoChange"];
+  onMisionLaGaviaMsiMensualidadesChange?: MisionLaGaviaSimuladorPanelProps["onMsiNumMensualidadesChange"];
 };
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -264,6 +266,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         libreEnganchePct={props.misionLaGaviaLibreEnganche}
         libreMensualidadesPct={props.misionLaGaviaLibreMensualidades}
         libreFechaFiniquito={props.misionLaGaviaLibreFechaFiniquito}
+        msiNumMensualidades={props.misionLaGaviaMsiMensualidades}
         onClusterChange={props.onClusterChange}
         onPrototipoChange={props.onPrototipoChange}
         onUnidadChange={props.onUnidadChange}
@@ -271,6 +274,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         onLibreEngancheChange={props.onMisionLaGaviaLibreEngancheChange}
         onLibreMensualidadesChange={props.onMisionLaGaviaLibreMensualidadesChange}
         onLibreFechaFiniquitoChange={props.onMisionLaGaviaLibreFechaFiniquitoChange}
+        onMsiNumMensualidadesChange={props.onMisionLaGaviaMsiMensualidadesChange}
         onClienteNombreChange={props.onClienteNombreChange}
       />
     );

@@ -124,23 +124,53 @@ export function PriceSelector({
   options: number[];
   onChange: (value: number) => void;
 }) {
-  const optionValues = options.includes(value)
-    ? options
-    : [...options, value].sort((a, b) => a - b);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const listId = useMemo(
+    () => `price-options-${label.toLowerCase().replace(/\s+/g, "-")}`,
+    [label],
+  );
+
+  const optionValues = useMemo(() => {
+    if (options.includes(value)) return options;
+    return [...options, value].sort((a, b) => a - b);
+  }, [options, value]);
 
   return (
     <Field label={label}>
-      <select
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="input-xl appearance-none"
-      >
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        list={listId}
+        value={editing ? draft : formatRecorridoMoney(value)}
+        onFocus={(event) => {
+          setEditing(true);
+          setDraft(String(value));
+          requestAnimationFrame(() => event.target.select());
+        }}
+        onBlur={() => {
+          setEditing(false);
+          const parsed = Number(draft.replace(/\D/g, "")) || 0;
+          onChange(Math.max(0, parsed));
+        }}
+        onChange={(event) => {
+          const digits = event.target.value.replace(/\D/g, "");
+          setDraft(digits);
+          if (digits) {
+            onChange(Math.max(0, Number(digits)));
+          }
+        }}
+        className="input-xl tabular-nums tracking-tight"
+        aria-label={`${label} en pesos mexicanos`}
+      />
+      <datalist id={listId}>
         {optionValues.map((option) => (
           <option key={option} value={option}>
             {formatPrice(option)}
           </option>
         ))}
-      </select>
+      </datalist>
     </Field>
   );
 }

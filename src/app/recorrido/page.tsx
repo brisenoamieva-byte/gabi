@@ -28,6 +28,7 @@ import { trackVisita } from "@/lib/visitas/client";
 import { PasajeAcabadosPanel } from "@/components/PasajeAcabadosPanel";
 import { CotizadorPanel } from "@/components/CotizadorPanel";
 import { InvesttiSimuladorPanel } from "@/components/corredor/investti/InvesttiSimuladorPanel";
+import { MisionLaGaviaAcabadosPanel } from "@/components/corredor/mision-la-gavia/MisionLaGaviaAcabadosPanel";
 import { MisionLaGaviaSimuladorPanel } from "@/components/corredor/mision-la-gavia/MisionLaGaviaSimuladorPanel";
 import {
   getCotizadorKind,
@@ -36,6 +37,8 @@ import {
 import {
   investtiCatalogHasSimulador,
 } from "@/lib/catalog/investti-desarrollos";
+import { resolveMisionLaGaviaPrototipoPlanta } from "@/lib/disponibilidad/planos/plantas";
+import { isMisionLaGaviaDepartamentosCluster } from "@/lib/catalog/mision-la-gavia-acabados";
 import {
   isPasajeDepartamentosCluster,
 } from "@/lib/catalog/pasaje-alamos-acabados";
@@ -444,6 +447,17 @@ function RecorridoPageContent() {
   const selectedPrototipo = clusterPrototipos.find(
     (prototipo) => prototipo.id === state.prototipoId,
   );
+  const selectedPrototipoPlantaSrc = selectedPrototipo
+    ? resolveMisionLaGaviaPrototipoPlanta(selectedPrototipo) ??
+      selectedPrototipo.planos[0] ??
+      null
+    : null;
+  const selectedPrototipoHeroSrc =
+    selectedPrototipo?.fotos[0] ?? selectedPrototipoPlantaSrc;
+  const selectedPrototipoHeroIsPlanta =
+    Boolean(selectedPrototipoHeroSrc) &&
+    selectedPrototipoHeroSrc === selectedPrototipoPlantaSrc &&
+    !selectedPrototipo?.fotos[0];
   const unidadesPrototipoSeleccionado = useMemo(
     () =>
       selectedPrototipo
@@ -2065,6 +2079,12 @@ function RecorridoPageContent() {
                             );
                             const precioDesde = getPrecioDesdePrototipo(prototipo, unidades);
                             const desde = prototipoMuestraPrecioDesde(unidades);
+                            const plantaSrc =
+                              resolveMisionLaGaviaPrototipoPlanta(prototipo) ??
+                              prototipo.planos[0] ??
+                              null;
+                            const thumbSrc = prototipo.fotos[0] ?? plantaSrc;
+                            const thumbIsPlanta = Boolean(thumbSrc) && !prototipo.fotos[0];
 
                             return (
                             <button
@@ -2077,17 +2097,23 @@ function RecorridoPageContent() {
                                   : "ring-transparent"
                               }`}
                             >
-                              {prototipo.fotos[0] && (
-                                <div className="mb-4 h-40 overflow-hidden rounded-2xl bg-slate-100">
+                              {thumbSrc ? (
+                                <div className="mb-4 h-40 overflow-hidden rounded-2xl bg-slate-50">
                                   <Image
-                                    src={prototipo.fotos[0]}
-                                    alt={`Fachada ${prototipo.nombre}`}
+                                    src={thumbSrc}
+                                    alt={
+                                      thumbIsPlanta
+                                        ? `Planta ${prototipo.nombre}`
+                                        : `Fachada ${prototipo.nombre}`
+                                    }
                                     width={420}
                                     height={320}
-                                    className="h-full w-full object-cover"
+                                    className={`h-full w-full ${
+                                      thumbIsPlanta ? "object-contain p-2" : "object-cover"
+                                    }`}
                                   />
                                 </div>
-                              )}
+                              ) : null}
                               <h3 className="text-xl font-black text-[#201044]">
                                 {prototipo.nombre}
                               </h3>
@@ -2154,14 +2180,22 @@ function RecorridoPageContent() {
                     <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
                       <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
                         <div className="mb-5 grid gap-4">
-                          {selectedPrototipo.fotos[0] ? (
-                            <div className="overflow-hidden rounded-[1.5rem] bg-slate-100">
+                          {selectedPrototipoHeroSrc ? (
+                            <div className="overflow-hidden rounded-[1.5rem] bg-slate-50">
                               <Image
-                                src={selectedPrototipo.fotos[0]}
-                                alt={`Fachada ${selectedPrototipo.nombre}`}
+                                src={selectedPrototipoHeroSrc}
+                                alt={
+                                  selectedPrototipoHeroIsPlanta
+                                    ? `Planta ${selectedPrototipo.nombre}`
+                                    : `Fachada ${selectedPrototipo.nombre}`
+                                }
                                 width={900}
                                 height={680}
-                                className="h-72 w-full object-cover"
+                                className={
+                                  selectedPrototipoHeroIsPlanta
+                                    ? "mx-auto max-h-[420px] w-full object-contain p-4"
+                                    : "h-72 w-full object-cover"
+                                }
                               />
                             </div>
                           ) : (
@@ -2169,7 +2203,7 @@ function RecorridoPageContent() {
                               Foto placeholder
                             </div>
                           )}
-                          {selectedPrototipo.planos[0] && (
+                          {selectedPrototipo.fotos[0] && selectedPrototipoPlantaSrc ? (
                             <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
                               <div className="border-b border-slate-100 px-4 py-3">
                                 <p className="text-sm font-black uppercase tracking-wide text-[#6CC24A]">
@@ -2177,14 +2211,14 @@ function RecorridoPageContent() {
                                 </p>
                               </div>
                               <Image
-                                src={selectedPrototipo.planos[0]}
+                                src={selectedPrototipoPlantaSrc}
                                 alt={`Plano ${selectedPrototipo.nombre}`}
                                 width={900}
                                 height={900}
                                 className="max-h-[520px] w-full object-contain"
                               />
                             </div>
-                          )}
+                          ) : null}
                         </div>
                         <h2 className="text-2xl font-black text-[#201044]">
                           {selectedPrototipo.nombre}
@@ -2275,6 +2309,8 @@ function RecorridoPageContent() {
                       <div className="space-y-5">
                         {isPasajeDepartamentosCluster(selectedCluster?.id) ? (
                           <PasajeAcabadosPanel />
+                        ) : isMisionLaGaviaDepartamentosCluster(selectedCluster?.id) ? (
+                          <MisionLaGaviaAcabadosPanel />
                         ) : (
                           <>
                             <ListBox
@@ -2334,6 +2370,7 @@ function RecorridoPageContent() {
                               libreEnganchePct={state.misionLaGaviaLibreEnganche}
                               libreMensualidadesPct={state.misionLaGaviaLibreMensualidades}
                               libreFechaFiniquito={state.misionLaGaviaLibreFechaFiniquito}
+                              msiNumMensualidades={state.misionLaGaviaMsiMensualidades}
                               onUnidadChange={(id) => patchState({ unidadId: id ?? "" })}
                               onEsquemaChange={(value) =>
                                 patchState({ misionLaGaviaEsquema: value })
@@ -2346,6 +2383,9 @@ function RecorridoPageContent() {
                               }
                               onLibreFechaFiniquitoChange={(value) =>
                                 patchState({ misionLaGaviaLibreFechaFiniquito: value })
+                              }
+                              onMsiNumMensualidadesChange={(value) =>
+                                patchState({ misionLaGaviaMsiMensualidades: value })
                               }
                               onClienteNombreChange={(nombre) => patchCliente({ nombre })}
                             />
@@ -2678,6 +2718,7 @@ function RecorridoPageContent() {
             misionLaGaviaLibreEnganche={state.misionLaGaviaLibreEnganche}
             misionLaGaviaLibreMensualidades={state.misionLaGaviaLibreMensualidades}
             misionLaGaviaLibreFechaFiniquito={state.misionLaGaviaLibreFechaFiniquito}
+            misionLaGaviaMsiMensualidades={state.misionLaGaviaMsiMensualidades}
             onMisionLaGaviaLibreEngancheChange={(value) =>
               patchState({ misionLaGaviaLibreEnganche: value })
             }
@@ -2686,6 +2727,9 @@ function RecorridoPageContent() {
             }
             onMisionLaGaviaLibreFechaFiniquitoChange={(value) =>
               patchState({ misionLaGaviaLibreFechaFiniquito: value })
+            }
+            onMisionLaGaviaMsiMensualidadesChange={(value) =>
+              patchState({ misionLaGaviaMsiMensualidades: value })
             }
             onClienteNombreChange={(nombre) => patchCliente({ nombre })}
           />

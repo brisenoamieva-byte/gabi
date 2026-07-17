@@ -214,7 +214,7 @@ export type PasajeSimuladorResultado = {
 export const PASAJE_ESQUEMA_LABELS: Record<PasajeEsquemaPago, string> = {
   contado: "Contado",
   "contado-diferido": "Contado diferido",
-  msi: "Meses sin intereses",
+  msi: "MSI",
   "30-30-40": "30-30-40",
   libre: "Libre",
   "libre-sin-mensualidades": "Libre sin mensualidades",

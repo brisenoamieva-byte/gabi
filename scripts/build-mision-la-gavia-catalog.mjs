@@ -88,6 +88,16 @@ const precioDesdeLista = Math.min(...unidades.map((u) => u.precioLista));
 
 const prototipos = [...modelosMap.values()].map((m) => {
   const slug = slugify(m.modelo);
+  const tipologia = m.recamaras >= 3 ? "3r" : "2r";
+  const modeloNorm = String(m.modelo)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  let nivelCode = "01";
+  if (modeloNorm.includes("primer")) nivelCode = "02";
+  else if (modeloNorm.includes("segundo") || modeloNorm.includes("roof")) nivelCode = "03";
+  const plantaSrc = `/desarrollos/mision-la-gavia/plantas/${tipologia}-izq-${nivelCode}.png`;
+
   return {
     id: `${MISION_LA_GAVIA_CLUSTER_ID}-${slug}`,
     clusterId: MISION_LA_GAVIA_CLUSTER_ID,
@@ -103,7 +113,7 @@ const prototipos = [...modelosMap.values()].map((m) => {
     entrega: "Según calendario por torre",
     equipamientoIncluido: [],
     noIncluye: [],
-    planos: [],
+    planos: [plantaSrc],
     fotos: [],
     activo: true,
     soldOut: false,

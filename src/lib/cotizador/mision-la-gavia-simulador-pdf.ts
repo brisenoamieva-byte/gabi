@@ -1,8 +1,15 @@
 import { formatPrice } from "@/lib/data";
 import { formatAreaM2 } from "@/lib/format/money";
 import { formatMonthYear } from "@/lib/cotizador/pasaje-simulador";
-import { formatPctShort } from "@/lib/corredor/mision-la-gavia-simulador";
-import type { MisionLaGaviaSimulacionResult } from "@/lib/corredor/mision-la-gavia-simulador-data-types";
+import {
+  buildCalendarioPagosMisionLaGavia,
+  formatPctShort,
+  MISION_LA_GAVIA_DIA_PAGO_DEFAULT,
+} from "@/lib/corredor/mision-la-gavia-simulador";
+import type {
+  MisionLaGaviaDiaPago,
+  MisionLaGaviaSimulacionResult,
+} from "@/lib/corredor/mision-la-gavia-simulador-data-types";
 import {
   decodeMisionLaGaviaUnidad,
   type GaviaTipologia,
@@ -16,6 +23,8 @@ export type MisionLaGaviaSimuladorPdfInput = {
   clienteNombre?: string;
   asesorNombre?: string;
   recamaras?: number;
+  /** Día fijo de enganche/mensualidades en el plan de pagos. */
+  diaPago?: MisionLaGaviaDiaPago;
 };
 
 /** Paleta Gavia — contraste alto para impresión. */
@@ -36,14 +45,20 @@ const PAGE = {
   marginX: 14,
   marginTop: 12,
   marginBottom: 10,
-  footerH: 20,
+  footerH: 14,
   gap: 3.5,
 } as const;
 
-const DISCLAIMERS = [
-  "Vigencia de una semana, sujeto a cambio sin previo aviso.",
-  "Valores referenciales. Esta cotización no constituye preaprobación ni compromiso de apartado.",
-];
+/** Términos oficiales de cotización Misión La Gavia. */
+export const MISION_LA_GAVIA_TERMINOS_CONDICIONES = [
+  "Todos los precios tienen una vigencia de 10 días naturales y están sujetos a cambio sin previo aviso.",
+  "El apartado es de $50,000.00 (cincuenta mil pesos 00/100 M.N.) y deberá pagarse en una sola exhibición para bloquear la Unidad Residencial de su interés. La cantidad restante se cubrirá conforme al plan comercial pactado por escrito.",
+  "Antes de realizar cualquier pago, deberá integrar su expediente básico: identificación oficial vigente, carta oferta o contrato de promesa de compraventa debidamente firmado así como el formato de Ley Antilavado.",
+  "La disponibilidad y los precios pueden cambiar sin previo aviso hasta que exista carta oferta firmada y apartado confirmado.",
+  "Los valores anteriores son sólo referenciales e informativos, por lo que esta consulta no constituye preaprobación y por lo tanto no compromete al desarrollo.",
+  "Las imágenes, renders y demás elementos visuales incluidos en esta cotización son de carácter ilustrativo y pueden modificarse sin previo aviso.",
+  "Todos los pagos deberán provenir de la cuenta del comprador.",
+] as const;
 
 const slugify = (value: string) =>
   value
@@ -309,6 +324,69 @@ const drawHeader = (
   return y + h + 5;
 };
 
+const drawTerminosPage = (doc: JsPDFDoc, input: MisionLaGaviaSimuladorPdfInput) => {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const contentW = pageW - PAGE.marginX * 2;
+  const left = PAGE.marginX + 4;
+  const s = input.simulacion;
+
+  doc.addPage();
+  let y = PAGE.marginTop;
+
+  setFill(doc, CREAM);
+  setDraw(doc, BORDER);
+  doc.setLineWidth(0.2);
+  roundedRect(doc, PAGE.marginX, y, contentW, 18, "FD", 2);
+  caps(doc, "Cotización", left, y + 6, { color: ACCENT });
+  text(doc, "TÉRMINOS Y CONDICIONES", left, y + 12.5, { size: 12, bold: true });
+  text(
+    doc,
+    `${s.unidad} · ${input.clienteNombre?.trim() || "Prospecto"}`,
+    PAGE.marginX + contentW - 4,
+    y + 12.5,
+    { size: 7.5, color: MUTED, align: "right", maxW: contentW * 0.42 },
+  );
+  y += 26;
+
+  MISION_LA_GAVIA_TERMINOS_CONDICIONES.forEach((line, index) => {
+    const bullet = `${index + 1}.`;
+    const maxW = contentW - 14;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8.5);
+    setText(doc, MUTED);
+    const parts = doc.splitTextToSize(line, maxW) as string[];
+    const blockH = Math.max(6, parts.length * 4.2 + 2);
+
+    if (y + blockH > pageH - PAGE.marginBottom - 8) {
+      doc.addPage();
+      y = PAGE.marginTop;
+    }
+
+    text(doc, bullet, left, y + 3.5, { size: 8.5, bold: true, color: INK });
+    parts.forEach((part, lineIndex) => {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8.5);
+      setText(doc, MUTED);
+      doc.text(part, left + 8, y + 3.5 + lineIndex * 4.2);
+    });
+    y += blockH + 2.5;
+  });
+
+  y += 4;
+  if (y + 14 < pageH - PAGE.marginBottom) {
+    setFill(doc, SLATE_50);
+    roundedRect(doc, PAGE.marginX, y, contentW, 12, "F", 2);
+    text(
+      doc,
+      "Documento informativo generado en GABI · Misión La Gavia · BBR Habitarea",
+      left,
+      y + 7,
+      { size: 7, color: MUTED, maxW: contentW - 8 },
+    );
+  }
+};
+
 const drawPlantasPage = (
   doc: JsPDFDoc,
   input: MisionLaGaviaSimuladorPdfInput,
@@ -491,51 +569,72 @@ export async function downloadMisionLaGaviaSimuladorPdf(
   text(doc, s.descripcionPago, left, y + 2, { size: 8, color: MUTED, maxW: contentW - 8 });
   y += 10;
 
-  const paymentRows: Array<[string, string, string?]> = [
-    [`Enganche ${formatPctShort(s.enganchePct)}`, formatPrice(s.enganche)],
-  ];
-  if (s.mensualidad && s.numMensualidades) {
-    paymentRows.push([
-      `${s.numMensualidades} pagos`,
-      formatPrice(s.mensualidad),
-      s.fechaPrimerPago && s.fechaUltimoPago
-        ? `${formatMonthYear(s.fechaPrimerPago)} – ${formatMonthYear(s.fechaUltimoPago)}`
-        : undefined,
-    ]);
-  }
-  if (s.finiquito) {
-    paymentRows.push([
-      `Finiquito ${formatPctShort(s.finiquitoPct ?? 0)}`,
-      formatPrice(s.finiquito),
-      s.fechaFiniquito ? formatMonthYear(s.fechaFiniquito) : s.entregaLabel,
-    ]);
-  }
-  paymentRows.push(["Descuento vs lista", formatPctShort(s.descuentoVsListaPct)]);
-  if (s.descuentoEspecialPct && s.descuentoEspecialPct > 0) {
-    paymentRows.push([
-      "Descuento especial",
-      formatPctShort(s.descuentoEspecialPct),
-    ]);
-  }
+  const calendario = buildCalendarioPagosMisionLaGavia(s, {
+    diaPago: input.diaPago ?? MISION_LA_GAVIA_DIA_PAGO_DEFAULT,
+  });
+  const rowH = 5.2;
+  const headerH = 10;
+  const maxRowsFit = Math.max(
+    4,
+    Math.floor((footerTop - y - 18 - headerH) / rowH),
+  );
+  const visibleRows = calendario.slice(0, maxRowsFit);
+  const omitted = Math.max(0, calendario.length - visibleRows.length);
+  const payH = headerH + visibleRows.length * rowH + (omitted ? 5 : 0) + 6;
 
   setFill(doc, WHITE);
   setDraw(doc, BORDER);
-  const payH = 8 + paymentRows.length * 8;
   roundedRect(doc, PAGE.marginX, y, contentW, payH, "FD", 2);
-  caps(doc, "Desglose de pagos", left, y + 5);
-  paymentRows.forEach(([label, value, helper], index) => {
-    const py = y + 11 + index * 8;
-    text(doc, label, left, py, { size: 8 });
-    text(doc, value, PAGE.marginX + contentW - 4, py, {
-      size: 9,
+  caps(doc, `Plan de pagos — ${s.esquemaLabel}`, left, y + 5);
+  text(doc, "No.", left, y + 9.5, { size: 6.5, color: MUTED });
+  text(doc, "Fecha", left + 12, y + 9.5, { size: 6.5, color: MUTED });
+  text(doc, "Concepto", left + 42, y + 9.5, { size: 6.5, color: MUTED });
+  text(doc, "Pago", PAGE.marginX + contentW - 4, y + 9.5, {
+    size: 6.5,
+    color: MUTED,
+    align: "right",
+  });
+
+  visibleRows.forEach((fila, index) => {
+    const py = y + headerH + 2 + index * rowH;
+    text(doc, String(fila.numero), left, py, { size: 7.5 });
+    text(doc, formatMonthYear(fila.fechaPago), left + 12, py, { size: 7.5 });
+    text(doc, fila.concepto, left + 42, py, { size: 7.5, maxW: contentW - 70 });
+    text(doc, formatPrice(fila.pagoTotal), PAGE.marginX + contentW - 4, py, {
+      size: 7.5,
       bold: true,
       align: "right",
     });
-    if (helper) {
-      text(doc, helper, left, py + 3.2, { size: 6.5, color: MUTED });
-    }
   });
-  y += payH + 6;
+
+  if (omitted > 0) {
+    text(
+      doc,
+      `+ ${omitted} pago(s) adicional(es) en el detalle del simulador`,
+      left,
+      y + headerH + visibleRows.length * rowH + 2,
+      { size: 6.5, color: MUTED },
+    );
+  }
+
+  y += payH + 4;
+
+  const metaRows: Array<[string, string]> = [
+    ["Descuento vs lista", formatPctShort(s.descuentoVsListaPct)],
+  ];
+  if (s.descuentoEspecialPct && s.descuentoEspecialPct > 0) {
+    metaRows.push(["Descuento especial", formatPctShort(s.descuentoEspecialPct)]);
+  }
+  metaRows.forEach(([label, value], index) => {
+    const py = y + index * 5;
+    text(doc, label, left, py, { size: 7.5, color: MUTED });
+    text(doc, value, PAGE.marginX + contentW - 4, py, {
+      size: 8,
+      bold: true,
+      align: "right",
+    });
+  });
+  y += metaRows.length * 5 + 2;
 
   setFill(doc, SLATE_50);
   roundedRect(doc, PAGE.marginX, y, contentW, 16, "F", 2);
@@ -566,17 +665,19 @@ export async function downloadMisionLaGaviaSimuladorPdf(
 
   setFill(doc, SLATE_50);
   roundedRect(doc, PAGE.marginX, footerTop, contentW, PAGE.footerH, "F", 2);
-  DISCLAIMERS.forEach((line, index) => {
-    text(doc, `• ${line}`, left, footerTop + 5 + index * 4.5, {
-      size: 6,
-      color: MUTED,
-      maxW: contentW - 8,
-    });
-  });
+  text(
+    doc,
+    "Vigencia 10 días naturales · Ver página de Términos y condiciones al final de este documento.",
+    left,
+    footerTop + 8,
+    { size: 6.5, color: MUTED, maxW: contentW - 8 },
+  );
 
   if (planta || roof) {
     drawPlantasPage(doc, input, planta, roof);
   }
+
+  drawTerminosPage(doc, input);
 
   const fileName = `cotizacion-gavia-${s.unidad}-${slugify(input.clienteNombre ?? "prospecto")}.pdf`;
   doc.save(fileName);

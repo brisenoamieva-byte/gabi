@@ -15,15 +15,23 @@ import { endOfMonth, formatMonthYear } from "@/lib/cotizador/pasaje-simulador";
 import { downloadMisionLaGaviaSimuladorPdf } from "@/lib/cotizador/mision-la-gavia-simulador-pdf";
 import { MISION_LA_GAVIA_UNIDADES } from "@/lib/corredor/mision-la-gavia-unidades.generated";
 import {
+  buildCalendarioPagosMisionLaGavia,
   buildMisionLaGaviaSimulacionSummary,
+  clampMsiMensualidades,
+  defaultMsiMensualidadesForEsquema,
   formatPctShort,
   getMisionLaGaviaEsquemas,
+  labelDiaPagoMisionLaGavia,
+  MISION_LA_GAVIA_DIA_PAGO_DEFAULT,
   MISION_LA_GAVIA_ENTREGA_ETAPA1_ISO,
   MISION_LA_GAVIA_LIBRE_DEFAULTS,
+  MISION_LA_GAVIA_MSI_DEFAULTS,
+  normalizeMisionLaGaviaEsquema,
   resolveMisionLaGaviaUnidadFromInventario,
   simularMisionLaGavia,
-  simularTodosEsquemasMisionLaGavia,
+  type MisionLaGaviaDiaPago,
   type MisionLaGaviaEsquemaId,
+  type MisionLaGaviaFilaPago,
   type MisionLaGaviaUnidadRecord,
 } from "@/lib/corredor/mision-la-gavia-simulador";
 import {
@@ -59,6 +67,8 @@ export type MisionLaGaviaSimuladorPanelProps = {
   libreEnganchePct?: number;
   libreMensualidadesPct?: number;
   libreFechaFiniquito?: string;
+  /** Número de mensualidades del esquema MSI unificado. */
+  msiNumMensualidades?: number;
   onClusterChange?: (clusterId: string) => void;
   onPrototipoChange?: (prototipoId: string | undefined) => void;
   onUnidadChange?: (unidadId: string | undefined) => void;
@@ -66,6 +76,7 @@ export type MisionLaGaviaSimuladorPanelProps = {
   onLibreEngancheChange?: (value: number) => void;
   onLibreMensualidadesChange?: (value: number) => void;
   onLibreFechaFiniquitoChange?: (value: string) => void;
+  onMsiNumMensualidadesChange?: (value: number) => void;
   onClienteNombreChange?: (value: string) => void;
 };
 
@@ -290,24 +301,45 @@ export function MisionLaGaviaSimuladorPanel({
   libreEnganchePct,
   libreMensualidadesPct,
   libreFechaFiniquito,
+  msiNumMensualidades,
   onUnidadChange,
   onEsquemaChange,
   onLibreEngancheChange,
   onLibreMensualidadesChange,
   onLibreFechaFiniquitoChange,
+  onMsiNumMensualidadesChange,
   onClienteNombreChange,
 }: MisionLaGaviaSimuladorPanelProps) {
   const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [edificio, setEdificio] = useState("");
   const [unidadCode, setUnidadCode] = useState("");
-  const [esquemaLocal, setEsquemaLocal] = useState<MisionLaGaviaEsquemaId>(esquema);
+  const [esquemaLocal, setEsquemaLocal] = useState<MisionLaGaviaEsquemaId>(() =>
+    normalizeMisionLaGaviaEsquema(esquema),
+  );
+  const [msiMensualidadesLocal, setMsiMensualidadesLocal] = useState(() =>
+    clampMsiMensualidades(
+      msiNumMensualidades ?? defaultMsiMensualidadesForEsquema(esquema),
+    ),
+  );
+  const [diaPago, setDiaPago] = useState<MisionLaGaviaDiaPago>(
+    MISION_LA_GAVIA_DIA_PAGO_DEFAULT,
+  );
   const [plantasOpen, setPlantasOpen] = useState(false);
   const [descuentoEspecialPct, setDescuentoEspecialPct] = useState(0);
 
   useEffect(() => {
-    setEsquemaLocal(esquema);
+    setEsquemaLocal(normalizeMisionLaGaviaEsquema(esquema));
+    if (esquema === "6msi" || esquema === "12msi") {
+      setMsiMensualidadesLocal(defaultMsiMensualidadesForEsquema(esquema));
+    }
   }, [esquema]);
+
+  useEffect(() => {
+    if (msiNumMensualidades != null) {
+      setMsiMensualidadesLocal(clampMsiMensualidades(msiNumMensualidades));
+    }
+  }, [msiNumMensualidades]);
 
   const esquemas = useMemo(() => getMisionLaGaviaEsquemas(), []);
   const unidadesInventario = useMemo(
@@ -450,6 +482,10 @@ export function MisionLaGaviaSimuladorPanel({
               fechaFiniquito,
             }
           : undefined,
+      msi:
+        esquemaLocal === "msi"
+          ? { numMensualidades: msiMensualidadesLocal }
+          : undefined,
     });
   }, [
     descuentoEspecialPct,
@@ -458,26 +494,36 @@ export function MisionLaGaviaSimuladorPanel({
     libreEnganche,
     libreFechaFiniquito,
     libreMensualidades,
+    msiMensualidadesLocal,
     unidadRecord,
   ]);
 
-  const comparativo = useMemo(() => {
-    if (!unidadRecord) return [];
-    return simularTodosEsquemasMisionLaGavia(unidadRecord, undefined, descuentoEspecialPct);
-  }, [descuentoEspecialPct, unidadRecord]);
+  const calendarioPagos = useMemo(() => {
+    if (!simulacion) return [];
+    return buildCalendarioPagosMisionLaGavia(simulacion, { diaPago });
+  }, [diaPago, simulacion]);
+
+  const rangoMensualidades = useMemo(() => {
+    const mens = calendarioPagos.filter((fila) => fila.tipo === "mensualidad");
+    if (mens.length === 0) return undefined;
+    const first = mens[0]!;
+    const last = mens[mens.length - 1]!;
+    return `${formatMonthYear(first.fechaPago)} – ${formatMonthYear(last.fechaPago)}`;
+  }, [calendarioPagos]);
 
   const puedeEditarMontosLibre =
     esquemaLocal === "libre" &&
     Boolean(onLibreEngancheChange && onLibreMensualidadesChange);
 
-  const libreMensualidadesMax = Math.min(0.5, Math.max(0, 1 - libreEnganche));
+  // Finiquito = remanente; puede ser 0% si enganche + mensualidades = 100%.
+  const libreMensualidadesMax = Math.max(0, 1 - libreEnganche);
 
   const handleLibreEngancheChange = (value: number) => {
     if (!onLibreEngancheChange) return;
     const nextEnganche = clamp(value, 0.15, 1);
     onLibreEngancheChange(nextEnganche);
     if (onLibreMensualidadesChange) {
-      const maxMens = Math.min(0.5, Math.max(0, 1 - nextEnganche));
+      const maxMens = Math.max(0, 1 - nextEnganche);
       if (libreMensualidades > maxMens) {
         onLibreMensualidadesChange(maxMens);
       }
@@ -490,6 +536,7 @@ export function MisionLaGaviaSimuladorPanel({
   };
 
   const syncLibreEngancheFromAmount = (amount: number) => {
+    // En Libre el % de enganche se aplica al precio de contado (como en el Excel).
     const base = simulacion?.precioContado ?? unidadRecord?.precioContado ?? 0;
     if (!onLibreEngancheChange || base <= 0) {
       return;
@@ -508,16 +555,29 @@ export function MisionLaGaviaSimuladorPanel({
   };
 
   const syncLibreFiniquitoFromAmount = (amount: number) => {
-    if (!onLibreMensualidadesChange || !simulacion || simulacion.precioTotal <= 0) {
+    if (!onLibreMensualidadesChange || !simulacion || simulacion.precioContado <= 0) {
       return;
     }
-    const finiquitoPct = clamp(amount / simulacion.precioTotal, 0, 1 - libreEnganche);
+    if (amount <= 0) {
+      // Todo en enganche + mensualidades (finiquito 0%).
+      handleLibreMensualidadesChange(1 - libreEnganche);
+      return;
+    }
+    // Aproxima el % de contado con el monto capturado (remanente hasta 100%).
+    const finiquitoPct = clamp(amount / simulacion.precioContado, 0, 1 - libreEnganche);
     handleLibreMensualidadesChange(1 - libreEnganche - finiquitoPct);
   };
 
   const handleEsquema = (value: MisionLaGaviaEsquemaId) => {
-    setEsquemaLocal(value);
-    onEsquemaChange?.(value);
+    const normalized = normalizeMisionLaGaviaEsquema(value);
+    setEsquemaLocal(normalized);
+    onEsquemaChange?.(normalized);
+  };
+
+  const handleMsiMensualidades = (value: number) => {
+    const next = clampMsiMensualidades(value);
+    setMsiMensualidadesLocal(next);
+    onMsiNumMensualidadesChange?.(next);
   };
 
   const persistCotizacion = (opts?: { pdfGenerado?: boolean; origen?: string }) => {
@@ -555,6 +615,8 @@ export function MisionLaGaviaSimuladorPanel({
       simulacion,
       desarrolloNombre,
       clienteNombre,
+      undefined,
+      diaPago,
     );
     try {
       await navigator.clipboard.writeText(summary);
@@ -586,6 +648,7 @@ export function MisionLaGaviaSimuladorPanel({
         clienteNombre,
         asesorNombre,
         recamaras: unidadRecord?.recamaras,
+        diaPago,
       });
       persistCotizacion({
         pdfGenerado: true,
@@ -773,6 +836,27 @@ export function MisionLaGaviaSimuladorPanel({
         </div>
       </div>
 
+      {esquemaLocal === "msi" ? (
+        <label className="block max-w-xs">
+          <FieldLabel>Número de mensualidades</FieldLabel>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={MISION_LA_GAVIA_MSI_DEFAULTS.minMensualidades}
+            max={MISION_LA_GAVIA_MSI_DEFAULTS.maxMensualidades}
+            step={1}
+            value={msiMensualidadesLocal}
+            onChange={(event) => handleMsiMensualidades(Number(event.target.value))}
+            className="input-cotizador"
+          />
+          <p className="mt-1.5 text-[11px] text-slate-500">
+            Escribe cuántas mensualidades quiere el cliente (antes 6MSI / 12MSI).
+            Rango {MISION_LA_GAVIA_MSI_DEFAULTS.minMensualidades}–
+            {MISION_LA_GAVIA_MSI_DEFAULTS.maxMensualidades}.
+          </p>
+        </label>
+      ) : null}
+
       <DescuentoEspecialField
         asesorRol={asesorRol}
         value={descuentoEspecialPct}
@@ -837,7 +921,7 @@ export function MisionLaGaviaSimuladorPanel({
               label={`Finiquito (${formatPctShort(Math.max(0, 1 - libreEnganche - libreMensualidades))})`}
               amount={simulacion.finiquito ?? 0}
               onAmountChange={puedeEditarMontosLibre ? syncLibreFiniquitoFromAmount : undefined}
-              helper="Enganche hasta 100%. Mínimos: enganche 15%, enganche + mensualidades 30%. El descuento se recalcula capitalizando al 11% anual desde el precio contado."
+              helper="Los % se aplican al contado. El finiquito es el remanente y puede ser 0% si enganche + mensualidades suman 100%. El total de venta es la suma del plan."
             />
           </div>
         </div>
@@ -871,23 +955,24 @@ export function MisionLaGaviaSimuladorPanel({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
-          label={`Enganche ${formatPctShort(simulacion.enganchePct)}`}
+          label={`Enganche ${formatPctShort(simulacion.enganchePct)} del contado`}
           value={formatPrice(simulacion.enganche)}
+          helper={
+            simulacion.precioContado
+              ? `Sobre precio contado ${formatPrice(simulacion.precioContado)}`
+              : undefined
+          }
         />
         {simulacion.mensualidad && simulacion.numMensualidades ? (
           <MetricCard
             label={`${simulacion.numMensualidades} pagos`}
             value={formatPrice(simulacion.mensualidad)}
-            helper={
-              simulacion.fechaPrimerPago && simulacion.fechaUltimoPago
-                ? `${formatMonthYear(simulacion.fechaPrimerPago)} – ${formatMonthYear(simulacion.fechaUltimoPago)}`
-                : undefined
-            }
+            helper={rangoMensualidades}
           />
         ) : null}
         {simulacion.finiquito ? (
           <MetricCard
-            label={`Finiquito ${formatPctShort(simulacion.finiquitoPct ?? 0)}`}
+            label={`Finiquito ${formatPctShort(simulacion.finiquitoPct ?? 0)} del contado`}
             value={formatPrice(simulacion.finiquito)}
             helper={
               simulacion.fechaFiniquito
@@ -898,36 +983,30 @@ export function MisionLaGaviaSimuladorPanel({
         ) : null}
       </div>
 
-      <div className="rounded-2xl bg-slate-50 px-4 py-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-          Comparativo rápido
-        </p>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[420px] text-left text-sm">
-            <thead>
-              <tr className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <th className="pb-2 pr-3">Esquema</th>
-                <th className="pb-2 pr-3">Total</th>
-                <th className="pb-2">Enganche</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparativo.map((row) => (
-                <tr
-                  key={row.esquema}
-                  className={
-                    row.esquema === esquemaLocal ? "font-bold text-[#14453D]" : "text-slate-600"
-                  }
-                >
-                  <td className="py-1.5 pr-3">{row.esquemaLabel}</td>
-                  <td className="py-1.5 pr-3 tabular-nums">{formatPrice(row.precioTotal)}</td>
-                  <td className="py-1.5 tabular-nums">{formatPrice(row.enganche)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {calendarioPagos.length > 0 ? (
+        <div className="space-y-3">
+          <label className="block max-w-sm">
+            <FieldLabel>Día de pago (enganche y mensualidades)</FieldLabel>
+            <select
+              value={diaPago}
+              onChange={(event) => setDiaPago(event.target.value as MisionLaGaviaDiaPago)}
+              className="input-cotizador"
+            >
+              <option value="fin-mes">Último día de cada mes</option>
+              <option value="dia-15">Día 15 de cada mes</option>
+            </select>
+            <p className="mt-1.5 text-[11px] text-slate-500">
+              Enganche y mensualidades caen en {labelDiaPagoMisionLaGavia(diaPago)}. El
+              finiquito respeta la fecha de entrega pactada.
+            </p>
+          </label>
+          <CalendarioPagosGavia
+            filas={calendarioPagos}
+            titulo={`Plan de pagos — ${simulacion.esquemaLabel}`}
+            descripcion={simulacion.descripcionPago}
+          />
         </div>
-      </div>
+      ) : null}
 
       {onClienteNombreChange ? (
         <label className="block">
@@ -987,6 +1066,75 @@ export function MisionLaGaviaSimuladorPanel({
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function fmtFechaPago(d: Date): string {
+  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "2-digit" });
+}
+
+function CalendarioPagosGavia({
+  filas,
+  titulo,
+  descripcion,
+}: {
+  filas: MisionLaGaviaFilaPago[];
+  titulo: string;
+  descripcion: string;
+}) {
+  const totalPagado = filas.reduce((sum, fila) => sum + fila.pagoTotal, 0);
+
+  return (
+    <div className="mt-2">
+      <div className="mb-3">
+        <h3 className="text-base font-bold text-[#14453D]">{titulo}</h3>
+        <p className="mt-1 text-[12px] text-slate-600">{descripcion}</p>
+      </div>
+
+      <div className="max-h-[28rem] overflow-auto rounded-xl border border-slate-200">
+        <table className="w-full min-w-[420px] border-collapse text-left text-[12px]">
+          <thead className="sticky top-0 z-10 bg-slate-50">
+            <tr className="border-b border-slate-200 text-[10px] uppercase tracking-wide text-slate-400">
+              <th className="px-3 py-2.5 font-medium">No.</th>
+              <th className="px-3 py-2.5 font-medium">Mes</th>
+              <th className="px-3 py-2.5 font-medium">Concepto</th>
+              <th className="px-3 py-2.5 text-right font-medium">Pago total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((fila) => (
+              <tr
+                key={`${fila.tipo}-${fila.numero}`}
+                className={`border-b border-slate-100 ${
+                  fila.tipo === "enganche"
+                    ? "bg-amber-50/50"
+                    : fila.tipo === "finiquito"
+                      ? "bg-emerald-50/40"
+                      : ""
+                }`}
+              >
+                <td className="px-3 py-2 tabular-nums text-slate-500">{fila.numero}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{fmtFechaPago(fila.fechaPago)}</td>
+                <td className="px-3 py-2 text-slate-600">{fila.concepto}</td>
+                <td className="px-3 py-2 text-right tabular-nums font-medium text-[#14453D]">
+                  {formatPrice(fila.pagoTotal)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t border-slate-200 bg-slate-50 font-medium">
+              <td colSpan={3} className="px-3 py-2.5 text-[11px] uppercase tracking-wide text-slate-500">
+                Total
+              </td>
+              <td className="px-3 py-2.5 text-right tabular-nums text-[#14453D]">
+                {formatPrice(totalPagado)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 }

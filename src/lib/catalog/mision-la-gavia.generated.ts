@@ -32,7 +32,9 @@ export const misionLaGaviaPrototipos: Prototipo[] = [
     "entrega": "Según calendario por torre",
     "equipamientoIncluido": [],
     "noIncluye": [],
-    "planos": [],
+    "planos": [
+      "/desarrollos/mision-la-gavia/plantas/2r-izq-01.png"
+    ],
     "fotos": [],
     "activo": true,
     "soldOut": false
@@ -52,7 +54,9 @@ export const misionLaGaviaPrototipos: Prototipo[] = [
     "entrega": "Según calendario por torre",
     "equipamientoIncluido": [],
     "noIncluye": [],
-    "planos": [],
+    "planos": [
+      "/desarrollos/mision-la-gavia/plantas/2r-izq-02.png"
+    ],
     "fotos": [],
     "activo": true,
     "soldOut": false
@@ -72,7 +76,9 @@ export const misionLaGaviaPrototipos: Prototipo[] = [
     "entrega": "Según calendario por torre",
     "equipamientoIncluido": [],
     "noIncluye": [],
-    "planos": [],
+    "planos": [
+      "/desarrollos/mision-la-gavia/plantas/2r-izq-03.png"
+    ],
     "fotos": [],
     "activo": true,
     "soldOut": false
@@ -92,7 +98,9 @@ export const misionLaGaviaPrototipos: Prototipo[] = [
     "entrega": "Según calendario por torre",
     "equipamientoIncluido": [],
     "noIncluye": [],
-    "planos": [],
+    "planos": [
+      "/desarrollos/mision-la-gavia/plantas/3r-izq-01.png"
+    ],
     "fotos": [],
     "activo": true,
     "soldOut": false
@@ -112,7 +120,9 @@ export const misionLaGaviaPrototipos: Prototipo[] = [
     "entrega": "Según calendario por torre",
     "equipamientoIncluido": [],
     "noIncluye": [],
-    "planos": [],
+    "planos": [
+      "/desarrollos/mision-la-gavia/plantas/3r-izq-02.png"
+    ],
     "fotos": [],
     "activo": true,
     "soldOut": false
@@ -132,7 +142,9 @@ export const misionLaGaviaPrototipos: Prototipo[] = [
     "entrega": "Según calendario por torre",
     "equipamientoIncluido": [],
     "noIncluye": [],
-    "planos": [],
+    "planos": [
+      "/desarrollos/mision-la-gavia/plantas/3r-izq-03.png"
+    ],
     "fotos": [],
     "activo": true,
     "soldOut": false

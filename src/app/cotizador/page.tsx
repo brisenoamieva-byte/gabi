@@ -22,6 +22,7 @@ import type { PasajeEsquemaPago } from "@/lib/cotizador/pasaje-simulador";
 import type { MisionLaGaviaEsquemaId } from "@/lib/corredor/mision-la-gavia-simulador";
 import {
   MISION_LA_GAVIA_LIBRE_DEFAULTS,
+  MISION_LA_GAVIA_MSI_DEFAULTS,
 } from "@/lib/corredor/mision-la-gavia-simulador";
 import {
   INVESTTI_GRUPO_LOGO,
@@ -139,6 +140,9 @@ function CotizadorPageContent() {
   const [misionLaGaviaLibreFechaFiniquito, setMisionLaGaviaLibreFechaFiniquito] = useState<
     string | undefined
   >();
+  const [misionLaGaviaMsiMensualidades, setMisionLaGaviaMsiMensualidades] = useState(
+    MISION_LA_GAVIA_MSI_DEFAULTS.numMensualidades,
+  );
   const [clienteNombre, setClienteNombre] = useState<string | undefined>();
   const [clienteEmail, setClienteEmail] = useState<string | undefined>();
   const [clienteTelefono, setClienteTelefono] = useState<string | undefined>();
@@ -566,9 +570,11 @@ function CotizadorPageContent() {
               misionLaGaviaLibreEnganche={misionLaGaviaLibreEnganche}
               misionLaGaviaLibreMensualidades={misionLaGaviaLibreMensualidades}
               misionLaGaviaLibreFechaFiniquito={misionLaGaviaLibreFechaFiniquito}
+              misionLaGaviaMsiMensualidades={misionLaGaviaMsiMensualidades}
               onMisionLaGaviaLibreEngancheChange={setMisionLaGaviaLibreEnganche}
               onMisionLaGaviaLibreMensualidadesChange={setMisionLaGaviaLibreMensualidades}
               onMisionLaGaviaLibreFechaFiniquitoChange={setMisionLaGaviaLibreFechaFiniquito}
+              onMisionLaGaviaMsiMensualidadesChange={setMisionLaGaviaMsiMensualidades}
               onClienteNombreChange={setClienteNombre}
             />
           </div>

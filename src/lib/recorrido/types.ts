@@ -44,6 +44,7 @@ export type RecorridoState = {
   misionLaGaviaLibreEnganche?: number;
   misionLaGaviaLibreMensualidades?: number;
   misionLaGaviaLibreFechaFiniquito?: string;
+  misionLaGaviaMsiMensualidades?: number;
 };
 
 export type StoredContact = {

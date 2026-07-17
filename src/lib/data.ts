@@ -1313,7 +1313,7 @@ export const bondadesMisionLaGavia = [
   'Galerías Querétaro, Plaza Constituyentes, Citadina, Soriana, Walmart, Sam\'s, Esfera, La Comer',
   'Restaurantes en Jardines del Hacienda: Sushi Roll, Tacos el Pata, Rebel Wings, Cielito Querido, Crepería',
   'Amenidades: juegos infantiles, alberca, pet park, terraza, parque lineal y baños',
-  'Superficies desde 90.5 m² · esquemas Contado, MSI, 30-70 y 15-85 (lista mar26)',
+  'Superficies desde 90.5 m² · esquemas Contado, MSI, 30-70 y Libre (lista mar26)',
 ]
 
 export const tecnicaDosMinutosMisionLaGavia = {
