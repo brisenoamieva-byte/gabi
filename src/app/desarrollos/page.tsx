@@ -10,6 +10,11 @@ import { DesarrolloSelectorLogo } from "@/components/desarrollos/DesarrolloSelec
 import { getDesarrolloSelectorOrder } from "@/lib/catalog/desarrollos-registry";
 import { applyDesarrolloCodeDefaults } from "@/lib/catalog/code-sync";
 import type { DesarrolloRecord } from "@/lib/catalog/types";
+import {
+  refreshStoredAsesorSession,
+  syncAsesorFromAdminAuth,
+  writeStoredAsesorSession,
+} from "@/lib/asesores/session-client";
 import { logoutAsesorSession } from "@/lib/session/asesor-session-actions";
 import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
@@ -47,8 +52,31 @@ export default function DesarrollosPage() {
     const loadDesarrollos = async () => {
       setLoadingCatalog(true);
       try {
-        const ids = user.desarrollosIds.join(",");
-        const response = await fetch(`/api/catalog/desarrollos?ids=${encodeURIComponent(ids)}`);
+        let ids = user.desarrollosIds.filter(Boolean);
+
+        // Sesión vieja / perfil sin alcance: re-sincroniza (operador debe ver todos).
+        if (!ids.length) {
+          const synced = await syncAsesorFromAdminAuth();
+          if (synced?.asesor.desarrollosIds.length) {
+            ids = synced.asesor.desarrollosIds;
+          } else {
+            const refreshed = await refreshStoredAsesorSession();
+            if (refreshed?.desarrollosIds.length) {
+              ids = refreshed.desarrollosIds;
+            }
+          }
+        }
+
+        if (!ids.length) {
+          setDesarrollosDisponibles([]);
+          return;
+        }
+
+        writeStoredAsesorSession({ ...user, desarrollosIds: ids });
+
+        const response = await fetch(
+          `/api/catalog/desarrollos?ids=${encodeURIComponent(ids.join(","))}`,
+        );
         const data = (await response.json()) as { desarrollos?: DesarrolloRecord[] };
         setDesarrollosDisponibles(
           sortDesarrollosForHub(
@@ -156,9 +184,17 @@ export default function DesarrollosPage() {
             <div className="rounded-xl border border-dashed border-black/15 bg-white p-6 text-center sm:col-span-2">
               <p className="font-bold">Sin desarrollos asignados</p>
               <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
-                Tu usuario no tiene proyectos activos. Pide a tu coordinador que revise tu perfil
-                en el panel admin de gabi.
+                Tu usuario no tiene proyectos activos. Cierra sesión, vuelve a entrar, o pide
+                en admin de gabi que te asignen desarrollos.
               </p>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white"
+                style={{ backgroundColor: primary }}
+              >
+                Cerrar sesión y reintentar
+              </button>
             </div>
           ) : (
             desarrollosDisponibles.map((desarrollo, index) => (

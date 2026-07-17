@@ -168,18 +168,21 @@ export const resolveCampoAsesorSessionForAdminUser = async (input: {
 }): Promise<AsesorSession | null> => {
   const adminRol = input.adminRol ?? "operaciones";
   const adminDesarrollosIds = input.adminDesarrollosIds ?? [];
+  const emailCandidates = Array.from(
+    new Set([input.adminEmail, input.authEmail].map(normalizeEmail).filter(Boolean)),
+  );
+  const isOperator = emailCandidates.some((email) => isGabiOperator({ email }));
+  /** Operador gabi siempre ve todos los desarrollos activos (no el alcance vacío del perfil). */
+  const effectiveRol: AdminRol = isOperator ? "superadmin" : adminRol;
+  const effectiveDesarrollosIds = isOperator ? [] : adminDesarrollosIds;
 
-  if (!canAdminOpenCampoCrm(adminRol)) {
+  if (!canAdminOpenCampoCrm(effectiveRol) && !isOperator) {
     return null;
   }
 
   let asesor: AsesorSession | null = await getLinkedAsesorSessionForAdminUser(input.adminUserId);
 
   if (!asesor) {
-    const emailCandidates = Array.from(
-      new Set([input.adminEmail, input.authEmail].map(normalizeEmail).filter(Boolean)),
-    );
-
     for (const email of emailCandidates) {
       const byEmail = await findAsesorSessionByEmail(email);
       if (byEmail) {
@@ -189,24 +192,15 @@ export const resolveCampoAsesorSessionForAdminUser = async (input: {
     }
   }
 
-  if (!asesor && adminRol === "superadmin") {
-    if (
-      [input.adminEmail, input.authEmail]
-        .map(normalizeEmail)
-        .some((email) => email && isGabiOperator({ email }))
-    ) {
-      asesor = await findOperatorSeedAsesorSession();
-    }
-    if (!asesor) {
-      asesor = await findOperatorSeedAsesorSession();
-    }
+  if (!asesor && (effectiveRol === "superadmin" || isOperator)) {
+    asesor = await findOperatorSeedAsesorSession();
   }
 
   if (!asesor) {
     return null;
   }
 
-  return applyAdminScopeToAsesorSession(asesor, adminRol, adminDesarrollosIds);
+  return applyAdminScopeToAsesorSession(asesor, effectiveRol, effectiveDesarrollosIds);
 };
 
 /** Sesión CRM de campo para operador gabi autenticado con cookie master (sin Supabase). */
