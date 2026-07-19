@@ -171,9 +171,9 @@ export function GabiHomePage() {
             </div>
           </div>
 
-          <p className="mt-16 max-w-[52ch] text-[13px] leading-[1.6] text-gabi-navy/40 md:mt-20">
-            Pensado para desarrollos que venden con equipo en showroom — no para
-            portales de anuncios ni CRMs genéricos.
+          <p className="mt-16 max-w-[48ch] text-[13px] leading-[1.6] text-gabi-navy/40 md:mt-20">
+            Diseñado desde dirección comercial, con el proceso real de showroom — no un CRM
+            genérico adaptado a inmobiliaria.
           </p>
         </div>
       </section>
