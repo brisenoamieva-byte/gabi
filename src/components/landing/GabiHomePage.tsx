@@ -237,6 +237,9 @@ export function GabiHomePage() {
             <a href="mailto:hola@gabi.mx" className="text-gabi-navy/45 hover:text-gabi-navy">
               hola@gabi.mx
             </a>
+            <Link href="/aviso-de-privacidad" className="text-gabi-navy/45 hover:text-gabi-navy">
+              Aviso de privacidad
+            </Link>
             <Link href="/acceso" className="text-gabi-navy/45 hover:text-gabi-navy">
               Entrar
             </Link>
