@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 /**
  * Regenera PNG PWA + favicon desde public/logos/gabi-icon.svg
- * (misma geometría que GabiMark en src/components/brand/GabiLogo.tsx).
+ * (wordmark oficial: g teal + abi blanco sobre navy).
  */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");

@@ -21,8 +21,8 @@ const variantClasses: Record<GabiLogoVariant, string> = {
 };
 
 /**
- * Monograma solo para favicon / PWA / usos compactos.
- * No va junto al wordmark (evita “g gabi”).
+ * Icono compacto del wordmark oficial (misma marca que favicon / PWA).
+ * No va junto al wordmark tipográfico (evita “gabi gabi”).
  */
 export function GabiMark({
   className = "",
@@ -41,21 +41,19 @@ export function GabiMark({
       role={title ? "img" : undefined}
     >
       {title ? <title>{title}</title> : null}
-      <rect width="32" height="32" rx="9" fill="#13315C" />
-      <circle
-        cx="15.4"
-        cy="14.2"
-        r="6.35"
-        stroke="#2DD4BF"
-        strokeWidth="3.15"
-      />
-      <path
-        d="M21.75 14.2V24.4H13.2"
-        stroke="#2DD4BF"
-        strokeWidth="3.15"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect width="32" height="32" rx="5.1" fill="#13315C" />
+      <text
+        x="16"
+        y="21"
+        textAnchor="middle"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="8.75"
+        fontWeight="700"
+        letterSpacing="-0.38"
+      >
+        <tspan fill="#2DD4BF">g</tspan>
+        <tspan fill="#FFFFFF">abi</tspan>
+      </text>
     </svg>
   );
 }
