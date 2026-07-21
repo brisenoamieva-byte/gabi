@@ -79,9 +79,16 @@ export function useRequireAsesorSession(options: Options = {}) {
         }
 
         const freshUser = await refreshStoredAsesorSession();
+        let activeUser = freshUser ?? storedUser;
+
         if (!freshUser) {
           const synced = await syncAsesorFromAdminAuth();
-          if (!synced) {
+          if (synced) {
+            activeUser = synced.asesor;
+            if (synced.portal) {
+              portalSession = synced.portal;
+            }
+          } else if (!storedUser) {
             localStorage.removeItem(GABI_USER_KEY);
             localStorage.removeItem(GABI_DESARROLLO_KEY);
             router.replace(
@@ -91,7 +98,12 @@ export function useRequireAsesorSession(options: Options = {}) {
           }
         }
 
-        const activeUser = freshUser ?? storedUser;
+        if (!activeUser) {
+          router.replace(
+            portalSession ? resolveAdvisorEntryPath(portalSession) : "/acceso",
+          );
+          return;
+        }
 
         if (requireDesarrollo && storedDevelopment) {
           if (!activeUser.desarrollosIds.includes(storedDevelopment)) {

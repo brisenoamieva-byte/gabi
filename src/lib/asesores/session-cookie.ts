@@ -31,6 +31,11 @@ export const signAsesorSession = (asesorId: string) => {
   return `${payload}.${sig}`;
 };
 
+/**
+ * Formato: `{asesorId}.{exp}.{sig}`.
+ * El asesorId puede contener puntos (ej. ignacio.underwood); exp y sig son siempre
+ * los dos segmentos finales.
+ */
 export const verifyAsesorSessionValue = (value: string | undefined | null): string | null => {
   if (!value) {
     return null;
@@ -41,12 +46,18 @@ export const verifyAsesorSessionValue = (value: string | undefined | null): stri
     return null;
   }
 
-  const parts = value.split(".");
-  if (parts.length !== 3) {
+  const lastDot = value.lastIndexOf(".");
+  if (lastDot <= 0) {
+    return null;
+  }
+  const secondLastDot = value.lastIndexOf(".", lastDot - 1);
+  if (secondLastDot <= 0) {
     return null;
   }
 
-  const [asesorId, expStr, sig] = parts;
+  const asesorId = value.slice(0, secondLastDot);
+  const expStr = value.slice(secondLastDot + 1, lastDot);
+  const sig = value.slice(lastDot + 1);
   const exp = Number(expStr);
   if (!asesorId || !sig || !Number.isFinite(exp) || Date.now() > exp) {
     return null;
