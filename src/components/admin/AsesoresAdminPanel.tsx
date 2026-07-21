@@ -1525,7 +1525,7 @@ export function AsesoresAdminPanel({
                         } as Desarrollo);
                       }
                     }
-                    return [...byId.values()];
+                    return Array.from(byId.values());
                   })().map((item) => {
                     const selected = editForm.desarrollosIds.includes(item.id);
                     const orphan = !desarrollos.some((d) => d.id === item.id);
