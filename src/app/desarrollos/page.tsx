@@ -98,7 +98,9 @@ export default function DesarrollosPage() {
     router.push("/dashboard");
   };
 
-  const handleLogout = () => logoutAsesorSession(router);
+  const handleLogout = () => {
+    void logoutAsesorSession(router);
+  };
 
   const accent = portal?.colorAccent ?? "#6cc24a";
   const primary = portal?.colorPrimary ?? "#201044";

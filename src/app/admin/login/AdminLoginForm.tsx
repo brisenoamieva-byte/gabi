@@ -47,11 +47,11 @@ export function AdminLoginForm({ variant = "admin" }: AdminLoginFormProps) {
 
   const resolvePostLoginPath = async (): Promise<string> => {
     if (nextPath?.startsWith("/") && !nextPath.startsWith("//")) {
-      await syncAsesorFromAdminAuth();
+      await syncAsesorFromAdminAuth({ allowAfterLogout: true });
       return nextPath;
     }
 
-    const synced = await syncAsesorFromAdminAuth();
+    const synced = await syncAsesorFromAdminAuth({ allowAfterLogout: true });
     if (synced) {
       return unified ? "/inicio" : safeNext;
     }

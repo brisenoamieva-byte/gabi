@@ -1,9 +1,24 @@
 import type { AsesorSession } from "@/lib/asesores/types";
 import type { PortalSession } from "@/lib/portal/session";
 import { PORTAL_STORAGE_KEY } from "@/lib/portal/session";
-import { GABI_USER_KEY } from "@/lib/session/keys";
+import { GABI_ASESOR_LOGOUT_FLAG, GABI_USER_KEY } from "@/lib/session/keys";
 
 const USER_STORAGE_KEY = GABI_USER_KEY;
+
+export const markAsesorExplicitLogout = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(GABI_ASESOR_LOGOUT_FLAG, "1");
+};
+
+export const clearAsesorExplicitLogout = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(GABI_ASESOR_LOGOUT_FLAG);
+};
+
+export const hasAsesorExplicitLogout = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem(GABI_ASESOR_LOGOUT_FLAG) === "1";
+};
 
 export const readStoredAsesorSession = (): AsesorSession | null => {
   if (typeof window === "undefined") {
@@ -23,6 +38,7 @@ export const readStoredAsesorSession = (): AsesorSession | null => {
 };
 
 export const writeStoredAsesorSession = (asesor: AsesorSession) => {
+  clearAsesorExplicitLogout();
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(asesor));
 };
 
@@ -50,6 +66,11 @@ export const refreshStoredAsesorSession = async (): Promise<AsesorSession | null
     if (fromPin) {
       writeStoredAsesorSession(fromPin);
       return fromPin;
+    }
+
+    // Tras «Salir» explícito no reentrar con cookie de operador/admin.
+    if (hasAsesorExplicitLogout()) {
+      return null;
     }
 
     const fromOperator = await fetchOperatorSessionFromServer();
@@ -89,10 +110,21 @@ const parseSyncedAsesorResponse = async (
 };
 
 /** Si el usuario ya entró con correo (admin), activa CRM de campo sin PIN. */
-export const syncAsesorFromAdminAuth = async (): Promise<{
+export const syncAsesorFromAdminAuth = async (opts?: {
+  /** Ignora «Salir» de campo (login admin o enlace explícito a CRM). */
+  allowAfterLogout?: boolean;
+}): Promise<{
   asesor: AsesorSession;
   portal: PortalSession | null;
 } | null> => {
+  if (hasAsesorExplicitLogout() && !opts?.allowAfterLogout) {
+    return null;
+  }
+
+  if (opts?.allowAfterLogout) {
+    clearAsesorExplicitLogout();
+  }
+
   try {
     const postResponse = await fetch("/api/acceso/sync-asesor", {
       method: "POST",

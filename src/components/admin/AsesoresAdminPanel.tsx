@@ -1515,8 +1515,20 @@ export function AsesoresAdminPanel({
                   Desarrollos asignados
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {desarrollos.map((item) => {
+                  {(() => {
+                    const byId = new Map(desarrollos.map((item) => [item.id, item] as const));
+                    for (const id of editForm.desarrollosIds) {
+                      if (!byId.has(id)) {
+                        byId.set(id, {
+                          id,
+                          nombre: id,
+                        } as Desarrollo);
+                      }
+                    }
+                    return [...byId.values()];
+                  })().map((item) => {
                     const selected = editForm.desarrollosIds.includes(item.id);
+                    const orphan = !desarrollos.some((d) => d.id === item.id);
                     return (
                       <button
                         key={item.id}
@@ -1538,12 +1550,24 @@ export function AsesoresAdminPanel({
                             ? "bg-[#13315C] text-white"
                             : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                         }`}
+                        title={
+                          orphan
+                            ? "Asignado fuera de esta vista — clic para quitar"
+                            : undefined
+                        }
                       >
                         {item.nombre}
+                        {orphan ? " · quitar" : ""}
                       </button>
                     );
                   })}
                 </div>
+                {editForm.desarrollosIds.some((id) => !desarrollos.some((d) => d.id === id)) ? (
+                  <p className="mt-2 text-xs text-amber-700">
+                    Hay desarrollos asignados que no están en esta vista. Quítalos aquí y guarda
+                    para limpiar el acceso.
+                  </p>
+                ) : null}
               </div>
             ) : null}
 

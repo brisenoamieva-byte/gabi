@@ -15,7 +15,10 @@ import { resolveComercializadoraPortalSession } from "@/lib/portal/comercializad
 import {
   refreshStoredAsesorSession,
   syncAsesorFromAdminAuth,
+  writeStoredAsesorSession,
 } from "@/lib/asesores/session-client";
+import type { AsesorSession } from "@/lib/asesores/types";
+import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
 
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
@@ -129,8 +132,8 @@ export default function PortalSlugPinPage() {
         }
 
         if (!cancelled && response.ok && data.asesor) {
-          localStorage.setItem("gabi_user", JSON.stringify(data.asesor));
-          localStorage.removeItem("gabi_desarrollo");
+          writeStoredAsesorSession(data.asesor as AsesorSession);
+          localStorage.removeItem(GABI_DESARROLLO_KEY);
           router.replace("/desarrollos");
           return;
         }

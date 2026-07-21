@@ -1,3 +1,4 @@
+import { markAsesorExplicitLogout } from "@/lib/asesores/session-client";
 import {
   PORTAL_STORAGE_KEY,
   readPortalSession,
@@ -10,17 +11,27 @@ type RouterLike = {
   push?: (path: string) => void;
 };
 
-export function logoutAsesorSession(
+export async function logoutAsesorSession(
   router: RouterLike,
   options?: { clearPortal?: boolean; redirect?: string },
 ) {
   const portal = readPortalSession();
-  void fetch("/api/asesores/auth/logout", { method: "POST" }).catch(() => undefined);
+  markAsesorExplicitLogout();
   localStorage.removeItem(GABI_USER_KEY);
   localStorage.removeItem(GABI_DESARROLLO_KEY);
   if (options?.clearPortal) {
     localStorage.removeItem(PORTAL_STORAGE_KEY);
   }
+
+  try {
+    await fetch("/api/asesores/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+  } catch {
+    // Continuar al PIN aunque falle la red; la bandera evita reentrada.
+  }
+
   router.replace(
     options?.redirect ?? (portal ? resolveAdvisorEntryPath(portal) : "/portal"),
   );

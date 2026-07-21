@@ -39,7 +39,7 @@ export function AdminCampoCrmLink({
     setError("");
 
     try {
-      let asesor = (await syncAsesorFromAdminAuth())?.asesor ?? null;
+      let asesor = (await syncAsesorFromAdminAuth({ allowAfterLogout: true }))?.asesor ?? null;
 
       if (!asesor) {
         asesor = await refreshStoredAsesorSession();
