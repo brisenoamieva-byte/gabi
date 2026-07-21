@@ -23,10 +23,12 @@ type Props = {
   loading: boolean;
   error: string;
   desarrolloId: string | null;
+  asesorId?: string | null;
   canOpenLeads: boolean;
   onRefresh: () => void;
   onOpenConfig?: () => void;
   canConfigurePlaybook?: boolean;
+  onSelectAsesor?: (asesorId: string) => void;
 };
 
 const sealStyles: Record<
@@ -74,10 +76,12 @@ export function GarantiaSlaDashboard({
   loading,
   error,
   desarrolloId,
+  asesorId,
   canOpenLeads,
   onRefresh,
   onOpenConfig,
   canConfigurePlaybook,
+  onSelectAsesor,
 }: Props) {
   const SealIcon = report ? sealStyles[report.seal].icon : ShieldCheck;
   const [sending, setSending] = useState(false);
@@ -387,7 +391,13 @@ export function GarantiaSlaDashboard({
                     </thead>
                     <tbody>
                       {report.asesores.map((row) => (
-                        <tr key={row.asesorId} className="border-b border-gabi-cream-dark/70">
+                        <tr
+                          key={row.asesorId}
+                          className={`border-b border-gabi-cream-dark/70 ${
+                            onSelectAsesor ? "cursor-pointer hover:bg-gabi-cream/40" : ""
+                          }`}
+                          onClick={() => onSelectAsesor?.(row.asesorId)}
+                        >
                           <td className="px-5 py-3 font-medium">{row.asesorNombre}</td>
                           <td className="px-5 py-3">
                             <PctBadge pct={row.compliancePct} />
@@ -421,7 +431,9 @@ export function GarantiaSlaDashboard({
                   </div>
                   {canOpenLeads && desarrolloId ? (
                     <Link
-                      href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId)}`}
+                      href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId)}${
+                        asesorId ? `&asesorId=${encodeURIComponent(asesorId)}` : ""
+                      }`}
                       className="text-sm font-semibold text-gabi-forest hover:underline"
                     >
                       Abrir leads

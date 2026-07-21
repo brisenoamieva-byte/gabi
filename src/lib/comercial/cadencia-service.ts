@@ -14,6 +14,7 @@ import {
   isPlaybookDemoLead,
   isTouchDueToday,
   isTouchOverdue,
+  shouldExpireCadenciaByAge,
   type CadenciaCanal,
   type CadenciaStatus,
   type CadenciaTouchStatus,
@@ -498,6 +499,12 @@ const expireCadenciaIfNoResponse = async (cadenciaId: string) => {
     return;
   }
 
+  await supabase
+    .from("prospecto_cadencia_touches")
+    .update({ status: "expired" })
+    .eq("cadencia_id", cadenciaId)
+    .eq("status", "pending");
+
   const cadenciaNote =
     "[GABI · Cadencia] Secuencia de 8 días completada sin respuesta. Mover a Descartado si no hay interés.";
 
@@ -706,6 +713,84 @@ const enrichHoyItem = (
   };
 };
 
+/**
+ * Alinea cadencias activas con el día calendario:
+ * - > D7 → expira la secuencia (sin apilar VENCIDOs eternos)
+ * - toques de días anteriores sin completar → skipped
+ */
+const reconcileActiveCadenciasForHoy = async (
+  cadencias: DbCadenciaRow[],
+  touches: DbTouchRow[],
+  now: Date,
+): Promise<{
+  activeCadencias: DbCadenciaRow[];
+  pendingTouches: DbTouchRow[];
+}> => {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    return { activeCadencias: cadencias, pendingTouches: touches };
+  }
+
+  const expireIds: string[] = [];
+  const skipIds: string[] = [];
+  const dayIndexByCadencia = new Map<string, number>();
+
+  for (const cadencia of cadencias) {
+    const dayIndex = getCadenciaDayIndex(new Date(cadencia.started_at), now);
+    dayIndexByCadencia.set(cadencia.id, dayIndex);
+    if (shouldExpireCadenciaByAge(new Date(cadencia.started_at), now)) {
+      expireIds.push(cadencia.id);
+    }
+  }
+
+  const expireSet = new Set(expireIds);
+
+  for (const touch of touches) {
+    if (expireSet.has(touch.cadencia_id)) {
+      continue;
+    }
+    const dayIndex = dayIndexByCadencia.get(touch.cadencia_id) ?? 0;
+    if (touch.day_offset < dayIndex) {
+      skipIds.push(touch.id);
+    }
+  }
+
+  for (const cadenciaId of expireIds) {
+    await expireCadenciaIfNoResponse(cadenciaId);
+  }
+
+  if (skipIds.length) {
+    const { error } = await supabase
+      .from("prospecto_cadencia_touches")
+      .update({ status: "skipped" })
+      .in("id", skipIds)
+      .eq("status", "pending");
+    if (error) {
+      console.error("[cadencia] skip overdue touches failed", error);
+    }
+  }
+
+  const skippedSet = new Set(skipIds);
+
+  return {
+    activeCadencias: cadencias.filter((row) => !expireSet.has(row.id)),
+    pendingTouches: touches.filter(
+      (row) => !expireSet.has(row.cadencia_id) && !skippedSet.has(row.id),
+    ),
+  };
+};
+
+/** Un solo toque accionable por lead (el más urgente). */
+const collapseHoyItemsOnePerProspecto = (items: CadenciaHoyItem[]): CadenciaHoyItem[] => {
+  const byProspecto = new Map<string, CadenciaHoyItem>();
+  for (const item of items) {
+    if (!byProspecto.has(item.prospectoId)) {
+      byProspecto.set(item.prospectoId, item);
+    }
+  }
+  return Array.from(byProspecto.values());
+};
+
 export const listCadenciaHoyForAsesor = async (
   asesorId: string,
   desarrolloId: string,
@@ -749,7 +834,19 @@ export const listCadenciaHoyForAsesor = async (
     return [];
   }
 
-  const cadenciaMap = new Map(cadencias.map((row) => [row.id as string, row as DbCadenciaRow]));
+  const reconciled = await reconcileActiveCadenciasForHoy(
+    cadencias as DbCadenciaRow[],
+    touches as DbTouchRow[],
+    now,
+  );
+
+  if (!reconciled.activeCadencias.length || !reconciled.pendingTouches.length) {
+    return [];
+  }
+
+  const cadenciaMap = new Map(
+    reconciled.activeCadencias.map((row) => [row.id, row]),
+  );
   const prospectoMap = new Map(
     (prospectos ?? [])
       .filter((row) => !isPlaybookDemoLead(row))
@@ -761,7 +858,7 @@ export const listCadenciaHoyForAsesor = async (
 
   const items: CadenciaHoyItem[] = [];
 
-  for (const touch of touches as DbTouchRow[]) {
+  for (const touch of reconciled.pendingTouches) {
     const cadencia = cadenciaMap.get(touch.cadencia_id);
     const prospecto = prospectoMap.get(touch.prospecto_id);
     if (!cadencia || !prospecto) {
@@ -786,7 +883,15 @@ export const listCadenciaHoyForAsesor = async (
     return new Date(a.touch.dueAt).getTime() - new Date(b.touch.dueAt).getTime();
   });
 
-  return items;
+  const collapsed = collapseHoyItemsOnePerProspecto(items);
+  collapsed.sort((a, b) => {
+    if (a.isOverdue !== b.isOverdue) {
+      return a.isOverdue ? -1 : 1;
+    }
+    return new Date(a.touch.dueAt).getTime() - new Date(b.touch.dueAt).getTime();
+  });
+
+  return collapsed;
 };
 
 export type CadenciaReminderTarget = {
@@ -1004,6 +1109,31 @@ export const ensureCadenciasForDesarrollo = async (desarrolloId: string): Promis
     }
     await bootstrapCadenciaForProspecto(row.id as string);
   }
+
+  const { data: cadencias } = await supabase
+    .from("prospecto_cadencia")
+    .select("id, prospecto_id, desarrollo_id, asesor_id, started_at, status")
+    .eq("desarrollo_id", desarrolloId)
+    .eq("status", "active");
+
+  if (!cadencias?.length) {
+    return;
+  }
+
+  const { data: touches } = await supabase
+    .from("prospecto_cadencia_touches")
+    .select("*")
+    .in(
+      "cadencia_id",
+      cadencias.map((row) => row.id as string),
+    )
+    .eq("status", "pending");
+
+  await reconcileActiveCadenciasForHoy(
+    cadencias as DbCadenciaRow[],
+    (touches ?? []) as DbTouchRow[],
+    new Date(),
+  );
 };
 
 export type CadenciaProspectoRow = {

@@ -65,6 +65,57 @@ export type GarantiaSlaReport = {
   generatedAt: string;
 };
 
+/** Vista filtrada por asesor (tablas y métricas de cartera; sello del desarrollo se conserva). */
+export const filterGarantiaSlaReportByAsesor = (
+  report: GarantiaSlaReport,
+  asesorId: string | null | undefined,
+): GarantiaSlaReport => {
+  const filterId = asesorId?.trim();
+  if (!filterId) {
+    return report;
+  }
+
+  const asesor = report.asesores.find((row) => row.asesorId === filterId);
+  const topExceptions = report.topExceptions.filter(
+    (row) => (row.asesorId ?? "sin-asesor") === filterId,
+  );
+
+  if (!asesor) {
+    return {
+      ...report,
+      asesores: [],
+      topExceptions: [],
+      compliance: {
+        ...report.compliance,
+        activeLeads: 0,
+        compliantLeads: 0,
+        compliancePct: 100,
+        confidencePct: 0,
+        overdueCount: 0,
+        exceptionCount: 0,
+      },
+      sealMessage: `Sin leads activos para este asesor. ${report.sealMessage}`,
+    };
+  }
+
+  return {
+    ...report,
+    asesores: [asesor],
+    topExceptions,
+    garantiaScorePct: asesor.compliancePct,
+    compliance: {
+      ...report.compliance,
+      activeLeads: asesor.activeLeads,
+      compliantLeads: asesor.compliantLeads,
+      compliancePct: asesor.compliancePct,
+      confidencePct: asesor.confidencePct,
+      overdueCount: asesor.overdueIssues,
+      exceptionCount: topExceptions.length,
+    },
+    sealMessage: `Filtrado: ${asesor.asesorNombre}. Sello del desarrollo: ${report.sealLabel}. ${report.sealMessage}`,
+  };
+};
+
 /** Compromisos comerciales por defecto (plan Garantía). */
 export const GARANTIA_SLA_TARGETS = {
   /** % leads activos sin pasos vencidos */

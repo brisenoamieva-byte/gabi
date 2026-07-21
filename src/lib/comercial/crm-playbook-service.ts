@@ -496,6 +496,36 @@ export const completePlaybookStepForProspecto = async (
   }
 
   if (stepId === "recorrido") {
+    // Pase / walk-in: la visita realizada cumple también la cita agendada.
+    await supabase.from("prospecto_playbook_progress").upsert(
+      {
+        prospecto_id: prospectoId,
+        step_id: "visita-agendada",
+        completed_at: new Date().toISOString(),
+        completed_by: asesorId,
+      },
+      { onConflict: "prospecto_id,step_id" },
+    );
+
+    if (visitDate) {
+      const { data: datesRow } = await supabase
+        .from("prospectos")
+        .select("visita_agendada_on")
+        .eq("id", prospectoId)
+        .maybeSingle();
+      if (!datesRow?.visita_agendada_on) {
+        await supabase
+          .from("prospectos")
+          .update({
+            visita_agendada_on: visitDate,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", prospectoId);
+      }
+    }
+
+    await completeCadenciaForProspecto(prospectoId, "Visita realizada — cadencia detenida");
+
     const currentEtapa =
       normalizeProspectoEtapaValue(prospectoRow.etapa as string) ?? ("nuevo" as ProspectoEtapa);
     const nextEtapa = mergeProspectoEtapa(currentEtapa, "visita");

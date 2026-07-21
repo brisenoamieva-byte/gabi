@@ -49,6 +49,7 @@ import {
   formatLeadActivity,
   formatLeadDate,
   formatLeadDateOnly,
+  formatLeadDayMonth,
   formatLeadVisitSchedule,
   leadPeriodToRange,
   type LeadPeriodFilter,
@@ -2031,8 +2032,7 @@ export function AsesorLeadsPanel({
                       </span>
                       {row.proximo_contacto_on ? (
                         <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-800 ring-1 ring-sky-100">
-                          Recontacto{" "}
-                          {row.proximo_contacto_on.slice(5).split("-").reverse().join("/")}
+                          Recontacto {formatLeadDayMonth(row.proximo_contacto_on)}
                         </span>
                       ) : null}
                     </div>

@@ -118,6 +118,9 @@ export const CADENCIA_TOUCH_TEMPLATES: CadenciaTouchTemplate[] = [
   },
 ];
 
+/** Último día de la secuencia (D7). Tras este día calendario la cadencia debe expirar. */
+export const CADENCIA_SEQUENCE_LAST_DAY = 7;
+
 export const CADENCIA_REMINDER_HOURS = [9, 12, 17] as const;
 
 type MexicoDateParts = {
@@ -323,6 +326,10 @@ export const getCadenciaDayIndex = (startedAt: Date, now = new Date()): number =
   const currentUtc = Date.UTC(current.year, current.month - 1, current.day);
   return Math.floor((currentUtc - startUtc) / (24 * 60 * 60 * 1000));
 };
+
+/** Cadencia de 8 días vencida: ya pasó el último día de toques (D7). */
+export const shouldExpireCadenciaByAge = (startedAt: Date, now = new Date()): boolean =>
+  getCadenciaDayIndex(startedAt, now) > CADENCIA_SEQUENCE_LAST_DAY;
 
 export const PLAYBOOK_STEPS_WITH_VISIT_DATE = new Set(["visita-agendada", "recorrido"]);
 

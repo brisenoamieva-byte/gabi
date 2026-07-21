@@ -82,7 +82,7 @@ export function AsesorCadenciaLeadPanel({
         <>
           <p className="mt-1 text-sm font-semibold text-[#201044]">{next.touch.label}</p>
           <p className="text-xs text-slate-500">
-            Día {next.cadenciaDayIndex} · {next.windowLabel}
+            Toque D{next.touch.dayOffset} · {next.windowLabel}
             {next.isOverdue ? " · vencido" : ""}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">

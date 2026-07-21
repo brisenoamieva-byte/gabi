@@ -13,6 +13,8 @@ type CadenciaAdminPanelProps = {
   scopeLabel?: string;
   /** Embebido en Salud CRM (sin header propio ni selector de desarrollo). */
   embedded?: boolean;
+  /** Filtra tablas y métricas a un asesor (p. ej. desde Salud CRM). */
+  asesorId?: string | null;
 };
 
 const statusLabel: Record<string, string> = {
@@ -33,6 +35,7 @@ export function CadenciaAdminPanel({
   desarrollos,
   scopeLabel,
   embedded = false,
+  asesorId = null,
 }: CadenciaAdminPanelProps) {
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(desarrollos);
   const [report, setReport] = useState<DesarrolloCadenciaReport | null>(null);
@@ -97,10 +100,50 @@ export function CadenciaAdminPanel({
     }
   };
 
+  const filteredProspectos = useMemo(() => {
+    const rows = report?.prospectos ?? [];
+    if (!asesorId) {
+      return rows;
+    }
+    return rows.filter((row) => (row.asesorId ?? "sin-asesor") === asesorId);
+  }, [asesorId, report?.prospectos]);
+
   const activeProspectos = useMemo(
-    () => report?.prospectos.filter((row) => row.cadenciaStatus === "active") ?? [],
-    [report],
+    () => filteredProspectos.filter((row) => row.cadenciaStatus === "active"),
+    [filteredProspectos],
   );
+
+  const filteredAsesores = useMemo(() => {
+    const rows = report?.asesores ?? [];
+    if (!asesorId) {
+      return rows;
+    }
+    return rows.filter((row) => row.asesorId === asesorId);
+  }, [asesorId, report?.asesores]);
+
+  const filteredMetrics = useMemo(() => {
+    if (!report || !asesorId) {
+      return report
+        ? {
+            activeCount: report.activeCount,
+            overdueTouchesTotal: report.overdueTouchesTotal,
+            dueTodayTotal: report.dueTodayTotal,
+            pausedCount: report.pausedCount,
+            expiredCount: report.expiredCount,
+            responseRatePct: report.responseRatePct,
+          }
+        : null;
+    }
+    const asesor = filteredAsesores[0];
+    return {
+      activeCount: asesor?.activeCadencias ?? activeProspectos.length,
+      overdueTouchesTotal: asesor?.overdueToday ?? 0,
+      dueTodayTotal: asesor?.dueToday ?? 0,
+      pausedCount: filteredProspectos.filter((row) => row.cadenciaStatus === "paused").length,
+      expiredCount: filteredProspectos.filter((row) => row.cadenciaStatus === "expired").length,
+      responseRatePct: report.responseRatePct,
+    };
+  }, [activeProspectos.length, asesorId, filteredAsesores, filteredProspectos, report]);
 
   const actions = (
     <div className="flex flex-wrap items-center gap-2">
@@ -189,28 +232,28 @@ export function CadenciaAdminPanel({
           <Loader2 className="h-4 w-4 animate-spin" />
           Cargando cadencias…
         </div>
-      ) : report ? (
+      ) : report && filteredMetrics ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-            <MetricCard label="Activas" value={report.activeCount} />
-            <MetricCard label="Tasa respuesta" value={report.responseRatePct} suffix="%" />
-            <MetricCard label="Vencidos hoy" value={report.overdueTouchesTotal} tone="warn" />
-            <MetricCard label="Pendientes hoy" value={report.dueTodayTotal} />
-            <MetricCard label="Pausadas" value={report.pausedCount} />
-            <MetricCard label="Expiradas (D7)" value={report.expiredCount} tone="warn" />
+            <MetricCard label="Activas" value={filteredMetrics.activeCount} />
+            <MetricCard label="Tasa respuesta" value={filteredMetrics.responseRatePct} suffix="%" />
+            <MetricCard label="Vencidos hoy" value={filteredMetrics.overdueTouchesTotal} tone="warn" />
+            <MetricCard label="Pendientes hoy" value={filteredMetrics.dueTodayTotal} />
+            <MetricCard label="Pausadas" value={filteredMetrics.pausedCount} />
+            <MetricCard label="Expiradas (D7)" value={filteredMetrics.expiredCount} tone="warn" />
           </div>
 
-          {report.expiredCount > 0 ? (
+          {filteredMetrics.expiredCount > 0 ? (
             <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                {report.expiredCount} cadencia(s) expirada(s) sin respuesta — revisar con asesores si
+                {filteredMetrics.expiredCount} cadencia(s) expirada(s) sin respuesta — revisar con asesores si
                 deben pasar a <strong>{prospectoEtapaLabel.perdido}</strong>.
               </span>
             </div>
           ) : null}
 
-          {report.asesores.length > 0 ? (
+          {filteredAsesores.length > 0 ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-gabi-forest">
                 <Users className="h-4 w-4" />
@@ -227,7 +270,7 @@ export function CadenciaAdminPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {report.asesores.map((row) => (
+                    {filteredAsesores.map((row) => (
                       <tr key={row.asesorId} className="border-b border-slate-100">
                         <td className="py-2.5 pr-4 font-semibold text-gabi-forest">{row.asesorNombre}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{row.activeCadencias}</td>
@@ -246,7 +289,7 @@ export function CadenciaAdminPanel({
               <Clock className="h-4 w-4" />
               Prospectos en cadencia ({activeProspectos.length} activos)
             </h2>
-            {report.prospectos.length === 0 ? (
+            {filteredProspectos.length === 0 ? (
               <p className="text-sm text-slate-500">No hay cadencias registradas en este desarrollo.</p>
             ) : (
               <div className="overflow-x-auto">
@@ -263,7 +306,7 @@ export function CadenciaAdminPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {report.prospectos.map((row) => (
+                    {filteredProspectos.map((row) => (
                       <tr key={row.prospectoId} className="border-b border-slate-100">
                         <td className="py-2.5 pr-3">
                           <Link

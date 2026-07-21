@@ -111,7 +111,7 @@ export function AsesorCadenciaHoyPanel({
             Hoy toca · captura rápida
           </p>
           <p className="mt-0.5 text-xs text-white/65">
-            Abre WhatsApp y registra el resultado en un toque — sin formularios largos
+            Un toque por lead. Los días viejos se saltan solos; tras D7 la cadencia expira.
           </p>
         </div>
       </div>
@@ -167,7 +167,7 @@ function CadenciaHoyRow({
           </div>
           <p className="mt-0.5 text-sm text-white/80">{item.touch.label}</p>
           <p className="mt-0.5 text-xs text-white/50">
-            Día {item.cadenciaDayIndex} · {item.windowLabel}
+            Toque D{item.touch.dayOffset} · {item.windowLabel}
           </p>
         </div>
 

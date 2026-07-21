@@ -11,6 +11,31 @@ export const formatLeadDate = (iso: string) =>
 export const getMexicoCityDateInput = (date = new Date()) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(date);
 
+/** Día/mes corto para chips (ej. 26/jul). */
+export const formatLeadDayMonth = (isoDate: string) => {
+  const [year, month, day] = isoDate.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) {
+    return isoDate;
+  }
+
+  const months = [
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
+  ] as const;
+
+  return `${day}/${months[month - 1]}`;
+};
+
 /** Muestra una fecha guardada como date (sin hora). */
 export const formatLeadDateOnly = (isoDate: string) => {
   const [year, month, day] = isoDate.split("-").map(Number);

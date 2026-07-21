@@ -79,7 +79,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "visita-agendada",
     etapa: "contactado",
     label: "Cita agendada en el desarrollo",
-    hint: "Programa la visita con el prospecto: fecha y horario.",
+    hint: "Programa la visita con fecha y horario. Si ya está en sitio (pase), marca «Visita al desarrollo realizada» — no hace falta agendar antes.",
     kind: "manual",
     required: true,
     order: 40,
@@ -88,7 +88,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "recorrido",
     etapa: "cita",
     label: "Visita al desarrollo realizada",
-    hint: "Confirma que el prospecto recorrió el desarrollo e indica la fecha. Al completar, el lead pasa a etapa Visita.",
+    hint: "Confirma que el prospecto recorrió el desarrollo e indica la fecha. Si llegó sin cita, márcalo desde Contactado: pasa directo a Visita.",
     kind: "manual",
     required: true,
     order: 50,
@@ -220,34 +220,46 @@ export const getPlaybookStepsForEtapa = (config: CrmPlaybookConfig, etapa: Prosp
 
 /**
  * Pasos a mostrar en el checklist del asesor.
- * En Contactado/Cita permite marcar cotización de forma anticipada (sigue siendo
- * obligatoria al salir de Visita; no bloquea el avance desde Contactado).
+ * - Contactado/Nuevo: permite marcar visita realizada (pase / walk-in) sin agendar cita.
+ * - Contactado/Cita: permite marcar cotización anticipada.
  */
 export const getPlaybookStepsVisibleForEtapa = (
   config: CrmPlaybookConfig,
   etapa: ProspectoEtapa,
 ): PlaybookStep[] => {
   const steps = getPlaybookStepsForEtapa(config, etapa);
-  if (etapa !== "contactado" && etapa !== "cita") {
+  const extras: PlaybookStep[] = [];
+
+  if (etapa === "nuevo" || etapa === "contactado") {
+    const recorrido = config.steps.find((step) => step.id === "recorrido");
+    if (recorrido && !steps.some((step) => step.id === "recorrido")) {
+      extras.push({
+        ...recorrido,
+        required: false,
+        order: 45,
+        hint: "Si llegó sin cita (pase), marca la visita con la fecha. Pasa directo a Visita; no hace falta agendar antes.",
+      });
+    }
+  }
+
+  if (etapa === "contactado" || etapa === "cita") {
+    const cotizacion = config.steps.find((step) => step.id === "cotizacion");
+    if (cotizacion && !steps.some((step) => step.id === "cotizacion")) {
+      extras.push({
+        ...cotizacion,
+        required: false,
+        hint:
+          cotizacion.hint ??
+          "Opcional en esta etapa. Márcala si ya enviaste cotización; será obligatoria en Visita.",
+      });
+    }
+  }
+
+  if (!extras.length) {
     return steps;
   }
 
-  const cotizacion = config.steps.find((step) => step.id === "cotizacion");
-  if (!cotizacion || steps.some((step) => step.id === "cotizacion")) {
-    return steps;
-  }
-
-  return sortPlaybookSteps([
-    ...steps,
-    {
-      ...cotizacion,
-      // Anticipada: no exige cotizar para pasar a Cita.
-      required: false,
-      hint:
-        cotizacion.hint ??
-        "Opcional en esta etapa. Márcala si ya enviaste cotización; será obligatoria en Visita.",
-    },
-  ]);
+  return sortPlaybookSteps([...steps, ...extras]);
 };
 
 export const etapaIndex = (etapa: ProspectoEtapa) => PROSPECTO_ETAPAS.indexOf(etapa);
@@ -282,6 +294,7 @@ export const getAutoCompletedPlaybookStepIds = (signals: PlaybookProspectoSignal
     etapaIndex(signals.etapa as ProspectoEtapa) >= etapaIndex("visita")
   ) {
     done.add("recorrido");
+    done.add("visita-agendada");
   }
   if (signals.cotizacionesCount > 0) {
     done.add("cotizacion");
@@ -321,8 +334,16 @@ export const getPendingRequiredForEtapa = (
   config: CrmPlaybookConfig,
   etapa: ProspectoEtapa,
   completedIds: Set<string>,
-) =>
-  getPlaybookStepsForEtapa(config, etapa).filter((step) => step.required && !completedIds.has(step.id));
+) => {
+  const pending = getPlaybookStepsForEtapa(config, etapa).filter(
+    (step) => step.required && !completedIds.has(step.id),
+  );
+  // Pase / walk-in: con visita realizada no exigimos cita agendada.
+  if (completedIds.has("recorrido")) {
+    return pending.filter((step) => step.id !== "visita-agendada");
+  }
+  return pending;
+};
 
 export const canAdvancePlaybookEtapa = (
   config: CrmPlaybookConfig,

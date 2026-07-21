@@ -17,8 +17,12 @@ import {
   Wrench,
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
-import type { DesarrolloComplianceReport } from "@/lib/comercial/crm-compliance-service";
 import type { GarantiaSlaReport } from "@/lib/comercial/garantia-sla";
+import { filterGarantiaSlaReportByAsesor } from "@/lib/comercial/garantia-sla";
+import type {
+  AsesorComplianceSummary,
+  DesarrolloComplianceReport,
+} from "@/lib/comercial/crm-compliance-service";
 import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { CadenciaAdminPanel } from "@/components/admin/CadenciaAdminPanel";
@@ -55,6 +59,7 @@ export function CrmComplianceAdminPanel({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { desarrolloId, setDesarrolloId } = useAdminDesarrolloSelection(options);
+  const [asesorId, setAsesorId] = useState(() => searchParams.get("asesorId") ?? "");
   const [tab, setTab] = useState<SaludCrmTab>(() =>
     parseTab(searchParams.get("tab"), canConfigurePlaybook),
   );
@@ -72,20 +77,43 @@ export function CrmComplianceAdminPanel({
     setTab(parseTab(searchParams.get("tab"), canConfigurePlaybook));
   }, [searchParams, canConfigurePlaybook]);
 
+  useEffect(() => {
+    setAsesorId("");
+  }, [desarrolloId]);
+
+  const syncUrl = useCallback(
+    (next: { tab?: SaludCrmTab; asesorId?: string }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const nextTab = next.tab ?? tab;
+      if (nextTab === "garantia") {
+        params.delete("tab");
+      } else {
+        params.set("tab", nextTab);
+      }
+      if (desarrolloId) {
+        params.set("desarrolloId", desarrolloId);
+      }
+      const nextAsesor = next.asesorId !== undefined ? next.asesorId : asesorId;
+      if (nextAsesor) {
+        params.set("asesorId", nextAsesor);
+      } else {
+        params.delete("asesorId");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [asesorId, desarrolloId, pathname, router, searchParams, tab],
+  );
+
   const setActiveTab = (next: SaludCrmTab) => {
     if (next === "config" && !canConfigurePlaybook) return;
     setTab(next);
-    const params = new URLSearchParams(searchParams.toString());
-    if (next === "garantia") {
-      params.delete("tab");
-    } else {
-      params.set("tab", next);
-    }
-    if (desarrolloId) {
-      params.set("desarrolloId", desarrolloId);
-    }
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    syncUrl({ tab: next });
+  };
+
+  const setAsesorFilter = (next: string) => {
+    setAsesorId(next);
+    syncUrl({ asesorId: next });
   };
 
   const load = useCallback(async () => {
@@ -151,26 +179,78 @@ export function CrmComplianceAdminPanel({
   }, [desarrolloId]);
 
   useEffect(() => {
-    if (tab === "playbook") {
-      void load();
+    if (!desarrolloId) {
+      return;
     }
-    if (tab === "garantia") {
-      void loadGarantia();
+    // Precarga ambas vistas para poblar el filtro de asesores.
+    void load();
+    void loadGarantia();
+  }, [desarrolloId, load, loadGarantia]);
+
+  const asesorOptions = useMemo(() => {
+    const byId = new Map<string, AsesorComplianceSummary>();
+    for (const row of garantia?.asesores ?? []) {
+      byId.set(row.asesorId, row);
     }
-  }, [load, loadGarantia, tab]);
+    for (const row of report?.asesores ?? []) {
+      byId.set(row.asesorId, row);
+    }
+    return Array.from(byId.values()).sort((a, b) =>
+      a.asesorNombre.localeCompare(b.asesorNombre, "es"),
+    );
+  }, [garantia?.asesores, report?.asesores]);
+
+  const filteredGarantia = useMemo(
+    () => (garantia ? filterGarantiaSlaReportByAsesor(garantia, asesorId || null) : null),
+    [asesorId, garantia],
+  );
+
+  const filteredReport = useMemo(() => {
+    if (!report || !asesorId) {
+      return report;
+    }
+    const asesor = report.asesores.find((row) => row.asesorId === asesorId);
+    const exceptions = report.exceptions.filter(
+      (row) => (row.asesorId ?? "sin-asesor") === asesorId,
+    );
+    if (!asesor) {
+      return {
+        ...report,
+        asesores: [],
+        exceptions: [],
+        activeLeads: 0,
+        compliantLeads: 0,
+        compliancePct: 100,
+        confidencePct: 0,
+        overdueCount: 0,
+        exceptionCount: 0,
+      };
+    }
+    return {
+      ...report,
+      asesores: [asesor],
+      exceptions,
+      activeLeads: asesor.activeLeads,
+      compliantLeads: asesor.compliantLeads,
+      compliancePct: asesor.compliancePct,
+      confidencePct: asesor.confidencePct,
+      overdueCount: asesor.overdueIssues,
+      exceptionCount: exceptions.length,
+    };
+  }, [asesorId, report]);
 
   const healthTone = useMemo(() => {
-    if (!report?.playbookEnabled) {
+    if (!filteredReport?.playbookEnabled) {
       return "neutral";
     }
-    if (report.compliancePct >= 85 && report.confidencePct >= 80) {
+    if (filteredReport.compliancePct >= 85 && filteredReport.confidencePct >= 80) {
       return "good";
     }
-    if (report.compliancePct >= 70) {
+    if (filteredReport.compliancePct >= 70) {
       return "warn";
     }
     return "bad";
-  }, [report]);
+  }, [filteredReport]);
 
   const sendWhatsAppTest = async () => {
     if (!desarrolloId || !testPhone.trim()) {
@@ -274,7 +354,13 @@ export function CrmComplianceAdminPanel({
           ) : null}
           {canOpenLeads ? (
             <Link
-              href={`/admin/leads${desarrolloId ? `?desarrolloId=${encodeURIComponent(desarrolloId)}` : ""}`}
+              href={`/admin/leads${
+                desarrolloId
+                  ? `?desarrolloId=${encodeURIComponent(desarrolloId)}${
+                      asesorId ? `&asesorId=${encodeURIComponent(asesorId)}` : ""
+                    }`
+                  : ""
+              }`}
               className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white transition hover:bg-gabi-forest-light"
             >
               Ir a Leads
@@ -289,20 +375,48 @@ export function CrmComplianceAdminPanel({
         </div>
       ) : (
         <div className="rounded-2xl border border-gabi-cream-dark bg-white p-4 shadow-sm">
-          <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            Desarrollo
-          </label>
-          <select
-            value={desarrolloId ?? ""}
-            onChange={(event) => setDesarrolloId(event.target.value)}
-            className="mt-2 w-full max-w-md rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20"
-          >
-            {options.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.nombre}
-              </option>
-            ))}
-          </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Desarrollo
+              </span>
+              <select
+                value={desarrolloId ?? ""}
+                onChange={(event) => setDesarrolloId(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20"
+              >
+                {options.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Asesor
+              </span>
+              <select
+                value={asesorId}
+                onChange={(event) => setAsesorFilter(event.target.value)}
+                disabled={!desarrolloId}
+                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-gabi-forest focus:outline-none focus:ring-2 focus:ring-gabi-forest/20 disabled:opacity-50"
+              >
+                <option value="">Todos los asesores</option>
+                {asesorOptions.map((row) => (
+                  <option key={row.asesorId} value={row.asesorId}>
+                    {row.asesorNombre}
+                    {row.overdueIssues > 0 ? ` · ${row.overdueIssues} vencido(s)` : ""}
+                  </option>
+                ))}
+              </select>
+              {asesorId && asesorOptions.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Carga Garantía o Playbook para listar asesores del desarrollo.
+                </p>
+              ) : null}
+            </label>
+          </div>
         </div>
       )}
 
@@ -343,19 +457,26 @@ export function CrmComplianceAdminPanel({
 
       {tab === "garantia" ? (
         <GarantiaSlaDashboard
-          report={garantia}
+          report={filteredGarantia}
           loading={garantiaLoading}
           error={garantiaError}
           desarrolloId={desarrolloId}
+          asesorId={asesorId || null}
           canOpenLeads={canOpenLeads}
           onRefresh={() => void loadGarantia()}
           canConfigurePlaybook={canConfigurePlaybook}
           onOpenConfig={() => setActiveTab("config")}
+          onSelectAsesor={setAsesorFilter}
         />
       ) : null}
 
       {tab === "cadencia" ? (
-        <CadenciaAdminPanel desarrollos={desarrollos} scopeLabel={scopeLabel} embedded />
+        <CadenciaAdminPanel
+          desarrollos={desarrollos}
+          scopeLabel={scopeLabel}
+          embedded
+          asesorId={asesorId || null}
+        />
       ) : null}
 
       {tab === "config" && canConfigurePlaybook ? (
@@ -418,30 +539,30 @@ export function CrmComplianceAdminPanel({
             </div>
           ) : null}
 
-          {report?.playbookEnabled ? (
+          {filteredReport?.playbookEnabled ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   label="Playbook al día"
-                  value={`${report.compliancePct}%`}
-                  hint={`${report.compliantLeads}/${report.activeLeads} leads sin pasos vencidos`}
+                  value={`${filteredReport.compliancePct}%`}
+                  hint={`${filteredReport.compliantLeads}/${filteredReport.activeLeads} leads sin pasos vencidos`}
                   tone={healthTone}
                 />
                 <MetricCard
                   label="Datos / embudo"
-                  value={`${report.confidencePct}%`}
+                  value={`${filteredReport.confidencePct}%`}
                   hint="Contacto + playbook completos"
                 />
                 <MetricCard
                   label="Pipeline confiable"
-                  value={String(report.pipelineReliableCount)}
-                  hint={`${report.pipelineExcludedCount} excluidos del embudo`}
+                  value={String(filteredReport.pipelineReliableCount)}
+                  hint={`${filteredReport.pipelineExcludedCount} excluidos del embudo`}
                 />
                 <MetricCard
                   label="Excepciones"
-                  value={String(report.exceptionCount)}
-                  hint={`${report.overdueCount} paso(s) vencido(s)`}
-                  tone={report.overdueCount > 0 ? "bad" : "good"}
+                  value={String(filteredReport.exceptionCount)}
+                  hint={`${filteredReport.overdueCount} paso(s) vencido(s)`}
+                  tone={filteredReport.overdueCount > 0 ? "bad" : "good"}
                 />
               </div>
 
@@ -463,8 +584,12 @@ export function CrmComplianceAdminPanel({
                       </tr>
                     </thead>
                     <tbody>
-                      {report.asesores.map((row) => (
-                        <tr key={row.asesorId} className="border-b border-gabi-cream-dark/70">
+                      {filteredReport.asesores.map((row) => (
+                        <tr
+                          key={row.asesorId}
+                          className="cursor-pointer border-b border-gabi-cream-dark/70 hover:bg-gabi-cream/40"
+                          onClick={() => setAsesorFilter(row.asesorId)}
+                        >
                           <td className="px-5 py-3 font-medium">{row.asesorNombre}</td>
                           <td className="px-5 py-3">
                             <ComplianceBadge pct={row.compliancePct} />
@@ -475,7 +600,7 @@ export function CrmComplianceAdminPanel({
                           <td className="px-5 py-3 tabular-nums text-amber-700">{row.pendingIssues}</td>
                         </tr>
                       ))}
-                      {report.asesores.length === 0 ? (
+                      {filteredReport.asesores.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-5 py-6 text-center text-slate-500">
                             Sin leads activos en playbook.
@@ -497,7 +622,9 @@ export function CrmComplianceAdminPanel({
                   </div>
                   {canOpenLeads ? (
                     <Link
-                      href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId ?? "")}`}
+                      href={`/admin/leads?desarrolloId=${encodeURIComponent(desarrolloId ?? "")}${
+                        asesorId ? `&asesorId=${encodeURIComponent(asesorId)}` : ""
+                      }`}
                       className="text-sm font-semibold text-gabi-forest hover:underline"
                     >
                       Abrir leads
@@ -518,7 +645,7 @@ export function CrmComplianceAdminPanel({
                       </tr>
                     </thead>
                     <tbody>
-                      {report.exceptions.slice(0, 50).map((row) => {
+                      {filteredReport.exceptions.slice(0, 50).map((row) => {
                         const issue = row.issues[0];
                         return (
                           <tr key={row.prospectoId} className="border-b border-gabi-cream-dark/70">
@@ -550,7 +677,7 @@ export function CrmComplianceAdminPanel({
                           </tr>
                         );
                       })}
-                      {report.exceptions.length === 0 ? (
+                      {filteredReport.exceptions.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="px-5 py-8 text-center">
                             <span className="inline-flex items-center gap-2 text-emerald-700">
@@ -566,11 +693,11 @@ export function CrmComplianceAdminPanel({
               </section>
 
               <p className="text-xs text-slate-500">
-                Actualizado: {new Date(report.generatedAt).toLocaleString("es-MX")}. El digest diario
+                Actualizado: {new Date(filteredReport.generatedAt).toLocaleString("es-MX")}. El digest diario
                 resume esta misma vista para gerencia.
               </p>
             </>
-          ) : report && !report.playbookEnabled ? (
+          ) : filteredReport && !filteredReport.playbookEnabled ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-600">
               Playbook CRM no activo para este desarrollo.
               {canConfigurePlaybook ? (
