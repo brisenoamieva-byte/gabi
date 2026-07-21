@@ -398,20 +398,18 @@ function RecorridoPageContent() {
   const clusterPrecioDesdeLive = useMemo(() => {
     const map = new Map<string, number>();
     for (const cluster of activeClusters) {
-      const prototiposCluster = activePrototipos.filter(
-        (prototipo) => prototipo.clusterId === cluster.id,
-      );
+      const prototiposFiltrados = filteredPrototiposByCluster.get(cluster.id) ?? [];
       map.set(
         cluster.id,
         getPrecioDesdeCluster(
           cluster.precioDesde,
-          prototiposCluster,
+          prototiposFiltrados,
           getClusterInventario(cluster.id),
         ),
       );
     }
     return map;
-  }, [activeClusters, activePrototipos, getClusterInventario]);
+  }, [activeClusters, filteredPrototiposByCluster, getClusterInventario]);
 
   const filteredClusters = useMemo(
     () =>
@@ -2366,7 +2364,7 @@ function RecorridoPageContent() {
                               asesorRol={user?.rol}
                               esquema={state.misionLaGaviaEsquema ?? "contado"}
                               showSelectors
-                              showCopy
+                              showPdf
                               libreEnganchePct={state.misionLaGaviaLibreEnganche}
                               libreMensualidadesPct={state.misionLaGaviaLibreMensualidades}
                               libreFechaFiniquito={state.misionLaGaviaLibreFechaFiniquito}
