@@ -32,10 +32,11 @@ import { normalizePlaybookVisitDate, normalizePlaybookVisitTime } from "@/lib/co
 import {
   computePerfilCalificacionLead,
   isPerfilamientoVisitaComplete,
-  perfilamientoVisitaToRow,
+  mergePerfilamientoVisitaAnswers,
+  perfilamientoVisitaPartialToRow,
   PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS,
   readPerfilamientoVisitaFromProspecto,
-  validatePerfilamientoVisitaInput,
+  validatePerfilamientoVisitaPartialInput,
   type PerfilamientoVisitaAnswers,
 } from "@/lib/comercial/perfilamiento-post-visita";
 
@@ -359,7 +360,7 @@ export const completePlaybookStepForProspecto = async (
   prospectoId: string,
   stepId: string,
   stepDate?: string,
-  perfilamientoVisita?: PerfilamientoVisitaAnswers,
+  perfilamientoVisita?: Partial<PerfilamientoVisitaAnswers>,
   stepTime?: string,
 ): Promise<{ playbook: ProspectoPlaybookState; prospecto: ProspectoListRow }> => {
   const supabase = createSupabaseServiceClient();
@@ -369,7 +370,9 @@ export const completePlaybookStepForProspecto = async (
 
   const { data: prospectoRow, error: prospectoError } = await supabase
     .from("prospectos")
-    .select("id, desarrollo_id, asesor_id, etapa")
+    .select(
+      "id, desarrollo_id, asesor_id, etapa, perfil_presupuesto_disponible, perfil_intencion_apartar, perfil_decisor_visita, perfil_vio_publicidad_redes, perfil_calificacion_lead",
+    )
     .eq("id", prospectoId)
     .maybeSingle();
 
@@ -398,12 +401,14 @@ export const completePlaybookStepForProspecto = async (
   }
 
   if (PLAYBOOK_PERFILAMIENTO_VISITA_STEP_IDS.has(stepId)) {
-    const answers = validatePerfilamientoVisitaInput(perfilamientoVisita);
-    const perfilCalificacionLead = computePerfilCalificacionLead(answers);
+    const partial = validatePerfilamientoVisitaPartialInput(perfilamientoVisita);
+    const existing = readPerfilamientoVisitaFromProspecto(prospectoRow);
+    const merged = mergePerfilamientoVisitaAnswers(existing, partial);
+    const perfilCalificacionLead = computePerfilCalificacionLead(merged);
     const { error: perfilError } = await supabase
       .from("prospectos")
       .update({
-        ...perfilamientoVisitaToRow(answers),
+        ...perfilamientoVisitaPartialToRow(partial),
         perfil_calificacion_lead: perfilCalificacionLead,
         updated_at: new Date().toISOString(),
       })
@@ -411,6 +416,41 @@ export const completePlaybookStepForProspecto = async (
 
     if (perfilError) {
       throw new Error(perfilError.message);
+    }
+
+    // Avance parcial: guarda respuestas sin marcar el paso como completo.
+    if (!isPerfilamientoVisitaComplete(merged)) {
+      const { data: fullProspecto, error: fullError } = await supabase
+        .from("prospectos")
+        .select("*")
+        .eq("id", prospectoId)
+        .maybeSingle();
+
+      if (fullError || !fullProspecto) {
+        throw new Error("No se pudo recargar el prospecto.");
+      }
+
+      const { data: cotizaciones } = await supabase
+        .from("cotizaciones")
+        .select("id")
+        .eq("prospecto_id", prospectoId);
+
+      const progressMap = await getPlaybookProgressMap([prospectoId]);
+      const manualStepIds = progressMap.get(prospectoId) ?? [];
+      const recorridoCompletado = await resolveRecorridoCompletadoForProspecto(
+        fullProspecto as ProspectoListRow,
+      );
+
+      return {
+        playbook: computeProspectoPlaybookState(
+          fullProspecto as ProspectoListRow,
+          config,
+          manualStepIds,
+          cotizaciones?.length ?? 0,
+          recorridoCompletado,
+        ),
+        prospecto: fullProspecto as ProspectoListRow,
+      };
     }
   }
 

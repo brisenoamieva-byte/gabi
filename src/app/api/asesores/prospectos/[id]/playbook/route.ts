@@ -42,7 +42,7 @@ export async function POST(request: Request, context: RouteContext) {
       stepDate?: string;
       stepTime?: string;
       action?: "complete" | "uncomplete";
-      perfilamientoVisita?: PerfilamientoVisitaAnswers;
+      perfilamientoVisita?: Partial<PerfilamientoVisitaAnswers>;
     };
     const asesorId = resolveAsesorIdForApi(body.asesorId);
     const stepId = body.stepId?.trim();

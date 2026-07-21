@@ -5,6 +5,7 @@ import { Loader2, Pencil } from "lucide-react";
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import {
   computePerfilCalificacionLead,
+  countPerfilamientoAnswered,
   formatPerfilamientoSiNo,
   isPerfilamientoVisitaComplete,
   PERFILAMIENTO_VISITA_QUESTIONS,
@@ -74,7 +75,7 @@ function SiNoToggle({
 type PerfilamientoVisitaFormProps = {
   loading: boolean;
   initial?: PerfilamientoVisitaRecord;
-  onSubmit: (answers: PerfilamientoVisitaAnswers) => void;
+  onSubmit: (answers: Partial<PerfilamientoVisitaAnswers>) => void;
   onCancel?: () => void;
   submitLabel?: string;
   className?: string;
@@ -85,7 +86,7 @@ export function PerfilamientoVisitaForm({
   initial,
   onSubmit,
   onCancel,
-  submitLabel = "Guardar",
+  submitLabel,
   className = "space-y-2",
 }: PerfilamientoVisitaFormProps) {
   const [answers, setAnswers] = useState<Partial<PerfilamientoVisitaAnswers>>(() => ({
@@ -109,13 +110,21 @@ export function PerfilamientoVisitaForm({
     initial?.vioPublicidadRedes,
   ]);
 
-  const allAnswered = PERFILAMIENTO_VISITA_QUESTIONS.every(
-    (question) => typeof answers[question.key] === "boolean",
-  );
+  const answeredCount = countPerfilamientoAnswered(answers);
+  const allAnswered = answeredCount === PERFILAMIENTO_VISITA_QUESTIONS.length;
+  const canSave = answeredCount > 0;
 
   const draftCalificacion = allAnswered
     ? computePerfilCalificacionLead(answers as PerfilamientoVisitaAnswers)
     : null;
+
+  const resolvedSubmitLabel =
+    submitLabel ??
+    (allAnswered
+      ? "Guardar"
+      : answeredCount > 0
+        ? `Guardar avance (${answeredCount}/4)`
+        : "Guardar avance");
 
   return (
     <div className={className}>
@@ -126,6 +135,10 @@ export function PerfilamientoVisitaForm({
           <PerfilCalificacionLeadBadge calificacion={draftCalificacion} size="sm" />
           <p className="text-[11px] font-semibold">Lead {draftCalificacion}</p>
         </div>
+      ) : answeredCount > 0 ? (
+        <p className="text-[11px] text-slate-500">
+          Puedes guardar y completar el resto después ({answeredCount}/4).
+        </p>
       ) : null}
       <div className="rounded-lg border border-slate-200 bg-white px-2.5">
         {PERFILAMIENTO_VISITA_QUESTIONS.map((question) => (
@@ -144,8 +157,8 @@ export function PerfilamientoVisitaForm({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          disabled={loading || !allAnswered}
-          onClick={() => onSubmit(answers as PerfilamientoVisitaAnswers)}
+          disabled={loading || !canSave}
+          onClick={() => onSubmit(answers)}
           className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#201044] px-3 text-xs font-bold text-white disabled:opacity-50 sm:flex-none"
         >
           {loading ? (
@@ -154,7 +167,7 @@ export function PerfilamientoVisitaForm({
               Guardando…
             </>
           ) : (
-            submitLabel
+            resolvedSubmitLabel
           )}
         </button>
         {onCancel ? (
@@ -246,7 +259,7 @@ export function PerfilamientoVisitaSummary({
 type PerfilamientoVisitaPanelProps = {
   record: PerfilamientoVisitaRecord;
   loading: boolean;
-  onSubmit: (answers: PerfilamientoVisitaAnswers) => void;
+  onSubmit: (answers: Partial<PerfilamientoVisitaAnswers>) => void;
   desarrolloHint?: string | null;
 };
 
@@ -281,6 +294,7 @@ export function PerfilamientoVisitaPanel({
   }, [fingerprint, complete]);
 
   const showForm = !complete || editing;
+  const answeredCount = countPerfilamientoAnswered(record);
 
   return (
     <div className="rounded-xl border border-[#201044]/12 bg-white p-3">
@@ -297,7 +311,9 @@ export function PerfilamientoVisitaPanel({
           ) : null}
         </div>
         {!complete ? (
-          <p className="shrink-0 text-[10px] font-medium text-slate-400">4 Sí/No</p>
+          <p className="shrink-0 text-[10px] font-medium text-slate-400">
+            {answeredCount}/4 · se puede ir llenando
+          </p>
         ) : null}
       </div>
 
@@ -305,7 +321,7 @@ export function PerfilamientoVisitaPanel({
         <PerfilamientoVisitaForm
           loading={loading}
           initial={record}
-          submitLabel={complete ? "Guardar cambios" : "Guardar"}
+          submitLabel={complete ? "Guardar cambios" : undefined}
           onCancel={complete ? () => setEditing(false) : undefined}
           onSubmit={onSubmit}
         />

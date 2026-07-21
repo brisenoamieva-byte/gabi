@@ -18,6 +18,7 @@ import {
 } from "@/lib/comercial/prospecto-etapas";
 import {
   buildProspectoTelefonoDuplicadoMessage,
+  normalizeProspectoTelefono,
   validateProspectoTelefono,
 } from "@/lib/comercial/prospecto-telefono";
 import {
@@ -176,6 +177,10 @@ export type AsesorUpdateProspectoInput = {
   /** Fecha AAAA-MM-DD o null para quitar el recordatorio. */
   proximoContactoOn?: string | null;
   proximoContactoNota?: string | null;
+  /** Nombre completo del contacto (incluye apellidos). */
+  nombre?: string;
+  email?: string | null;
+  telefono?: string;
 };
 
 export const checkProspectoTelefonoForAsesor = async (
@@ -396,6 +401,40 @@ export const updateProspectoForAsesor = async (
   }
   if (input.proximoContactoNota !== undefined) {
     patch.proximo_contacto_nota = input.proximoContactoNota?.trim() || null;
+  }
+  if (input.nombre !== undefined) {
+    const nombre = input.nombre.trim();
+    if (!nombre) {
+      throw new Error("El nombre es obligatorio.");
+    }
+    patch.nombre = nombre;
+  }
+  if (input.email !== undefined) {
+    patch.email = input.email?.trim() || null;
+  }
+  if (input.telefono !== undefined) {
+    const telefonoValidation = validateProspectoTelefono(input.telefono);
+    if (!telefonoValidation.ok) {
+      throw new Error(telefonoValidation.error);
+    }
+    const telefono = telefonoValidation.telefono;
+    const telefonoActual = normalizeProspectoTelefono(existing.telefono);
+    if (telefono !== telefonoActual) {
+      const duplicate = await findProspectoByTelefonoInDesarrollo(
+        existing.desarrollo_id,
+        telefono,
+      );
+      if (duplicate && duplicate.prospecto.id !== prospectoId) {
+        throw new Error(
+          buildProspectoTelefonoDuplicadoMessage({
+            prospectoNombre: duplicate.prospecto.nombre,
+            asesorNombre: duplicate.asesorNombre,
+            mismoAsesor: duplicate.prospecto.asesor_id === asesorId,
+          }),
+        );
+      }
+    }
+    patch.telefono = telefono;
   }
 
   const nextEtapa = (input.etapa ?? existing.etapa) as string;

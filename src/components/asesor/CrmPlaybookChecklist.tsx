@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, Circle, Loader2, MessageCircle, Phone } from "lucide-react";
 import type { ProspectoPlaybookState } from "@/lib/comercial/crm-playbook-service";
 import {
-  getPlaybookStepsForEtapa,
+  getPlaybookStepsVisibleForEtapa,
   PLAYBOOK_CONTACT_ACTION_STEP_IDS,
   PLAYBOOK_PERFILAMIENTO_OBJETIVO,
   type PlaybookStep,
@@ -46,7 +46,7 @@ type CrmPlaybookChecklistProps = {
   onCompleteStep: (
     stepId: string,
     stepDate?: string,
-    perfilamientoVisita?: PerfilamientoVisitaAnswers,
+    perfilamientoVisita?: Partial<PerfilamientoVisitaAnswers>,
     stepTime?: string,
   ) => void;
   onUncompleteStep?: (stepId: string) => void;
@@ -67,7 +67,7 @@ export function CrmPlaybookChecklist({
     return null;
   }
 
-  const steps = getPlaybookStepsForEtapa(playbook.config, etapa);
+  const steps = getPlaybookStepsVisibleForEtapa(playbook.config, etapa);
   if (!steps.length) {
     return null;
   }
@@ -159,7 +159,7 @@ function PlaybookStepRow({
   canUncomplete?: boolean;
   onComplete: (
     stepDate?: string,
-    perfilamientoVisita?: PerfilamientoVisitaAnswers,
+    perfilamientoVisita?: Partial<PerfilamientoVisitaAnswers>,
     stepTime?: string,
   ) => void;
   onUncomplete?: () => void;

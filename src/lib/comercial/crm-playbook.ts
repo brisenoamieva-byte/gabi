@@ -106,7 +106,7 @@ const basePasos = (): PlaybookStep[] => [
     id: "cotizacion",
     etapa: "visita",
     label: "Cotización enviada al cliente",
-    hint: "Acción obligatoria del playbook (no es una etapa). Marca cuando el cliente recibió la cotización o al usar el cotizador.",
+    hint: "Marca cuando el cliente recibió la cotización (también desde Contactado si ya cotizaste). Se completa sola al guardar desde el cotizador.",
     kind: "manual",
     required: true,
     order: 70,
@@ -217,6 +217,38 @@ export const sortPlaybookSteps = (steps: PlaybookStep[]) =>
 
 export const getPlaybookStepsForEtapa = (config: CrmPlaybookConfig, etapa: ProspectoEtapa) =>
   sortPlaybookSteps(config.steps.filter((step) => step.etapa === etapa));
+
+/**
+ * Pasos a mostrar en el checklist del asesor.
+ * En Contactado/Cita permite marcar cotización de forma anticipada (sigue siendo
+ * obligatoria al salir de Visita; no bloquea el avance desde Contactado).
+ */
+export const getPlaybookStepsVisibleForEtapa = (
+  config: CrmPlaybookConfig,
+  etapa: ProspectoEtapa,
+): PlaybookStep[] => {
+  const steps = getPlaybookStepsForEtapa(config, etapa);
+  if (etapa !== "contactado" && etapa !== "cita") {
+    return steps;
+  }
+
+  const cotizacion = config.steps.find((step) => step.id === "cotizacion");
+  if (!cotizacion || steps.some((step) => step.id === "cotizacion")) {
+    return steps;
+  }
+
+  return sortPlaybookSteps([
+    ...steps,
+    {
+      ...cotizacion,
+      // Anticipada: no exige cotizar para pasar a Cita.
+      required: false,
+      hint:
+        cotizacion.hint ??
+        "Opcional en esta etapa. Márcala si ya enviaste cotización; será obligatoria en Visita.",
+    },
+  ]);
+};
 
 export const etapaIndex = (etapa: ProspectoEtapa) => PROSPECTO_ETAPAS.indexOf(etapa);
 

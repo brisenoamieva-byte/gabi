@@ -76,6 +76,62 @@ export const perfilamientoVisitaToRow = (answers: PerfilamientoVisitaAnswers) =>
   perfil_vio_publicidad_redes: answers.vioPublicidadRedes,
 });
 
+/** Solo escribe las respuestas que ya vienen como boolean (avance parcial). */
+export const perfilamientoVisitaPartialToRow = (
+  answers: Partial<PerfilamientoVisitaAnswers>,
+): Partial<{
+  perfil_presupuesto_disponible: boolean;
+  perfil_intencion_apartar: boolean;
+  perfil_decisor_visita: boolean;
+  perfil_vio_publicidad_redes: boolean;
+}> => {
+  const row: Partial<{
+    perfil_presupuesto_disponible: boolean;
+    perfil_intencion_apartar: boolean;
+    perfil_decisor_visita: boolean;
+    perfil_vio_publicidad_redes: boolean;
+  }> = {};
+  if (typeof answers.presupuestoDisponible === "boolean") {
+    row.perfil_presupuesto_disponible = answers.presupuestoDisponible;
+  }
+  if (typeof answers.intencionApartarInmediato === "boolean") {
+    row.perfil_intencion_apartar = answers.intencionApartarInmediato;
+  }
+  if (typeof answers.decisorVisita === "boolean") {
+    row.perfil_decisor_visita = answers.decisorVisita;
+  }
+  if (typeof answers.vioPublicidadRedes === "boolean") {
+    row.perfil_vio_publicidad_redes = answers.vioPublicidadRedes;
+  }
+  return row;
+};
+
+export const mergePerfilamientoVisitaAnswers = (
+  existing: PerfilamientoVisitaRecord,
+  partial: Partial<PerfilamientoVisitaAnswers>,
+): PerfilamientoVisitaRecord => ({
+  presupuestoDisponible:
+    typeof partial.presupuestoDisponible === "boolean"
+      ? partial.presupuestoDisponible
+      : existing.presupuestoDisponible,
+  intencionApartarInmediato:
+    typeof partial.intencionApartarInmediato === "boolean"
+      ? partial.intencionApartarInmediato
+      : existing.intencionApartarInmediato,
+  decisorVisita:
+    typeof partial.decisorVisita === "boolean" ? partial.decisorVisita : existing.decisorVisita,
+  vioPublicidadRedes:
+    typeof partial.vioPublicidadRedes === "boolean"
+      ? partial.vioPublicidadRedes
+      : existing.vioPublicidadRedes,
+});
+
+export const countPerfilamientoAnswered = (
+  answers: Partial<PerfilamientoVisitaAnswers> | PerfilamientoVisitaRecord,
+): number =>
+  PERFILAMIENTO_VISITA_QUESTIONS.filter((question) => typeof answers[question.key] === "boolean")
+    .length;
+
 export const validatePerfilamientoVisitaInput = (
   input: Partial<PerfilamientoVisitaAnswers> | undefined,
 ): PerfilamientoVisitaAnswers => {
@@ -91,6 +147,29 @@ export const validatePerfilamientoVisitaInput = (
   }
 
   return input as PerfilamientoVisitaAnswers;
+};
+
+/** Acepta avance parcial: al menos una respuesta Sí/No. */
+export const validatePerfilamientoVisitaPartialInput = (
+  input: Partial<PerfilamientoVisitaAnswers> | undefined,
+): Partial<PerfilamientoVisitaAnswers> => {
+  if (!input) {
+    throw new Error("Marca al menos una respuesta del perfilamiento.");
+  }
+
+  const partial: Partial<PerfilamientoVisitaAnswers> = {};
+  for (const question of PERFILAMIENTO_VISITA_QUESTIONS) {
+    const value = input[question.key];
+    if (typeof value === "boolean") {
+      partial[question.key] = value;
+    }
+  }
+
+  if (!Object.keys(partial).length) {
+    throw new Error("Marca al menos una respuesta del perfilamiento.");
+  }
+
+  return partial;
 };
 
 export const formatPerfilamientoSiNo = (value: boolean | null) => {

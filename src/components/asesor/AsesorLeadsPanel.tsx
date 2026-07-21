@@ -7,6 +7,7 @@ import {
   Kanban,
   LayoutList,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   Save,
@@ -158,6 +159,11 @@ function AsesorLeadDrawer({
   const [tieneOperacionActiva, setTieneOperacionActiva] = useState(false);
   const [rescateEtapa, setRescateEtapa] = useState<ProspectoEtapa>(ETAPA_RESCATE_DEFAULT);
   const [rescatando, setRescatando] = useState(false);
+  const [editingContacto, setEditingContacto] = useState(false);
+  const [savingContacto, setSavingContacto] = useState(false);
+  const [contactoNombre, setContactoNombre] = useState("");
+  const [contactoEmail, setContactoEmail] = useState("");
+  const [contactoTelefono, setContactoTelefono] = useState("");
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -193,6 +199,10 @@ function AsesorLeadDrawer({
         setMotivoDescarte(data.prospecto.motivo_descarte ?? "");
         setMotivoDescarteDetalle(data.prospecto.motivo_descarte_detalle ?? "");
         setAssignedAsesorId(data.prospecto.asesor_id ?? "");
+        setContactoNombre(data.prospecto.nombre ?? "");
+        setContactoEmail(data.prospecto.email ?? "");
+        setContactoTelefono(data.prospecto.telefono ?? "");
+        setEditingContacto(false);
       }
 
       const solicitudRes = await fetch(
@@ -315,7 +325,7 @@ function AsesorLeadDrawer({
   const handleCompleteStep = async (
     stepId: string,
     stepDate?: string,
-    perfilamientoVisita?: PerfilamientoVisitaAnswers,
+    perfilamientoVisita?: Partial<PerfilamientoVisitaAnswers>,
     stepTime?: string,
   ) => {
     setCompletingStepId(stepId);
@@ -384,6 +394,76 @@ function AsesorLeadDrawer({
       );
     } finally {
       setCompletingStepId(null);
+    }
+  };
+
+  const beginEditContacto = () => {
+    if (!detail) {
+      return;
+    }
+    setContactoNombre(detail.nombre ?? "");
+    setContactoEmail(detail.email ?? "");
+    setContactoTelefono(detail.telefono ?? "");
+    setEditingContacto(true);
+    setError("");
+  };
+
+  const cancelEditContacto = () => {
+    if (!detail) {
+      return;
+    }
+    setContactoNombre(detail.nombre ?? "");
+    setContactoEmail(detail.email ?? "");
+    setContactoTelefono(detail.telefono ?? "");
+    setEditingContacto(false);
+    setError("");
+  };
+
+  const handleSaveContacto = async () => {
+    setSavingContacto(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          asesorId,
+          nombre: contactoNombre,
+          email: contactoEmail,
+          telefono: contactoTelefono,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        prospecto?: ProspectoDetail;
+        playbook?: ProspectoPlaybookState;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron guardar los datos de contacto.");
+      }
+
+      if (data.prospecto) {
+        setDetail((current) => (current ? { ...current, ...data.prospecto! } : data.prospecto!));
+        setContactoNombre(data.prospecto.nombre ?? "");
+        setContactoEmail(data.prospecto.email ?? "");
+        setContactoTelefono(data.prospecto.telefono ?? "");
+      }
+      if (data.playbook) {
+        setPlaybook(data.playbook);
+      }
+      setEditingContacto(false);
+      onUpdated();
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Error al guardar los datos de contacto.",
+      );
+    } finally {
+      setSavingContacto(false);
     }
   };
 
@@ -571,15 +651,99 @@ function AsesorLeadDrawer({
                     </div>
                   )}
 
-                  <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Teléfono</span>
-                      <span>{detail.telefono ?? "—"}</span>
+                  <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+                        Datos de contacto
+                      </p>
+                      {!editingContacto ? (
+                        <button
+                          type="button"
+                          onClick={beginEditContacto}
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[#201044] transition hover:bg-white"
+                        >
+                          <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
+                          Editar
+                        </button>
+                      ) : null}
                     </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Email</span>
-                      <span className="font-medium">{detail.email ?? "—"}</span>
-                    </div>
+                    {editingContacto ? (
+                      <div className="grid gap-3">
+                        <label className="block text-xs">
+                          <span className="mb-1 block font-semibold text-slate-600">
+                            Nombre completo
+                          </span>
+                          <input
+                            type="text"
+                            value={contactoNombre}
+                            onChange={(event) => setContactoNombre(event.target.value)}
+                            className={inputClass}
+                            placeholder="Nombre y apellidos"
+                            autoComplete="name"
+                          />
+                        </label>
+                        <label className="block text-xs">
+                          <span className="mb-1 block font-semibold text-slate-600">Email</span>
+                          <input
+                            type="email"
+                            value={contactoEmail}
+                            onChange={(event) => setContactoEmail(event.target.value)}
+                            className={inputClass}
+                            placeholder="correo@ejemplo.com"
+                            autoComplete="email"
+                          />
+                        </label>
+                        <label className="block text-xs">
+                          <span className="mb-1 block font-semibold text-slate-600">Teléfono</span>
+                          <input
+                            type="tel"
+                            value={contactoTelefono}
+                            onChange={(event) => setContactoTelefono(event.target.value)}
+                            className={inputClass}
+                            placeholder="10 dígitos"
+                            autoComplete="tel"
+                          />
+                        </label>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <button
+                            type="button"
+                            disabled={savingContacto}
+                            onClick={cancelEditContacto}
+                            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 disabled:opacity-50"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={savingContacto}
+                            onClick={() => void handleSaveContacto()}
+                            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#201044] px-3 text-xs font-semibold text-white disabled:opacity-50"
+                          >
+                            {savingContacto ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Save className="h-3.5 w-3.5" strokeWidth={2} />
+                            )}
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3">
+                        <div className="flex justify-between gap-4">
+                          <span className="text-slate-500">Nombre</span>
+                          <span className="font-medium text-right">{detail.nombre}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-slate-500">Teléfono</span>
+                          <span>{detail.telefono ?? "—"}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-slate-500">Email</span>
+                          <span className="font-medium">{detail.email ?? "—"}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {detail.etapa !== "perdido" ? (
@@ -657,83 +821,171 @@ function AsesorLeadDrawer({
                 </div>
               ) : null}
 
-              <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Email</span>
-                  <span className="font-medium">{detail.email ?? "—"}</span>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+                    Datos de contacto
+                  </p>
+                  {!editingContacto ? (
+                    <button
+                      type="button"
+                      onClick={beginEditContacto}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[#201044] transition hover:bg-white"
+                    >
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      Editar
+                    </button>
+                  ) : null}
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Teléfono</span>
-                  <span>{detail.telefono ?? "—"}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Medio</span>
-                  <span>{detail.medio_publicitario ?? detail.medio_contacto ?? "—"}</span>
-                </div>
-                {detail.partnerNombre ? (
-                  <div className="flex justify-between gap-4">
-                    <span className="text-slate-500">Aliado</span>
-                    <span className="font-medium text-right">
-                      {detail.partnerNombre}
-                      {detail.partnerTipo
-                        ? ` · ${partnerTipoLabel[detail.partnerTipo as PartnerTipo] ?? detail.partnerTipo}`
-                        : ""}
-                    </span>
-                  </div>
-                ) : null}
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Última actividad</span>
-                  <span>{formatLeadDate(detail.updated_at)}</span>
-                </div>
-                {detail.visita_agendada_on ? (
-                  <div className="flex justify-between gap-4">
-                    <span className="text-slate-500">Visita agendada</span>
-                    <span className="font-medium">
-                      {formatLeadVisitSchedule(
-                        detail.visita_agendada_on,
-                        detail.visita_agendada_hora,
-                      )}
-                    </span>
-                  </div>
-                ) : null}
-                {detail.visita_realizada_on ? (
-                  <div className="flex justify-between gap-4">
-                    <span className="text-slate-500">Visita realizada</span>
-                    <span className="font-medium">{formatLeadDateOnly(detail.visita_realizada_on)}</span>
-                  </div>
-                ) : null}
-                {canReassignProspectos ? (
-                  <div className="border-t border-slate-200 pt-3">
-                    <label className="block text-xs font-semibold text-slate-600">
-                      Asesor asignado
-                      <select
-                        value={assignedAsesorId}
-                        onChange={(event) => setAssignedAsesorId(event.target.value)}
-                        className={`${inputClass} mt-1`}
-                      >
-                        <option value="">Sin asesor</option>
-                        {equipoAsesores.map((asesor) => (
-                          <option key={asesor.id} value={asesor.id}>
-                            {asesor.nombre} · {asesorRolLabel[asesor.rol]}
-                          </option>
-                        ))}
-                        {assignedAsesorId &&
-                        !equipoAsesores.some((asesor) => asesor.id === assignedAsesorId) &&
-                        detail.asesorNombre ? (
-                          <option value={assignedAsesorId}>{detail.asesorNombre}</option>
-                        ) : null}
-                      </select>
+                {editingContacto ? (
+                  <div className="grid gap-3">
+                    <label className="block text-xs">
+                      <span className="mb-1 block font-semibold text-slate-600">
+                        Nombre completo
+                      </span>
+                      <input
+                        type="text"
+                        value={contactoNombre}
+                        onChange={(event) => setContactoNombre(event.target.value)}
+                        className={inputClass}
+                        placeholder="Nombre y apellidos"
+                        autoComplete="name"
+                      />
                     </label>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Como gerencia puedes reasignar este prospecto a otro miembro del equipo.
-                    </p>
+                    <label className="block text-xs">
+                      <span className="mb-1 block font-semibold text-slate-600">Email</span>
+                      <input
+                        type="email"
+                        value={contactoEmail}
+                        onChange={(event) => setContactoEmail(event.target.value)}
+                        className={inputClass}
+                        placeholder="correo@ejemplo.com"
+                        autoComplete="email"
+                      />
+                    </label>
+                    <label className="block text-xs">
+                      <span className="mb-1 block font-semibold text-slate-600">Teléfono</span>
+                      <input
+                        type="tel"
+                        value={contactoTelefono}
+                        onChange={(event) => setContactoTelefono(event.target.value)}
+                        className={inputClass}
+                        placeholder="10 dígitos"
+                        autoComplete="tel"
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={savingContacto}
+                        onClick={cancelEditContacto}
+                        className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 disabled:opacity-50"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={savingContacto}
+                        onClick={() => void handleSaveContacto()}
+                        className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#201044] px-3 text-xs font-semibold text-white disabled:opacity-50"
+                      >
+                        {savingContacto ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Save className="h-3.5 w-3.5" strokeWidth={2} />
+                        )}
+                        Guardar
+                      </button>
+                    </div>
                   </div>
-                ) : detail.asesorNombre ? (
+                ) : (
+                  <div className="grid gap-3">
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Nombre</span>
+                      <span className="font-medium text-right">{detail.nombre}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Email</span>
+                      <span className="font-medium">{detail.email ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Teléfono</span>
+                      <span>{detail.telefono ?? "—"}</span>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3">
                   <div className="flex justify-between gap-4">
-                    <span className="text-slate-500">Asesor</span>
-                    <span className="font-medium">{detail.asesorNombre}</span>
+                    <span className="text-slate-500">Medio</span>
+                    <span>{detail.medio_publicitario ?? detail.medio_contacto ?? "—"}</span>
                   </div>
-                ) : null}
+                  {detail.partnerNombre ? (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Aliado</span>
+                      <span className="font-medium text-right">
+                        {detail.partnerNombre}
+                        {detail.partnerTipo
+                          ? ` · ${partnerTipoLabel[detail.partnerTipo as PartnerTipo] ?? detail.partnerTipo}`
+                          : ""}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Última actividad</span>
+                    <span>{formatLeadDate(detail.updated_at)}</span>
+                  </div>
+                  {detail.visita_agendada_on ? (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Visita agendada</span>
+                      <span className="font-medium">
+                        {formatLeadVisitSchedule(
+                          detail.visita_agendada_on,
+                          detail.visita_agendada_hora,
+                        )}
+                      </span>
+                    </div>
+                  ) : null}
+                  {detail.visita_realizada_on ? (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Visita realizada</span>
+                      <span className="font-medium">
+                        {formatLeadDateOnly(detail.visita_realizada_on)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {canReassignProspectos ? (
+                    <div className="border-t border-slate-200 pt-3">
+                      <label className="block text-xs font-semibold text-slate-600">
+                        Asesor asignado
+                        <select
+                          value={assignedAsesorId}
+                          onChange={(event) => setAssignedAsesorId(event.target.value)}
+                          className={`${inputClass} mt-1`}
+                        >
+                          <option value="">Sin asesor</option>
+                          {equipoAsesores.map((asesor) => (
+                            <option key={asesor.id} value={asesor.id}>
+                              {asesor.nombre} · {asesorRolLabel[asesor.rol]}
+                            </option>
+                          ))}
+                          {assignedAsesorId &&
+                          !equipoAsesores.some((asesor) => asesor.id === assignedAsesorId) &&
+                          detail.asesorNombre ? (
+                            <option value={assignedAsesorId}>{detail.asesorNombre}</option>
+                          ) : null}
+                        </select>
+                      </label>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Como gerencia puedes reasignar este prospecto a otro miembro del equipo.
+                      </p>
+                    </div>
+                  ) : detail.asesorNombre ? (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-500">Asesor</span>
+                      <span className="font-medium">{detail.asesorNombre}</span>
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               {!etapaEditable ? (
