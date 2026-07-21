@@ -42,6 +42,8 @@ export type CotizadorPanelProps = {
   clusterId: string;
   prototipoId?: string;
   unidadId?: string;
+  /** Código de unidad (ej. R-101) desde deep-link. */
+  unidadCodigo?: string;
   /** Inventario unificado (Supabase con fallback local). */
   inventarioUnidades?: DisponibilidadUnidad[];
   descuento: number;
@@ -250,6 +252,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         clusterId={props.clusterId}
         prototipoId={props.prototipoId}
         unidadId={props.unidadId}
+        unidadCodigo={props.unidadCodigo}
         inventarioUnidades={props.inventarioUnidades}
         catalog={props.catalog}
         clienteNombre={props.clienteNombre}

@@ -126,6 +126,7 @@ function AsesorLeadDrawer({
   intentDiscard = false,
   onClose,
   onUpdated,
+  onDiscarded,
 }: {
   asesorId: string;
   asesorNombre: string;
@@ -137,6 +138,8 @@ function AsesorLeadDrawer({
   intentDiscard?: boolean;
   onClose: () => void;
   onUpdated: () => void;
+  /** Tras confirmar descarte: quitar de inmediato de la cola de playbook. */
+  onDiscarded?: (prospectoId: string) => void;
 }) {
   const [detail, setDetail] = useState<ProspectoDetail | null>(null);
   const [playbook, setPlaybook] = useState<ProspectoPlaybookState | null>(null);
@@ -473,20 +476,20 @@ function AsesorLeadDrawer({
     setError("");
 
     try {
+      const discarding = etapa === "perdido";
       const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           asesorId,
-          etapa: etapaEditable ? etapa : undefined,
+          // Siempre enviar etapa al descartar (aunque el select esté deshabilitado).
+          etapa: etapaEditable || discarding ? etapa : undefined,
           notas,
-          proximoContactoOn: etapa === "perdido" ? null : proximoContactoOn || null,
+          proximoContactoOn: discarding ? null : proximoContactoOn || null,
           proximoContactoNota:
-            etapa === "perdido" || !proximoContactoOn
-              ? null
-              : proximoContactoNota.trim() || null,
-          motivoDescarte: etapa === "perdido" ? motivoDescarte || null : undefined,
-          motivoDescarteDetalle: etapa === "perdido" ? motivoDescarteDetalle || null : undefined,
+            discarding || !proximoContactoOn ? null : proximoContactoNota.trim() || null,
+          motivoDescarte: discarding ? motivoDescarte || null : undefined,
+          motivoDescarteDetalle: discarding ? motivoDescarteDetalle || null : undefined,
           assignedAsesorId: canReassignProspectos ? assignedAsesorId || null : undefined,
         }),
       });
@@ -504,11 +507,21 @@ function AsesorLeadDrawer({
       if (data.prospecto) {
         setDetail(data.prospecto);
         setNotas(data.prospecto.notas ?? "");
+        if (isProspectoEtapa(data.prospecto.etapa)) {
+          setEtapa(data.prospecto.etapa);
+        }
       }
       if (data.playbook) {
         setPlaybook(data.playbook);
       }
+      if (discarding && data.prospecto?.etapa === "perdido") {
+        onDiscarded?.(prospectoId);
+      }
       onUpdated();
+      // Tras confirmar descarte, cerrar para que se vea la cola actualizada.
+      if (discarding && data.prospecto?.etapa === "perdido") {
+        onClose();
+      }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Error al guardar.");
     } finally {
@@ -1251,7 +1264,9 @@ function AsesorLeadDrawer({
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-4 text-sm font-semibold text-white transition hover:bg-[#2a1760] disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" strokeWidth={2} />}
-              Guardar seguimiento
+              {etapa === "perdido" && detail.etapa !== "perdido"
+                ? "Confirmar descarte"
+                : "Guardar seguimiento"}
             </button>
           </div>
         ) : null}
@@ -1517,9 +1532,10 @@ export function AsesorLeadsPanel({
 
   const handleMoveEtapa = async (prospectoId: string, etapa: ProspectoEtapa) => {
     if (etapa === "perdido") {
+      // Abrir drawer para capturar motivo; no marcar error (el drop no falla).
       setDiscardIntentId(prospectoId);
       setSelectedId(prospectoId);
-      throw new Error("Motivo de descarte requerido.");
+      return;
     }
 
     const response = await fetch(`/api/asesores/prospectos/${prospectoId}`, {
@@ -2061,6 +2077,9 @@ export function AsesorLeadsPanel({
             setDiscardIntentId(null);
             void loadLeads();
             void loadPlaybookQueue();
+          }}
+          onDiscarded={(id) => {
+            setPlaybookQueue((prev) => prev.filter((item) => item.prospectoId !== id));
           }}
         />
       ) : null}

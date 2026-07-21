@@ -456,6 +456,9 @@ export const updateProspectoForAsesor = async (
     patch.motivo_descarte_detalle = motivoValidation.motivoDescarteDetalle;
     patch.calificacion = calificacionFromMotivoDescarte(motivoValidation.motivoDescarte);
     patch.es_spam = motivoValidation.motivoDescarte === "datos_falsos";
+    // Fuera de la bandeja activa: no debe seguir en recontacto ni cadencia.
+    patch.proximo_contacto_on = null;
+    patch.proximo_contacto_nota = null;
   } else if (input.etapa !== undefined && existing.etapa === "perdido") {
     const isLeadership = await isLeadershipAsesorId(asesorId);
     if (!isLeadership) {

@@ -827,7 +827,10 @@ export const listCadenciaHoyForAsesor = async (
       .in("cadencia_id", cadenciaIds)
       .eq("status", "pending")
       .order("due_at", { ascending: true }),
-    supabase.from("prospectos").select("id, nombre, telefono, email").in("id", prospectoIds),
+    supabase
+      .from("prospectos")
+      .select("id, nombre, telefono, email, etapa")
+      .in("id", prospectoIds),
   ]);
 
   if (!touches?.length) {
@@ -847,9 +850,25 @@ export const listCadenciaHoyForAsesor = async (
   const cadenciaMap = new Map(
     reconciled.activeCadencias.map((row) => [row.id, row]),
   );
+  const closedEtapas = new Set(["apartado", "vendido", "cancelado", "perdido"]);
+  const staleActiveCadencias = (prospectos ?? []).filter((row) =>
+    closedEtapas.has(String(row.etapa ?? "")),
+  );
+  if (staleActiveCadencias.length) {
+    await Promise.all(
+      staleActiveCadencias.map((row) =>
+        pauseCadenciaForProspecto(
+          row.id as string,
+          `Etapa ${String(row.etapa)} — cadencia reconciliada`,
+        ),
+      ),
+    );
+  }
+
   const prospectoMap = new Map(
     (prospectos ?? [])
       .filter((row) => !isPlaybookDemoLead(row))
+      .filter((row) => !closedEtapas.has(String(row.etapa ?? "")))
       .map((row) => [
         row.id as string,
         { nombre: row.nombre as string, telefono: row.telefono as string | null },

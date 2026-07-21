@@ -114,6 +114,7 @@ function CotizadorPageContent() {
   const [clusterId, setClusterId] = useState("");
   const [prototipoId, setPrototipoId] = useState<string | undefined>();
   const [unidadId, setUnidadId] = useState<string | undefined>();
+  const unidadCodigoFromUrl = searchParams.get("unidad")?.trim() || undefined;
   const [descuento, setDescuento] = useState(0);
   const [esquema, setEsquema] = useState<CotizadorEsquema>("mensualidades");
   const [pasajeEsquema, setPasajeEsquema] = useState<PasajeEsquemaPago>("contado");
@@ -319,12 +320,18 @@ function CotizadorPageContent() {
   );
 
   useEffect(() => {
-    if (unidadId || catalogStatus !== "ready") {
+    if (catalogStatus !== "ready") {
       return;
     }
     const unidadCode = searchParams.get("unidad")?.trim();
     if (!unidadCode || !inventarioUnidades.length) {
       return;
+    }
+    if (unidadId) {
+      const byId = inventarioUnidades.find((unit) => unit.id === unidadId);
+      if (byId) {
+        return;
+      }
     }
     const match = inventarioUnidades.find((unit) => unit.unidad === unidadCode);
     if (match) {
@@ -529,6 +536,7 @@ function CotizadorPageContent() {
               clusterId={clusterId}
               prototipoId={prototipoId}
               unidadId={unidadId}
+              unidadCodigo={unidadCodigoFromUrl}
               inventarioUnidades={inventarioUnidades}
               descuento={descuento}
               esquema={esquema}

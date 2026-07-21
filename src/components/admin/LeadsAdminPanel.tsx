@@ -451,7 +451,7 @@ export function LeadsAdminPanel({
     if (etapa === "perdido") {
       setDiscardIntentId(prospectoId);
       setSelectedId(prospectoId);
-      throw new Error("Motivo de descarte requerido.");
+      return;
     }
 
     const response = await fetch(`/api/admin/prospectos/${prospectoId}`, {

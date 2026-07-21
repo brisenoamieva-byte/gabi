@@ -20,6 +20,7 @@ import {
   isProspectoEtapa,
   mergeProspectoEtapa,
   normalizeProspectoEtapaValue,
+  PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO,
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -697,6 +698,7 @@ export const getPlaybookQueueForAsesor = async (
   const prospectos = await listProspectos({
     desarrolloId,
     ...(asesorFilter ? { asesorId: asesorFilter } : {}),
+    etapa: PROSPECTO_ETAPA_FILTER_EN_SEGUIMIENTO,
     fechaEn: "updated",
   });
   const active = prospectos.filter(

@@ -28,6 +28,7 @@ import {
   MISION_LA_GAVIA_MSI_DEFAULTS,
   normalizeMisionLaGaviaEsquema,
   resolveMisionLaGaviaUnidadFromInventario,
+  findMisionLaGaviaUnidadByCode,
   simularMisionLaGavia,
   type MisionLaGaviaDiaPago,
   type MisionLaGaviaEsquemaId,
@@ -50,6 +51,8 @@ export type MisionLaGaviaSimuladorPanelProps = {
   clusterId: string;
   prototipoId?: string;
   unidadId?: string;
+  /** Código de unidad (ej. R-101) desde deep-link Disponibilidad → Cotizador. */
+  unidadCodigo?: string;
   inventarioUnidades?: DisponibilidadUnidad[];
   catalog?: CotizadorCatalog;
   clienteNombre?: string;
@@ -253,6 +256,14 @@ function MoneyAmountInput({
   );
 }
 
+function normalizeGaviaUnidadCodigo(codigo: string | undefined): string | undefined {
+  const raw = codigo?.trim();
+  if (!raw) {
+    return undefined;
+  }
+  return decodeMisionLaGaviaUnidad(raw)?.codigo ?? raw;
+}
+
 function resolveUnidadRecord(
   inventario: DisponibilidadUnidad[] | undefined,
   unidadId: string | undefined,
@@ -260,12 +271,16 @@ function resolveUnidadRecord(
   unidadCode: string,
   prototipoModelo?: string,
 ): MisionLaGaviaUnidadRecord | undefined {
-  const fromInventario = resolveMisionLaGaviaUnidadFromInventario(inventario, unidadId);
+  const fromInventario = resolveMisionLaGaviaUnidadFromInventario(
+    inventario,
+    unidadId,
+    unidadCode || undefined,
+  );
   if (fromInventario) {
     return fromInventario;
   }
   if (unidadCode) {
-    return MISION_LA_GAVIA_UNIDADES.find((item) => item.unidad === unidadCode);
+    return findMisionLaGaviaUnidadByCode(unidadCode);
   }
   if (edificio && prototipoModelo) {
     const candidates = MISION_LA_GAVIA_UNIDADES.filter(
@@ -286,6 +301,7 @@ export function MisionLaGaviaSimuladorPanel({
   clusterId,
   prototipoId,
   unidadId,
+  unidadCodigo: unidadCodigoProp,
   inventarioUnidades,
   clienteNombre,
   asesorNombre,
@@ -381,31 +397,59 @@ export function MisionLaGaviaSimuladorPanel({
         .map((item) => item.unidad),
     );
     // Preferir unidades presentes en inventario vivo; si no hay, catálogo del edificio.
-    const filtered = fromInventarioCodes.size
+    let filtered = fromInventarioCodes.size
       ? fromCatalog.filter((item) => fromInventarioCodes.has(item.unidad))
       : fromCatalog;
+    // Deep-link / unidad fuera de cotizables: mantener la seleccionada visible en el select.
+    if (unidadCode && !filtered.some((item) => item.unidad === unidadCode)) {
+      const selected = fromCatalog.find((item) => item.unidad === unidadCode);
+      if (selected) {
+        filtered = [...filtered, selected];
+      }
+    }
     return filtered.sort((a, b) => a.unidad.localeCompare(b.unidad, "es", { numeric: true }));
-  }, [edificio, unidadesInventario]);
+  }, [edificio, unidadCode, unidadesInventario]);
 
   // Al elegir unidad en el recorrido (o URL), sincronizar selectores del simulador.
   useEffect(() => {
-    if (!unidadId) {
+    if (unidadId) {
+      const inv =
+        inventarioUnidades?.find((item) => item.id === unidadId) ??
+        unidadesInventario.find((item) => item.id === unidadId);
+      if (inv?.unidad) {
+        const code = normalizeGaviaUnidadCodigo(inv.unidad) ?? inv.unidad;
+        const decoded = decodeMisionLaGaviaUnidad(code);
+        const torre = decoded?.edificio ?? code.split("-")[0]?.toUpperCase();
+        if (torre) {
+          setEdificio(torre);
+          setUnidadCode(code);
+        }
+        return;
+      }
+    }
+
+    // Deep-link por código: sembrar solo si aún no hay selección local.
+    if (unidadCode || !unidadCodigoProp) {
       return;
     }
-    const inv =
-      inventarioUnidades?.find((item) => item.id === unidadId) ??
-      unidadesInventario.find((item) => item.id === unidadId);
-    if (!inv?.unidad) {
+    const code = normalizeGaviaUnidadCodigo(unidadCodigoProp);
+    if (!code) {
       return;
     }
-    const decoded = decodeMisionLaGaviaUnidad(inv.unidad);
-    const torre = decoded?.edificio ?? inv.unidad.split("-")[0]?.toUpperCase();
+    const decoded = decodeMisionLaGaviaUnidad(code);
+    const torre = decoded?.edificio ?? code.split("-")[0]?.toUpperCase();
     if (!torre) {
       return;
     }
     setEdificio(torre);
-    setUnidadCode(inv.unidad);
-  }, [unidadId, inventarioUnidades, unidadesInventario]);
+    setUnidadCode(code);
+  }, [
+    unidadId,
+    unidadCodigoProp,
+    unidadCode,
+    inventarioUnidades,
+    unidadesInventario,
+  ]);
 
   useEffect(() => {
     if (!edificio && edificios.length) {
@@ -669,11 +713,78 @@ export function MisionLaGaviaSimuladorPanel({
 
   if (!unidadRecord || !simulacion) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-        <p className="text-base font-black text-[#14453D] sm:text-lg">Selecciona una unidad</p>
-        <p className="mt-2 text-sm text-slate-500">
-          Elige edificio y departamento para cotizar con lista mar26.
-        </p>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center gap-4">
+          {desarrolloLogo ? (
+            <Image
+              src={desarrolloLogo}
+              alt={desarrolloNombre}
+              width={120}
+              height={48}
+              className="h-10 w-auto object-contain"
+            />
+          ) : null}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#5B8A7D]">
+              Simulador oficial · mar26
+            </p>
+            <p className="text-sm font-bold text-[#14453D]">{desarrolloNombre}</p>
+          </div>
+        </div>
+
+        {showSelectors ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <FieldLabel>Edificio</FieldLabel>
+              <select
+                value={edificio}
+                onChange={(event) => {
+                  setEdificio(event.target.value);
+                  setUnidadCode("");
+                  onUnidadChange?.(undefined);
+                }}
+                className="input-cotizador"
+              >
+                {edificios.map((item) => (
+                  <option key={item} value={item}>
+                    Torre {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <FieldLabel>Unidad</FieldLabel>
+              <select
+                value={unidadCode}
+                onChange={(event) => {
+                  setUnidadCode(event.target.value);
+                  const inv = unidadesInventario.find(
+                    (item) => item.unidad === event.target.value,
+                  );
+                  onUnidadChange?.(inv?.id);
+                }}
+                className="input-cotizador"
+              >
+                {unidadesEdificio.length === 0 ? (
+                  <option value="">Sin unidades en esta torre</option>
+                ) : null}
+                {unidadesEdificio.map((item) => (
+                  <option key={item.unidad} value={item.unidad}>
+                    {item.unidad} · {item.modelo}
+                    {item.estatus !== "disponible" ? ` (${item.estatus})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
+
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+          <p className="text-base font-black text-[#14453D] sm:text-lg">Selecciona una unidad</p>
+          <p className="mt-2 text-sm text-slate-500">
+            Elige edificio y departamento para cotizar con lista mar26.
+          </p>
+        </div>
       </div>
     );
   }

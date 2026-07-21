@@ -1,6 +1,6 @@
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
-import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import { bootstrapCadenciaForProspecto, pauseCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
 import {
   isProspectoEtapa,
   mergeProspectoEtapa,
@@ -588,6 +588,8 @@ export const updateProspecto = async (
       patch.calificacion = calificacionFromMotivoDescarte(motivoValidation.motivoDescarte);
       patch.es_spam = motivoValidation.motivoDescarte === "datos_falsos";
     }
+    patch.proximo_contacto_on = null;
+    patch.proximo_contacto_nota = null;
   } else if (input.etapa !== undefined && input.etapa !== "perdido") {
     // Al salir de Descartado, limpiar motivo y dejar rastro en notas.
     if (existing.etapa === "perdido") {
@@ -612,6 +614,14 @@ export const updateProspecto = async (
   const { error } = await supabase.from("prospectos").update(patch).eq("id", id);
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (input.etapa !== undefined && input.etapa !== existing.etapa) {
+    if (input.etapa === "perdido" || input.etapa === "cancelado") {
+      await pauseCadenciaForProspecto(id, `Etapa cambiada a ${input.etapa}`);
+    } else if (existing.etapa === "nuevo" && input.etapa !== "nuevo") {
+      await pauseCadenciaForProspecto(id, `Prospecto avanzó a ${input.etapa}`);
+    }
   }
 
   if (input.asesorId !== undefined && input.asesorId !== (existing.asesor_id ?? null)) {
