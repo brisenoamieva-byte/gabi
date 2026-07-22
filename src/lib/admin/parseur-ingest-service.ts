@@ -13,6 +13,7 @@ import {
   normalizeLeadEmail,
   normalizeLeadPhone,
 } from "@/lib/comercial/lead-scoring";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import { nivelInteresFromLabel } from "@/lib/comercial/prospecto-interes";
 import type { ProspectoRecord } from "@/lib/comercial/sembrado-status";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -169,6 +170,8 @@ const applyScores = async (prospecto: ProspectoRecord, esDuplicado: boolean) => 
     }
     throw new Error(error.message);
   }
+
+  await recomputeLeadActivityScoreSafe(prospecto.id);
 
   return data as ProspectoRecord;
 };

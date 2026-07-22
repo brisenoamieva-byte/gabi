@@ -7,10 +7,17 @@ import { DisponibilidadPanel } from "@/components/disponibilidad/DisponibilidadP
 function DisponibilidadPageContent() {
   const searchParams = useSearchParams();
   const fromAdmin = searchParams.get("from") === "admin";
+  const fromRecorrido = searchParams.get("from") === "recorrido";
   const desarrolloIdParam = searchParams.get("desarrolloId");
+  const clusterIdParam = searchParams.get("clusterId");
 
   return (
-    <DisponibilidadPanel fromAdmin={fromAdmin} desarrolloIdParam={desarrolloIdParam} />
+    <DisponibilidadPanel
+      fromAdmin={fromAdmin}
+      fromRecorrido={fromRecorrido}
+      desarrolloIdParam={desarrolloIdParam}
+      clusterIdParam={clusterIdParam}
+    />
   );
 }
 

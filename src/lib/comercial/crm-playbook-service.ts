@@ -24,6 +24,7 @@ import {
   type ProspectoEtapa,
 } from "@/lib/comercial/prospecto-etapas";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
 import {
   completeCadenciaForProspecto,
@@ -442,6 +443,8 @@ export const completePlaybookStepForProspecto = async (
         fullProspecto as ProspectoListRow,
       );
 
+      await recomputeLeadActivityScoreSafe(prospectoId);
+
       return {
         playbook: computeProspectoPlaybookState(
           fullProspecto as ProspectoListRow,
@@ -575,6 +578,8 @@ export const completePlaybookStepForProspecto = async (
     fullProspecto as ProspectoListRow,
   );
 
+  await recomputeLeadActivityScoreSafe(prospectoId);
+
   return {
     playbook: computeProspectoPlaybookState(
       fullProspecto as ProspectoListRow,
@@ -657,6 +662,8 @@ export const uncompletePlaybookStepForProspecto = async (
   const recorridoCompletado = await resolveRecorridoCompletadoForProspecto(
     fullProspecto as ProspectoListRow,
   );
+
+  await recomputeLeadActivityScoreSafe(prospectoId);
 
   return {
     playbook: computeProspectoPlaybookState(

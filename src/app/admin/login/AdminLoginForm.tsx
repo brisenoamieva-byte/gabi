@@ -220,8 +220,8 @@ export function AdminLoginForm({ variant = "admin" }: AdminLoginFormProps) {
       {unified ? (
         <p className="mt-5 text-center text-xs leading-relaxed text-slate-400">
           Asesor en showroom con tablet compartida:{" "}
-          <Link href="/portal/bbr" className="font-semibold text-gabi-forest underline">
-            entrar con PIN
+          <Link href="/portal" className="font-semibold text-gabi-forest underline">
+            elegir comercializadora y PIN
           </Link>
         </p>
       ) : null}

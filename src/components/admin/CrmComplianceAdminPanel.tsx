@@ -16,6 +16,7 @@ import {
   Target,
   Trophy,
   Wrench,
+  Sparkles,
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
 import type { GarantiaSlaReport } from "@/lib/comercial/garantia-sla";
@@ -28,6 +29,7 @@ import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
 import { AsesorScorecardPanel } from "@/components/admin/AsesorScorecardPanel";
 import { CadenciaAdminPanel } from "@/components/admin/CadenciaAdminPanel";
+import { CrmLeadScoreActionsPanel } from "@/components/admin/CrmLeadScoreActionsPanel";
 import { CrmPlaybookAdminPanel } from "@/components/admin/CrmPlaybookAdminPanel";
 import { GarantiaSlaDashboard } from "@/components/admin/GarantiaSlaDashboard";
 
@@ -43,6 +45,7 @@ type SaludCrmTab =
   | "desempeno"
   | "playbook"
   | "cadencia"
+  | "acciones"
   | "config"
   | "herramientas";
 
@@ -52,6 +55,7 @@ const parseTab = (value: string | null, canConfigure: boolean): SaludCrmTab => {
   if (value === "desempeno" || value === "scorecard") return "desempeno";
   if (value === "playbook" || value === "cumplimiento") return "playbook";
   if (value === "cadencia") return "cadencia";
+  if (value === "acciones" || value === "score-leads") return "acciones";
   if (value === "herramientas") return "herramientas";
   if (value === "config" && canConfigure) return "config";
   return "garantia";
@@ -455,6 +459,12 @@ export function CrmComplianceAdminPanel({
           label="Contacto 8 días"
           onClick={() => setActiveTab("cadencia")}
         />
+        <TabButton
+          active={tab === "acciones"}
+          icon={Sparkles}
+          label="Score leads"
+          onClick={() => setActiveTab("acciones")}
+        />
         {canConfigurePlaybook ? (
           <TabButton
             active={tab === "config"}
@@ -501,6 +511,10 @@ export function CrmComplianceAdminPanel({
           embedded
           asesorId={asesorId || null}
         />
+      ) : null}
+
+      {tab === "acciones" ? (
+        <CrmLeadScoreActionsPanel canEdit={Boolean(canConfigurePlaybook)} />
       ) : null}
 
       {tab === "config" && canConfigurePlaybook ? (

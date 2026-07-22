@@ -29,6 +29,13 @@ const toSession = (row: Omit<AsesorAuthRow, "pin_hash" | "activo">): AsesorSessi
   desarrollosIds: row.desarrollos_ids ?? [],
 });
 
+const clipDesarrollosIds = (ids: string[], allowed?: string[]): string[] => {
+  if (!allowed?.length) {
+    return ids;
+  }
+  return ids.filter((id) => allowed.includes(id));
+};
+
 export const authenticateInvesttiSimuladorByPin = async (
   pin: string,
 ): Promise<{ asesor: AsesorSession; source: "investti-demo" | "supabase" | "fallback" } | null> => {
@@ -74,8 +81,12 @@ export const authenticateAsesorByPin = async (
     if (!error && data?.length) {
       for (const row of data as AsesorAuthRow[]) {
         if (verifyPin(pin, row.pin_hash)) {
+          const session = toSession(row);
           return {
-            asesor: toSession(row),
+            asesor: {
+              ...session,
+              desarrollosIds: clipDesarrollosIds(session.desarrollosIds, options?.desarrolloIds),
+            },
             source: "supabase",
           };
         }
@@ -109,7 +120,7 @@ export const authenticateAsesorByPin = async (
       nombre: fallback.nombre,
       email: fallback.email,
       rol: fallback.rol,
-      desarrollosIds: fallback.desarrollosIds,
+      desarrollosIds: clipDesarrollosIds(fallback.desarrollosIds, options?.desarrolloIds),
     },
     source: "fallback",
   };

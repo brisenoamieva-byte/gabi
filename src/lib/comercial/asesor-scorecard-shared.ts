@@ -6,7 +6,7 @@
 import type { SpeedToLeadAggregate } from "@/lib/comercial/speed-to-lead-metrics";
 import { formatSpeedMinutesLabel } from "@/lib/comercial/speed-to-lead-metrics";
 
-export const ASESOR_SCORE_VERSION = "2026.2";
+export const ASESOR_SCORE_VERSION = "2026.3";
 
 /** Pesos base (suman 1). Si falta un componente, se redistribuye. */
 export const ASESOR_SCORE_WEIGHTS = {
@@ -23,7 +23,7 @@ export type AsesorScoreWeightKey = keyof typeof ASESOR_SCORE_WEIGHTS;
 /** Muestra mínima para bandear con confianza. */
 export const ASESOR_SCORE_MIN_SAMPLE = 5;
 
-/** iScore máximo teórico (lead-scoring.ts). */
+/** iScore máximo teórico (lead-scoring.ts) — referencia legacy / export. */
 export const ISCORE_MAX = 30;
 
 /** Ventana por defecto del reporte (días hacia atrás desde hoy). */
@@ -44,9 +44,42 @@ export const asesorScoreBandLabel: Record<AsesorScoreBand, string> = {
   insuficiente: "Muestra insuficiente",
 };
 
+export type PerfilAbcResumen = {
+  a: number;
+  b: number;
+  c: number;
+  sin: number;
+  total: number;
+  perfiladosPct: number;
+};
+
 const clampPct = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 
 const pct = (num: number, den: number) => (den > 0 ? clampPct((num / den) * 100) : 0);
+
+export const emptyPerfilAbcResumen = (): PerfilAbcResumen => ({
+  a: 0,
+  b: 0,
+  c: 0,
+  sin: 0,
+  total: 0,
+  perfiladosPct: 0,
+});
+
+export const buildPerfilAbcResumen = (counts: {
+  a: number;
+  b: number;
+  c: number;
+  sin: number;
+}): PerfilAbcResumen => {
+  const total = counts.a + counts.b + counts.c + counts.sin;
+  const perfilados = counts.a + counts.b + counts.c;
+  return {
+    ...counts,
+    total,
+    perfiladosPct: pct(perfilados, total),
+  };
+};
 
 export const bandFromScore = (score: number, sampleSize: number): AsesorScoreBand => {
   if (sampleSize < ASESOR_SCORE_MIN_SAMPLE) {
@@ -67,7 +100,7 @@ export type AsesorScoreParts = {
   compliancePct: number | null;
   /** null = sin cadencias → redistribuir peso. */
   cadenciaHealthPct: number | null;
-  /** avg(iScore) / ISCORE_MAX * 100. */
+  /** avg(activity) / referenceMax * 100. */
   qualityPct: number;
 };
 
@@ -161,8 +194,12 @@ export type AsesorScorecardRow = {
   contactRatePct: number;
   funnelRatePct: number;
   discardRatePct: number;
+  /** Promedio lead_activity_score (null si sin datos). */
+  avgActivityScore: number | null;
+  /** Legacy Xperience iScore (referencia). */
   avgIscore: number | null;
   qualityPct: number;
+  perfilAbc: PerfilAbcResumen;
   /** Mediana de minutos al primer toque (null si sin cobertura). */
   speedMedianMinutes: number | null;
   speedUnder60Pct: number;
@@ -185,6 +222,7 @@ export type CanalScorecardRow = {
   contactRatePct: number;
   funnelCount: number;
   funnelRatePct: number;
+  avgActivityScore: number | null;
   avgIscore: number | null;
 };
 
@@ -208,7 +246,9 @@ export type DesarrolloScorecardKpis = {
   discardRatePct: number;
   /** % aún en etapa nuevo (estancamiento). */
   nuevoRatePct: number;
+  avgActivityScore: number | null;
   avgIscore: number | null;
+  perfilAbc: PerfilAbcResumen;
   asesoresActivos: number;
   /** Promedio simple de scores de asesores con muestra confiable. */
   avgScoreReliable: number | null;
@@ -221,6 +261,7 @@ export type DesarrolloAsesorScorecardReport = {
   desde: string;
   hasta: string;
   playbookEnabled: boolean;
+  activityScoreReferenceMax: number;
   kpis: DesarrolloScorecardKpis;
   asesores: AsesorScorecardRow[];
   canales: CanalScorecardRow[];
@@ -267,7 +308,9 @@ export const filterScorecardByAsesor = (
         funnelRatePct: 0,
         discardRatePct: 0,
         nuevoRatePct: 0,
+        avgActivityScore: null,
         avgIscore: null,
+        perfilAbc: emptyPerfilAbcResumen(),
         asesoresActivos: 0,
         avgScoreReliable: null,
         speed: {
@@ -296,7 +339,9 @@ export const filterScorecardByAsesor = (
       funnelRatePct: row.funnelRatePct,
       discardRatePct: row.discardRatePct,
       nuevoRatePct: pct(row.nuevoCount, row.assignedCount),
+      avgActivityScore: row.avgActivityScore,
       avgIscore: row.avgIscore,
+      perfilAbc: row.perfilAbc,
       asesoresActivos: row.assignedCount > 0 ? 1 : 0,
       avgScoreReliable: row.sampleReliable ? row.score : null,
       speed: {
@@ -341,6 +386,12 @@ export const exportAsesorScorecardCsv = (report: DesarrolloAsesorScorecardReport
     "Playbook %",
     "Cadencia %",
     "Cadencia vencidos",
+    "Activity score prom",
+    "Calidad %",
+    "Perfil A",
+    "Perfil B",
+    "Perfil C",
+    "Sin perfil",
     "iScore prom",
     "Desde",
     "Hasta",
@@ -368,6 +419,12 @@ export const exportAsesorScorecardCsv = (report: DesarrolloAsesorScorecardReport
       row.compliancePct === null ? "" : String(row.compliancePct),
       row.cadenciaHealthPct === null ? "" : String(row.cadenciaHealthPct),
       String(row.overdueCadencia),
+      row.avgActivityScore === null ? "" : String(row.avgActivityScore),
+      String(row.qualityPct),
+      String(row.perfilAbc.a),
+      String(row.perfilAbc.b),
+      String(row.perfilAbc.c),
+      String(row.perfilAbc.sin),
       row.avgIscore === null ? "" : String(row.avgIscore),
       report.desde,
       report.hasta,

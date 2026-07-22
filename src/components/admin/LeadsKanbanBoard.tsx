@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { GripVertical, Phone, RotateCcw, Trash2, UserRound, X } from "lucide-react";
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
+import { LeadActivityScoreBadge } from "@/components/asesor/LeadActivityScoreBadge";
 import type { ProspectoListRow } from "@/lib/admin/prospectos-service";
 import { ETAPA_RESCATE_DEFAULT } from "@/lib/asesores/prospectos-client";
 import { prospectoContactoOHistorialLabel } from "@/lib/comercial/apartado-cancelado-historial";
@@ -213,6 +214,11 @@ export function LeadsKanbanBoard({
                           <UserRound className="h-3.5 w-3.5 text-[#201044]" strokeWidth={2} />
                         </div>
                         <p className="truncate text-sm font-semibold text-[#201044]">{row.nombre}</p>
+                        <LeadActivityScoreBadge
+                          score={row.lead_activity_score}
+                          detail={row.lead_activity_score_detail}
+                          size="sm"
+                        />
                         {calificacion ? (
                           <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
                         ) : null}

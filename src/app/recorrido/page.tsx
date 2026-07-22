@@ -38,7 +38,7 @@ import {
   investtiCatalogHasSimulador,
 } from "@/lib/catalog/investti-desarrollos";
 import { resolveMisionLaGaviaPrototipoPlanta } from "@/lib/disponibilidad/planos/plantas";
-import { isMisionLaGaviaDepartamentosCluster } from "@/lib/catalog/mision-la-gavia-acabados";
+import { isMisionLaGaviaDepartamentosCluster, misionLaGaviaPrototipoHasRoof } from "@/lib/catalog/mision-la-gavia-acabados";
 import {
   isPasajeDepartamentosCluster,
 } from "@/lib/catalog/pasaje-alamos-acabados";
@@ -93,6 +93,9 @@ import {
 } from "@/lib/crm/sync-policy";
 import { DEFAULT_RECORRIDO_ETAPAS } from "@/lib/catalog/types";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
+import { hasDisponibilidadPlano } from "@/lib/disponibilidad/planos";
+import { MISION_LA_GAVIA_CLUSTER_ID } from "@/lib/catalog/mision-la-gavia";
 
 import {
   confianzaItems,
@@ -2229,15 +2232,6 @@ function RecorridoPageContent() {
                               prototipoId={selectedPrototipo.id}
                               desarrolloId={activeDesarrollo.id}
                             />
-                            {selectedCluster ? (
-                              <DocumentDownloadButton
-                                compact
-                                variant="cluster"
-                                clusterId={selectedCluster.id}
-                                desarrolloId={activeDesarrollo.id}
-                                label="Brochure del cluster"
-                              />
-                            ) : null}
                           </div>
                         ) : null}
                         <p className="mt-2 text-2xl font-black text-[#6CC24A]">
@@ -2308,7 +2302,9 @@ function RecorridoPageContent() {
                         {isPasajeDepartamentosCluster(selectedCluster?.id) ? (
                           <PasajeAcabadosPanel />
                         ) : isMisionLaGaviaDepartamentosCluster(selectedCluster?.id) ? (
-                          <MisionLaGaviaAcabadosPanel />
+                          <MisionLaGaviaAcabadosPanel
+                            includeRoof={misionLaGaviaPrototipoHasRoof(selectedPrototipo)}
+                          />
                         ) : (
                           <>
                             <ListBox
@@ -2323,11 +2319,44 @@ function RecorridoPageContent() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (!selectedCluster) {
+                              if (!activeDesarrollo) {
                                 return;
                               }
 
-                              setAvailabilityClusterId(selectedCluster.id);
+                              const clusterId =
+                                selectedCluster?.id ??
+                                (hasDisponibilidadPlano(activeDesarrollo.id)
+                                  ? MISION_LA_GAVIA_CLUSTER_ID
+                                  : null);
+
+                              try {
+                                localStorage.setItem(
+                                  GABI_DESARROLLO_KEY,
+                                  activeDesarrollo.id,
+                                );
+                              } catch {
+                                /* ignore quota / private mode */
+                              }
+
+                              // Si hay plano (Gavia), ir a /disponibilidad; si no, panel local.
+                              if (hasDisponibilidadPlano(activeDesarrollo.id)) {
+                                const params = new URLSearchParams({
+                                  desarrolloId: activeDesarrollo.id,
+                                  from: "recorrido",
+                                });
+                                if (clusterId) {
+                                  params.set("clusterId", clusterId);
+                                }
+                                // Navegación completa: más fiable en PWA/HMR que router.push.
+                                window.location.assign(
+                                  `/disponibilidad?${params.toString()}`,
+                                );
+                                return;
+                              }
+
+                              if (clusterId) {
+                                setAvailabilityClusterId(clusterId);
+                              }
                               setSelectedAvailabilityId(null);
                               setShowAvailability(true);
                             }}

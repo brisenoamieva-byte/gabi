@@ -33,29 +33,45 @@ export default function PortalSlugPinPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(PORTAL_STORAGE_KEY);
-      let parsed: PortalSession | null = null;
+    let cancelled = false;
 
-      if (stored) {
-        parsed = JSON.parse(stored) as PortalSession;
-      }
+    void (async () => {
+      try {
+        const stored = localStorage.getItem(PORTAL_STORAGE_KEY);
+        let parsed: PortalSession | null = null;
 
-      if (!parsed || parsed.slug !== slug) {
-        const bootstrap = resolveComercializadoraPortalSession(slug);
-        if (bootstrap) {
-          localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(bootstrap));
-          parsed = bootstrap;
-        } else {
-          router.replace("/portal");
+        if (stored) {
+          parsed = JSON.parse(stored) as PortalSession;
+        }
+
+        if (!parsed || parsed.slug !== slug) {
+          const bootstrap = resolveComercializadoraPortalSession(slug);
+          if (bootstrap) {
+            localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(bootstrap));
+            parsed = bootstrap;
+          } else {
+            const response = await fetch(
+              `/api/portal/comercializadoras?slug=${encodeURIComponent(slug)}`,
+            );
+            const data = (await response.json()) as {
+              portal?: PortalSession;
+            };
+            if (!response.ok || !data.portal) {
+              router.replace("/portal");
+              return;
+            }
+            localStorage.setItem(PORTAL_STORAGE_KEY, JSON.stringify(data.portal));
+            parsed = data.portal;
+          }
+        }
+
+        if (cancelled) {
           return;
         }
-      }
 
-      setPortal(parsed);
-      setReady(true);
+        setPortal(parsed);
+        setReady(true);
 
-      void (async () => {
         const existing = await refreshStoredAsesorSession();
         if (existing) {
           router.replace("/desarrollos");
@@ -65,11 +81,15 @@ export default function PortalSlugPinPage() {
         if (synced) {
           router.replace("/desarrollos");
         }
-      })();
-    } catch {
-      localStorage.removeItem(PORTAL_STORAGE_KEY);
-      router.replace("/portal");
-    }
+      } catch {
+        localStorage.removeItem(PORTAL_STORAGE_KEY);
+        router.replace("/portal");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, slug]);
 
   useEffect(() => {

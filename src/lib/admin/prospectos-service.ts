@@ -34,6 +34,7 @@ import {
   isAsesorFilterInactivos,
 } from "@/lib/comercial/prospecto-asesor-filters";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import {
   recordFirstAdvisorContact,
   shouldRecordFirstContactOnEtapaChange,
@@ -656,6 +657,8 @@ export const updateProspecto = async (
     throw new Error("No se pudo cargar el prospecto actualizado.");
   }
 
+  await recomputeLeadActivityScoreSafe(id);
+
   return updated;
 };
 
@@ -874,6 +877,7 @@ export const syncProspectoFromVisita = async (
       throw new Error(error.message);
     }
 
+    await recomputeLeadActivityScoreSafe(existing.id);
     return data as ProspectoRecord;
   }
 
@@ -890,7 +894,9 @@ export const syncProspectoFromVisita = async (
     throw new Error(error.message);
   }
 
-  return data as ProspectoRecord;
+  const row = data as ProspectoRecord;
+  await recomputeLeadActivityScoreSafe(row.id);
+  return row;
 };
 
 export const createProspecto = async (input: ProspectoInput) => {
@@ -909,7 +915,9 @@ export const createProspecto = async (input: ProspectoInput) => {
     throw new Error(error.message);
   }
 
-  return data as ProspectoRecord;
+  const row = data as ProspectoRecord;
+  await recomputeLeadActivityScoreSafe(row.id);
+  return row;
 };
 
 export const upsertProspectoFromVisita = async (input: ProspectoInput) => {
@@ -943,6 +951,7 @@ export const upsertProspectoFromVisita = async (input: ProspectoInput) => {
       throw new Error(error.message);
     }
 
+    await recomputeLeadActivityScoreSafe(existing.id);
     return data as ProspectoRecord;
   }
 
@@ -1004,6 +1013,7 @@ export const saveCotizacion = async (input: CotizacionInput) => {
       .from("prospectos")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", input.prospectoId);
+    await recomputeLeadActivityScoreSafe(input.prospectoId);
   }
 
   return data;
@@ -1066,6 +1076,7 @@ export const syncLeadIntelligenceForDesarrollo = async (
         throw new Error(updateError.message);
       }
       scoresUpdated += 1;
+      await recomputeLeadActivityScoreSafe(prospecto.id);
     }
   }
 

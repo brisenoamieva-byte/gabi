@@ -10,6 +10,7 @@ import {
 import { canAccessDesarrollo, isSuperAdmin } from "@/lib/admin/permissions";
 import type { AdminProfile } from "@/lib/admin/types";
 import { getProspectoById } from "@/lib/admin/prospectos-service";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import { prospectoEtapaFromSembrado } from "@/lib/comercial/prospecto-etapas";
 import { resolveMedioPublicitarioFromProspecto } from "@/lib/comercial/apartado-form-options";
 import { markSolicitudApartadoAtendida } from "@/lib/comercial/solicitud-apartado-service";
@@ -592,6 +593,8 @@ const syncProspectoEtapaFromOperacion = async (
       updated_at: new Date().toISOString(),
     })
     .eq("id", params.prospectoId);
+
+  await recomputeLeadActivityScoreSafe(params.prospectoId);
 };
 
 export const getApartadoPrefill = async (
@@ -799,7 +802,8 @@ export const createOperacionApartado = async (
     if (prospectoError) {
       throw new Error(prospectoError.message);
     }
-    prospectoId = createdProspecto.id;
+    prospectoId = createdProspecto.id as string;
+    await recomputeLeadActivityScoreSafe(prospectoId);
   } else {
     await supabase
       .from("prospectos")
@@ -1325,6 +1329,7 @@ export const cancelOperacionComercial = async (
     };
 
     await supabase.from("prospectos").update(prospectoPatch).eq("id", operacion.prospecto_id);
+    await recomputeLeadActivityScoreSafe(operacion.prospecto_id);
   }
 
   return {

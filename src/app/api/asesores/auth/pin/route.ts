@@ -48,10 +48,23 @@ export async function POST(request: Request) {
     }
 
     const desarrolloIds = await getDesarrolloIdsForComercializadora(portal);
+    if (!desarrolloIds.length) {
+      return NextResponse.json(
+        { error: "Este portal no tiene desarrollos activos." },
+        { status: 403 },
+      );
+    }
 
     const result = await authenticateAsesorByPin(pin, { desarrolloIds });
     if (!result) {
       return NextResponse.json({ error: "PIN incorrecto." }, { status: 401 });
+    }
+
+    if (!result.asesor.desarrollosIds.length) {
+      return NextResponse.json(
+        { error: "Tu PIN no tiene acceso a los desarrollos de este portal." },
+        { status: 403 },
+      );
     }
 
     const response = NextResponse.json({ asesor: result.asesor, source: result.source });

@@ -1,4 +1,5 @@
 import { findProspectoByContact } from "@/lib/admin/prospectos-service";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import {
   computeIscore,
   computeSellerScore,
@@ -57,6 +58,8 @@ const applyScores = async (prospecto: ProspectoRecord, esDuplicado: boolean) => 
   if (error) {
     return prospecto;
   }
+
+  await recomputeLeadActivityScoreSafe(prospecto.id);
 
   return data as ProspectoRecord;
 };

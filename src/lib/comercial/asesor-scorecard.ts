@@ -8,7 +8,7 @@ import { listProspectos, type ProspectoListRow } from "@/lib/admin/prospectos-se
 import {
   ASESOR_SCORE_MIN_SAMPLE,
   ASESOR_SCORE_VERSION,
-  ISCORE_MAX,
+  buildPerfilAbcResumen,
   cadenciaHealthFromSummary,
   clampPct,
   computeAsesorScore,
@@ -30,6 +30,7 @@ import {
   type AsesorComplianceSummary,
   type DesarrolloComplianceReport,
 } from "@/lib/comercial/crm-compliance-service";
+import { getLeadActivityScoreReferenceMax } from "@/lib/comercial/lead-activity-score";
 import {
   isProspectoEtapa,
   normalizeProspectoEtapaValue,
@@ -62,6 +63,20 @@ const DISCARD_ETAPAS = new Set<ProspectoEtapa>(["perdido", "cancelado"]);
 const resolveEtapa = (raw: string): ProspectoEtapa | null =>
   normalizeProspectoEtapaValue(raw) ?? (isProspectoEtapa(raw) ? raw : null);
 
+const readActivityScore = (row: ProspectoListRow): number | null =>
+  typeof row.lead_activity_score === "number" ? row.lead_activity_score : null;
+
+const bumpPerfil = (
+  counts: { a: number; b: number; c: number; sin: number },
+  raw: string | null | undefined,
+) => {
+  const key = raw?.trim().toUpperCase();
+  if (key === "A") counts.a += 1;
+  else if (key === "B") counts.b += 1;
+  else if (key === "C") counts.c += 1;
+  else counts.sin += 1;
+};
+
 type AggBucket = {
   asesorId: string;
   asesorNombre: string;
@@ -70,8 +85,11 @@ type AggBucket = {
   funnel: number;
   discarded: number;
   nuevo: number;
+  activitySum: number;
+  activityCount: number;
   iscoreSum: number;
   iscoreCount: number;
+  perfil: { a: number; b: number; c: number; sin: number };
   speedMinutes: number[];
 };
 
@@ -83,8 +101,11 @@ const emptyBucket = (asesorId: string, asesorNombre: string): AggBucket => ({
   funnel: 0,
   discarded: 0,
   nuevo: 0,
+  activitySum: 0,
+  activityCount: 0,
   iscoreSum: 0,
   iscoreCount: 0,
+  perfil: { a: 0, b: 0, c: 0, sin: 0 },
   speedMinutes: [],
 });
 
@@ -94,15 +115,21 @@ const channelKey = (row: ProspectoListRow) =>
 const campanaKey = (row: ProspectoListRow) =>
   row.campana_id ?? `nombre:${row.campanaNombre?.trim() || "Sin campaña"}`;
 
+const avgRounded = (sum: number, count: number): number | null =>
+  count > 0 ? Math.round((sum / count) * 10) / 10 : null;
+
 export const buildAsesorScorecardFromParts = (input: {
   desarrolloId: string;
   period: ScorecardPeriod;
   prospectos: ProspectoListRow[];
   compliance: DesarrolloComplianceReport | null;
   cadencia: DesarrolloCadenciaReport | null;
+  activityScoreReferenceMax?: number;
   generatedAt?: string;
 }): DesarrolloAsesorScorecardReport => {
   const { desarrolloId, period, prospectos, compliance, cadencia } = input;
+  const activityScoreReferenceMax =
+    input.activityScoreReferenceMax ?? getLeadActivityScoreReferenceMax();
   const playbookEnabled = Boolean(compliance?.playbookEnabled);
   const complianceByAsesor = new Map<string, AsesorComplianceSummary>(
     (compliance?.asesores ?? []).map((row) => [row.asesorId, row]),
@@ -117,8 +144,11 @@ export const buildAsesorScorecardFromParts = (input: {
   let totalFunnel = 0;
   let totalDiscarded = 0;
   let totalNuevo = 0;
+  let activitySum = 0;
+  let activityCount = 0;
   let iscoreSum = 0;
   let iscoreCount = 0;
+  const perfilTotales = { a: 0, b: 0, c: 0, sin: 0 };
   const allSpeedMinutes: number[] = [];
 
   type ChanAgg = {
@@ -126,6 +156,8 @@ export const buildAsesorScorecardFromParts = (input: {
     leads: number;
     contacted: number;
     funnel: number;
+    activitySum: number;
+    activityCount: number;
     iscoreSum: number;
     iscoreCount: number;
   };
@@ -148,15 +180,21 @@ export const buildAsesorScorecardFromParts = (input: {
     const discarded = etapa ? DISCARD_ETAPAS.has(etapa) : false;
     const nuevo = etapa === "nuevo";
     const speedMinutes = speedMinutesBetween(row.created_at, row.first_contacted_at);
+    const activity = readActivityScore(row);
 
     if (contacted) totalContacted += 1;
     if (funnel) totalFunnel += 1;
     if (discarded) totalDiscarded += 1;
     if (nuevo) totalNuevo += 1;
+    if (activity !== null) {
+      activitySum += activity;
+      activityCount += 1;
+    }
     if (typeof row.iscore === "number") {
       iscoreSum += row.iscore;
       iscoreCount += 1;
     }
+    bumpPerfil(perfilTotales, row.perfil_calificacion_lead);
     if (speedMinutes !== null) {
       allSpeedMinutes.push(speedMinutes);
     }
@@ -167,12 +205,18 @@ export const buildAsesorScorecardFromParts = (input: {
       leads: 0,
       contacted: 0,
       funnel: 0,
+      activitySum: 0,
+      activityCount: 0,
       iscoreSum: 0,
       iscoreCount: 0,
     };
     chan.leads += 1;
     if (contacted) chan.contacted += 1;
     if (funnel) chan.funnel += 1;
+    if (activity !== null) {
+      chan.activitySum += activity;
+      chan.activityCount += 1;
+    }
     if (typeof row.iscore === "number") {
       chan.iscoreSum += row.iscore;
       chan.iscoreCount += 1;
@@ -206,10 +250,15 @@ export const buildAsesorScorecardFromParts = (input: {
     if (funnel) bucket.funnel += 1;
     if (discarded) bucket.discarded += 1;
     if (nuevo) bucket.nuevo += 1;
+    if (activity !== null) {
+      bucket.activitySum += activity;
+      bucket.activityCount += 1;
+    }
     if (typeof row.iscore === "number") {
       bucket.iscoreSum += row.iscore;
       bucket.iscoreCount += 1;
     }
+    bumpPerfil(bucket.perfil, row.perfil_calificacion_lead);
     if (speedMinutes !== null) {
       bucket.speedMinutes.push(speedMinutes);
     }
@@ -233,12 +282,13 @@ export const buildAsesorScorecardFromParts = (input: {
       const contactRatePct = pct(bucket.contacted, bucket.assigned);
       const funnelRatePct = pct(bucket.funnel, bucket.assigned);
       const discardRatePct = pct(bucket.discarded, bucket.assigned);
-      const avgIscore =
-        bucket.iscoreCount > 0
-          ? Math.round((bucket.iscoreSum / bucket.iscoreCount) * 10) / 10
-          : null;
+      const avgActivityScore = avgRounded(bucket.activitySum, bucket.activityCount);
+      const avgIscore = avgRounded(bucket.iscoreSum, bucket.iscoreCount);
       const qualityPct =
-        avgIscore !== null ? clampPct((avgIscore / ISCORE_MAX) * 100) : 0;
+        avgActivityScore !== null
+          ? clampPct((avgActivityScore / activityScoreReferenceMax) * 100)
+          : 0;
+      const perfilAbc = buildPerfilAbcResumen(bucket.perfil);
 
       const speedAgg = aggregateSpeedToLead(bucket.speedMinutes, bucket.assigned);
 
@@ -274,8 +324,10 @@ export const buildAsesorScorecardFromParts = (input: {
         contactRatePct,
         funnelRatePct,
         discardRatePct,
+        avgActivityScore,
         avgIscore,
         qualityPct,
+        perfilAbc,
         speedMedianMinutes: speedAgg.medianMinutes,
         speedUnder60Pct: speedAgg.pctUnder60Min,
         speedCoveragePct: speedAgg.coveragePct,
@@ -318,10 +370,8 @@ export const buildAsesorScorecardFromParts = (input: {
       contactRatePct: pct(row.contacted, row.leads),
       funnelCount: row.funnel,
       funnelRatePct: pct(row.funnel, row.leads),
-      avgIscore:
-        row.iscoreCount > 0
-          ? Math.round((row.iscoreSum / row.iscoreCount) * 10) / 10
-          : null,
+      avgActivityScore: avgRounded(row.activitySum, row.activityCount),
+      avgIscore: avgRounded(row.iscoreSum, row.iscoreCount),
     }))
     .sort((a, b) => b.leads - a.leads || b.contactRatePct - a.contactRatePct);
 
@@ -345,6 +395,7 @@ export const buildAsesorScorecardFromParts = (input: {
     desde: period.desde,
     hasta: period.hasta,
     playbookEnabled,
+    activityScoreReferenceMax,
     kpis: {
       totalLeads: prospectos.length,
       assignedLeads,
@@ -353,8 +404,9 @@ export const buildAsesorScorecardFromParts = (input: {
       funnelRatePct: pct(totalFunnel, prospectos.length),
       discardRatePct: pct(totalDiscarded, prospectos.length),
       nuevoRatePct: pct(totalNuevo, prospectos.length),
-      avgIscore:
-        iscoreCount > 0 ? Math.round((iscoreSum / iscoreCount) * 10) / 10 : null,
+      avgActivityScore: avgRounded(activitySum, activityCount),
+      avgIscore: avgRounded(iscoreSum, iscoreCount),
+      perfilAbc: buildPerfilAbcResumen(perfilTotales),
       asesoresActivos: asesores.filter((row) => row.assignedCount > 0).length,
       avgScoreReliable,
       speed: aggregateSpeedToLead(allSpeedMinutes, assignedLeads),

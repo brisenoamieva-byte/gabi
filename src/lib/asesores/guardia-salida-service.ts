@@ -4,6 +4,7 @@ import {
 } from "@/lib/admin/prospectos-service";
 import { registerGuardiaMarcaje } from "@/lib/asesores/guardias-service";
 import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import {
   buildGuardiaSalidaProspectoNotas,
   computeGuardiaSalidaCalificacion,
@@ -70,6 +71,7 @@ const upsertProspectoFromGuardiaSalida = async (
       throw new Error(error.message);
     }
 
+    await recomputeLeadActivityScoreSafe(data.id as string);
     return data.id as string;
   }
 
@@ -98,6 +100,8 @@ const upsertProspectoFromGuardiaSalida = async (
   if (perfilError) {
     throw new Error(perfilError.message);
   }
+
+  await recomputeLeadActivityScoreSafe(record.id);
 
   try {
     await bootstrapCadenciaForProspecto(record.id);

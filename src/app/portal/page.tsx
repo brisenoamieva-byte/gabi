@@ -4,12 +4,22 @@ import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import { GabiLogo } from "@/components/brand/GabiLogo";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { isComercializadoraPortalSlug } from "@/lib/portal/comercializadora-portals";
 import { isInvesttiSimuladorPortal } from "@/lib/portal/investti-simulador";
 
 const PORTAL_KEY = "gabi_portal";
+
+type PortalPinOption = {
+  id: string;
+  slug: string;
+  nombre: string;
+  logo: string | null;
+  portalPath: string;
+  colorPrimary: string;
+  colorAccent: string;
+};
 
 export default function PortalLoginPage() {
   const router = useRouter();
@@ -17,25 +27,45 @@ export default function PortalLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pinPortals, setPinPortals] = useState<PortalPinOption[]>([]);
+  const [pinLoading, setPinLoading] = useState(true);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(PORTAL_KEY);
       if (stored) {
         const portal = JSON.parse(stored) as { portalPath?: string; slug?: string };
+        // Tablet de showroom: si ya eligió comercializadora, volver al PIN de esa.
         if (
-          portal.portalPath &&
+          portal.portalPath?.startsWith("/portal/") &&
           portal.slug &&
-          isComercializadoraPortalSlug(portal.slug) &&
           !isInvesttiSimuladorPortal(portal.slug)
         ) {
           router.replace(portal.portalPath);
+          return;
         }
       }
     } catch {
       localStorage.removeItem(PORTAL_KEY);
     }
   }, [router]);
+
+  useEffect(() => {
+    void (async () => {
+      setPinLoading(true);
+      try {
+        const response = await fetch("/api/portal/comercializadoras");
+        const data = (await response.json()) as {
+          portals?: PortalPinOption[];
+        };
+        setPinPortals(data.portals ?? []);
+      } catch {
+        setPinPortals([]);
+      } finally {
+        setPinLoading(false);
+      }
+    })();
+  }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -103,11 +133,11 @@ export default function PortalLoginPage() {
             </span>
             <h1 className="mt-4 text-2xl font-black">Acceso comercial</h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              Gerentes, directores y asesores con correo entran en{" "}
+              Gerentes y asesores con correo:{" "}
               <Link href="/acceso" className="font-semibold text-[#13315C] underline">
                 gabi.mx/acceso
               </Link>
-              . El PIN en showroom queda solo para tablets compartidas.
+              . En showroom, elige primero tu comercializadora y luego el PIN.
             </p>
           </div>
 
@@ -118,56 +148,101 @@ export default function PortalLoginPage() {
             >
               Entrar con correo y contraseña
             </Link>
-            <Link
-              href="/portal/bbr"
-              className="flex w-full items-center justify-center rounded-2xl border border-[#13315C]/15 bg-white py-3.5 text-sm font-semibold text-[#13315C]"
-            >
-              BBR · entrar con PIN (showroom)
-            </Link>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+              PIN · tablet de showroom
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              El PIN solo funciona dentro del portal de tu comercializadora.
+            </p>
+            <div className="mt-3 space-y-2">
+              {pinLoading ? (
+                <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                  Cargando comercializadoras…
+                </p>
+              ) : null}
+              {!pinLoading && pinPortals.length === 0 ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  No hay comercializadoras activas. Revisa el catálogo en admin.
+                </p>
+              ) : null}
+              {pinPortals.map((portal) => (
+                <Link
+                  key={portal.id}
+                  href={portal.portalPath}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-[#13315C]/15 bg-white px-4 py-3.5 text-left transition hover:border-[#13315C]/30 hover:bg-slate-50"
+                >
+                  <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-100">
+                    {portal.logo ? (
+                      <Image
+                        src={portal.logo}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="h-8 w-8 object-contain"
+                      />
+                    ) : (
+                      <span
+                        className="text-xs font-black"
+                        style={{ color: portal.colorPrimary }}
+                      >
+                        {portal.nombre.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-[#13315C]">
+                      {portal.nombre}
+                    </span>
+                    <span className="block text-xs text-slate-500">Entrar con PIN</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
 
           <details className="mt-6 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
             <summary className="cursor-pointer text-sm font-semibold text-slate-600">
-              Otra comercializadora (usuario legacy)
+              Acceso legacy (usuario de portal)
             </summary>
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            <label className="block">
-              <span className="mb-2 block text-sm font-bold">Usuario</span>
-              <input
-                type="text"
-                value={usuario}
-                onChange={(event) => setUsuario(event.target.value)}
-                autoComplete="username"
-                className="input-xl"
-                placeholder="Ej. bbr"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-bold">Contraseña</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                className="input-xl"
-                placeholder="••••••••"
-              />
-            </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold">Usuario</span>
+                <input
+                  type="text"
+                  value={usuario}
+                  onChange={(event) => setUsuario(event.target.value)}
+                  autoComplete="username"
+                  className="input-xl"
+                  placeholder="Ej. bbr"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold">Contraseña</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  className="input-xl"
+                  placeholder="••••••••"
+                />
+              </label>
 
-            {error ? (
-              <p className="text-center text-sm font-semibold text-[#ef4444]">
-                {error}
-              </p>
-            ) : null}
+              {error ? (
+                <p className="text-center text-sm font-semibold text-[#ef4444]">{error}</p>
+              ) : null}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-2xl bg-[#13315C] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#1A4478] active:scale-[0.98] disabled:opacity-60"
-            >
-              {loading ? "Validando..." : "Entrar al portal"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl bg-[#13315C] py-4 text-base font-black text-white shadow-lg transition hover:bg-[#1A4478] active:scale-[0.98] disabled:opacity-60"
+              >
+                {loading ? "Validando..." : "Entrar al portal"}
+              </button>
+            </form>
           </details>
 
           <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">

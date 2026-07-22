@@ -4,6 +4,7 @@ import { calificacionLabel } from "@/lib/comercial/xperience-leads";
 import { nivelInteresLabelOrDefault } from "@/lib/comercial/prospecto-interes";
 import { prospectoEtapaLabel, normalizeProspectoEtapaValue, type ProspectoEtapa } from "@/lib/comercial/prospecto-etapas";
 import { motivoDescarteLabel } from "@/lib/comercial/motivo-descarte";
+import { getLeadActivityScoreReferenceMax } from "@/lib/comercial/lead-activity-score";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { canAccessDesarrollo } from "@/lib/admin/permissions";
 import { fetchLeadsQaResumen, type LeadsQaResumen } from "@/lib/admin/qa-satisfaccion-service";
@@ -59,6 +60,28 @@ export type LeadsCalificacionResumen = {
   noCalificados: number;
 };
 
+export type LeadsPerfilAbcResumen = {
+  a: number;
+  b: number;
+  c: number;
+  sin: number;
+  total: number;
+  perfilados: number;
+  perfiladosPct: number;
+};
+
+export type LeadsActivityScoreResumen = {
+  avg: number | null;
+  conScore: number;
+  referenceMax: number;
+  porBanda: {
+    alto: number;
+    medio: number;
+    bajo: number;
+    cero: number;
+  };
+};
+
 export type LeadsInteraccionesResumen = {
   conCorreo: number;
   conLlamada: number;
@@ -91,6 +114,9 @@ export type LeadsReporte = {
   duplicados: number;
   duplicadosSpam: number;
   calificacion: LeadsCalificacionResumen;
+  perfilAbc: LeadsPerfilAbcResumen;
+  activityScore: LeadsActivityScoreResumen;
+  porPerfilAbc: Record<string, number>;
   interacciones: LeadsInteraccionesResumen;
   embudo: LeadsEmbudoEtapa[];
   porEtapa: Record<string, number>;
@@ -203,6 +229,19 @@ export const getLeadsReporte = async (
   let calificados = 0;
   let noCalificados = 0;
   let descartadosTotal = 0;
+  let perfilA = 0;
+  let perfilB = 0;
+  let perfilC = 0;
+  let perfilSin = 0;
+  let activitySum = 0;
+  let activityCount = 0;
+  let activityAlto = 0;
+  let activityMedio = 0;
+  let activityBajo = 0;
+  let activityCero = 0;
+  const activityReferenceMax = getLeadActivityScoreReferenceMax();
+  const activityMid = activityReferenceMax * 0.4;
+  const activityHigh = activityReferenceMax * 0.7;
 
   const interacciones: LeadsInteraccionesResumen = {
     conCorreo: 0,
@@ -237,6 +276,22 @@ export const getLeadsReporte = async (
       calificados += 1;
     } else {
       noCalificados += 1;
+    }
+
+    const perfilKey = prospecto.perfil_calificacion_lead?.trim().toUpperCase();
+    if (perfilKey === "A") perfilA += 1;
+    else if (perfilKey === "B") perfilB += 1;
+    else if (perfilKey === "C") perfilC += 1;
+    else perfilSin += 1;
+
+    if (typeof prospecto.lead_activity_score === "number") {
+      const score = prospecto.lead_activity_score;
+      activitySum += score;
+      activityCount += 1;
+      if (score <= 0) activityCero += 1;
+      else if (score >= activityHigh) activityAlto += 1;
+      else if (score >= activityMid) activityMedio += 1;
+      else activityBajo += 1;
     }
 
     const interesKey = nivelInteresLabelOrDefault(prospecto.nivel_interes);
@@ -421,6 +476,9 @@ export const getLeadsReporte = async (
     asesorId: filters.asesorId,
   });
 
+  const perfilados = perfilA + perfilB + perfilC;
+  const perfilTotal = perfilados + perfilSin;
+
   return {
     totalBruto: prospectos.length,
     total: validos,
@@ -432,6 +490,36 @@ export const getLeadsReporte = async (
       total: prospectos.length,
       calificados,
       noCalificados,
+    },
+    perfilAbc: {
+      a: perfilA,
+      b: perfilB,
+      c: perfilC,
+      sin: perfilSin,
+      total: perfilTotal,
+      perfilados,
+      perfiladosPct:
+        perfilTotal > 0 ? Math.round((perfilados / perfilTotal) * 100) : 0,
+    },
+    activityScore: {
+      avg:
+        activityCount > 0
+          ? Math.round((activitySum / activityCount) * 10) / 10
+          : null,
+      conScore: activityCount,
+      referenceMax: activityReferenceMax,
+      porBanda: {
+        alto: activityAlto,
+        medio: activityMedio,
+        bajo: activityBajo,
+        cero: activityCero,
+      },
+    },
+    porPerfilAbc: {
+      A: perfilA,
+      B: perfilB,
+      C: perfilC,
+      "Sin perfil": perfilSin,
     },
     interacciones,
     embudo,

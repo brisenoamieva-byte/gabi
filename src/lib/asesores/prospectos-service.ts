@@ -40,6 +40,7 @@ import {
   recordFirstAdvisorContact,
   shouldRecordFirstContactOnEtapaChange,
 } from "@/lib/comercial/speed-to-lead";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
@@ -510,6 +511,8 @@ export const updateProspectoForAsesor = async (
       }
     }
   }
+
+  await recomputeLeadActivityScoreSafe(prospectoId);
 
   return getProspectoForAsesor(asesorId, prospectoId);
 };

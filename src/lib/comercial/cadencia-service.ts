@@ -20,6 +20,7 @@ import {
   type CadenciaTouchStatus,
 } from "@/lib/comercial/cadencia-perfilamiento";
 import { isCrmPlaybookEnabledForDesarrollo } from "@/lib/comercial/crm-playbook-enablement";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isLeadershipAsesorId } from "@/lib/asesores/leadership-access";
 import { validateAsesorForVisita } from "@/lib/visitas/service";
@@ -483,6 +484,8 @@ const completeCadenciaTouchInternal = async (
   if (touch.touch_key === "d7-call") {
     await expireCadenciaIfNoResponse(cadencia.id);
   }
+
+  await recomputeLeadActivityScoreSafe(cadencia.prospecto_id);
 
   return mapTouch(updated as DbTouchRow);
 };

@@ -51,7 +51,7 @@ function KpiCard({
   accent = false,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   accent?: boolean;
 }) {
   return (
@@ -242,8 +242,8 @@ export function LeadsReportePanel({
               </p>
             ) : null}
             <p className="mt-3 max-w-3xl text-sm text-slate-500">
-              Paridad con Xperience: volumen, campañas, calificaciones, regiones e interacciones —
-              más embudo comercial y cotizaciones integradas.
+              Volumen, campañas, regiones e interacciones. En «Score y perfil»: activity score y
+              A/B/C post-visita (CRM Gabi); la calificación Xperience queda como referencia de import.
             </p>
           </div>
           {reporte && selectedDesarrollo ? (
@@ -268,7 +268,7 @@ export function LeadsReportePanel({
           {(
             [
               { id: "leads" as const, label: "Leads" },
-              { id: "calificaciones" as const, label: "Calificaciones" },
+              { id: "calificaciones" as const, label: "Score y perfil" },
               { id: "regiones" as const, label: "Regiones" },
               { id: "interacciones" as const, label: "Interacciones" },
               { id: "qa" as const, label: "QA / Satisfacción" },
@@ -516,13 +516,64 @@ export function LeadsReportePanel({
 
           {subTab === "calificaciones" ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <KpiCard label="Leads totales" value={reporte.calificacion.total} accent />
-                <KpiCard label="Calificados" value={reporte.calificacion.calificados} />
-                <KpiCard label="No calificados" value={reporte.calificacion.noCalificados} />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiCard
+                  label="Activity score prom."
+                  value={reporte.activityScore.avg ?? "—"}
+                  accent
+                />
+                <KpiCard
+                  label="Con activity score"
+                  value={reporte.activityScore.conScore}
+                />
+                <KpiCard
+                  label="Perfilados A/B/C"
+                  value={`${reporte.perfilAbc.perfiladosPct}%`}
+                />
+                <KpiCard
+                  label="A / B / C"
+                  value={`${reporte.perfilAbc.a} / ${reporte.perfilAbc.b} / ${reporte.perfilAbc.c}`}
+                />
               </div>
 
-              <ChartCard title="Calificaciones" subtitle="Distribución por estatus comercial">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <ChartCard
+                  title="Perfil comercial A/B/C"
+                  subtitle="Post-visita (CRM Gabi) — no confundir con Xperience"
+                >
+                  <LeadsCalificacionChart porCalificacion={reporte.porPerfilAbc} />
+                </ChartCard>
+                <ChartCard
+                  title="Activity score"
+                  subtitle={`Bandas vs techo ${reporte.activityScore.referenceMax}`}
+                >
+                  <LeadsCalificacionChart
+                    porCalificacion={{
+                      "Alto (≥70%)": reporte.activityScore.porBanda.alto,
+                      "Medio (40–70%)": reporte.activityScore.porBanda.medio,
+                      "Bajo (>0)": reporte.activityScore.porBanda.bajo,
+                      Cero: reporte.activityScore.porBanda.cero,
+                    }}
+                  />
+                </ChartCard>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <KpiCard label="Leads totales" value={reporte.calificacion.total} />
+                <KpiCard
+                  label="Calif. Xperience"
+                  value={reporte.calificacion.calificados}
+                />
+                <KpiCard
+                  label="Sin calif. Xperience"
+                  value={reporte.calificacion.noCalificados}
+                />
+              </div>
+
+              <ChartCard
+                title="Calificación Xperience (import)"
+                subtitle="Campo legacy de importación — no es el perfil A/B/C post-visita"
+              >
                 <LeadsCalificacionChart porCalificacion={reporte.porCalificacion} />
               </ChartCard>
 

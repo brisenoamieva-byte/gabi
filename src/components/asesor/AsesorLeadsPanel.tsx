@@ -20,6 +20,7 @@ import { LeadsKanbanBoard } from "@/components/admin/LeadsKanbanBoard";
 import { SolicitarApartadoModal } from "@/components/asesor/SolicitarApartadoModal";
 import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedienteApartadoPanel";
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
+import { LeadActivityScoreBadge } from "@/components/asesor/LeadActivityScoreBadge";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { PerfilamientoVisitaPanel } from "@/components/asesor/PerfilamientoVisitaPanel";
@@ -563,6 +564,13 @@ function AsesorLeadDrawer({
               <h3 className="text-lg font-semibold tracking-tight text-[#201044] md:text-xl">
                 {detail?.nombre ?? "Cargando…"}
               </h3>
+              {detail ? (
+                <LeadActivityScoreBadge
+                  score={detail.lead_activity_score}
+                  detail={detail.lead_activity_score_detail}
+                  size="md"
+                />
+              ) : null}
               {perfilCalificacion && etapa !== "perdido" ? (
                 <PerfilCalificacionLeadBadge calificacion={perfilCalificacion} size="lg" />
               ) : null}
@@ -2020,6 +2028,11 @@ export function AsesorLeadsPanel({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-semibold text-[#201044]">{row.nombre}</p>
+                        <LeadActivityScoreBadge
+                          score={row.lead_activity_score}
+                          detail={row.lead_activity_score_detail}
+                          size="sm"
+                        />
                         {calificacion ? (
                           <PerfilCalificacionLeadBadge calificacion={calificacion} size="sm" />
                         ) : null}

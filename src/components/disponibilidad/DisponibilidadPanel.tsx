@@ -27,13 +27,16 @@ import {
   cotizadorHrefForUnidad,
 } from "@/lib/disponibilidad/unit-deep-links";
 import { useRequireAsesorSession } from "@/lib/session/useRequireAsesorSession";
+import { GABI_DESARROLLO_KEY } from "@/lib/session/keys";
 import { isMisionLaGaviaDesarrollo } from "@/lib/catalog/mision-la-gavia";
 
 type ViewMode = "plano" | "lista";
 
 type DisponibilidadPanelProps = {
   fromAdmin?: boolean;
+  fromRecorrido?: boolean;
   desarrolloIdParam?: string | null;
+  clusterIdParam?: string | null;
 };
 
 const estatusClass = (estatus: string) => {
@@ -70,7 +73,9 @@ const mapSembradoRow = (row: SembradoUnidadRow): AsesorDisponibilidadRow => {
 
 export function DisponibilidadPanel({
   fromAdmin = false,
+  fromRecorrido = false,
   desarrolloIdParam = null,
+  clusterIdParam = null,
 }: DisponibilidadPanelProps) {
   const router = useRouter();
   const [adminChecked, setAdminChecked] = useState(false);
@@ -176,8 +181,18 @@ export function DisponibilidadPanel({
         const loadedClusters = catalogData.clusters ?? [];
         setDesarrollo(catalogData.desarrollo);
         setClusters(loadedClusters);
-        setClusterId(loadedClusters[0]?.id ?? "");
+        const preferredCluster =
+          clusterIdParam && loadedClusters.some((item) => item.id === clusterIdParam)
+            ? clusterIdParam
+            : (loadedClusters[0]?.id ?? "");
+        setClusterId(preferredCluster);
         setCatalogReady(true);
+
+        try {
+          localStorage.setItem(GABI_DESARROLLO_KEY, catalogData.desarrollo.id);
+        } catch {
+          /* ignore */
+        }
       } catch {
         router.replace(isAdminEditMode ? "/admin/sembrado" : "/dashboard");
       }
@@ -188,11 +203,15 @@ export function DisponibilidadPanel({
     isAdminEditMode,
     needsAsesorAuth,
     resolvedDesarrolloId,
+    clusterIdParam,
     router,
   ]);
 
   const loadUnidades = useCallback(async () => {
     if (!desarrollo?.id || !clusterId) {
+      setUnidades([]);
+      setSembradoRows([]);
+      setLoading(false);
       return;
     }
 
@@ -302,7 +321,11 @@ export function DisponibilidadPanel({
   }
 
   const activeCluster = clusters.find((item) => item.id === clusterId);
-  const backHref = editMode ? "/admin/sembrado" : "/dashboard";
+  const backHref = editMode
+    ? "/admin/sembrado"
+    : fromRecorrido
+      ? "/recorrido"
+      : "/dashboard";
   const showPlano = hasDisponibilidadPlano(desarrollo.id);
   const effectiveView: ViewMode = showPlano ? viewMode : "lista";
 

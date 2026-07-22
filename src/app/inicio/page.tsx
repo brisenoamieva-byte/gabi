@@ -143,8 +143,8 @@ export default function InicioPage() {
 
         <p className="mt-8 text-center text-xs text-slate-400">
           ¿Asesor en showroom con tablet compartida?{" "}
-          <Link href="/portal/bbr" className="font-semibold text-gabi-forest underline">
-            Entrar con PIN
+          <Link href="/portal" className="font-semibold text-gabi-forest underline">
+            Elegir comercializadora y PIN
           </Link>
         </p>
       </div>

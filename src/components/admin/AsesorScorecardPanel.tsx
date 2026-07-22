@@ -123,7 +123,7 @@ export function AsesorScorecardPanel({ desarrolloId, asesorId, onSelectAsesor }:
                 {Math.round(ASESOR_SCORE_WEIGHTS.speed * 100)}% · funnel{" "}
                 {Math.round(ASESOR_SCORE_WEIGHTS.funnel * 100)}% · playbook{" "}
                 {Math.round(ASESOR_SCORE_WEIGHTS.compliance * 100)}% · cadencia{" "}
-                {Math.round(ASESOR_SCORE_WEIGHTS.cadencia * 100)}% · iScore{" "}
+                {Math.round(ASESOR_SCORE_WEIGHTS.cadencia * 100)}% · activity score{" "}
                 {Math.round(ASESOR_SCORE_WEIGHTS.quality * 100)}%. Spam/duplicados fuera. Si
                 falta un componente, se redistribuyen pesos. Mín. {ASESOR_SCORE_MIN_SAMPLE}{" "}
                 leads para bandear.
@@ -260,7 +260,17 @@ export function AsesorScorecardPanel({ desarrolloId, asesorId, onSelectAsesor }:
               hint="Leads sin avanzar de etapa"
             />
             <KpiCard
-              label="iScore promedio"
+              label="Activity score prom."
+              value={scoreLabel(filtered.kpis.avgActivityScore)}
+              hint={`Calidad del AsesorScore · techo ${filtered.activityScoreReferenceMax}`}
+            />
+            <KpiCard
+              label="Perfil A/B/C"
+              value={`${filtered.kpis.perfilAbc.a}/${filtered.kpis.perfilAbc.b}/${filtered.kpis.perfilAbc.c}`}
+              hint={`${pctLabel(filtered.kpis.perfilAbc.perfiladosPct)} perfilados · ${filtered.kpis.perfilAbc.sin} sin`}
+            />
+            <KpiCard
+              label="iScore (legacy)"
               value={scoreLabel(filtered.kpis.avgIscore)}
               hint={`${pctLabel(filtered.kpis.discardRatePct)} descartados`}
             />
@@ -299,13 +309,15 @@ export function AsesorScorecardPanel({ desarrolloId, asesorId, onSelectAsesor }:
                     <th className="px-3 py-2">Descarte</th>
                     <th className="px-3 py-2">Playbook</th>
                     <th className="px-3 py-2">Cadencia</th>
+                    <th className="px-3 py-2">Activity</th>
+                    <th className="px-3 py-2">A/B/C</th>
                     <th className="px-3 py-2">iScore</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.asesores.length === 0 ? (
                     <tr>
-                      <td colSpan={15} className="px-4 py-8 text-center text-slate-500">
+                      <td colSpan={17} className="px-4 py-8 text-center text-slate-500">
                         Sin asesores con leads en este periodo.
                       </td>
                     </tr>
@@ -387,6 +399,15 @@ export function AsesorScorecardPanel({ desarrolloId, asesorId, onSelectAsesor }:
                             ) : null}
                           </td>
                           <td className="px-3 py-2.5 tabular-nums">
+                            {scoreLabel(row.avgActivityScore)}
+                          </td>
+                          <td className="px-3 py-2.5 tabular-nums text-[11px] text-slate-600">
+                            {row.perfilAbc.a}/{row.perfilAbc.b}/{row.perfilAbc.c}
+                            {row.perfilAbc.sin > 0 ? (
+                              <span className="text-slate-400"> ·{row.perfilAbc.sin}</span>
+                            ) : null}
+                          </td>
+                          <td className="px-3 py-2.5 tabular-nums text-slate-400">
                             {scoreLabel(row.avgIscore)}
                           </td>
                         </tr>
@@ -413,7 +434,7 @@ export function AsesorScorecardPanel({ desarrolloId, asesorId, onSelectAsesor }:
                         <th className="px-3 py-2">Leads</th>
                         <th className="px-3 py-2">Contacto</th>
                         <th className="px-3 py-2">Funnel</th>
-                        <th className="px-3 py-2">iScore</th>
+                        <th className="px-3 py-2">Activity</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -437,7 +458,7 @@ export function AsesorScorecardPanel({ desarrolloId, asesorId, onSelectAsesor }:
                               {pctLabel(row.funnelRatePct)}
                             </td>
                             <td className="px-3 py-2.5 tabular-nums">
-                              {scoreLabel(row.avgIscore)}
+                              {scoreLabel(row.avgActivityScore)}
                             </td>
                           </tr>
                         ))

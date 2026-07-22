@@ -29,8 +29,34 @@ export const exportLeadsReporteCsv = (
       ["Duplicados", reporte.duplicados],
       ["Duplicados marcados spam", reporte.duplicadosSpam],
       ["Cotizaciones", reporte.cotizaciones],
-      ["Calificados", reporte.calificacion.calificados],
-      ["No calificados", reporte.calificacion.noCalificados],
+      ["Calificados (Xperience)", reporte.calificacion.calificados],
+      ["No calificados (Xperience)", reporte.calificacion.noCalificados],
+      ["Activity score promedio", reporte.activityScore.avg ?? ""],
+      ["Leads con activity score", reporte.activityScore.conScore],
+      ["Perfil A", reporte.perfilAbc.a],
+      ["Perfil B", reporte.perfilAbc.b],
+      ["Perfil C", reporte.perfilAbc.c],
+      ["Sin perfil A/B/C", reporte.perfilAbc.sin],
+      ["% perfilados A/B/C", reporte.perfilAbc.perfiladosPct],
+    ]),
+    section("Por perfil A/B/C (post-visita)", [
+      ["Perfil", "Total"],
+      ...Object.entries(reporte.porPerfilAbc)
+        .sort((a, b) => b[1] - a[1])
+        .map(([perfil, total]) => [perfil, total]),
+    ]),
+    section("Activity score (bandas)", [
+      ["Banda", "Total"],
+      ["Alto", reporte.activityScore.porBanda.alto],
+      ["Medio", reporte.activityScore.porBanda.medio],
+      ["Bajo", reporte.activityScore.porBanda.bajo],
+      ["Cero", reporte.activityScore.porBanda.cero],
+    ]),
+    section("Por calificacion Xperience (import)", [
+      ["Calificacion", "Total"],
+      ...Object.entries(reporte.porCalificacion)
+        .sort((a, b) => b[1] - a[1])
+        .map(([calificacion, total]) => [calificacion, total]),
     ]),
     section("Por campana", [
       ["Campaña", "Canal", "Total", "Validos"],
@@ -40,12 +66,6 @@ export const exportLeadsReporteCsv = (
         item.total,
         item.validos,
       ]),
-    ]),
-    section("Por calificacion", [
-      ["Calificacion", "Total"],
-      ...Object.entries(reporte.porCalificacion)
-        .sort((a, b) => b[1] - a[1])
-        .map(([calificacion, total]) => [calificacion, total]),
     ]),
     section("Por mes", [
       ["Mes", "Total", "Validos", "Duplicados"],

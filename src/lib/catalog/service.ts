@@ -173,6 +173,65 @@ export const getComercializadoraBySlug = async (
   return toComercializadora(data);
 };
 
+/** Lista pública para selector de PIN (sin usuario/credenciales). */
+export type PortalPinOption = {
+  id: string;
+  slug: string;
+  nombre: string;
+  logo: string | null;
+  portalPath: string;
+  colorPrimary: string;
+  colorAccent: string;
+};
+
+export const listPortalPinComercializadoras = async (): Promise<PortalPinOption[]> => {
+  const supabase = createSupabaseServiceClient();
+
+  if (!supabase) {
+    return fallbackComercializadores.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      nombre: item.nombre,
+      logo: item.logo,
+      portalPath: item.portalPath.startsWith("/portal/")
+        ? item.portalPath
+        : `/portal/${item.slug}`,
+      colorPrimary: item.colorPrimary,
+      colorAccent: item.colorAccent,
+    }));
+  }
+
+  const { data, error } = await supabase
+    .from("comercializadoras")
+    .select("id, slug, nombre, logo, color_primary, color_accent")
+    .eq("activo", true)
+    .order("nombre", { ascending: true });
+
+  if (error || !data?.length) {
+    return fallbackComercializadores.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      nombre: item.nombre,
+      logo: item.logo,
+      portalPath: item.portalPath.startsWith("/portal/")
+        ? item.portalPath
+        : `/portal/${item.slug}`,
+      colorPrimary: item.colorPrimary,
+      colorAccent: item.colorAccent,
+    }));
+  }
+
+  return data.map((row) => ({
+    id: row.id as string,
+    slug: row.slug as string,
+    nombre: row.nombre as string,
+    logo: (row.logo as string | null) ?? null,
+    portalPath: `/portal/${row.slug}`,
+    colorPrimary: (row.color_primary as string) ?? "#13315C",
+    colorAccent: (row.color_accent as string) ?? "#2DD4BF",
+  }));
+};
+
 export const getComercializadoraByUsuario = async (
   usuario: string,
 ): Promise<ComercializadoraRecord | null> => {
@@ -204,9 +263,10 @@ export const getComercializadoraByUsuario = async (
 };
 
 export const getDesarrolloIdsForComercializadora = async (
-  comercializadoraId: string,
+  comercializadoraIdOrSlug: string,
 ): Promise<string[]> => {
-  if (comercializadoraId === "investti") {
+  const key = comercializadoraIdOrSlug.trim().toLowerCase();
+  if (key === "investti") {
     return getInvesttiSimuladorDesarrolloIds();
   }
 
@@ -214,8 +274,30 @@ export const getDesarrolloIdsForComercializadora = async (
 
   if (!supabase) {
     return fallbackDesarrollos
-      .filter((item) => item.comercializador === "BBR Habitarea" || comercializadoraId === "bbr")
+      .filter((item) => item.comercializador === "BBR Habitarea" || key === "bbr")
       .map((item) => item.id);
+  }
+
+  let comercializadoraId = key;
+  const { data: byId } = await supabase
+    .from("comercializadoras")
+    .select("id")
+    .eq("activo", true)
+    .eq("id", key)
+    .maybeSingle();
+
+  if (byId?.id) {
+    comercializadoraId = byId.id as string;
+  } else {
+    const { data: bySlug } = await supabase
+      .from("comercializadoras")
+      .select("id")
+      .eq("activo", true)
+      .eq("slug", key)
+      .maybeSingle();
+    if (bySlug?.id) {
+      comercializadoraId = bySlug.id as string;
+    }
   }
 
   const { data, error } = await supabase
@@ -228,8 +310,7 @@ export const getDesarrolloIdsForComercializadora = async (
   if (error || !data?.length) {
     return fallbackDesarrollos
       .filter(
-        (item) =>
-          item.comercializador === "BBR Habitarea" || comercializadoraId === "bbr",
+        (item) => item.comercializador === "BBR Habitarea" || key === "bbr",
       )
       .map((item) => item.id);
   }

@@ -9,6 +9,8 @@ import {
 type MisionLaGaviaAcabadosPanelProps = {
   compact?: boolean;
   className?: string;
+  /** Solo modelos con roof garden / segundo nivel. */
+  includeRoof?: boolean;
 };
 
 function AcabadosList({
@@ -61,8 +63,9 @@ function SectionBlock({ section }: { section: MisionLaGaviaAcabadosSection }) {
 export function MisionLaGaviaAcabadosPanel({
   compact = false,
   className = "",
+  includeRoof = false,
 }: MisionLaGaviaAcabadosPanelProps) {
-  const { incluido, noIncluye, sections } = getMisionLaGaviaDeptosAcabados();
+  const { incluido, noIncluye, sections } = getMisionLaGaviaDeptosAcabados({ includeRoof });
 
   return (
     <div className={`space-y-3 ${className}`}>

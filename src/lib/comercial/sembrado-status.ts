@@ -181,6 +181,10 @@ export type ProspectoRecord = {
   nivel_interes: string | null;
   iscore: number | null;
   seller_score: number | null;
+  /** Score por acciones Gabi (estilo Experience). */
+  lead_activity_score?: number | null;
+  /** Desglose de acciones aplicadas al score. */
+  lead_activity_score_detail?: Array<{ id: string; label: string; points: number }> | null;
   asignado_por: string | null;
   bandera_correo: number;
   bandera_llamada: number;

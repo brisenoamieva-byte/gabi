@@ -2,6 +2,7 @@ import type { AdminProfile } from "@/lib/admin/types";
 import { assertDesarrolloAccess, filterDesarrollosForAdmin } from "@/lib/admin/permissions";
 import { syncProspectoFromVisita } from "@/lib/admin/prospectos-service";
 import { completeCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import { recomputeLeadActivityScoreSafe } from "@/lib/comercial/lead-activity-score-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import type { VisitaInput, VisitaRecord, VisitasResumen } from "@/lib/visitas/types";
 
@@ -154,6 +155,7 @@ export const insertVisita = async (input: VisitaInput): Promise<VisitaInsertResu
           },
           { onConflict: "prospecto_id,step_id" },
         );
+        await recomputeLeadActivityScoreSafe(prospectoId);
       } catch {
         // no bloquear registro de visita
       }

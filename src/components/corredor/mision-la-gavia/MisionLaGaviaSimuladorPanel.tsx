@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, Download, FileDown, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -79,6 +79,26 @@ export type MisionLaGaviaSimuladorPanelProps = {
   onLibreFechaFiniquitoChange?: (value: string) => void;
   onMsiNumMensualidadesChange?: (value: number) => void;
   onClienteNombreChange?: (value: string) => void;
+};
+
+const downloadPlantaAsset = async (src: string, filename: string) => {
+  try {
+    const response = await fetch(src);
+    if (!response.ok) {
+      throw new Error("No se pudo descargar.");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  } catch {
+    window.open(src, "_blank", "noopener,noreferrer");
+  }
 };
 
 function MetricCard({
@@ -871,11 +891,22 @@ export function MisionLaGaviaSimuladorPanel({
                 plantasAssets.roofSrc ? "sm:grid-cols-2" : "justify-items-center"
               }`}
             >
-              <figure className="w-full max-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:max-w-[240px]">
-                <figcaption className="border-b border-slate-100 bg-white px-2.5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              <button
+                type="button"
+                onClick={() =>
+                  void downloadPlantaAsset(
+                    plantasAssets.plantaSrc,
+                    `planta-${simulacion.unidad}.png`,
+                  )
+                }
+                className="group w-full max-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left transition hover:border-[#5B8A7D]/50 hover:shadow-sm sm:max-w-[240px]"
+                title="Clic para descargar planta"
+              >
+                <span className="flex items-center justify-center gap-1.5 border-b border-slate-100 bg-white px-2.5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                   Planta · {simulacion.unidad}
-                </figcaption>
-                <div className="flex h-44 items-center justify-center p-2 sm:h-48">
+                  <Download className="h-3 w-3 opacity-50 transition group-hover:opacity-100" />
+                </span>
+                <span className="flex h-44 items-center justify-center p-2 sm:h-48">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={plantasAssets.plantaSrc}
@@ -884,14 +915,25 @@ export function MisionLaGaviaSimuladorPanel({
                     loading="lazy"
                     decoding="async"
                   />
-                </div>
-              </figure>
+                </span>
+              </button>
               {plantasAssets.roofSrc ? (
-                <figure className="w-full max-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:max-w-[240px] sm:justify-self-stretch">
-                  <figcaption className="border-b border-slate-100 bg-white px-2.5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void downloadPlantaAsset(
+                      plantasAssets.roofSrc!,
+                      `roof-${simulacion.unidad}.png`,
+                    )
+                  }
+                  className="group w-full max-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left transition hover:border-[#5B8A7D]/50 hover:shadow-sm sm:max-w-[240px] sm:justify-self-stretch"
+                  title="Clic para descargar roof garden"
+                >
+                  <span className="flex items-center justify-center gap-1.5 border-b border-slate-100 bg-white px-2.5 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                     Roof garden
-                  </figcaption>
-                  <div className="flex h-44 items-center justify-center p-2 sm:h-48">
+                    <Download className="h-3 w-3 opacity-50 transition group-hover:opacity-100" />
+                  </span>
+                  <span className="flex h-44 items-center justify-center p-2 sm:h-48">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={plantasAssets.roofSrc}
@@ -900,8 +942,8 @@ export function MisionLaGaviaSimuladorPanel({
                       loading="lazy"
                       decoding="async"
                     />
-                  </div>
-                </figure>
+                  </span>
+                </button>
               ) : null}
             </div>
           ) : null}
