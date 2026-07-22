@@ -194,6 +194,10 @@ export type ProspectoRecord = {
   /** Hora local de la cita (HH:MM:SS desde Postgres). */
   visita_agendada_hora?: string | null;
   visita_realizada_on: string | null;
+  /** Primer toque del asesor (speed-to-lead; set-once). */
+  first_contacted_at?: string | null;
+  /** Origen del stamp de primer contacto. */
+  first_contacted_source?: string | null;
   /** Fecha en que el prospecto pidió ser contactado de nuevo. */
   proximo_contacto_on?: string | null;
   /** Nota opcional del contacto diferido. */

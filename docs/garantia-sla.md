@@ -33,3 +33,14 @@ Query opcional: `?desarrolloId=…&force=1`
 ## Compromisos (v2026.1)
 
 Ver `GARANTIA_SLA_CONTRACT` y `GARANTIA_SLA_TARGETS` en `src/lib/comercial/garantia-sla.ts`.
+
+## Desempeño (AsesorScore)
+
+Pestaña **Desempeño** en `/admin/crm-compliance?tab=desempeno`.
+
+Score 0–100 compuesto (v2026.2): contacto 25% · **speed-to-lead 15%** · funnel 15% · playbook 20% · cadencia 15% · iScore 10%.
+
+Speed-to-lead usa `prospectos.first_contacted_at` (migración `076`, set-once al completar cadencia/playbook de contacto o al salir de etapa `nuevo`). Excluye WhatsApp automático del sistema.
+
+API: `GET /api/admin/crm-compliance/scorecard` · CSV: `.../scorecard/export`.  
+Lógica: `src/lib/comercial/asesor-scorecard.ts` + `speed-to-lead.ts`.

@@ -27,6 +27,7 @@
     "db:apply:069": "node scripts/apply-sql-migrations.mjs 069",
     "db:apply:070": "node scripts/apply-sql-migrations.mjs 070",
     "db:apply:071": "node scripts/apply-sql-migrations.mjs 071",
+    "db:apply:076": "node scripts/apply-sql-migrations.mjs 076",
     "templates:gavia:build": "node scripts/build-gavia-oferta-templates.mjs",
     "listas:seed:gavia": "node scripts/seed-lista-precios.mjs mision-la-gavia --activate",
     "analyze:cdv-sembrado": "node scripts/analyze-cdv-sembrado-temporal.mjs",

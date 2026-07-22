@@ -36,6 +36,10 @@ import {
 } from "@/lib/comercial/motivo-descarte";
 import { normalizeProximoContactoOn } from "@/lib/comercial/proximo-contacto";
 import { appendProspectoNota } from "@/lib/comercial/prospecto-notas-historial";
+import {
+  recordFirstAdvisorContact,
+  shouldRecordFirstContactOnEtapaChange,
+} from "@/lib/comercial/speed-to-lead";
 import { ETAPAS_ASESOR } from "@/lib/asesores/prospectos-client";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
@@ -496,6 +500,14 @@ export const updateProspectoForAsesor = async (
       await pauseCadenciaForProspecto(prospectoId, `Etapa cambiada a ${input.etapa}`);
     } else if (existing.etapa === "nuevo" && input.etapa !== "nuevo") {
       await pauseCadenciaForProspecto(prospectoId, `Prospecto avanzó a ${input.etapa}`);
+      if (shouldRecordFirstContactOnEtapaChange(existing.etapa, input.etapa)) {
+        await recordFirstAdvisorContact({
+          prospectoId,
+          desarrolloId: existing.desarrollo_id,
+          source: "etapa_avance",
+          asesorId,
+        });
+      }
     }
   }
 

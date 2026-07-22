@@ -492,6 +492,22 @@ export const completePlaybookStepForProspecto = async (
 
   await completeCadenciaTouchForPlaybookStep(prospectoId, stepId, asesorId);
 
+  {
+    const {
+      isPlaybookFirstContactStep,
+      recordFirstAdvisorContact,
+      firstContactSourceFromPlaybookStep,
+    } = await import("@/lib/comercial/speed-to-lead");
+    if (isPlaybookFirstContactStep(stepId)) {
+      await recordFirstAdvisorContact({
+        prospectoId,
+        desarrolloId: prospectoRow.desarrollo_id as string,
+        source: firstContactSourceFromPlaybookStep(stepId),
+        asesorId,
+      });
+    }
+  }
+
   if (stepId === "visita-agendada") {
     await completeCadenciaForProspecto(prospectoId, "Visita agendada — cadencia detenida");
   }

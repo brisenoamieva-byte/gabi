@@ -14,6 +14,7 @@ import {
   Settings2,
   ShieldCheck,
   Target,
+  Trophy,
   Wrench,
 } from "lucide-react";
 import type { Desarrollo } from "@/lib/data";
@@ -25,6 +26,7 @@ import type {
 } from "@/lib/comercial/crm-compliance-service";
 import { prospectoEtapaLabel } from "@/lib/comercial/prospecto-etapas";
 import { useAdminDesarrolloSelection } from "@/lib/admin/use-admin-desarrollo";
+import { AsesorScorecardPanel } from "@/components/admin/AsesorScorecardPanel";
 import { CadenciaAdminPanel } from "@/components/admin/CadenciaAdminPanel";
 import { CrmPlaybookAdminPanel } from "@/components/admin/CrmPlaybookAdminPanel";
 import { GarantiaSlaDashboard } from "@/components/admin/GarantiaSlaDashboard";
@@ -36,11 +38,18 @@ type CrmComplianceAdminPanelProps = {
   canOpenLeads?: boolean;
 };
 
-type SaludCrmTab = "garantia" | "playbook" | "cadencia" | "config" | "herramientas";
+type SaludCrmTab =
+  | "garantia"
+  | "desempeno"
+  | "playbook"
+  | "cadencia"
+  | "config"
+  | "herramientas";
 
 const pilotDesarrollos = (desarrollos: Desarrollo[]) => desarrollos;
 
 const parseTab = (value: string | null, canConfigure: boolean): SaludCrmTab => {
+  if (value === "desempeno" || value === "scorecard") return "desempeno";
   if (value === "playbook" || value === "cumplimiento") return "playbook";
   if (value === "cadencia") return "cadencia";
   if (value === "herramientas") return "herramientas";
@@ -319,7 +328,8 @@ export function CrmComplianceAdminPanel({
           <h1 className="text-2xl font-black tracking-tight text-gabi-forest">Salud CRM</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             Flujo: cadencia (Nuevo) → playbook por etapa → calificación A/B/C tras visita. La
-            Garantía SLA resume si el desarrollo cumple plazos.
+            Garantía SLA resume si el desarrollo cumple plazos; Desempeño rankea asesores con
+            AsesorScore (contacto, funnel, playbook, cadencia, iScore).
             {scopeLabel ? ` · ${scopeLabel}` : ""}
           </p>
         </div>
@@ -428,6 +438,12 @@ export function CrmComplianceAdminPanel({
           onClick={() => setActiveTab("garantia")}
         />
         <TabButton
+          active={tab === "desempeno"}
+          icon={Trophy}
+          label="Desempeño"
+          onClick={() => setActiveTab("desempeno")}
+        />
+        <TabButton
           active={tab === "playbook"}
           icon={ShieldCheck}
           label="Playbook al día"
@@ -466,6 +482,14 @@ export function CrmComplianceAdminPanel({
           onRefresh={() => void loadGarantia()}
           canConfigurePlaybook={canConfigurePlaybook}
           onOpenConfig={() => setActiveTab("config")}
+          onSelectAsesor={setAsesorFilter}
+        />
+      ) : null}
+
+      {tab === "desempeno" ? (
+        <AsesorScorecardPanel
+          desarrolloId={desarrolloId}
+          asesorId={asesorId || null}
           onSelectAsesor={setAsesorFilter}
         />
       ) : null}

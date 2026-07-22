@@ -466,6 +466,20 @@ const completeCadenciaTouchInternal = async (
     );
   }
 
+  if (source !== "system_auto_wa") {
+    const { recordFirstAdvisorContact, firstContactSourceFromCadencia } = await import(
+      "@/lib/comercial/speed-to-lead"
+    );
+    await recordFirstAdvisorContact({
+      prospectoId: cadencia.prospecto_id,
+      desarrolloId: cadencia.desarrollo_id,
+      source: firstContactSourceFromCadencia(source),
+      at: now,
+      asesorId: completedBy,
+      skipEvent: true,
+    });
+  }
+
   if (touch.touch_key === "d7-call") {
     await expireCadenciaIfNoResponse(cadencia.id);
   }

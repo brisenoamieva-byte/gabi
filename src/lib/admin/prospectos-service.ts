@@ -34,6 +34,10 @@ import {
   isAsesorFilterInactivos,
 } from "@/lib/comercial/prospecto-asesor-filters";
 import { validatePlaybookEtapaChange } from "@/lib/comercial/crm-playbook-service";
+import {
+  recordFirstAdvisorContact,
+  shouldRecordFirstContactOnEtapaChange,
+} from "@/lib/comercial/speed-to-lead";
 
 export type ProspectoListRow = ProspectoRecord & {
   asesorNombre: string | null;
@@ -213,7 +217,8 @@ export const listProspectos = async (
       "*, asesor:asesores(nombre, activo), campana:campanas(nombre, canal), partner:partners(nombre, tipo)",
     )
     .eq("activo", true)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (filters.desarrolloId) {
     if (profile && !canAccessDesarrollo(profile, filters.desarrolloId)) {
@@ -282,12 +287,22 @@ export const listProspectos = async (
     query = query.lte(fechaColumn, `${filters.hasta}T23:59:59.999Z`);
   }
 
-  const { data, error } = await query;
-  if (error) {
-    throw new Error(error.message);
+  // PostgREST limita ~1000 filas; paginar para reportes/CRM completos.
+  const PAGE_SIZE = 1000;
+  const rawRows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
+    if (error) {
+      throw new Error(error.message);
+    }
+    const page = (data ?? []) as Record<string, unknown>[];
+    rawRows.push(...page);
+    if (page.length < PAGE_SIZE) {
+      break;
+    }
   }
 
-  let rows = (data ?? []).map((row) => mapProspectoRow(row as Record<string, unknown>));
+  let rows = rawRows.map((row) => mapProspectoRow(row));
 
   if (filters.search?.trim()) {
     const term = filters.search.trim().toLowerCase();
@@ -621,6 +636,14 @@ export const updateProspecto = async (
       await pauseCadenciaForProspecto(id, `Etapa cambiada a ${input.etapa}`);
     } else if (existing.etapa === "nuevo" && input.etapa !== "nuevo") {
       await pauseCadenciaForProspecto(id, `Prospecto avanzó a ${input.etapa}`);
+      if (shouldRecordFirstContactOnEtapaChange(existing.etapa, input.etapa)) {
+        await recordFirstAdvisorContact({
+          prospectoId: id,
+          desarrolloId: existing.desarrollo_id,
+          source: "etapa_avance",
+          asesorId: (patch.asesor_id as string | null | undefined) ?? existing.asesor_id,
+        });
+      }
     }
   }
 
