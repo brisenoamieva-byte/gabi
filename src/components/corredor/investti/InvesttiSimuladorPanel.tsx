@@ -2,7 +2,11 @@
 
 import { Printer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatAmountInput, formatPrice, parseMoneyInput } from "@/lib/format/money";
+import {
+  formatAmountDigits,
+  formatPrice,
+  parseMoneyInput,
+} from "@/lib/format/money";
 import { investtiCatalogDesarrollos } from "@/lib/catalog/investti-desarrollos";
 import {
   filasProspectoToPrint,
@@ -930,12 +934,12 @@ function InvesttiMoneyInput({
   isReport: boolean;
   className?: string;
 }) {
-  const [draft, setDraft] = useState(() => formatAmountInput(amount));
+  const [draft, setDraft] = useState(() => formatAmountDigits(amount));
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
     if (!focused) {
-      setDraft(formatAmountInput(amount));
+      setDraft(formatAmountDigits(amount));
     }
   }, [amount, focused]);
 
@@ -951,7 +955,7 @@ function InvesttiMoneyInput({
       return;
     }
     onAmountChange(parsed);
-    setDraft(formatAmountInput(parsed));
+    setDraft(formatAmountDigits(parsed));
   };
 
   return (

@@ -29,12 +29,18 @@ export const formatPrice = (price: number): string =>
 export const formatTicket = (value: number): string =>
   mxnTicketFormatter.format(Math.round(Number.isFinite(value) ? value : 0));
 
-/** Monto con signo de pesos, separador de miles y 2 decimales (para inputs). */
-export const formatAmountInput = (value: number): string => {
+/** Dígitos con miles y 2 decimales, sin símbolo $ (inputs con prefijo visual). */
+export const formatAmountDigits = (value: number): string => {
   if (!Number.isFinite(value) || value <= 0) {
     return "";
   }
-  return `$${amountFormatter.format(roundMoney(value))}`;
+  return amountFormatter.format(roundMoney(value));
+};
+
+/** Monto con signo de pesos, separador de miles y 2 decimales (para inputs). */
+export const formatAmountInput = (value: number): string => {
+  const digits = formatAmountDigits(value);
+  return digits ? `$${digits}` : "";
 };
 
 const normalizeMoneyDigits = (raw: string): string | null => {

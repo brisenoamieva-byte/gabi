@@ -1,1 +1,6 @@
-export { formatAmountInput, parseMoneyInput, roundMoney } from "@/lib/format/money";
+export {
+  formatAmountDigits,
+  formatAmountInput,
+  parseMoneyInput,
+  roundMoney,
+} from "@/lib/format/money";

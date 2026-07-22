@@ -19,7 +19,10 @@ import {
   type CotizadorCatalog,
 } from "@/lib/cotizador";
 import { downloadPasajeSimuladorPdf } from "@/lib/cotizador/pasaje-simulador-pdf";
-import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
+import {
+  formatAmountDigits,
+  parseMoneyInput,
+} from "@/lib/format/money-input";
 import { formatAreaM2 } from "@/lib/format/money";
 import { enrichPasajeUnidad, computePasajeSuperficieTotalM2 } from "@/lib/catalog/pasaje-unidad-detalles";
 import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
@@ -151,33 +154,27 @@ function MoneyAmountInput({
   helper?: string;
   disabled?: boolean;
 }) {
-  const [draft, setDraft] = useState(() => formatAmountInput(amount));
+  const [draft, setDraft] = useState(() => formatAmountDigits(amount));
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    setDraft(formatAmountInput(amount));
-  }, [amount]);
-
-  const handleChange = (raw: string) => {
-    const parsed = parseMoneyInput(raw);
-    if (parsed === null) {
-      setDraft(raw.replace(/[^\d,.\s$]/g, ""));
-      return;
+    if (!focused) {
+      setDraft(formatAmountDigits(amount));
     }
-    setDraft(formatAmountInput(parsed));
-  };
+  }, [amount, focused]);
 
   const commit = () => {
     if (!onAmountChange) {
-      setDraft(formatAmountInput(amount));
+      setDraft(formatAmountDigits(amount));
       return;
     }
     const parsed = parseMoneyInput(draft);
-    if (parsed === null) {
-      setDraft(formatAmountInput(amount));
+    if (parsed === null || !draft.trim()) {
+      setDraft(formatAmountDigits(amount));
       return;
     }
     onAmountChange(parsed);
-    setDraft(formatAmountInput(parsed));
+    setDraft(formatAmountDigits(parsed));
   };
 
   return (
@@ -189,10 +186,16 @@ function MoneyAmountInput({
         </span>
         <input
           type="text"
-          inputMode="numeric"
+          inputMode="decimal"
           value={draft}
-          onChange={(event) => handleChange(event.target.value)}
-          onBlur={commit}
+          onChange={(event) =>
+            setDraft(event.target.value.replace(/[^\d,.\s]/g, ""))
+          }
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            commit();
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.currentTarget.blur();

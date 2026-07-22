@@ -10,7 +10,10 @@ import {
 import { DescuentoEspecialField } from "@/components/cotizador/DescuentoEspecialField";
 import { calcDescuentoPct, saveCotizacionClient } from "@/lib/comercial/save-cotizacion-client";
 import { formatAreaM2, formatPrice } from "@/lib/format/money";
-import { formatAmountInput, parseMoneyInput } from "@/lib/format/money-input";
+import {
+  formatAmountDigits,
+  parseMoneyInput,
+} from "@/lib/format/money-input";
 import { endOfMonth, formatMonthYear } from "@/lib/cotizador/pasaje-simulador";
 import { downloadMisionLaGaviaSimuladorPdf } from "@/lib/cotizador/mision-la-gavia-simulador-pdf";
 import { MISION_LA_GAVIA_UNIDADES } from "@/lib/corredor/mision-la-gavia-unidades.generated";
@@ -218,33 +221,27 @@ function MoneyAmountInput({
   onAmountChange?: (amount: number) => void;
   helper?: string;
 }) {
-  const [draft, setDraft] = useState(() => formatAmountInput(amount));
+  const [draft, setDraft] = useState(() => formatAmountDigits(amount));
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    setDraft(formatAmountInput(amount));
-  }, [amount]);
-
-  const handleChange = (raw: string) => {
-    const parsed = parseMoneyInput(raw);
-    if (parsed === null) {
-      setDraft(raw.replace(/[^\d,.\s$]/g, ""));
-      return;
+    if (!focused) {
+      setDraft(formatAmountDigits(amount));
     }
-    setDraft(formatAmountInput(parsed));
-  };
+  }, [amount, focused]);
 
   const commit = () => {
     if (!onAmountChange) {
-      setDraft(formatAmountInput(amount));
+      setDraft(formatAmountDigits(amount));
       return;
     }
     const parsed = parseMoneyInput(draft);
-    if (parsed === null) {
-      setDraft(formatAmountInput(amount));
+    if (parsed === null || !draft.trim()) {
+      setDraft(formatAmountDigits(amount));
       return;
     }
     onAmountChange(parsed);
-    setDraft(formatAmountInput(parsed));
+    setDraft(formatAmountDigits(parsed));
   };
 
   return (
@@ -256,10 +253,16 @@ function MoneyAmountInput({
         </span>
         <input
           type="text"
-          inputMode="numeric"
+          inputMode="decimal"
           value={draft}
-          onChange={(event) => handleChange(event.target.value)}
-          onBlur={commit}
+          onChange={(event) =>
+            setDraft(event.target.value.replace(/[^\d,.\s]/g, ""))
+          }
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            commit();
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.currentTarget.blur();
