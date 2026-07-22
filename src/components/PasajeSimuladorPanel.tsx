@@ -6,13 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 import { DescuentoEspecialField } from "@/components/cotizador/DescuentoEspecialField";
 import {
   PASAJE_ESQUEMA_LABELS,
-  PASAJE_FECHA_ENTREGA,
   computePasajeSimulador,
   formatMonthYear,
   formatPctShort,
   getPasajeSimuladorConfig,
   type PasajeEsquemaPago,
-  type PasajeSimuladorResultado,
   type PasajeUnidadTipo,
 } from "@/lib/cotizador/pasaje-simulador";
 import {
