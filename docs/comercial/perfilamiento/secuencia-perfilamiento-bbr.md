@@ -64,7 +64,7 @@ Tras el recorrido: perfilar necesidades, enviar cotización y documentar seguimi
 
 ## Automatización en GABI
 
-Guía de prueba con asesores (Pasaje Álamos): [instructivo-prueba-crm-pasaje-alamos.md](./instructivo-prueba-crm-pasaje-alamos.md)
+Guía de prueba con asesores (Pasaje Álamos): [instructivo-prueba-crm-pasaje-alamos.md](./instructivo-prueba-crm-pasaje-alamos.md). **Misión La Gavia** usa el mismo playbook de 8 hitos; solo cambian hints de producto (torre / 2R–3R) y del proceso in-situ.
 
 | Capa | Comportamiento |
 |------|----------------|

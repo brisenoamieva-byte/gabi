@@ -128,15 +128,45 @@ const desarrolloNecesidadesHint: Partial<Record<CrmPlaybookPilotDesarrolloId, st
   [MISION_LA_GAVIA_DESARROLLO_ID]: "Torre, modelo (2R/3R) y nivel según perfil del cliente.",
 };
 
+/** Hints de proceso in-situ / producto solo para Misión La Gavia. */
+const GAVIA_STEP_HINT_OVERRIDES: Partial<Record<string, string>> = {
+  recorrido:
+    "Confirma la visita y sigue el proceso in-situ: confianza → necesidades → producto → cierre. Indica la fecha del recorrido.",
+  cotizacion:
+    "Envía la cotización con el simulador Gavia (contado, libre o MSI). Se completa sola al guardar desde el cotizador; también puedes marcarla desde Contactado.",
+  "necesidades-perfiladas":
+    "Obligatorio en Visita. Documenta torre, modelo (2R/3R) y nivel. El perfilamiento (presupuesto, decisión, intención) define la calificación A/B/C.",
+};
+
 export const getNecesidadesPerfilDesarrolloHint = (desarrolloId: string): string | null =>
   (desarrolloNecesidadesHint[desarrolloId as CrmPlaybookPilotDesarrolloId] ?? null);
 
-const buildPilotPlaybook = (desarrolloId: CrmPlaybookPilotDesarrolloId): CrmPlaybookConfig => ({
-  desarrolloId,
-  enabled: true,
-  blockEtapa: true,
-  steps: basePasos(),
-});
+const buildPilotPlaybook = (desarrolloId: CrmPlaybookPilotDesarrolloId): CrmPlaybookConfig => {
+  const necesidadesProducto = desarrolloNecesidadesHint[desarrolloId];
+  const gaviaOverrides =
+    desarrolloId === MISION_LA_GAVIA_DESARROLLO_ID ? GAVIA_STEP_HINT_OVERRIDES : null;
+
+  const steps = basePasos().map((step) => {
+    const gaviaHint = gaviaOverrides?.[step.id];
+    if (gaviaHint) {
+      return { ...step, hint: gaviaHint };
+    }
+    if (step.id === "necesidades-perfiladas" && necesidadesProducto) {
+      return {
+        ...step,
+        hint: `${step.hint ?? "Obligatorio en etapa Visita."} ${necesidadesProducto}`.trim(),
+      };
+    }
+    return step;
+  });
+
+  return {
+    desarrolloId,
+    enabled: true,
+    blockEtapa: true,
+    steps,
+  };
+};
 
 export const DEFAULT_CRM_PLAYBOOKS: Record<CrmPlaybookPilotDesarrolloId, CrmPlaybookConfig> = {
   [PASAJE_ALAMOS_ID]: buildPilotPlaybook(PASAJE_ALAMOS_ID),
@@ -176,7 +206,14 @@ export const mergePlaybookConfigWithDefaults = (
     if (!storedStep) {
       return def;
     }
-    const preferCodeCopy = def.id === "datos-completos";
+    // Preferir copy del código en pasos que coexisten con seeds legacy (043/038).
+    const preferCodeCopy =
+      def.id === "datos-completos" ||
+      def.id === "recorrido" ||
+      def.id === "cotizacion" ||
+      def.id === "necesidades-perfiladas" ||
+      def.id === "visita-agendada" ||
+      def.id === "seguimiento-post-cotizacion";
     return {
       ...def,
       ...storedStep,
@@ -184,6 +221,7 @@ export const mergePlaybookConfigWithDefaults = (
       etapa: def.etapa,
       required: def.required,
       kind: def.kind,
+      order: def.order,
       label: preferCodeCopy ? def.label : storedStep.label,
       hint: preferCodeCopy ? def.hint ?? storedStep.hint : def.hint ?? storedStep.hint,
     };
