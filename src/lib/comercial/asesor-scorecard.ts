@@ -1,18 +1,25 @@
 /**
- * AsesorScore — scorecard de desempeño comercial (v2026.2)
- *
- * Diseño basado en prácticas CRM premium / RevOps:
- * - No rankear solo por volumen: tasas normalizadas por carga.
- * - Separar resultado (contacto + avance de funnel) de proceso (playbook + cadencia).
- * - Incluir speed-to-lead real (first_contacted_at) y calidad de cartera (iScore).
- * - Muestra mínima antes de etiquetar banda (evita sesgo con n pequeño).
- * - Spam/duplicados fuera del denominador (ruido de captación ≠ skill del asesor).
- *
- * Referencias: speed-to-lead <5–60 min, lead→cita→cierre, SLA/playbook, cadencia 8 días.
+ * AsesorScore — carga de datos (servidor).
+ * Tipos/pesos/helpers puros: asesor-scorecard-shared.ts
  */
 
 import type { AdminProfile } from "@/lib/admin/types";
 import { listProspectos, type ProspectoListRow } from "@/lib/admin/prospectos-service";
+import {
+  ASESOR_SCORE_MIN_SAMPLE,
+  ASESOR_SCORE_VERSION,
+  ISCORE_MAX,
+  cadenciaHealthFromSummary,
+  clampPct,
+  computeAsesorScore,
+  defaultScorecardPeriod,
+  pct,
+  type AsesorScorecardRow,
+  type CampanaScorecardRow,
+  type CanalScorecardRow,
+  type DesarrolloAsesorScorecardReport,
+  type ScorecardPeriod,
+} from "@/lib/comercial/asesor-scorecard-shared";
 import {
   getDesarrolloCadenciaReport,
   type AsesorCadenciaSummary,
@@ -30,48 +37,10 @@ import {
 } from "@/lib/comercial/prospecto-etapas";
 import {
   aggregateSpeedToLead,
-  formatSpeedMinutesLabel,
   speedMinutesBetween,
-  type SpeedToLeadAggregate,
-} from "@/lib/comercial/speed-to-lead";
+} from "@/lib/comercial/speed-to-lead-metrics";
 
-export const ASESOR_SCORE_VERSION = "2026.2";
-
-/** Pesos base (suman 1). Si falta un componente, se redistribuye. */
-export const ASESOR_SCORE_WEIGHTS = {
-  contact: 0.25,
-  speed: 0.15,
-  funnel: 0.15,
-  compliance: 0.2,
-  cadencia: 0.15,
-  quality: 0.1,
-} as const;
-
-export type AsesorScoreWeightKey = keyof typeof ASESOR_SCORE_WEIGHTS;
-
-/** Muestra mínima para bandear con confianza. */
-export const ASESOR_SCORE_MIN_SAMPLE = 5;
-
-/** iScore máximo teórico (lead-scoring.ts). */
-export const ISCORE_MAX = 30;
-
-/** Ventana por defecto del reporte (días hacia atrás desde hoy). */
-export const ASESOR_SCORECARD_DEFAULT_DAYS = 90;
-
-export type AsesorScoreBand =
-  | "elite"
-  | "solido"
-  | "riesgo"
-  | "critico"
-  | "insuficiente";
-
-export const asesorScoreBandLabel: Record<AsesorScoreBand, string> = {
-  elite: "Élite",
-  solido: "Sólido",
-  riesgo: "En riesgo",
-  critico: "Crítico",
-  insuficiente: "Muestra insuficiente",
-};
+export * from "@/lib/comercial/asesor-scorecard-shared";
 
 const CONTACT_ETAPAS = new Set<ProspectoEtapa>([
   "contactado",
@@ -81,7 +50,6 @@ const CONTACT_ETAPAS = new Set<ProspectoEtapa>([
   "vendido",
 ]);
 
-/** Avance comercial más allá del primer contacto (cita+). */
 const FUNNEL_ETAPAS = new Set<ProspectoEtapa>([
   "cita",
   "visita",
@@ -91,203 +59,8 @@ const FUNNEL_ETAPAS = new Set<ProspectoEtapa>([
 
 const DISCARD_ETAPAS = new Set<ProspectoEtapa>(["perdido", "cancelado"]);
 
-const clampPct = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
-
-const pct = (num: number, den: number) => (den > 0 ? clampPct((num / den) * 100) : 0);
-
 const resolveEtapa = (raw: string): ProspectoEtapa | null =>
   normalizeProspectoEtapaValue(raw) ?? (isProspectoEtapa(raw) ? raw : null);
-
-export const bandFromScore = (score: number, sampleSize: number): AsesorScoreBand => {
-  if (sampleSize < ASESOR_SCORE_MIN_SAMPLE) {
-    return "insuficiente";
-  }
-  if (score >= 80) return "elite";
-  if (score >= 65) return "solido";
-  if (score >= 50) return "riesgo";
-  return "critico";
-};
-
-export type AsesorScoreParts = {
-  contactRatePct: number;
-  funnelRatePct: number;
-  /** null = sin first_contacted_at en muestra → redistribuir. */
-  speedScorePct: number | null;
-  /** null = playbook off o sin cartera activa → redistribuir peso. */
-  compliancePct: number | null;
-  /** null = sin cadencias → redistribuir peso. */
-  cadenciaHealthPct: number | null;
-  /** avg(iScore) / ISCORE_MAX * 100. */
-  qualityPct: number;
-};
-
-export type AsesorScoreBreakdown = {
-  score: number;
-  band: AsesorScoreBand;
-  weightsUsed: Partial<Record<AsesorScoreWeightKey, number>>;
-  parts: AsesorScoreParts;
-};
-
-/**
- * Compone 0–100. Si speed/compliance/cadencia no aplican, redistribuye su peso
- * proporcionalmente entre los componentes disponibles.
- */
-export const computeAsesorScore = (
-  parts: AsesorScoreParts,
-  sampleSize: number,
-): AsesorScoreBreakdown => {
-  const available: { key: AsesorScoreWeightKey; weight: number; value: number }[] = [
-    { key: "contact", weight: ASESOR_SCORE_WEIGHTS.contact, value: parts.contactRatePct },
-    { key: "funnel", weight: ASESOR_SCORE_WEIGHTS.funnel, value: parts.funnelRatePct },
-    { key: "quality", weight: ASESOR_SCORE_WEIGHTS.quality, value: parts.qualityPct },
-  ];
-
-  if (parts.speedScorePct !== null) {
-    available.push({
-      key: "speed",
-      weight: ASESOR_SCORE_WEIGHTS.speed,
-      value: parts.speedScorePct,
-    });
-  }
-  if (parts.compliancePct !== null) {
-    available.push({
-      key: "compliance",
-      weight: ASESOR_SCORE_WEIGHTS.compliance,
-      value: parts.compliancePct,
-    });
-  }
-  if (parts.cadenciaHealthPct !== null) {
-    available.push({
-      key: "cadencia",
-      weight: ASESOR_SCORE_WEIGHTS.cadencia,
-      value: parts.cadenciaHealthPct,
-    });
-  }
-
-  const weightSum = available.reduce((sum, row) => sum + row.weight, 0);
-  const weightsUsed: Partial<Record<AsesorScoreWeightKey, number>> = {};
-  let score = 0;
-
-  for (const row of available) {
-    const w = weightSum > 0 ? row.weight / weightSum : 0;
-    weightsUsed[row.key] = Math.round(w * 1000) / 1000;
-    score += row.value * w;
-  }
-
-  const rounded = clampPct(score);
-  return {
-    score: rounded,
-    band: bandFromScore(rounded, sampleSize),
-    weightsUsed,
-    parts,
-  };
-};
-
-/** Salud de cadencia por asesor: penaliza vencidos vs cadencias activas. */
-export const cadenciaHealthFromSummary = (
-  row: AsesorCadenciaSummary | undefined,
-): number | null => {
-  if (!row || row.activeCadencias <= 0) {
-    return null;
-  }
-  const overdueRatio = row.overdueToday / row.activeCadencias;
-  return clampPct(100 - overdueRatio * 80);
-};
-
-export type AsesorScorecardRow = {
-  asesorId: string;
-  asesorNombre: string;
-  assignedCount: number;
-  contactedCount: number;
-  funnelCount: number;
-  discardedCount: number;
-  nuevoCount: number;
-  contactRatePct: number;
-  funnelRatePct: number;
-  discardRatePct: number;
-  avgIscore: number | null;
-  qualityPct: number;
-  /** Mediana de minutos al primer toque (null si sin cobertura). */
-  speedMedianMinutes: number | null;
-  speedUnder60Pct: number;
-  speedCoveragePct: number;
-  speedScorePct: number | null;
-  compliancePct: number | null;
-  cadenciaHealthPct: number | null;
-  overdueCadencia: number;
-  loadSharePct: number;
-  score: number;
-  band: AsesorScoreBand;
-  weightsUsed: Partial<Record<AsesorScoreWeightKey, number>>;
-  sampleReliable: boolean;
-};
-
-export type CanalScorecardRow = {
-  canal: string;
-  leads: number;
-  contactedCount: number;
-  contactRatePct: number;
-  funnelCount: number;
-  funnelRatePct: number;
-  avgIscore: number | null;
-};
-
-export type CampanaScorecardRow = {
-  campanaId: string | null;
-  campanaNombre: string;
-  canal: string;
-  leads: number;
-  contactedCount: number;
-  contactRatePct: number;
-  funnelCount: number;
-  funnelRatePct: number;
-};
-
-export type DesarrolloScorecardKpis = {
-  totalLeads: number;
-  assignedLeads: number;
-  unassignedLeads: number;
-  contactRatePct: number;
-  funnelRatePct: number;
-  discardRatePct: number;
-  /** % aún en etapa nuevo (estancamiento). */
-  nuevoRatePct: number;
-  avgIscore: number | null;
-  asesoresActivos: number;
-  /** Promedio simple de scores de asesores con muestra confiable. */
-  avgScoreReliable: number | null;
-  speed: SpeedToLeadAggregate;
-};
-
-export type DesarrolloAsesorScorecardReport = {
-  desarrolloId: string;
-  version: typeof ASESOR_SCORE_VERSION;
-  desde: string;
-  hasta: string;
-  playbookEnabled: boolean;
-  kpis: DesarrolloScorecardKpis;
-  asesores: AsesorScorecardRow[];
-  canales: CanalScorecardRow[];
-  campanas: CampanaScorecardRow[];
-  generatedAt: string;
-};
-
-export type ScorecardPeriod = {
-  desde: string;
-  hasta: string;
-};
-
-const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
-
-export const defaultScorecardPeriod = (
-  days = ASESOR_SCORECARD_DEFAULT_DAYS,
-  now = new Date(),
-): ScorecardPeriod => {
-  const hasta = toDateInput(now);
-  const desdeDate = new Date(now);
-  desdeDate.setUTCDate(desdeDate.getUTCDate() - days);
-  return { desde: toDateInput(desdeDate), hasta };
-};
 
 type AggBucket = {
   asesorId: string;
@@ -443,7 +216,6 @@ export const buildAsesorScorecardFromParts = (input: {
     byAsesor.set(row.asesor_id, bucket);
   }
 
-  // Incluir asesores que solo aparecen en compliance/cadencia (cartera viva fuera del periodo).
   for (const row of compliance?.asesores ?? []) {
     if (!byAsesor.has(row.asesorId)) {
       byAsesor.set(row.asesorId, emptyBucket(row.asesorId, row.asesorNombre));
@@ -633,138 +405,3 @@ export const getDesarrolloAsesorScorecard = async (
     cadencia,
   });
 };
-
-export const filterScorecardByAsesor = (
-  report: DesarrolloAsesorScorecardReport,
-  asesorId: string | null | undefined,
-): DesarrolloAsesorScorecardReport => {
-  const id = asesorId?.trim();
-  if (!id) return report;
-
-  const asesores = report.asesores.filter((row) => row.asesorId === id);
-  const row = asesores[0];
-  if (!row) {
-    return {
-      ...report,
-      asesores: [],
-      kpis: {
-        ...report.kpis,
-        totalLeads: 0,
-        assignedLeads: 0,
-        unassignedLeads: 0,
-        contactRatePct: 0,
-        funnelRatePct: 0,
-        discardRatePct: 0,
-        nuevoRatePct: 0,
-        avgIscore: null,
-        asesoresActivos: 0,
-        avgScoreReliable: null,
-        speed: {
-          sampleSize: 0,
-          coveragePct: 0,
-          medianMinutes: null,
-          pctUnder5Min: 0,
-          pctUnder60Min: 0,
-          pctUnder24h: 0,
-          speedScorePct: null,
-        },
-      },
-      canales: [],
-      campanas: [],
-    };
-  }
-
-  return {
-    ...report,
-    asesores,
-    kpis: {
-      totalLeads: row.assignedCount,
-      assignedLeads: row.assignedCount,
-      unassignedLeads: 0,
-      contactRatePct: row.contactRatePct,
-      funnelRatePct: row.funnelRatePct,
-      discardRatePct: row.discardRatePct,
-      nuevoRatePct: pct(row.nuevoCount, row.assignedCount),
-      avgIscore: row.avgIscore,
-      asesoresActivos: row.assignedCount > 0 ? 1 : 0,
-      avgScoreReliable: row.sampleReliable ? row.score : null,
-      speed: {
-        sampleSize: Math.round((row.speedCoveragePct / 100) * row.assignedCount),
-        coveragePct: row.speedCoveragePct,
-        medianMinutes: row.speedMedianMinutes,
-        pctUnder5Min: 0,
-        pctUnder60Min: row.speedUnder60Pct,
-        pctUnder24h: 0,
-        speedScorePct: row.speedScorePct,
-      },
-    },
-  };
-};
-
-const escapeCsvCell = (value: string) => {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-};
-
-/** CSV de ranking de asesores (UTF-8 con BOM lo agrega la ruta HTTP). */
-export const exportAsesorScorecardCsv = (report: DesarrolloAsesorScorecardReport) => {
-  const headers = [
-    "Posicion",
-    "Asesor",
-    "Asesor ID",
-    "Score",
-    "Banda",
-    "Muestra confiable",
-    "Asignados",
-    "Carga %",
-    "Contacto %",
-    "Funnel %",
-    "Descarte %",
-    "Nuevos",
-    "Speed mediana min",
-    "Speed <60min %",
-    "Speed cobertura %",
-    "Speed score",
-    "Playbook %",
-    "Cadencia %",
-    "Cadencia vencidos",
-    "iScore prom",
-    "Desde",
-    "Hasta",
-    "Version",
-  ];
-
-  const rows = report.asesores.map((row, index) =>
-    [
-      String(index + 1),
-      row.asesorNombre,
-      row.asesorId,
-      String(row.score),
-      asesorScoreBandLabel[row.band],
-      row.sampleReliable ? "Sí" : "No",
-      String(row.assignedCount),
-      String(row.loadSharePct),
-      String(row.contactRatePct),
-      String(row.funnelRatePct),
-      String(row.discardRatePct),
-      String(row.nuevoCount),
-      row.speedMedianMinutes === null ? "" : String(row.speedMedianMinutes),
-      String(row.speedUnder60Pct),
-      String(row.speedCoveragePct),
-      row.speedScorePct === null ? "" : String(row.speedScorePct),
-      row.compliancePct === null ? "" : String(row.compliancePct),
-      row.cadenciaHealthPct === null ? "" : String(row.cadenciaHealthPct),
-      String(row.overdueCadencia),
-      row.avgIscore === null ? "" : String(row.avgIscore),
-      report.desde,
-      report.hasta,
-      report.version,
-    ].map((cell) => escapeCsvCell(cell)),
-  );
-
-  return [headers.join(","), ...rows.map((row) => row.join(","))].join("\r\n");
-};
-
-export { formatSpeedMinutesLabel };

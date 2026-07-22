@@ -20,7 +20,7 @@ import {
   formatSpeedMinutesLabel,
   type AsesorScoreBand,
   type DesarrolloAsesorScorecardReport,
-} from "@/lib/comercial/asesor-scorecard";
+} from "@/lib/comercial/asesor-scorecard-shared";
 
 type Props = {
   desarrolloId: string | null;

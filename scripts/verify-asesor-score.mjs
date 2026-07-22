@@ -8,13 +8,13 @@ import {
   bandFromScore,
   cadenciaHealthFromSummary,
   computeAsesorScore,
-} from "../src/lib/comercial/asesor-scorecard.ts";
+} from "../src/lib/comercial/asesor-scorecard-shared.ts";
 import {
   aggregateSpeedToLead,
   speedMinutesBetween,
   speedMinutesToScore,
-  shouldRecordFirstContactOnEtapaChange,
-} from "../src/lib/comercial/speed-to-lead.ts";
+} from "../src/lib/comercial/speed-to-lead-metrics.ts";
+import { shouldRecordFirstContactOnEtapaChange } from "../src/lib/comercial/speed-to-lead.ts";
 
 let failed = 0;
 
