@@ -882,7 +882,8 @@ export const asesores: Asesor[] = [
     pin: '1234',
     rol: 'director',
     activo: true,
-    desarrollosIds: ['pasaje-alamos', 'mision-la-gavia', ...INVESTTI_DESARROLLO_IDS]
+    // Asignaciones reales viven en Supabase; este seed solo aplica en fallback local / demo.
+    desarrollosIds: ['mision-la-gavia']
   },
   {
     id: 'rodrigo',

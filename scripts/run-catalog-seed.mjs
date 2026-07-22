@@ -6,13 +6,11 @@ if (!loadEnvLocal()) {
 }
 
 const { seedCatalogFromData } = await import("../src/lib/catalog/seed.ts");
-const { syncAsesoresDesarrollosFromData } = await import("../src/lib/asesores/seed.ts");
 
 seedCatalogFromData()
-  .then(async (catalogResult) => {
+  .then((catalogResult) => {
     console.log("Catálogo sincronizado con Supabase:", catalogResult);
-    const asesoresResult = await syncAsesoresDesarrollosFromData();
-    console.log("Asesores BBR alineados con data.ts:", asesoresResult);
+    console.log("Asignaciones de asesores no se tocan (Admin → Asesores).");
   })
   .catch((error) => {
     console.error("Error al sincronizar:", error instanceof Error ? error.message : error);

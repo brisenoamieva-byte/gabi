@@ -17,25 +17,6 @@ type AsesorLookupRow = {
 
 const normalizeEmail = (value?: string | null) => value?.trim().toLowerCase() ?? "";
 
-const fetchAllActiveDesarrolloIds = async (): Promise<string[]> => {
-  const supabase = createSupabaseServiceClient();
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("desarrollos_catalog")
-    .select("id")
-    .eq("activo", true)
-    .order("nombre", { ascending: true });
-
-  if (error) {
-    return [];
-  }
-
-  return (data ?? []).map((row) => row.id as string);
-};
-
 /** Admin gerente / director comercial con acceso al CRM de campo desde backoffice. */
 export { canAdminOpenCampoCrm } from "@/lib/admin/campo-crm-access";
 
@@ -128,28 +109,23 @@ export const persistAdminAsesorLink = async (
     .eq("id", adminUserId);
 };
 
-/** Ajusta desarrollos visibles en CRM según alcance admin (superadmin = todos, gerente/director = asignados). */
+/**
+ * Ajusta desarrollos visibles en CRM de campo según alcance admin.
+ * Si el perfil admin no tiene lista explícita, se respetan los del asesor vinculado
+ * (ya no se expanden a “todos los activos del catálogo”).
+ */
 export const applyAdminScopeToAsesorSession = async (
   asesor: AsesorSession,
   adminRol: AdminRol,
   adminDesarrollosIds: string[],
 ): Promise<AsesorSession> => {
-  if (adminRol === "superadmin") {
-    const desarrollosIds = adminDesarrollosIds.length
-      ? adminDesarrollosIds
-      : await fetchAllActiveDesarrolloIds();
-
-    return {
-      ...asesor,
-      desarrollosIds: desarrollosIds.length ? desarrollosIds : asesor.desarrollosIds,
-    };
-  }
-
-  if (adminRol === "gerente" && adminDesarrollosIds.length) {
-    return {
-      ...asesor,
-      desarrollosIds: adminDesarrollosIds,
-    };
+  if (adminDesarrollosIds.length) {
+    if (adminRol === "superadmin" || adminRol === "gerente") {
+      return {
+        ...asesor,
+        desarrollosIds: adminDesarrollosIds,
+      };
+    }
   }
 
   return asesor;
@@ -172,9 +148,9 @@ export const resolveCampoAsesorSessionForAdminUser = async (input: {
     new Set([input.adminEmail, input.authEmail].map(normalizeEmail).filter(Boolean)),
   );
   const isOperator = emailCandidates.some((email) => isGabiOperator({ email }));
-  /** Operador gabi siempre ve todos los desarrollos activos (no el alcance vacío del perfil). */
+  /** Operador gabi abre CRM de campo; alcance = perfil admin o asignaciones del asesor vinculado. */
   const effectiveRol: AdminRol = isOperator ? "superadmin" : adminRol;
-  const effectiveDesarrollosIds = isOperator ? [] : adminDesarrollosIds;
+  const effectiveDesarrollosIds = adminDesarrollosIds;
 
   if (!canAdminOpenCampoCrm(effectiveRol) && !isOperator) {
     return null;

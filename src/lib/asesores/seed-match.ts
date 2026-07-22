@@ -58,16 +58,3 @@ export const findSeedAsesor = (
 
   return undefined;
 };
-
-export const mergeAsesorDesarrollosWithSeed = (
-  asesorId: string,
-  desarrollosIds: string[],
-  email?: string | null,
-): string[] => {
-  const seed = findSeedAsesor(asesorId, email);
-  if (!seed) {
-    return desarrollosIds;
-  }
-
-  return Array.from(new Set([...desarrollosIds, ...seed.desarrollosIds]));
-};

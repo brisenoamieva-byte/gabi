@@ -1,9 +1,5 @@
 import { verifyPin } from "@/lib/asesores/pin-server";
-import {
-  asesorSessionLookupIds,
-  findSeedAsesor,
-  mergeAsesorDesarrollosWithSeed,
-} from "@/lib/asesores/seed-match";
+import { asesorSessionLookupIds } from "@/lib/asesores/seed-match";
 import type { AsesorSession } from "@/lib/asesores/types";
 import { asesores as fallbackAsesores } from "@/lib/data";
 import {
@@ -29,7 +25,8 @@ const toSession = (row: Omit<AsesorAuthRow, "pin_hash" | "activo">): AsesorSessi
   nombre: row.nombre,
   email: row.email,
   rol: row.rol,
-  desarrollosIds: mergeAsesorDesarrollosWithSeed(row.id, row.desarrollos_ids ?? [], row.email),
+  // Fuente de verdad: asesores.desarrollos_ids en Supabase (sin merge con seed).
+  desarrollosIds: row.desarrollos_ids ?? [],
 });
 
 export const authenticateInvesttiSimuladorByPin = async (
@@ -135,14 +132,7 @@ export const getAsesorSessionById = async (id: string): Promise<AsesorSession | 
         .maybeSingle();
 
       if (!error && data) {
-        const session = toSession(data as AsesorAuthRow);
-        const seedAsesor = findSeedAsesor(session.id, session.email);
-        if (seedAsesor) {
-          session.desarrollosIds = Array.from(
-            new Set([...session.desarrollosIds, ...seedAsesor.desarrollosIds]),
-          );
-        }
-        return session;
+        return toSession(data as AsesorAuthRow);
       }
     }
   }
