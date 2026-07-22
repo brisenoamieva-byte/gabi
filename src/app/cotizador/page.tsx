@@ -550,7 +550,6 @@ function CotizadorPageContent() {
               catalog={catalogMemo}
               campoConfig={campoConfig}
               showSelectors
-              showCopy
               showPdf
               onClusterChange={handleClusterChange}
               onPrototipoChange={handlePrototipoChange}
@@ -643,16 +642,6 @@ function CotizadorPageContent() {
                 <Copy className="h-4 w-4" />
                 {copiedBank ? "Datos copiados" : "Copiar datos bancarios"}
               </button>
-            </div>
-
-            <div className="rounded-2xl bg-[#201044] p-5 sm:rounded-[1.75rem] sm:p-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] sm:text-[11px]">
-                Guía gabi
-              </p>
-              <p className="mt-2.5 text-sm leading-relaxed text-white/85">
-                Propuesta comercial del momento. Seguimiento del prospecto y simulaciones
-                bancarias en el CRM del desarrollador.
-              </p>
             </div>
           </aside>
         ) : null}

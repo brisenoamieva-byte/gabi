@@ -41,16 +41,18 @@ export function StepCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-        <p className="text-sm font-black uppercase tracking-[0.25em] text-[#6CC24A]">
+    <div className="space-y-4 md:space-y-5">
+      <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6CC24A] md:text-[11px]">
           {eyebrow}
         </p>
-        <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <h2 className="text-3xl font-black text-[#201044] md:text-5xl">{title}</h2>
-          <div className="flex max-w-xl items-start gap-3 rounded-2xl bg-[#6CC24A]/15 p-4 text-[#201044]">
-            <Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#6CC24A]" />
-            <p className="font-bold">{tip}</p>
+        <div className="mt-1.5 flex flex-col gap-3 md:mt-2 md:flex-row md:items-end md:justify-between md:gap-6">
+          <h2 className="text-2xl font-bold tracking-tight text-[#201044] md:text-[1.75rem] md:leading-tight">
+            {title}
+          </h2>
+          <div className="flex max-w-md items-start gap-2.5 rounded-xl bg-[#6CC24A]/12 px-3.5 py-2.5 text-[#201044]">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#6CC24A]" />
+            <p className="text-sm font-medium leading-snug md:text-[13px]">{tip}</p>
           </div>
         </div>
       </div>
@@ -107,7 +109,9 @@ export function BudgetCurrencyInput({
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-base font-black text-[#201044]">{label}</span>
+      <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[#201044]/80">
+        {label}
+      </span>
       {children}
     </label>
   );
@@ -194,8 +198,10 @@ export function AvailabilityUnitCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-[1.5rem] p-4 text-left shadow-lg transition active:scale-[0.99] ${
-        selected ? "bg-[#201044] text-white" : "bg-white text-[#201044]"
+      className={`w-full rounded-xl p-3.5 text-left shadow-sm transition active:scale-[0.99] ${
+        selected
+          ? "bg-[#201044] text-white"
+          : "border border-[#201044]/10 bg-white text-[#201044]"
       }`}
     >
       <div className="flex items-start gap-3">
@@ -339,14 +345,14 @@ export function ToggleGroup({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2">
+    <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 p-1.5">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`min-h-14 rounded-xl px-4 text-base font-black transition ${
-            value === option.value ? "bg-[#201044] text-white shadow" : "text-slate-500"
+          className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition md:min-h-10 ${
+            value === option.value ? "bg-[#201044] text-white shadow-sm" : "text-slate-500"
           }`}
         >
           {option.label}
@@ -369,18 +375,20 @@ export function ToggleCard({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-24 rounded-2xl p-5 text-left text-lg font-black shadow-sm transition ${
+      className={`min-h-[4.5rem] rounded-xl p-3.5 text-left text-sm font-semibold shadow-sm transition md:min-h-16 md:p-4 ${
         checked ? "bg-[#201044] text-white" : "bg-slate-50 text-[#201044]"
       }`}
     >
-      <span className="mb-3 block">{label}</span>
-      <span className="text-sm opacity-75">{checked ? "Sí" : "No"}</span>
+      <span className="mb-1.5 block">{label}</span>
+      <span className="text-xs opacity-70">{checked ? "Sí" : "No"}</span>
     </button>
   );
 }
 
 export function SectionTitle({ title }: { title: string }) {
-  return <h2 className="text-2xl font-black text-[#201044] md:text-3xl">{title}</h2>;
+  return (
+    <h2 className="text-lg font-bold tracking-tight text-[#201044] md:text-xl">{title}</h2>
+  );
 }
 
 export function ProductNarrativeCard({
@@ -402,21 +410,21 @@ export function ProductNarrativeCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.3 }}
-      className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7"
+      className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5"
     >
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="mb-4 flex flex-col gap-3 md:mb-5 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6CC24A] md:text-[11px]">
             Paso {step}
           </p>
-          <h3 className="mt-2 text-2xl font-black text-[#201044] md:text-4xl">
+          <h3 className="mt-1.5 text-xl font-bold tracking-tight text-[#201044] md:text-2xl">
             {title}
           </h3>
-          <p className="mt-2 max-w-3xl text-base font-semibold text-slate-500 md:text-lg">
+          <p className="mt-1.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-500">
             {subtitle}
           </p>
         </div>
-        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[#201044] text-white">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#201044] text-white">
           {icon}
         </div>
       </div>
@@ -618,18 +626,18 @@ export function Modal({
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`max-h-[94vh] w-full overflow-auto rounded-[2rem] bg-white p-5 shadow-2xl md:p-8 ${
+        className={`max-h-[94vh] w-full overflow-auto rounded-2xl bg-white p-4 shadow-2xl md:p-6 ${
           size === "wide" ? "max-w-[96rem]" : "max-w-5xl"
         }`}
       >
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-black text-[#201044] md:text-3xl">{title}</h2>
+        <div className="mb-4 flex items-center justify-between gap-3 md:mb-5">
+          <h2 className="text-lg font-bold tracking-tight text-[#201044] md:text-xl">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-[#201044]"
+            className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-[#201044] md:h-10 md:w-10"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         {children}

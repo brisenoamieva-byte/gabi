@@ -1296,34 +1296,34 @@ function RecorridoPageContent() {
 
   return (
     <main className="min-h-screen bg-bbr-cream text-bbr-purple">
-      <section className="sticky top-0 z-30 border-b border-bbr-cream-dark bg-bbr-cream/95 px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-sm backdrop-blur md:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3 md:gap-4">
+      <section className="sticky top-0 z-30 border-b border-bbr-cream-dark bg-bbr-cream/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-sm backdrop-blur md:px-6 md:py-3">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5 md:gap-3">
               {activeDesarrollo?.logo ? (
-                <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-[#201044]/10 bg-[#F2F0E9] p-2 md:h-12 md:w-[4.5rem]">
+                <div className="flex h-9 w-14 shrink-0 items-center justify-center rounded-lg border border-[#201044]/10 bg-[#F2F0E9] p-1.5 md:h-10 md:w-16">
                   <Image
                     src={activeDesarrollo.logo}
                     alt={activeDesarrollo.nombre}
                     width={120}
                     height={80}
                     priority
-                    className="h-auto max-h-8 w-full object-contain"
+                    className="h-auto max-h-7 w-full object-contain"
                   />
                 </div>
               ) : null}
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#6CC24A]">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#6CC24A]">
                   Recorrido guiado
                 </p>
-                <h1 className="truncate text-lg font-black text-[#201044] md:text-2xl">
+                <h1 className="truncate text-base font-bold tracking-tight text-[#201044] md:text-lg">
                   {activeDesarrollo?.nombre ?? "Desarrollo activo"}
                 </h1>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2.5">
               <div className="hidden flex-col items-end sm:flex">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-slate-400">
                   Plataforma
                 </p>
                 <GabiLogo variant="platform" />
@@ -1331,14 +1331,14 @@ function RecorridoPageContent() {
               <button
                 type="button"
                 onClick={() => router.push("/dashboard")}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-[#201044] shadow-sm transition active:scale-95 md:px-5"
+                className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#201044] shadow-sm transition active:scale-95 md:px-4"
               >
                 Salir
               </button>
             </div>
           </div>
 
-          <div className="relative h-3 overflow-hidden rounded-full bg-slate-200">
+          <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-200">
             <motion.div
               className="h-full rounded-full bg-[#6CC24A]"
               animate={{ width: `${progress}%` }}
@@ -1346,13 +1346,13 @@ function RecorridoPageContent() {
             />
           </div>
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {recorridoEtapas.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => goToStep(index)}
-                className={`min-w-[4.75rem] shrink-0 snap-start rounded-2xl px-2 py-3 text-center text-[11px] font-black transition sm:min-w-0 sm:flex-1 sm:text-xs md:text-sm ${
+                className={`min-w-[4.25rem] shrink-0 snap-start rounded-xl px-2 py-2 text-center text-[10px] font-semibold transition sm:min-w-0 sm:flex-1 sm:text-[11px] md:py-2.5 md:text-xs ${
                   index === state.etapa
                     ? "bg-[#201044] text-white"
                     : index < state.etapa
@@ -1360,7 +1360,7 @@ function RecorridoPageContent() {
                       : "bg-slate-100 text-slate-500"
                 }`}
               >
-                <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-[10px] md:h-6 md:w-6 md:text-xs">
+                <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/25 text-[9px] md:h-5 md:w-5 md:text-[10px]">
                   {index + 1}
                 </span>
                 {label}
@@ -1370,7 +1370,7 @@ function RecorridoPageContent() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+      <section className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={state.etapa}
@@ -1379,7 +1379,7 @@ function RecorridoPageContent() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction * -80 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
-            className="min-h-[calc(100vh-220px)]"
+            className="min-h-[calc(100vh-200px)]"
           >
             {state.etapa === 0 && (
               <StepCard
@@ -1387,25 +1387,25 @@ function RecorridoPageContent() {
                 title="Ganar confianza"
                 tip="Mantén contacto visual, sonríe, apretón de manos firme"
               >
-                <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-                  <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-                    <h2 className="mb-5 text-xl font-black text-[#201044]">
+                <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr] lg:gap-5">
+                  <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
+                    <h2 className="mb-3 text-sm font-bold tracking-tight text-[#201044] md:text-base">
                       Recordatorios de apertura
                     </h2>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {confianzaItems.map((item, index) => (
                         <div
                           key={item.title}
-                          className="flex gap-4 rounded-2xl bg-slate-50 p-4 text-left"
+                          className="flex gap-3 rounded-xl bg-slate-50 p-3 text-left"
                         >
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6CC24A]/15 text-base font-black text-[#201044]">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#6CC24A]/15 text-sm font-bold text-[#201044]">
                             {index + 1}
                           </span>
                           <span>
-                            <span className="block text-base font-black text-[#201044] md:text-lg">
+                            <span className="block text-sm font-semibold text-[#201044]">
                               {item.title}
                             </span>
-                            <span className="mt-1 block text-sm font-semibold text-slate-500">
+                            <span className="mt-0.5 block text-xs font-medium leading-relaxed text-slate-500">
                               {item.detail}
                             </span>
                           </span>
@@ -1414,18 +1414,18 @@ function RecorridoPageContent() {
                     </div>
                   </div>
 
-                  <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-                    <div className="mb-5">
-                      <h2 className="text-xl font-black text-[#201044]">
+                  <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
+                    <div className="mb-3">
+                      <h2 className="text-sm font-bold tracking-tight text-[#201044] md:text-base">
                         Prospecto de esta visita
                       </h2>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                      <p className="mt-1 text-xs leading-relaxed text-slate-500 md:text-[13px]">
                         Datos para personalizar el recorrido. Si el desarrollo lo
                         tiene activo, se envían al CRM — el seguimiento posterior
                         vive ahí.
                       </p>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-3 md:grid-cols-2">
                       <Field label="Nombre del prospecto">
                         <input
                           value={state.cliente.nombre}
@@ -1492,7 +1492,7 @@ function RecorridoPageContent() {
                 tip="Trata de sacar información valiosa durante la plática"
               >
                 <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                  <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
+                  <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                     <div className="grid gap-5 md:grid-cols-2">
                       <Field label="¿Para vivir o invertir?">
                         <ToggleGroup
@@ -1553,7 +1553,7 @@ function RecorridoPageContent() {
                   </div>
 
                   <div className="space-y-6">
-                    <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
+                    <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                       <h2 className="mb-4 text-xl font-black text-[#201044]">
                         Tags automáticos
                       </h2>
@@ -1798,7 +1798,7 @@ function RecorridoPageContent() {
                     ) : null}
                   </ProductNarrativeCard>
 
-                  <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
+                  <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                       <div>
                         <p className="text-sm font-black uppercase tracking-[0.2em] text-[#6CC24A]">
@@ -1814,7 +1814,7 @@ function RecorridoPageContent() {
                       <button
                         type="button"
                         onClick={() => setShowTwoMinuteGuide(true)}
-                        className="flex min-h-16 items-center justify-center gap-3 rounded-2xl bg-[#201044] px-6 text-lg font-black text-white shadow-xl shadow-[#201044]/20 transition active:scale-[0.99]"
+                        className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#201044] px-4 text-sm font-semibold text-white shadow-sm transition active:scale-[0.99]"
                       >
                         <FileText className="h-7 w-7" />
                         Ver guion
@@ -1833,7 +1833,7 @@ function RecorridoPageContent() {
               >
                 <div className="space-y-6">
                   <SectionTitle title="Filtra y selecciona un cluster" />
-                  <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
+                  <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                     <div className="grid gap-5 lg:grid-cols-[1fr_1fr_0.8fr]">
                       <Field label="Tipo de producto">
                         <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2">
@@ -1842,7 +1842,7 @@ function RecorridoPageContent() {
                               key={option.value}
                               type="button"
                               onClick={() => toggleProductoTipo(option.value)}
-                              className={`min-h-14 rounded-xl px-3 text-sm font-black transition md:text-base ${
+                              className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition ${
                                 selectedProductTypes.includes(option.value)
                                   ? "bg-[#201044] text-white shadow"
                                   : "text-slate-500"
@@ -1919,7 +1919,7 @@ function RecorridoPageContent() {
                               key={option.value}
                               type="button"
                               onClick={() => toggleRecamarasFiltro(option.value)}
-                              className={`min-h-14 rounded-xl px-3 text-sm font-black transition md:text-base ${
+                              className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition ${
                                 selectedRooms.includes(option.value)
                                   ? "bg-[#201044] text-white shadow"
                                   : "text-slate-500"
@@ -2134,9 +2134,9 @@ function RecorridoPageContent() {
                           })}
                         </div>
                       ) : activeDesarrollo && getCotizadorKind(activeDesarrollo.id) === "investti" ? (
-                        <div className="space-y-5 rounded-[2rem] bg-white p-6 shadow-lg">
+                        <div className="space-y-5 rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                           <div>
-                            <p className="text-xl font-black text-[#201044]">Terrenos · simulador</p>
+                            <p className="text-base font-bold tracking-tight text-[#201044]">Terrenos · simulador</p>
                             <p className="mt-2 text-sm text-slate-500">
                               Elige manzana y lote con la lista oficial Investti. Misma lógica que
                               Control Gerencia.
@@ -2155,13 +2155,13 @@ function RecorridoPageContent() {
                           <button
                             type="button"
                             onClick={() => openCotizador()}
-                            className="w-full rounded-2xl bg-[#6CC24A] px-5 py-4 text-lg font-black text-white shadow-lg active:scale-95"
+                            className="w-full rounded-xl bg-[#6CC24A] px-4 py-3 text-sm font-semibold text-white shadow-sm active:scale-95"
                           >
                             Abrir cotizador
                           </button>
                         </div>
                       ) : (
-                        <div className="rounded-[2rem] bg-white p-6 shadow-lg">
+                        <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                           <p className="text-xl font-black text-[#201044]">
                             Este cluster coincide por terrenos.
                           </p>
@@ -2176,7 +2176,7 @@ function RecorridoPageContent() {
 
                   {selectedPrototipo && (
                     <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-                      <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
+                      <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
                         <div className="mb-5 grid gap-4">
                           {selectedPrototipoHeroSrc ? (
                             <div className="overflow-hidden rounded-[1.5rem] bg-slate-50">
@@ -2331,14 +2331,14 @@ function RecorridoPageContent() {
                               setSelectedAvailabilityId(null);
                               setShowAvailability(true);
                             }}
-                            className="rounded-2xl border border-[#201044]/20 bg-white px-5 py-5 text-lg font-black text-[#201044] shadow-lg active:scale-95"
+                            className="rounded-xl border border-[#201044]/20 bg-white px-4 py-3 text-sm font-semibold text-[#201044] shadow-sm active:scale-95"
                           >
                             Ver unidades disponibles
                           </button>
                           <button
                             type="button"
                             onClick={() => openCotizador()}
-                            className="rounded-2xl bg-[#6CC24A] px-5 py-5 text-lg font-black text-white shadow-lg active:scale-95"
+                            className="rounded-xl bg-[#6CC24A] px-4 py-3 text-sm font-semibold text-white shadow-sm active:scale-95"
                           >
                             Cotizar ahora
                           </button>
@@ -2448,11 +2448,11 @@ function RecorridoPageContent() {
                     })}
                   </div>
 
-                  <div className="rounded-[2rem] bg-white p-5 shadow-lg md:p-7">
-                    <h2 className="mb-5 text-xl font-black text-[#201044]">
+                  <div className="rounded-2xl border border-[#201044]/10 bg-white p-4 shadow-sm md:p-5">
+                    <h2 className="mb-3 text-sm font-bold tracking-tight text-[#201044] md:text-base">
                       Recordatorios de cierre
                     </h2>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {cierreItems.map((item, index) => (
                         <div
                           key={item}
@@ -2469,7 +2469,7 @@ function RecorridoPageContent() {
                       <button
                         type="button"
                         onClick={() => setShowRequest(true)}
-                        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#6CC24A] px-6 py-5 text-lg font-black text-white shadow-lg active:scale-95"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#6CC24A] px-4 py-3 text-sm font-semibold text-white shadow-sm active:scale-95"
                       >
                         <FileText className="h-6 w-6" />
                         Generar solicitud de compra
@@ -2477,7 +2477,7 @@ function RecorridoPageContent() {
                       <button
                         type="button"
                         onClick={finishRecorrido}
-                        className="flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-[#201044] bg-white px-6 py-5 text-lg font-black text-[#201044] shadow-sm active:scale-95"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#201044]/25 bg-white px-4 py-3 text-sm font-semibold text-[#201044] shadow-sm active:scale-95"
                       >
                         <ClipboardCheck className="h-6 w-6" />
                         Finalizar recorrido
@@ -2491,25 +2491,25 @@ function RecorridoPageContent() {
         </AnimatePresence>
       </section>
 
-      <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:px-8">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+      <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5">
           <button
             type="button"
             onClick={() => goToStep(state.etapa - 1)}
             disabled={state.etapa === 0}
-            className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-base font-black text-[#201044] shadow-sm transition disabled:opacity-40 sm:flex-none sm:px-5"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-[#201044] shadow-sm transition disabled:opacity-40 sm:flex-none sm:px-4 md:min-h-10"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
             Anterior
           </button>
           <button
             type="button"
             onClick={handleNextStep}
             disabled={state.etapa === recorridoEtapas.length - 1 || isRegisteringLead}
-            className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#201044] px-4 text-base font-black text-white shadow-lg transition disabled:opacity-40 sm:flex-none sm:px-6"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#201044] px-3.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-40 sm:flex-none sm:px-5 md:min-h-10"
           >
             {isRegisteringLead ? "Validando..." : "Siguiente"}
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </footer>
@@ -2675,7 +2675,6 @@ function RecorridoPageContent() {
             asesorRol={user?.rol}
             catalog={{ clusters: activeClusters, prototipos: activePrototipos }}
             campoConfig={campoConfig}
-            showCopy
             showPdf
             onDescuentoChange={(value) => patchState({ descuento: value })}
             onEsquemaChange={(value) => patchState({ esquema: value })}

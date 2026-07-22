@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ChevronDown, Copy, FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, FileDown, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -16,7 +16,6 @@ import { downloadMisionLaGaviaSimuladorPdf } from "@/lib/cotizador/mision-la-gav
 import { MISION_LA_GAVIA_UNIDADES } from "@/lib/corredor/mision-la-gavia-unidades.generated";
 import {
   buildCalendarioPagosMisionLaGavia,
-  buildMisionLaGaviaSimulacionSummary,
   clampMsiMensualidades,
   defaultMsiMensualidadesForEsquema,
   formatPctShort,
@@ -65,7 +64,6 @@ export type MisionLaGaviaSimuladorPanelProps = {
   clienteTelefono?: string;
   esquema?: MisionLaGaviaEsquemaId;
   showSelectors?: boolean;
-  showCopy?: boolean;
   showPdf?: boolean;
   libreEnganchePct?: number;
   libreMensualidadesPct?: number;
@@ -312,7 +310,6 @@ export function MisionLaGaviaSimuladorPanel({
   clienteTelefono,
   esquema = "contado",
   showSelectors = false,
-  showCopy = false,
   showPdf = false,
   libreEnganchePct,
   libreMensualidadesPct,
@@ -326,7 +323,6 @@ export function MisionLaGaviaSimuladorPanel({
   onMsiNumMensualidadesChange,
   onClienteNombreChange,
 }: MisionLaGaviaSimuladorPanelProps) {
-  const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [edificio, setEdificio] = useState("");
   const [unidadCode, setUnidadCode] = useState("");
@@ -652,27 +648,6 @@ export function MisionLaGaviaSimuladorPanel({
         origen: opts?.origen ?? "mision_la_gavia_simulador",
       },
     });
-  };
-
-  const handleCopy = async () => {
-    if (!simulacion) return;
-    const summary = buildMisionLaGaviaSimulacionSummary(
-      simulacion,
-      desarrolloNombre,
-      clienteNombre,
-      undefined,
-      diaPago,
-    );
-    try {
-      await navigator.clipboard.writeText(summary);
-    } catch {
-      // clipboard puede fallar sin HTTPS.
-    }
-
-    persistCotizacion({ origen: "mision_la_gavia_simulador" });
-
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownloadPdf = async () => {
@@ -1136,49 +1111,26 @@ export function MisionLaGaviaSimuladorPanel({
         </label>
       ) : null}
 
-      {showCopy || showPdf ? (
-        <div className={`grid gap-2 ${showCopy && showPdf ? "sm:grid-cols-2" : ""}`}>
-          {showPdf ? (
-            <button
-              type="button"
-              disabled={pdfLoading || Boolean(simulacion.error)}
-              onClick={() => void handleDownloadPdf()}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#14453D]/20 bg-white px-5 text-sm font-bold text-[#14453D] transition hover:bg-[#14453D]/5 disabled:opacity-50 sm:min-h-14 sm:text-base"
-            >
-              {pdfLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
-                  Generando PDF…
-                </>
-              ) : (
-                <>
-                  <FileDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Descargar PDF / enviar a prospecto
-                </>
-              )}
-            </button>
-          ) : null}
-          {showCopy ? (
-            <button
-              type="button"
-              onClick={() => void handleCopy()}
-              className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#14453D] px-5 text-sm font-bold text-white transition hover:bg-[#0f332d] active:scale-[0.99] sm:min-h-14 sm:text-base ${
-                showPdf ? "" : ""
-              }`}
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Resumen copiado
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Copiar cotización para WhatsApp / CRM
-                </>
-              )}
-            </button>
-          ) : null}
+      {showPdf ? (
+        <div className="grid gap-2">
+          <button
+            type="button"
+            disabled={pdfLoading || Boolean(simulacion.error)}
+            onClick={() => void handleDownloadPdf()}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#14453D]/20 bg-white px-5 text-sm font-bold text-[#14453D] transition hover:bg-[#14453D]/5 disabled:opacity-50 sm:min-h-14 sm:text-base"
+          >
+            {pdfLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
+                Generando PDF…
+              </>
+            ) : (
+              <>
+                <FileDown className="h-4 w-4 sm:h-5 sm:w-5" />
+                Descargar PDF / enviar a prospecto
+              </>
+            )}
+          </button>
         </div>
       ) : null}
     </div>

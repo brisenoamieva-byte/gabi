@@ -1,23 +1,15 @@
 "use client";
 
-import { CheckCircle2, Copy } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
-  buildCotizacionSummary,
   computeCotizacion,
   getCotizadorRules,
   getPrototiposCotizables,
   getUnidadesCotizables,
-  type CotizacionResult,
   type CotizadorCatalog,
   type CotizadorEsquema,
 } from "@/lib/cotizador";
 import { formatPrice, type DisponibilidadUnidad } from "@/lib/data";
-import {
-  calcDescuentoPct,
-  resolveTipoUnidadFromInventario,
-  saveCotizacionClient,
-} from "@/lib/comercial/save-cotizacion-client";
 import {
   PasajeSimuladorPanel,
   type PasajeSimuladorPanelProps,
@@ -59,7 +51,6 @@ export type CotizadorPanelProps = {
   /** Override admin (desarrollos_catalog.campo_config). */
   campoConfig?: import("@/lib/catalog/campo-config").DesarrolloCampoConfig | null;
   showSelectors?: boolean;
-  showCopy?: boolean;
   showPdf?: boolean;
   onClusterChange?: (clusterId: string) => void;
   onPrototipoChange?: (prototipoId: string | undefined) => void;
@@ -216,8 +207,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         clienteEmail={props.clienteEmail}
         clienteTelefono={props.clienteTelefono}
         showSelectors={props.showSelectors}
-        showCopy={props.showCopy}
-        showPdf={props.showPdf ?? props.showCopy}
+        showPdf={props.showPdf}
         esquema={props.pasajeEsquema}
         libreEnganchePct={props.pasajeLibreEnganche}
         libreMensualidadesPct={props.pasajeLibreMensualidades}
@@ -264,8 +254,7 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
         clienteTelefono={props.clienteTelefono}
         esquema={props.misionLaGaviaEsquema ?? "contado"}
         showSelectors={props.showSelectors ?? true}
-        showCopy={props.showCopy}
-        showPdf={props.showPdf ?? props.showCopy}
+        showPdf={props.showPdf}
         libreEnganchePct={props.misionLaGaviaLibreEnganche}
         libreMensualidadesPct={props.misionLaGaviaLibreMensualidades}
         libreFechaFiniquito={props.misionLaGaviaLibreFechaFiniquito}
@@ -288,29 +277,21 @@ export function CotizadorPanel(props: CotizadorPanelProps) {
 
 function GenericCotizadorPanel({
   desarrolloId,
-  desarrolloNombre,
   clusterId,
   prototipoId,
   unidadId,
   inventarioUnidades,
   descuento,
   esquema,
-  clienteNombre,
-  asesorId,
-  prospectoId,
-  clienteEmail,
-  clienteTelefono,
   catalog,
   campoConfig,
   showSelectors = false,
-  showCopy = false,
   onClusterChange,
   onPrototipoChange,
   onUnidadChange,
   onDescuentoChange,
   onEsquemaChange,
 }: CotizadorPanelProps) {
-  const [copied, setCopied] = useState(false);
   const rules = getCotizadorRules(desarrolloId, campoConfig);
   const clusters = catalog?.clusters ?? [];
 
@@ -360,42 +341,6 @@ function GenericCotizadorPanel({
 
   const sinProductosCotizables =
     showSelectors && clusterId && prototipos.length === 0 && unidades.length === 0;
-
-  const handleCopy = async (result: CotizacionResult) => {
-    try {
-      await navigator.clipboard.writeText(
-        buildCotizacionSummary(result, desarrolloNombre, clienteNombre, desarrolloId),
-      );
-    } catch {
-      // El portapapeles puede fallar en HTTP o sin permisos del navegador.
-    }
-
-    const unidad = unidadId
-      ? inventarioUnidades?.find((item) => item.id === unidadId)
-      : undefined;
-
-    saveCotizacionClient({
-      desarrolloId,
-      asesorId,
-      prospectoId,
-      clienteNombre,
-      clienteEmail,
-      clienteTelefono,
-      clusterId,
-      prototipoId,
-      unidadId,
-      unidadNumero: unidad?.unidad ?? result.unidadNombre,
-      tipoUnidad: resolveTipoUnidadFromInventario(unidad),
-      precioLista: result.precioLista,
-      esquemaPago: result.esquema === "mensualidades" ? "Mensualidades" : "Contado",
-      descuentoPct: calcDescuentoPct(result.descuento, result.precioLista),
-      precioTotal: result.precioFinal,
-      payload: { cotizacion: result, origen: "cotizador_generico" },
-    });
-
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
 
   const selectorBlock = showSelectors ? (
     <div className="grid gap-4">
@@ -593,25 +538,6 @@ function GenericCotizadorPanel({
         </label>
       </div>
 
-      {showCopy ? (
-        <button
-          type="button"
-          onClick={() => void handleCopy(cotizacion)}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#201044] px-5 text-sm font-bold text-white transition hover:bg-[#35156D] active:scale-[0.99] sm:min-h-14 sm:text-base"
-        >
-          {copied ? (
-            <>
-              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-              Resumen copiado
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
-              Copiar resumen para WhatsApp / CRM
-            </>
-          )}
-        </button>
-      ) : null}
     </div>
   );
 }

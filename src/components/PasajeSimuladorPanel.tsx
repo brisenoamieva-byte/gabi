@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Copy, FileDown, UserRound } from "lucide-react";
+import { FileDown, UserRound } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { DescuentoEspecialField } from "@/components/cotizador/DescuentoEspecialField";
@@ -55,7 +55,6 @@ export type PasajeSimuladorPanelProps = {
   libreSinMensFechaPago?: string;
   libreSinMensFechaFiniquito?: string;
   showSelectors?: boolean;
-  showCopy?: boolean;
   showPdf?: boolean;
   onClusterChange?: (clusterId: string) => void;
   onPrototipoChange?: (prototipoId: string | undefined) => void;
@@ -302,91 +301,6 @@ const parseISODate = (value: string | undefined): Date | undefined => {
   return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
 };
 
-const buildResumen = (
-  result: PasajeSimuladorResultado,
-  desarrolloNombre: string,
-  context: {
-    clienteNombre?: string;
-    asesorNombre?: string;
-    clusterNombre?: string;
-    prototipoNombre?: string;
-    unidadNombre?: string;
-    unidad?: DisponibilidadUnidad;
-    tipo: PasajeUnidadTipo;
-    recamaras?: number;
-  },
-): string => {
-  const tipoLabel = context.tipo === "oficina" ? "Oficina" : "Departamento";
-  const ivaLabel = context.tipo === "oficina" ? " (precios más IVA)" : "";
-  const supLines: string[] = [];
-  if (context.recamaras) supLines.push(`Recámaras: ${context.recamaras}`);
-  if (context.unidad?.cajones) supLines.push(`Cajones: ${context.unidad.cajones}`);
-  const supInterna = formatAreaM2(context.unidad?.superficieInternaM2);
-  if (supInterna) {
-    supLines.push(`Sup. interna: ${supInterna}`);
-  }
-  const supExterna = formatAreaM2(context.unidad?.superficieExternaM2);
-  if (supExterna) {
-    supLines.push(`Terraza: ${supExterna}`);
-  }
-  const supBodega = formatAreaM2(context.unidad?.superficieBodegaM2);
-  if (supBodega) {
-    supLines.push(`Bodega: ${supBodega}`);
-  }
-  const supTotal = formatAreaM2(computePasajeSuperficieTotalM2(context.unidad));
-  if (supTotal) {
-    supLines.push(`Sup. total: ${supTotal}`);
-  }
-
-  const lines = [
-    `Cotización · ${desarrolloNombre}${ivaLabel}`,
-    context.clienteNombre ? `Cliente: ${context.clienteNombre}` : null,
-    context.asesorNombre ? `Asesor: ${context.asesorNombre}` : null,
-    "",
-    `${tipoLabel} ${context.unidadNombre ?? "—"}`,
-    context.prototipoNombre ? `Modelo: ${context.prototipoNombre}` : null,
-    context.unidad?.nivel ? `Nivel: ${context.unidad.nivel}` : null,
-    context.clusterNombre ? `Producto: ${context.clusterNombre}` : null,
-    ...supLines,
-    `Entrega estimada: ${formatMonthYear(PASAJE_FECHA_ENTREGA)}`,
-    "",
-    `Precio lista: ${formatPrice(result.precioLista)}`,
-    `Precio contado (−${formatPctShort(result.descuentoContadoPct)}): ${formatPrice(result.precioContado)}`,
-    result.descuentoEspecialPct > 0
-      ? `Descuento especial: ${formatPctShort(result.descuentoEspecialPct)}`
-      : null,
-    `Esquema: ${result.esquemaLabel}`,
-    `Total cliente: ${formatPrice(result.precioTotal)}`,
-    `Descuento efectivo: ${formatPctShort(result.descuentoEfectivoPct)}`,
-    "",
-    `Enganche (${formatPctShort(result.enganchePct)}): ${formatPrice(result.enganche)}`,
-    result.numMensualidades && result.mensualidadCliente
-      ? `${result.numMensualidades} mensualidades de ${formatPrice(result.mensualidadCliente)}`
-      : null,
-    result.fechaPrimerMes && result.fechaUltimoMes
-      ? `  · de ${formatMonthYear(result.fechaPrimerMes)} a ${formatMonthYear(result.fechaUltimoMes)}`
-      : null,
-    result.pagoIntermedio && result.fechaPagoIntermedio
-      ? `Pago intermedio (${formatPctShort(result.pagoIntermedioPct ?? 0)}): ${formatPrice(result.pagoIntermedio)} en ${formatMonthYear(result.fechaPagoIntermedio)}`
-      : null,
-    result.finiquito && result.fechaFiniquito
-      ? `Finiquito (${formatPctShort(result.finiquitoPct ?? 0)}): ${formatPrice(result.finiquito)} en ${formatMonthYear(result.fechaFiniquito)}`
-      : null,
-    "",
-    "Ejercicio de rentas (estimado):",
-    `  · Renta mensual: ${formatPrice(result.rentaMensual)}`,
-    `  · Rendimiento rentas: ${formatPctShort(result.rendimientoRentasAnual)}`,
-    `  · Rendimiento total est.: ${formatPctShort(result.rendimientoTotalAnual)}`,
-    "",
-    "* Vigencia 7 días, sujeto a cambio sin previo aviso.",
-    "* Apartado de $50,000 se aplica a cuenta de enganche.",
-    "* Valores referenciales; esta consulta no constituye preaprobación.",
-    "* Plusvalía estimada es aproximada, no constituye compromiso del desarrollador.",
-  ].filter(Boolean);
-
-  return lines.join("\n");
-};
-
 export function PasajeSimuladorPanel({
   desarrolloId,
   desarrolloNombre,
@@ -413,7 +327,6 @@ export function PasajeSimuladorPanel({
   libreSinMensFechaPago,
   libreSinMensFechaFiniquito,
   showSelectors = false,
-  showCopy = false,
   showPdf = false,
   onClusterChange,
   onPrototipoChange,
@@ -428,7 +341,6 @@ export function PasajeSimuladorPanel({
   onLibreSinMensFechaFiniquitoChange,
   onClienteNombreChange,
 }: PasajeSimuladorPanelProps) {
-  const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [descuentoEspecialPct, setDescuentoEspecialPct] = useState(0);
 
@@ -549,38 +461,6 @@ export function PasajeSimuladorPanel({
       unidad,
     ],
   );
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        buildResumen(resultado, desarrolloNombre, pdfContext),
-      );
-    } catch {
-      // El portapapeles puede fallar en HTTP/permisos.
-    }
-
-    saveCotizacionClient({
-      desarrolloId,
-      asesorId,
-      prospectoId,
-      clienteNombre,
-      clienteEmail,
-      clienteTelefono,
-      unidadId: unidad?.id,
-      clusterId,
-      prototipoId,
-      unidadNumero: unidad?.unidad,
-      tipoUnidad: tipo === "oficina" ? "oficina" : "departamento",
-      precioLista: resultado.precioLista,
-      esquemaPago: resultado.esquemaLabel,
-      descuentoPct: resultado.descuentoEfectivoPct,
-      precioTotal: resultado.precioTotal,
-      payload: { resultado, pdfContext, origen: "pasaje_simulador" },
-    });
-
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleDownloadPdf = async () => {
     if (precioLista <= 0 || resultado.error) {
@@ -1260,40 +1140,17 @@ export function PasajeSimuladorPanel({
         </p>
       </div>
 
-      {showCopy || showPdf ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {showPdf ? (
-            <button
-              type="button"
-              onClick={() => void handleDownloadPdf()}
-              disabled={pdfLoading || precioLista <= 0 || Boolean(resultado.error)}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#C7A694] px-5 text-sm font-bold text-[#242E38] transition hover:bg-[#b89582] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14 sm:text-base"
-            >
-              <FileDown className="h-4 w-4 sm:h-5 sm:w-5" />
-              {pdfLoading ? "Generando PDF…" : "Descargar PDF (carta)"}
-            </button>
-          ) : null}
-          {showCopy ? (
-            <button
-              type="button"
-              onClick={() => void handleCopy()}
-              className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#242E38] px-5 text-sm font-bold text-white transition hover:bg-[#1a232b] active:scale-[0.99] sm:min-h-14 sm:text-base ${
-                showPdf ? "" : "sm:col-span-2"
-              }`}
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Resumen copiado
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Copiar resumen
-                </>
-              )}
-            </button>
-          ) : null}
+      {showPdf ? (
+        <div className="grid gap-3">
+          <button
+            type="button"
+            onClick={() => void handleDownloadPdf()}
+            disabled={pdfLoading || precioLista <= 0 || Boolean(resultado.error)}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#C7A694] px-5 text-sm font-bold text-[#242E38] transition hover:bg-[#b89582] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14 sm:text-base"
+          >
+            <FileDown className="h-4 w-4 sm:h-5 sm:w-5" />
+            {pdfLoading ? "Generando PDF…" : "Descargar PDF (carta)"}
+          </button>
         </div>
       ) : null}
     </div>
