@@ -265,7 +265,7 @@ export function CrmComplianceAdminPanel({
     return "bad";
   }, [filteredReport]);
 
-  const sendWhatsAppTest = async () => {
+  const sendWhatsAppTest = async (template: "prospect" | "asesor" | "compliance") => {
     if (!desarrolloId || !testPhone.trim()) {
       setTestStatus("Indica un teléfono de prueba.");
       return;
@@ -281,7 +281,8 @@ export function CrmComplianceAdminPanel({
         body: JSON.stringify({
           desarrolloId,
           telefono: testPhone.trim(),
-          template: "compliance",
+          template,
+          desarrolloNombre: "Misión La Gavia",
         }),
       });
       const data = (await response.json()) as {
@@ -295,6 +296,7 @@ export function CrmComplianceAdminPanel({
           hasAccessToken?: boolean;
           hasPhoneNumberId?: boolean;
           configured?: boolean;
+          template?: string;
         };
       };
 
@@ -305,8 +307,8 @@ export function CrmComplianceAdminPanel({
       if (data.sent) {
         setTestStatus(
           data.messageId
-            ? `Aceptado por Meta (id: ${data.messageId}). Si no llega, revisa plantilla aprobada y el número en WhatsApp.`
-            : "Aceptado por Meta. Revisa WhatsApp en unos segundos.",
+            ? `Aceptado por Meta (${data.diagnostic?.template ?? template}, id: ${data.messageId}). Revisa WhatsApp.`
+            : `Aceptado por Meta (${template}). Revisa WhatsApp en unos segundos.`,
         );
         return;
       }
@@ -539,10 +541,13 @@ export function CrmComplianceAdminPanel({
           <div className="flex items-start gap-3">
             <MessageCircle className="mt-0.5 h-5 w-5 text-gabi-sand" />
             <div className="flex-1">
-              <h2 className="text-sm font-bold text-gabi-forest">Probar WhatsApp de alerta CRM</h2>
+              <h2 className="text-sm font-bold text-gabi-forest">Probar WhatsApp</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Envía la plantilla <code className="text-[11px]">gabi_crm_pendiente_asesor</code> a
-                un teléfono de prueba para verificar recordatorios de pasos pendientes.
+                Usa un teléfono que hayas agregado como destinatario de prueba en Meta (si aplica).
+                Plantillas de lead:{" "}
+                <code className="text-[11px]">gabi_lead_confirmacion_prospecto</code> /{" "}
+                <code className="text-[11px]">gabi_lead_alerta_asesor</code>. Cumplimiento CRM:{" "}
+                <code className="text-[11px]">gabi_crm_pendiente_asesor</code>.
               </p>
               <div className="mt-3 flex flex-wrap items-end gap-3">
                 <label className="min-w-[12rem] flex-1">
@@ -557,7 +562,7 @@ export function CrmComplianceAdminPanel({
                 </label>
                 <button
                   type="button"
-                  onClick={() => void sendWhatsAppTest()}
+                  onClick={() => void sendWhatsAppTest("prospect")}
                   disabled={testLoading || !desarrolloId}
                   className="inline-flex items-center gap-2 rounded-xl bg-gabi-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
@@ -566,7 +571,24 @@ export function CrmComplianceAdminPanel({
                   ) : (
                     <MessageCircle className="h-4 w-4" />
                   )}
-                  Enviar prueba
+                  Probar → prospecto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void sendWhatsAppTest("asesor")}
+                  disabled={testLoading || !desarrolloId}
+                  className="inline-flex items-center gap-2 rounded-xl border border-gabi-forest bg-white px-4 py-2 text-sm font-semibold text-gabi-forest disabled:opacity-50"
+                >
+                  Probar → asesor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void sendWhatsAppTest("compliance")}
+                  disabled={testLoading || !desarrolloId}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"
+                  title="Requiere plantilla gabi_crm_pendiente_asesor activa"
+                >
+                  Probar CRM
                 </button>
               </div>
               {testStatus ? <p className="mt-2 text-xs text-slate-500">{testStatus}</p> : null}

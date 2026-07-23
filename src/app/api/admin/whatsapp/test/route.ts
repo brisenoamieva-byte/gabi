@@ -10,10 +10,11 @@ import {
 } from "@/lib/whatsapp/templates";
 import {
   sendAsesorComplianceNudge,
+  sendAsesorLeadAlert,
   sendProspectLeadConfirmation,
 } from "@/lib/whatsapp/meta-cloud-api";
 
-const requireWhatsAppTestAccess = async (template: "prospect" | "compliance") => {
+const requireWhatsAppTestAccess = async (template: "prospect" | "asesor" | "compliance") => {
   const session = await getAdminSession();
   if (!session) {
     return { error: NextResponse.json({ error: "No autorizado" }, { status: 401 }) };
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       desarrolloId?: string;
       telefono?: string;
-      template?: "prospect" | "compliance";
+      template?: "prospect" | "asesor" | "compliance";
       desarrolloNombre?: string;
     };
 
@@ -86,12 +87,21 @@ export async function POST(request: Request) {
 
     const desarrolloId = body.desarrolloId?.trim();
     const telefono = body.telefono?.trim();
+    const desarrolloNombre = body.desarrolloNombre?.trim() || "Misión La Gavia";
 
     if (!desarrolloId || !telefono) {
       return NextResponse.json({ error: "desarrolloId y telefono requeridos." }, { status: 400 });
     }
 
     const config = getWhatsAppCloudConfig(desarrolloId);
+    const diagnostic = {
+      desarrolloId,
+      enabled: config.enabled,
+      hasAccessToken: Boolean(config.accessToken),
+      hasPhoneNumberId: Boolean(config.phoneNumberId),
+      configured: isWhatsAppCloudConfigured(desarrolloId),
+      template,
+    };
 
     if (template === "compliance") {
       const result = await sendAsesorComplianceNudge(
@@ -99,40 +109,35 @@ export async function POST(request: Request) {
         telefono,
         "Asesor de prueba",
         2,
-        body.desarrolloNombre?.trim() || "Desarrollo piloto",
+        desarrolloNombre,
         "Contactar prospecto demo · Actualizar etapa en CRM",
       );
 
-      return NextResponse.json({
-        ...result,
-        diagnostic: {
-          desarrolloId,
-          enabled: config.enabled,
-          hasAccessToken: Boolean(config.accessToken),
-          hasPhoneNumberId: Boolean(config.phoneNumberId),
-          configured: isWhatsAppCloudConfigured(desarrolloId),
-        },
-      });
+      return NextResponse.json({ ...result, diagnostic });
+    }
+
+    if (template === "asesor") {
+      const result = await sendAsesorLeadAlert(
+        desarrolloId,
+        telefono,
+        desarrolloNombre,
+        "María Pérez (prueba)",
+        telefono,
+        "Prueba Gabi",
+      );
+
+      return NextResponse.json({ ...result, diagnostic });
     }
 
     const result = await sendProspectLeadConfirmation(
       desarrolloId,
       telefono,
-      "Prueba",
-      "Desarrollo piloto",
+      "María",
+      desarrolloNombre,
       "Asesor de prueba",
     );
 
-    return NextResponse.json({
-      ...result,
-      diagnostic: {
-        desarrolloId,
-        enabled: config.enabled,
-        hasAccessToken: Boolean(config.accessToken),
-        hasPhoneNumberId: Boolean(config.phoneNumberId),
-        configured: isWhatsAppCloudConfigured(desarrolloId),
-      },
-    });
+    return NextResponse.json({ ...result, diagnostic });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error." },
