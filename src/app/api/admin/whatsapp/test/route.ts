@@ -91,6 +91,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "desarrolloId y telefono requeridos." }, { status: 400 });
     }
 
+    const config = getWhatsAppCloudConfig(desarrolloId);
+
     if (template === "compliance") {
       const result = await sendAsesorComplianceNudge(
         desarrolloId,
@@ -101,7 +103,16 @@ export async function POST(request: Request) {
         "Contactar prospecto demo · Actualizar etapa en CRM",
       );
 
-      return NextResponse.json(result);
+      return NextResponse.json({
+        ...result,
+        diagnostic: {
+          desarrolloId,
+          enabled: config.enabled,
+          hasAccessToken: Boolean(config.accessToken),
+          hasPhoneNumberId: Boolean(config.phoneNumberId),
+          configured: isWhatsAppCloudConfigured(desarrolloId),
+        },
+      });
     }
 
     const result = await sendProspectLeadConfirmation(
@@ -112,7 +123,16 @@ export async function POST(request: Request) {
       "Asesor de prueba",
     );
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...result,
+      diagnostic: {
+        desarrolloId,
+        enabled: config.enabled,
+        hasAccessToken: Boolean(config.accessToken),
+        hasPhoneNumberId: Boolean(config.phoneNumberId),
+        configured: isWhatsAppCloudConfigured(desarrolloId),
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error." },

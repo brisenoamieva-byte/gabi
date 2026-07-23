@@ -289,6 +289,13 @@ export function CrmComplianceAdminPanel({
         sent?: boolean;
         messageId?: string;
         skippedReason?: string;
+        diagnostic?: {
+          desarrolloId?: string;
+          enabled?: boolean;
+          hasAccessToken?: boolean;
+          hasPhoneNumberId?: boolean;
+          configured?: boolean;
+        };
       };
 
       if (!response.ok) {
@@ -304,16 +311,22 @@ export function CrmComplianceAdminPanel({
         return;
       }
 
+      const diag = data.diagnostic;
+      const diagHint = diag
+        ? ` [desarrollo=${diag.desarrolloId ?? "—"}; enabled=${String(diag.enabled)}; token=${diag.hasAccessToken ? "sí" : "no"}; phoneId=${diag.hasPhoneNumberId ? "sí" : "no"}]`
+        : "";
+
       const skipHint: Record<string, string> = {
-        whatsapp_disabled: "WhatsApp Cloud está desactivado (WHATSAPP_CLOUD_ENABLED).",
+        whatsapp_disabled:
+          "WhatsApp Cloud desactivado para este desarrollo. En Vercel revisa WHATSAPP_CLOUD_ENABLED=true y que WHATSAPP_ENABLED_DESARROLLO_IDS incluya mision-la-gavia (o bórralo).",
         not_configured:
-          "Falta WHATSAPP_CLOUD_ACCESS_TOKEN o WHATSAPP_PHONE_NUMBER_ID del desarrollo en Vercel.",
+          "Falta WHATSAPP_CLOUD_ACCESS_TOKEN o WHATSAPP_PHONE_NUMBER_ID_MISION_LA_GAVIA en Vercel (Production) + Redeploy.",
         invalid_phone: "Teléfono inválido. Usa +52 y 10 dígitos (ej. +524421556155).",
       };
       setTestStatus(
-        data.error ??
+        (data.error ??
           skipHint[data.skippedReason ?? ""] ??
-          `No enviado (${data.skippedReason ?? "sin detalle"}).`,
+          `No enviado (${data.skippedReason ?? "sin detalle"}).`) + diagHint,
       );
     } catch (sendError) {
       setTestStatus(sendError instanceof Error ? sendError.message : "Error al enviar.");
