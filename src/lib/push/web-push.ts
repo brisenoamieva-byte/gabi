@@ -232,3 +232,28 @@ export const buildCompliancePushPayload = (input: {
     badgeCount: Math.max(total, input.overdueCount),
   };
 };
+
+export const buildNewLeadPushPayload = (input: {
+  desarrolloNombre: string;
+  prospectoNombre: string;
+  prospectoId: string;
+  telefono?: string | null;
+  campanaNombre?: string | null;
+  siteUrl: string;
+}): CompliancePushPayload => {
+  const phone = String(input.telefono ?? "").trim();
+  const campana = String(input.campanaNombre ?? "").trim();
+  const parts = [
+    input.prospectoNombre,
+    phone || null,
+    campana ? `vía ${campana}` : null,
+  ].filter(Boolean);
+
+  return {
+    title: `Gabi · Nuevo lead · ${input.desarrolloNombre}`,
+    body: parts.join(" · "),
+    url: `${input.siteUrl.replace(/\/$/, "")}/mis-leads?prospecto=${encodeURIComponent(input.prospectoId)}`,
+    tag: `gabi-nuevo-lead-${input.prospectoId}`,
+    badgeCount: 1,
+  };
+};

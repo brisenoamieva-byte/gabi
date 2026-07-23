@@ -16,6 +16,11 @@ import {
 import { buildWhatsAppUrl } from "@/lib/visitas/follow-up";
 import { isDesarrolloAutomationActive } from "@/lib/comercial/desarrollo-automation";
 import { bootstrapCadenciaForProspecto } from "@/lib/comercial/cadencia-service";
+import {
+  buildNewLeadPushPayload,
+  isWebPushConfigured,
+  sendPushToAsesor,
+} from "@/lib/push/web-push";
 
 export type LeadContactEventInput = {
   prospectoId: string;
@@ -269,6 +274,43 @@ export const dispatchLeadInboundNotifications = async (
       destinatarioTipo: "asesor",
       status: "skipped",
       errorMessage: "Asesor sin teléfono ni email.",
+    });
+  }
+
+  if (isWebPushConfigured()) {
+    const pushPayload = buildNewLeadPushPayload({
+      desarrolloNombre,
+      prospectoNombre: prospecto.nombre,
+      prospectoId,
+      telefono: prospecto.telefono,
+      campanaNombre,
+      siteUrl,
+    });
+    const pushResult = await sendPushToAsesor(asesor.id, pushPayload);
+    await logContactEvent({
+      prospectoId,
+      desarrolloId,
+      canal: "push_asesor",
+      destinatarioTipo: "asesor",
+      status:
+        pushResult.sent > 0
+          ? "sent"
+          : pushResult.error === "no_subscriptions"
+            ? "skipped"
+            : "failed",
+      errorMessage:
+        pushResult.error ??
+        (pushResult.failed > 0 ? `${pushResult.failed} endpoint(s) fallaron` : undefined),
+      payload: { sent: pushResult.sent, failed: pushResult.failed },
+    });
+  } else {
+    await logContactEvent({
+      prospectoId,
+      desarrolloId,
+      canal: "push_asesor",
+      destinatarioTipo: "asesor",
+      status: "skipped",
+      errorMessage: "Web Push no configurado.",
     });
   }
 
