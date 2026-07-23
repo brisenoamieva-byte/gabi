@@ -11,10 +11,13 @@ import {
 import {
   sendAsesorComplianceNudge,
   sendAsesorLeadAlert,
+  sendHelloWorldTest,
   sendProspectLeadConfirmation,
 } from "@/lib/whatsapp/meta-cloud-api";
 
-const requireWhatsAppTestAccess = async (template: "prospect" | "asesor" | "compliance") => {
+const requireWhatsAppTestAccess = async (
+  template: "prospect" | "asesor" | "compliance" | "hello_world",
+) => {
   const session = await getAdminSession();
   if (!session) {
     return { error: NextResponse.json({ error: "No autorizado" }, { status: 401 }) };
@@ -75,7 +78,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       desarrolloId?: string;
       telefono?: string;
-      template?: "prospect" | "asesor" | "compliance";
+      template?: "prospect" | "asesor" | "compliance" | "hello_world";
       desarrolloNombre?: string;
     };
 
@@ -102,6 +105,11 @@ export async function POST(request: Request) {
       configured: isWhatsAppCloudConfigured(desarrolloId),
       template,
     };
+
+    if (template === "hello_world") {
+      const result = await sendHelloWorldTest(desarrolloId, telefono);
+      return NextResponse.json({ ...result, diagnostic });
+    }
 
     if (template === "compliance") {
       const result = await sendAsesorComplianceNudge(

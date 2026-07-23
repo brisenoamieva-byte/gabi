@@ -16,6 +16,8 @@ export type SendWhatsAppTemplateResult = {
   messageId?: string;
   error?: string;
   skippedReason?: string;
+  /** Número normalizado enviado a Meta (solo dígitos). */
+  to?: string;
 };
 
 const textParameter = (text: string) => ({
@@ -28,6 +30,7 @@ const sendTemplateMessage = async (
   toPhone: string,
   templateName: string,
   bodyParameters: string[],
+  languageCode: string = WHATSAPP_TEMPLATE_LANGUAGE,
 ): Promise<SendWhatsAppTemplateResult> => {
   if (!config.enabled) {
     return { sent: false, skippedReason: "whatsapp_disabled" };
@@ -45,6 +48,20 @@ const sendTemplateMessage = async (
   const version = getMetaGraphApiVersion();
   const url = `https://graph.facebook.com/${version}/${config.phoneNumberId}/messages`;
 
+  const template: Record<string, unknown> = {
+    name: templateName,
+    language: { code: languageCode },
+  };
+
+  if (bodyParameters.length > 0) {
+    template.components = [
+      {
+        type: "body",
+        parameters: bodyParameters.map((value) => textParameter(value)),
+      },
+    ];
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -56,16 +73,7 @@ const sendTemplateMessage = async (
       recipient_type: "individual",
       to,
       type: "template",
-      template: {
-        name: templateName,
-        language: { code: WHATSAPP_TEMPLATE_LANGUAGE },
-        components: [
-          {
-            type: "body",
-            parameters: bodyParameters.map((value) => textParameter(value)),
-          },
-        ],
-      },
+      template,
     }),
   });
 
@@ -76,10 +84,19 @@ const sendTemplateMessage = async (
 
   if (!response.ok) {
     const detail = data.error?.error_user_msg ?? data.error?.message ?? response.statusText;
-    return { sent: false, error: detail };
+    return { sent: false, error: detail, to };
   }
 
-  return { sent: true, messageId: data.messages?.[0]?.id };
+  return { sent: true, messageId: data.messages?.[0]?.id, to };
+};
+
+/** Plantilla sample de Meta (gratis). Sirve para aislar pago/formato vs plantillas propias. */
+export const sendHelloWorldTest = async (
+  desarrolloId: string,
+  toPhone: string,
+): Promise<SendWhatsAppTemplateResult> => {
+  const config = getWhatsAppCloudConfig(desarrolloId);
+  return sendTemplateMessage(config, toPhone, "hello_world", [], "en_US");
 };
 
 export const sendProspectLeadConfirmation = async (

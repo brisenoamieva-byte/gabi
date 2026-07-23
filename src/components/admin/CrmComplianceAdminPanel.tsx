@@ -265,7 +265,9 @@ export function CrmComplianceAdminPanel({
     return "bad";
   }, [filteredReport]);
 
-  const sendWhatsAppTest = async (template: "prospect" | "asesor" | "compliance") => {
+  const sendWhatsAppTest = async (
+    template: "prospect" | "asesor" | "compliance" | "hello_world",
+  ) => {
     if (!desarrolloId || !testPhone.trim()) {
       setTestStatus("Indica un teléfono de prueba.");
       return;
@@ -290,6 +292,7 @@ export function CrmComplianceAdminPanel({
         sent?: boolean;
         messageId?: string;
         skippedReason?: string;
+        to?: string;
         diagnostic?: {
           desarrolloId?: string;
           enabled?: boolean;
@@ -305,10 +308,11 @@ export function CrmComplianceAdminPanel({
       }
 
       if (data.sent) {
+        const toHint = data.to ? ` → ${data.to}` : "";
         setTestStatus(
           data.messageId
-            ? `Aceptado por Meta (${data.diagnostic?.template ?? template}, id: ${data.messageId}). Revisa WhatsApp.`
-            : `Aceptado por Meta (${template}). Revisa WhatsApp en unos segundos.`,
+            ? `Aceptado por Meta (${data.diagnostic?.template ?? template}${toHint}, id: ${data.messageId}). Revisa WhatsApp.`
+            : `Aceptado por Meta (${template}${toHint}). Revisa WhatsApp en unos segundos.`,
         );
         return;
       }
@@ -543,11 +547,10 @@ export function CrmComplianceAdminPanel({
             <div className="flex-1">
               <h2 className="text-sm font-bold text-gabi-forest">Probar WhatsApp</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Usa un teléfono que hayas agregado como destinatario de prueba en Meta (si aplica).
-                Plantillas de lead:{" "}
-                <code className="text-[11px]">gabi_lead_confirmacion_prospecto</code> /{" "}
-                <code className="text-[11px]">gabi_lead_alerta_asesor</code>. Cumplimiento CRM:{" "}
-                <code className="text-[11px]">gabi_crm_pendiente_asesor</code>.
+                Usa un teléfono agregado como destinatario de prueba en Meta. Si Meta acepta
+                (`wamid`) pero no llega al celular, casi siempre falta el{" "}
+                <strong>método de pago</strong> en la WABA Sistema Gabi (hello_world es gratis;
+                las plantillas propias sí cobran).
               </p>
               <div className="mt-3 flex flex-wrap items-end gap-3">
                 <label className="min-w-[12rem] flex-1">
@@ -560,6 +563,15 @@ export function CrmComplianceAdminPanel({
                     className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={() => void sendWhatsAppTest("hello_world")}
+                  disabled={testLoading || !desarrolloId}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                  title="Plantilla sample de Meta (sin costo)"
+                >
+                  Probar hello_world
+                </button>
                 <button
                   type="button"
                   onClick={() => void sendWhatsAppTest("prospect")}
