@@ -158,6 +158,14 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+        >
+          <AsesorPushOptIn />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
           <AsesorGuardiaHoyCard asesorId={user.id} desarrolloId={desarrollo.id} />
@@ -264,7 +272,6 @@ export default function DashboardPage() {
             desarrolloNombre={desarrollo.nombre}
           />
           <InstallGabiApp variant="dashboard" />
-          <AsesorPushOptIn />
         </motion.div>
 
         <p className="mt-auto pt-1 text-center text-[11px] text-slate-400">
