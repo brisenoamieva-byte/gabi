@@ -18,6 +18,7 @@ import { AsesorBackofficeLink } from "@/components/asesor/AsesorBackofficeLink";
 import { AsesorGuardiaHoyCard } from "@/components/asesor/AsesorGuardiaHoyCard";
 import { DocumentDownloadButton } from "@/components/DocumentDownloadButton";
 import { InstallGabiApp } from "@/components/InstallGabiApp";
+import { AsesorPushOptIn } from "@/components/asesor/AsesorPushOptIn";
 import { PrepareOfflineVisitButton } from "@/components/PrepareOfflineVisitButton";
 import {
   clearSelectedDesarrollo,
@@ -263,6 +264,7 @@ export default function DashboardPage() {
             desarrolloNombre={desarrollo.nombre}
           />
           <InstallGabiApp variant="dashboard" />
+          <AsesorPushOptIn />
         </motion.div>
 
         <p className="mt-auto pt-1 text-center text-[11px] text-slate-400">

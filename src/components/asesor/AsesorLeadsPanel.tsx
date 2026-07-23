@@ -22,6 +22,11 @@ import { AsesorExpedienteApartadoPanel } from "@/components/asesor/AsesorExpedie
 import { PerfilCalificacionLeadBadge } from "@/components/asesor/PerfilCalificacionLeadBadge";
 import { LeadActivityScoreBadge } from "@/components/asesor/LeadActivityScoreBadge";
 import { CrmPlaybookBanner } from "@/components/asesor/CrmPlaybookBanner";
+import { AsesorPendientesHero } from "@/components/asesor/AsesorPendientesHero";
+import {
+  AsesorPushOptIn,
+  syncAsesorAppBadge,
+} from "@/components/asesor/AsesorPushOptIn";
 import { CrmPlaybookChecklist } from "@/components/asesor/CrmPlaybookChecklist";
 import { PerfilamientoVisitaPanel } from "@/components/asesor/PerfilamientoVisitaPanel";
 import { AsesorCadenciaLeadPanel } from "@/components/asesor/AsesorCadenciaLeadPanel";
@@ -1378,11 +1383,17 @@ export function AsesorLeadsPanel({
 
       if (complianceRes.ok) {
         const complianceData = (await complianceRes.json()) as {
-          summary?: { overdueCount?: number };
+          summary?: { overdueCount?: number; pendingCount?: number };
+          cadencia?: { hoyCount?: number };
         };
-        setComplianceOverdue(complianceData.summary?.overdueCount ?? 0);
+        const overdue = complianceData.summary?.overdueCount ?? 0;
+        const pending = complianceData.summary?.pendingCount ?? 0;
+        const dueToday = complianceData.cadencia?.hoyCount ?? 0;
+        setComplianceOverdue(overdue);
+        void syncAsesorAppBadge(overdue + pending + dueToday);
       } else {
         setComplianceOverdue(0);
+        void syncAsesorAppBadge(0);
       }
     } catch {
       setPlaybookQueue([]);
@@ -1733,12 +1744,22 @@ export function AsesorLeadsPanel({
   return (
     <div className="space-y-4">
       {playbookEnabled ? (
-        <CrmPlaybookBanner
-          queue={playbookQueue}
-          overdueCount={complianceOverdue}
-          onSelectLead={(prospectoId) => setSelectedId(prospectoId)}
-        />
-      ) : null}
+        <>
+          <AsesorPendientesHero
+            overdueCount={complianceOverdue}
+            queue={playbookQueue}
+            onSelectLead={(prospectoId) => setSelectedId(prospectoId)}
+          />
+          <AsesorPushOptIn compact />
+          <CrmPlaybookBanner
+            queue={playbookQueue}
+            overdueCount={complianceOverdue}
+            onSelectLead={(prospectoId) => setSelectedId(prospectoId)}
+          />
+        </>
+      ) : (
+        <AsesorPushOptIn compact />
+      )}
 
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex flex-wrap items-start justify-between gap-3">

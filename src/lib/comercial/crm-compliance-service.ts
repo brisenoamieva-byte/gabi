@@ -582,7 +582,7 @@ export const wasComplianceDigestSentToday = async (
   desarrolloId: string,
   recipientType: "asesor" | "gerente",
   recipientId: string,
-  channel: "email" | "whatsapp" = "email",
+  channel: "email" | "whatsapp" | "push" = "email",
 ): Promise<boolean> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
@@ -616,7 +616,7 @@ export const logComplianceDigestSent = async (input: {
   overdueCount: number;
   exceptionCount: number;
   status: "sent" | "failed" | "skipped";
-  channel?: "email" | "whatsapp";
+  channel?: "email" | "whatsapp" | "push";
   errorMessage?: string;
 }): Promise<void> => {
   const supabase = createSupabaseServiceClient();

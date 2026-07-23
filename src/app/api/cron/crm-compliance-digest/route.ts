@@ -17,6 +17,12 @@ import {
 } from "@/lib/comercial/compliance-notifications";
 import { getDesarrolloCadenciaReport, listCadenciaHoyForAsesor } from "@/lib/comercial/cadencia-service";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getEmailConfig } from "@/lib/email/config";
+import {
+  buildCompliancePushPayload,
+  isWebPushConfigured,
+  sendPushToAsesor,
+} from "@/lib/push/web-push";
 
 const authorizeCron = (request: Request): boolean => {
   const secret = process.env.CRON_SECRET?.trim();
@@ -36,6 +42,7 @@ async function runComplianceDigest(): Promise<{
   desarrollos: number;
   asesorEmails: number;
   asesorWhatsApp: number;
+  asesorPush: number;
   gerenteEmails: number;
   skipped: number;
   errors: string[];
@@ -43,9 +50,11 @@ async function runComplianceDigest(): Promise<{
   const errors: string[] = [];
   let asesorEmails = 0;
   let asesorWhatsApp = 0;
+  let asesorPush = 0;
   let gerenteEmails = 0;
   let skipped = 0;
   let desarrollos = 0;
+  const { siteUrl } = getEmailConfig();
 
   const supabase = createSupabaseServiceClient();
 
@@ -62,38 +71,42 @@ async function runComplianceDigest(): Promise<{
     const targets = await listComplianceDigestTargets(desarrolloId);
 
     for (const target of targets) {
-      const alreadySent = await wasComplianceDigestSentToday(
+      const cadenciaHoyCount = (await listCadenciaHoyForAsesor(target.asesorId, desarrolloId))
+        .length;
+
+      const emailAlreadySent = await wasComplianceDigestSentToday(
         desarrolloId,
         "asesor",
         target.asesorId,
+        "email",
       );
 
-      if (alreadySent) {
+      if (emailAlreadySent) {
         skipped += 1;
-        continue;
-      }
+      } else {
+        const result = await sendAsesorComplianceDigestEmail(
+          target,
+          desarrolloNombre,
+          cadenciaHoyCount,
+        );
 
-      const result = await sendAsesorComplianceDigestEmail(
-        target,
-        desarrolloNombre,
-        (await listCadenciaHoyForAsesor(target.asesorId, desarrolloId)).length,
-      );
+        await logComplianceDigestSent({
+          desarrolloId,
+          recipientType: "asesor",
+          recipientId: target.asesorId,
+          email: target.email,
+          overdueCount: target.overdueCount,
+          exceptionCount: target.exceptionCount,
+          status: result.sent ? "sent" : "failed",
+          channel: "email",
+          errorMessage: result.error,
+        });
 
-      await logComplianceDigestSent({
-        desarrolloId,
-        recipientType: "asesor",
-        recipientId: target.asesorId,
-        email: target.email,
-        overdueCount: target.overdueCount,
-        exceptionCount: target.exceptionCount,
-        status: result.sent ? "sent" : "failed",
-        errorMessage: result.error,
-      });
-
-      if (result.sent) {
-        asesorEmails += 1;
-      } else if (result.error) {
-        errors.push(`asesor ${target.asesorId}: ${result.error}`);
+        if (result.sent) {
+          asesorEmails += 1;
+        } else if (result.error) {
+          errors.push(`asesor ${target.asesorId}: ${result.error}`);
+        }
       }
 
       if (target.overdueCount > 0) {
@@ -125,6 +138,61 @@ async function runComplianceDigest(): Promise<{
             asesorWhatsApp += 1;
           } else if (whatsappResult.error) {
             errors.push(`whatsapp ${target.asesorId}: ${whatsappResult.error}`);
+          }
+        }
+      }
+
+      const shouldPush =
+        target.overdueCount > 0 || target.pendingCount > 0 || cadenciaHoyCount > 0;
+
+      if (shouldPush && isWebPushConfigured()) {
+        const pushAlreadySent = await wasComplianceDigestSentToday(
+          desarrolloId,
+          "asesor",
+          target.asesorId,
+          "push",
+        );
+
+        if (pushAlreadySent) {
+          skipped += 1;
+        } else {
+          const priority = target.topExceptions[0];
+          const payload = buildCompliancePushPayload({
+            desarrolloNombre,
+            overdueCount: target.overdueCount,
+            pendingCount: target.pendingCount,
+            cadenciaHoyCount,
+            priorityNombre: priority?.nombre ?? null,
+            priorityProspectoId: priority?.prospectoId ?? null,
+            siteUrl,
+          });
+
+          const pushResult = await sendPushToAsesor(target.asesorId, payload);
+          const pushStatus =
+            pushResult.sent > 0
+              ? "sent"
+              : pushResult.error === "no_subscriptions"
+                ? "skipped"
+                : "failed";
+
+          await logComplianceDigestSent({
+            desarrolloId,
+            recipientType: "asesor",
+            recipientId: target.asesorId,
+            email: target.email,
+            overdueCount: target.overdueCount,
+            exceptionCount: target.exceptionCount,
+            status: pushStatus,
+            channel: "push",
+            errorMessage:
+              pushResult.error ??
+              (pushResult.failed > 0 ? `${pushResult.failed} endpoint(s) fallaron` : undefined),
+          });
+
+          if (pushResult.sent > 0) {
+            asesorPush += 1;
+          } else if (pushResult.error && pushResult.error !== "no_subscriptions") {
+            errors.push(`push ${target.asesorId}: ${pushResult.error}`);
           }
         }
       }
@@ -201,7 +269,7 @@ async function runComplianceDigest(): Promise<{
     }
   }
 
-  return { desarrollos, asesorEmails, asesorWhatsApp, gerenteEmails, skipped, errors };
+  return { desarrollos, asesorEmails, asesorWhatsApp, asesorPush, gerenteEmails, skipped, errors };
 }
 
 export async function GET(request: Request) {

@@ -37,6 +37,7 @@ const checks = [
   { id: "041", table: "lead_carousel_state", column: "desarrollo_id", file: "041_whatsapp_lead_notifications.sql" },
   { id: "042", table: "compliance_digest_log", column: "desarrollo_id", file: "042_crm_compliance_digest.sql" },
   { id: "043", table: "compliance_digest_log", column: "channel", file: "043_crm_compliance_gavia.sql" },
+  { id: "080", table: "asesor_push_subscriptions", column: "endpoint", file: "080_asesor_push_subscriptions.sql" },
   { id: "044", table: "guardia_marcajes", column: "id", file: "044_guardia_marcajes.sql" },
   { id: "045", table: "prospecto_cadencia", column: "prospecto_id", file: "045_cadencia_perfilamiento.sql" },
   { id: "046", table: "prospectos", column: "visita_agendada_on", file: "046_prospecto_fechas_visita.sql" },

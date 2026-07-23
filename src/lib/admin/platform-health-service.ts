@@ -497,6 +497,17 @@ export const getPlatformHealth = async (): Promise<PlatformHealth> => {
         : "Aplica 043 para canal WhatsApp en digest y playbook Gavia.",
   });
 
+  const pushSubsOk = await probeTable("asesor_push_subscriptions", "endpoint");
+  checks.push({
+    id: "080",
+    label: "Web Push asesores (PWA)",
+    migrationFile: "080_asesor_push_subscriptions.sql",
+    ok: pushSubsOk,
+    detail: pushSubsOk
+      ? "Suscripciones push de asesores listas."
+      : "Falta asesor_push_subscriptions — aplica 080.",
+  });
+
   const guardiaMarcajesOk = await probeTable("guardia_marcajes", "id");
   checks.push({
     id: "044",

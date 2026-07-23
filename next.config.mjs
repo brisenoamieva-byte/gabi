@@ -5,6 +5,8 @@ const withPWA = withPWAInit({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
+  // worker/index.js → push + notificationclick (Web Push CRM)
+  customWorkerDir: "worker",
   fallbacks: {
     document: "/",
   },

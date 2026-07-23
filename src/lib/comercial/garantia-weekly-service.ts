@@ -31,7 +31,7 @@ const startOfIsoWeekUtc = (now = new Date()): Date => {
 
 export const wasGarantiaWeeklySentThisWeek = async (
   desarrolloId: string,
-  channel: "email" | "whatsapp",
+  channel: "email" | "whatsapp" | "push",
 ): Promise<boolean> => {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
