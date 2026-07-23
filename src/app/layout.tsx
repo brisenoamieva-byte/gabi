@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { DevServiceWorkerCleanup } from "@/components/DevServiceWorkerCleanup";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { ObservabilityInit } from "@/components/ObservabilityInit";
+import { RegisterPwaServiceWorker } from "@/components/RegisterPwaServiceWorker";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -57,7 +58,11 @@ export default function RootLayout({
       >
         {children}
         <ObservabilityInit />
-        {process.env.NODE_ENV === "development" ? <DevServiceWorkerCleanup /> : null}
+        {process.env.NODE_ENV === "development" ? (
+          <DevServiceWorkerCleanup />
+        ) : (
+          <RegisterPwaServiceWorker />
+        )}
         <OfflineStatus />
       </body>
     </html>

@@ -42,6 +42,24 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
     );
   });
 
+const isLocalDevHost = (): boolean => {
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+};
+
+/** Asegura registro de /sw.js (next-pwa a veces no lo registra solo en App Router). */
+const ensureServiceWorker = async (): Promise<ServiceWorkerRegistration> => {
+  let registration = await navigator.serviceWorker.getRegistration("/");
+  if (!registration) {
+    registration = await withTimeout(
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }),
+      10000,
+    );
+  }
+  await withTimeout(navigator.serviceWorker.ready, 8000);
+  return registration;
+};
+
 type PushOptInState =
   | "loading"
   | "unsupported"
@@ -73,6 +91,14 @@ export function AsesorPushOptIn({ className = "", compact = false }: AsesorPushO
       return;
     }
 
+    if (isLocalDevHost()) {
+      setState("no_sw");
+      setMessage(
+        "En local/dev los avisos no se activan. Abre https://www.gabi.mx, entra con tu PIN e instala la app.",
+      );
+      return;
+    }
+
     if (Notification.permission === "denied") {
       setState("denied");
       setMessage(null);
@@ -80,14 +106,14 @@ export function AsesorPushOptIn({ className = "", compact = false }: AsesorPushO
     }
 
     try {
-      const registration = await withTimeout(navigator.serviceWorker.ready, 4000);
+      const registration = await ensureServiceWorker();
       const existing = await registration.pushManager.getSubscription();
       setState(existing ? "subscribed" : "ready");
       setMessage(null);
     } catch {
       setState("no_sw");
       setMessage(
-        "Falta el service worker de Gabi. Abre https://www.gabi.mx (producción), instala la app y vuelve a entrar — en local/dev los avisos no se activan.",
+        "No se pudo activar la app en este dispositivo. Abre https://www.gabi.mx en Chrome (Android) o instálala en Inicio (iPhone) y vuelve a intentar.",
       );
     }
   }, []);
@@ -100,10 +126,15 @@ export function AsesorPushOptIn({ className = "", compact = false }: AsesorPushO
     setBusy(true);
     setMessage(null);
     try {
-      if (state === "no_sw" || state === "unsupported") {
+      if (state === "unsupported") {
         setMessage(
-          "Primero instala Gabi desde gabi.mx (producción) y ábrela desde el ícono del celular.",
+          "Este navegador no soporta avisos. Usa Chrome en Android o Gabi instalada en iPhone.",
         );
+        return;
+      }
+
+      if (isLocalDevHost()) {
+        setMessage("Abre https://www.gabi.mx (producción) para activar recordatorios.");
         return;
       }
 
@@ -126,7 +157,7 @@ export function AsesorPushOptIn({ className = "", compact = false }: AsesorPushO
         return;
       }
 
-      const registration = await withTimeout(navigator.serviceWorker.ready, 5000);
+      const registration = await ensureServiceWorker();
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey) as BufferSource,
